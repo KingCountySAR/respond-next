@@ -1,14 +1,21 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from './page.module.css'
-import AppBar from './AppBar'
+import Image from 'next/image';
+import { Inter } from 'next/font/google';
+import styles from './page.module.css';
+import AppBar from './AppBar';
+import { getCookieAuth } from "@respond/lib/server/auth";
+
+import LoginPanel from './LoginPanel';
 
 const inter = Inter({ subsets: ['latin'] })
 
-export default function Home() {
+export default async function Home() {
+  const auth = await getCookieAuth();
   return (
     <main className={styles.main}>
+      <div>Auth: {JSON.stringify(auth)}</div>
       <AppBar />
+      <div>{process.env.GOOGLE_ID}</div>
+      <LoginPanel />
       <div className={styles.description}>
         <p>
           Get started by editing&nbsp;
