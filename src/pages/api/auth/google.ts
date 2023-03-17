@@ -5,6 +5,7 @@ import { getServices } from '@respond/lib/server/services';
 import * as Mongo from '@respond/lib/server/mongodb';
 import * as Auth from '@respond/lib/server/auth';
 import { MemberProvider } from '@respond/lib/server/memberProviders/memberProvider';
+import { TokenPayload } from 'google-auth-library';
 
 async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -14,15 +15,23 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
 
   let memberProvider: MemberProvider|undefined = undefined;
   try {
-    const { token } = req.body;
-    const authClient = getServices().authClient;
+    let payload: TokenPayload|undefined;
+    if (process.env.DEV_NETWORK_DISABLED) {
+      const data = process.env.DEV_AUTH_USER ?? '{}';
+      console.log('login data', data);
+      payload = JSON.parse(data);
+    } else {
+      const { token } = req.body;
+      const authClient = getServices().authClient;
 
-    const ticket = await authClient.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_ID,
-    });
+      const ticket = await authClient.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_ID,
+      });
 
-    const payload = ticket.getPayload();
+      payload = ticket.getPayload();
+    }
+    
     if (!payload) {
       res.status(500).json({message: 'Could not get ticket'});
       return;

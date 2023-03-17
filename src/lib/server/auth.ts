@@ -16,11 +16,11 @@ export async function getCookieAuth() {
  */
 export async function getAuthFromCookies(
   cookies: ReadonlyRequestCookies|RequestCookies
-): Promise<UserAuth | null> {
+): Promise<UserAuth | undefined> {
   const cookieName = process.env.SESSION_COOKIE_NAME as string;
   const found = cookies.get(cookieName);
 
-  if (!found) return null;
+  if (!found) return undefined;
 
   const { auth } = await unsealData(found.value, {
     password: process.env.SECRET_COOKIE_PASSWORD as string,

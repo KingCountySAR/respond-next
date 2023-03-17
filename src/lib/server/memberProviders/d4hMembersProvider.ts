@@ -35,6 +35,7 @@ export default class D4HMembersProvider implements MemberProvider {
   initialized: boolean = false;
   fetching: boolean = false;
   lastFetch: number = 0;
+  devNetworkDisabled: boolean = false;
 
   readonly tokenFetchInfo: {[token: string]: FetchForTokenEntry} = {};
 
@@ -69,6 +70,8 @@ export default class D4HMembersProvider implements MemberProvider {
       return;
     }
 
+    this.devNetworkDisabled = !!process.env.DEV_NETWORK_DISABLED
+
     const mongo = await mongoPromise;
     const rows = (await mongo.db().collection<D4HCacheDoc>(D4H_CACHE_COLLECTION).find({}).toArray());
     rows.forEach(row => {
@@ -83,6 +86,11 @@ export default class D4HMembersProvider implements MemberProvider {
   }
 
   async refresh(force?: boolean) {
+    if (this.devNetworkDisabled) {
+      console.log('## D4H Network access disabled by DEV_NETWORK_DISABLED');
+      return { ok: true, runtime: 0, cached: true };
+    }
+
     if (this.fetching) {
       return { ok: true, runtime: 0, cached: true };      
     }
