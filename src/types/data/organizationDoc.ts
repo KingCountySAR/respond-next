@@ -6,6 +6,14 @@ export interface D4HConfig {
 
 export const ORGANIZATION_COLLECTION = 'organizations';
 
+export interface OrganizationPartner {
+  id: string;
+  title: string;
+  rosterName?: string;
+  canCreateEvents: boolean;
+  canCreateMissions: boolean;
+}
+
 export interface OrganizationDoc {
   id: string;
   domain: string;
@@ -16,4 +24,7 @@ export interface OrganizationDoc {
     primary: string;
   };
   memberProvider: D4HConfig;
+  canCreateEvents: boolean;
+  canCreateMissions: boolean;
+  partners: OrganizationPartner[];
 }
