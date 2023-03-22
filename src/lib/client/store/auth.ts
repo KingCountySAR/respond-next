@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { UserInfo } from '@respond/types/userInfo';
 
@@ -10,6 +10,19 @@ let initialState: AuthState = {
   
 };
 
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (any, { rejectWithValue }) => {
+    try {
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      delete localStorage.userAuth;
+      return {};
+    } catch (err: unknown) {
+      rejectWithValue(err);
+    }
+  }
+)
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -18,10 +31,17 @@ const authSlice = createSlice({
       Object.assign(state, action.payload);
     }
   },
+  extraReducers: (builder) => {
+      builder
+    .addCase(logoutUser.fulfilled, state => {
+      state.userInfo = undefined
+    });
+  }
 });
 
 export default authSlice.reducer;
 
 export const AuthActions = {
   ...authSlice.actions,
+  logout: logoutUser,
 }

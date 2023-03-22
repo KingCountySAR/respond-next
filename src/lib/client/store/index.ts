@@ -5,18 +5,7 @@ import activitiesReducer from './activities';
 import authReducer from './auth';
 import configReducer from './config';
 import organizationReducer from './organization';
-
-export const syncMiddleware: Middleware<{}, RootState> = storeApi => next => (action: {type: string, payload: any, meta?: { sync?: boolean }}) => {
-  const result = next(action);
-  if (action?.meta?.sync) {
-    //sync.handleLocalAction(action, storeApi.getState());
-    console.log('ACTION FOR SYNC:', action);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.activities = JSON.stringify(storeApi.getState().activities);
-    }
-  }
-  return result;
-}
+import syncReducer from './sync';
 
 export const logMiddleware: Middleware<{}, RootState> = storeApi => next => (action: {type: string, payload: any, meta?: { sync?: boolean }}) => {
   if (typeof window !== 'undefined') console.log('action ' + action.type, action.payload);
@@ -29,14 +18,18 @@ const rootReducer = combineReducers({
   auth: authReducer,
   config: configReducer,
   organization: organizationReducer,
+  sync: syncReducer,
 });
 
-export const store = configureStore({
-  reducer: rootReducer,
-  middleware: getDefault => getDefault().concat(logMiddleware, syncMiddleware)
-});
+export function buildClientStore(middlewares: Middleware[]) {
+  return configureStore({
+    reducer: rootReducer,
+    middleware: getDefault => getDefault().concat(logMiddleware, ...middlewares)
+  });  
+}
 
-export type AppDispatch = typeof store.dispatch;
+export type AppStore = ReturnType<typeof buildClientStore>;
+export type AppDispatch = AppStore['dispatch'];
 export type RootState = ReturnType<typeof rootReducer>;
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,

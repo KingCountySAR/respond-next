@@ -1,16 +1,18 @@
 'use client';
 
-import { createTheme, ThemeOptions, ThemeProvider } from '@mui/material';
+import { createTheme, ThemeOptions, ThemeProvider, useMediaQuery } from '@mui/material';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 
-import { store } from '@respond/lib/client/store';
 import { Provider } from 'react-redux';
 import { ConfigActions } from '@respond/lib/client/store/config';
 import { UserInfo } from '@respond/types/userInfo';
 import { AuthActions } from '@respond/lib/client/store/auth';
 import { MyOrganization } from '@respond/types/organization';
 import { OrgActions } from '@respond/lib/client/store/organization';
+import { AppStore } from '@respond/lib/client/store';
+import { ClientSync } from '@respond/lib/client/sync';
+import merge from 'lodash.merge';
 
 export interface SiteConfig {
   theme: ThemeOptions;
@@ -22,8 +24,27 @@ export default function ClientProviders(
   { googleClient, config, user, myOrg, children }:
   { googleClient: string, config: SiteConfig, user?: UserInfo, myOrg?: MyOrganization, children: ReactNode}
 ) {
-  console.log('rendering theme');
-  const hydratedTheme = createTheme(config.theme);
+  const [ store, setStore ] = useState<AppStore>();
+
+  useEffect(() => {
+    console.log('ClientProviders mounting ...');
+    const { sync, store } = ClientSync.buildSyncAndStore();
+    setStore(store);
+    sync.start();
+  }, []);
+
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const hydratedTheme = useMemo(() => {
+    console.log('rendering theme');
+    const theme = merge({}, config.theme, { palette: { mode: prefersDarkMode ? 'dark' : 'light'}});
+    return createTheme(theme);
+  }, [ prefersDarkMode, config.theme ]);
+
+
+  if (!store) {
+    return (<>Loading ...</>)
+  }
+
   store.dispatch(ConfigActions.set({ organization: config.organization, dev: config.dev }));
   store.dispatch(AuthActions.set({ userInfo: user }));
   store.dispatch(OrgActions.set({ mine: myOrg }));

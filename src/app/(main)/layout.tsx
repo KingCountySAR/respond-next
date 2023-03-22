@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import { Container } from '@mui/material';
 import { AppMenu } from './AppMenu';
 import { useAppSelector } from '@respond/lib/client/store';
+import LoginPanel from '../LoginPanel';
 
 export default function MainLayout({
   children,
@@ -16,6 +17,12 @@ export default function MainLayout({
   children: React.ReactNode
 }) {
   const { shortTitle } = useAppSelector(state => state.config.organization )
+  const { userInfo } = useAppSelector(state => state.auth )
+
+  if (!userInfo) {
+    children = (<LoginPanel/>);
+  }
+
   return (
     <Container maxWidth="md" sx={{ display: 'flex', flexDirection:'column' }}>
       <CssBaseline />

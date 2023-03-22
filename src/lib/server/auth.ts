@@ -9,6 +9,15 @@ export async function getCookieAuth() {
   return getAuthFromCookies(cookies());
 }
 
+export async function getAuthFromApiCookies(
+  cookies: Partial<{[key: string]: string}>
+): Promise<UserAuth|undefined> {
+  const cookieName = process.env.SESSION_COOKIE_NAME as string;
+  const found = cookies[cookieName];
+  return getAuthFromCookie(cookies[cookieName]);
+}
+
+
 /**
  * Can be called in page/layout server component.
  * @param cookies ReadonlyRequestCookies
@@ -18,11 +27,15 @@ export async function getAuthFromCookies(
   cookies: ReadonlyRequestCookies|RequestCookies
 ): Promise<UserAuth | undefined> {
   const cookieName = process.env.SESSION_COOKIE_NAME as string;
-  const found = cookies.get(cookieName);
+  return getAuthFromCookie(cookies.get(cookieName)?.value);
+}
 
-  if (!found) return undefined;
+async function getAuthFromCookie(
+  sessionCookie?: string
+) {
+  if (!sessionCookie) return undefined;
 
-  const { auth } = await unsealData(found.value, {
+  const { auth } = await unsealData(sessionCookie, {
     password: process.env.SECRET_COOKIE_PASSWORD as string,
   });
   return auth as unknown as UserAuth;

@@ -4,6 +4,7 @@ import { getOrganizationForRequest } from '@respond/lib/server/request';
 import { headers } from 'next/headers';
 import ClientProviders, { SiteConfig } from './ClientProviders';
 import "./globals.css"
+import LoginPanel from './LoginPanel';
 
 export const metadata = {
   title: 'Respond Site',
@@ -51,7 +52,6 @@ export default async function RootLayout({
     })) ?? [],
   } : undefined;
 
-  console.log('headers', hdrs.get('host'));
   return (
     <html lang="en">
       <head />

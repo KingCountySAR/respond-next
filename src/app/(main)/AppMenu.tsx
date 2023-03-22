@@ -2,9 +2,13 @@
 
 import * as React from 'react';
 import { IconButton, Menu, MenuItem } from '@mui/material';
-import { AccountCircle } from '@mui/icons-material';
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
+import { AuthActions } from '@respond/lib/client/store/auth';
 
 export function AppMenu() {
+  const dispatch = useAppDispatch();
+  const { userInfo } = useAppSelector(state => state.auth);
   const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement|null>(null);
   const handleMenu = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => setMenuAnchor(event.currentTarget);
   const handleClose = () => setMenuAnchor(null);
@@ -36,9 +40,8 @@ export function AppMenu() {
       open={Boolean(menuAnchor)}
       onClose={handleClose}
     >
-      <MenuItem disabled={true}>Placeholder</MenuItem>
-      {/* {userInfo ? <MenuItem disabled>{userInfo.name}</MenuItem> : undefined}
-      <MenuItem disabled={!userInfo} onClick={() => { handleClose(); dispatch(AuthActions['auth/logout']()) }}>Sign Out</MenuItem> */}
+      {userInfo ? <MenuItem disabled>{userInfo.name}</MenuItem> : undefined}
+      <MenuItem disabled={!userInfo} onClick={() => { handleClose(); dispatch(AuthActions.logout()) }}>Sign Out</MenuItem>
     </Menu>
     </div>
   );
