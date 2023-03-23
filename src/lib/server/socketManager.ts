@@ -3,6 +3,7 @@ import { SocketAuthDoc } from '@respond/types/data/socketAuthDoc';
 import UserAuth from '@respond/types/userAuth';
 import { ObjectId } from 'mongodb';
 import mongoPromise from './mongodb';
+import { getServices } from './services';
 
 export default class SocketManager {
   private readonly connectedSockets: Record<string, SocketInterface> = {};
@@ -16,6 +17,7 @@ export default class SocketManager {
 
     socket.on('disconnect', () => {
       delete this.connectedSockets[socket.id];
+      getServices().stateManager.removeClient(socket.id);
     });
 
     socket.on('hello', async key => {
@@ -31,9 +33,19 @@ export default class SocketManager {
         socket.disconnect();
       } else {
         console.log(`authd socket for ${socketAuth.user.email}`);
+        getServices().stateManager.addClient({
+          id: socket.id,
+          broadcastAction(action, reporterId) {
+            socket.emit('broadcastAction', action, reporterId);
+          },
+        })
         socket.emit('welcome', socket.id);
       }
-    })
+    });
+
+    socket.on('reportAction', async (action, reporterId) => {
+      getServices().stateManager.handleIncomingAction(action, reporterId);
+    });
   }
 
   async getSocketKey(user: UserAuth, previousKey?: string) {

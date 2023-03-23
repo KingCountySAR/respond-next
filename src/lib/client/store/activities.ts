@@ -15,7 +15,6 @@ if (typeof localStorage !== 'undefined' && localStorage.activities) {
   initialState = JSON.parse(localStorage.activities);
 }
 
-console.log('activity initialstate', initialState);
 const update = createAction('activity/update', (updates: Partial<Activity> & { id: string }) => ({
   payload: updates,
   meta: { sync: true },

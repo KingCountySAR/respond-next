@@ -13,24 +13,28 @@ export const logMiddleware: Middleware<{}, RootState> = storeApi => next => (act
   return result;
 }
 
-const rootReducer = combineReducers({
-  activities: activitiesReducer,
-  auth: authReducer,
-  config: configReducer,
-  organization: organizationReducer,
-  sync: syncReducer,
-});
+function buildClientReducers() {
+  const rootReducer = combineReducers({
+    activities: activitiesReducer,
+    auth: authReducer,
+    config: configReducer,
+    organization: organizationReducer,
+    sync: syncReducer,
+  });
+  return rootReducer;  
+}
 
 export function buildClientStore(middlewares: Middleware[]) {
   return configureStore({
-    reducer: rootReducer,
+    reducer: buildClientReducers(),
     middleware: getDefault => getDefault().concat(logMiddleware, ...middlewares)
   });  
 }
 
 export type AppStore = ReturnType<typeof buildClientStore>;
 export type AppDispatch = AppStore['dispatch'];
-export type RootState = ReturnType<typeof rootReducer>;
+type ClientReducerType = ReturnType<typeof buildClientReducers>;
+export type RootState = ReturnType<ClientReducerType>;
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
   RootState,

@@ -53,7 +53,7 @@ export class ClientSync {
   handleLocalAction(action: { type: string, payload: any }, state: RootState) {
     console.log('SYNC action', action);
     localStorage.activities = JSON.stringify(state.activities);
-    this.socket.emit('reportAction', action);
+    this.socket.emit('reportAction', action,this.socket.id);
   }
 
   static buildSyncAndStore() {

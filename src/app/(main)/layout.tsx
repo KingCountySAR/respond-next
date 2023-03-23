@@ -7,6 +7,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { Container } from '@mui/material';
+import CloudIcon from '@mui/icons-material/Cloud';
+import NoCloudIcon from '@mui/icons-material/CloudOff';
 import { AppMenu } from './AppMenu';
 import { useAppSelector } from '@respond/lib/client/store';
 import LoginPanel from '../LoginPanel';
@@ -16,9 +18,9 @@ export default function MainLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { shortTitle } = useAppSelector(state => state.config.organization )
-  const { userInfo } = useAppSelector(state => state.auth )
-
+  const { shortTitle } = useAppSelector(state => state.config.organization);
+  const { userInfo } = useAppSelector(state => state.auth);
+  const { connected, id } = useAppSelector(state => state.sync);
   if (!userInfo) {
     children = (<LoginPanel/>);
   }
@@ -27,12 +29,12 @@ export default function MainLayout({
     <Container maxWidth="md" sx={{ display: 'flex', flexDirection:'column' }}>
       <CssBaseline />
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-      <Toolbar>
+      <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
           {shortTitle} Check-In
         </Typography>
         <Typography variant="h6" noWrap component="div">
-        {/* {appChrome.online ? undefined : <div>OFF</div>} */}
+          {id} {connected ? <CloudIcon fontSize='medium' /> : <NoCloudIcon fontSize='medium' />}
         </Typography>
         <AppMenu />
       </Toolbar>
