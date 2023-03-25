@@ -39,7 +39,7 @@ async function SocketHandler(req: NextApiRequest, res: NextApiResponse) {
     return;
   }
 
-  const newKey = await getServices().socketManager.getSocketKey(user, req.session.socketKey);
+  const newKey = await (await getServices()).socketManager.getSocketKey(user, req.session.socketKey);
   if (newKey !== req.session.socketKey) {
     req.session.socketKey = newKey;
     await req.session.save();
@@ -60,7 +60,7 @@ function ensureSocketServer(res: NextApiResponse) {
       console.log('Socket server is initializing');
       const io = new SocketServer(res.socket.server);
       res.socket.server.io = io;
-      io.on('connection', socket => getServices().socketManager.handleNewSocket(socket));
+      io.on('connection', async socket => (await getServices()).socketManager.handleNewSocket(socket));
     }
   }
 }

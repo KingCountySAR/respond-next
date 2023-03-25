@@ -6,8 +6,9 @@ import { Alert, Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, 
 import DeleteIcon from "@mui/icons-material/Delete";
 import { RelativeTimeText } from "@respond/components/RelativeTimeText";
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { ActivityActions, buildActivitySelector } from '@respond/lib/client/store/activities';
+import { buildActivitySelector } from '@respond/lib/client/store/activities';
 import { OrganizationStatus } from '@respond/types/activity';
+import { ActivityActions } from '@respond/lib/state';
 
 export const EventPage = ({ eventId }: { eventId: string }) => {
   const dispatch = useAppDispatch();

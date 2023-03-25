@@ -13,7 +13,7 @@ export interface Services {
 
 let instance: Services;
 
-export function getServices(): Services {
+export async function getServices(): Promise<Services> {
   if (!instance) {
     
     instance = {
@@ -25,6 +25,8 @@ export function getServices(): Services {
 
     //defaultMembersRepositoryRegistry.register('LocalDatabaseMembers', new LocalDatabaseMembersProvider(repo, this.log));
     instance.memberProviders.register('D4HMembers', new D4HMembersProvider());
+
+    await instance.stateManager.start();
   }
   return instance;
 }

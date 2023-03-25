@@ -10,7 +10,7 @@ import { UserInfo } from '@respond/types/userInfo';
 import { AuthActions } from '@respond/lib/client/store/auth';
 import { MyOrganization } from '@respond/types/organization';
 import { OrgActions } from '@respond/lib/client/store/organization';
-import { AppStore } from '@respond/lib/client/store';
+import { AppStore, buildClientStore } from '@respond/lib/client/store';
 import { ClientSync } from '@respond/lib/client/sync';
 import merge from 'lodash.merge';
 
@@ -24,14 +24,13 @@ export default function ClientProviders(
   { googleClient, config, user, myOrg, children }:
   { googleClient: string, config: SiteConfig, user?: UserInfo, myOrg?: MyOrganization, children: ReactNode}
 ) {
-  const [ store, setStore ] = useState<AppStore>();
+  const [ store ] = useState<AppStore>(buildClientStore([]));
+  const [ sync ] = useState<ClientSync>(new ClientSync(store));
 
   useEffect(() => {
     console.log('ClientProviders mounting ...');
-    const { sync, store } = ClientSync.buildSyncAndStore();
-    setStore(store);
     sync.start();
-  }, []);
+  }, [sync]);
 
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const hydratedTheme = useMemo(() => {

@@ -22,7 +22,7 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
       payload = JSON.parse(data);
     } else {
       const { token } = req.body;
-      const authClient = getServices().authClient;
+      const authClient = (await getServices()).authClient;
 
       const ticket = await authClient.verifyIdToken({
         idToken: token,
@@ -49,7 +49,7 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
       return;
     }
 
-    memberProvider = getServices().memberProviders.get(organization.memberProvider?.provider);
+    memberProvider = (await getServices()).memberProviders.get(organization.memberProvider?.provider);
     if (!memberProvider) {
       console.log(`Can't find memberProvider for org ${organization.id}: ${organization.memberProvider?.provider}`);
       res.status(500).json({message: 'Invalid configuration'});

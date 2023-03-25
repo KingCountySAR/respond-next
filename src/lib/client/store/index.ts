@@ -1,4 +1,4 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { configureStore, combineReducers, createListenerMiddleware, TypedStartListening, addListener, TypedAddListener } from '@reduxjs/toolkit';
 import type { ThunkAction, Action, Middleware } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import activitiesReducer from './activities';
@@ -24,11 +24,17 @@ function buildClientReducers() {
   return rootReducer;  
 }
 
+
+
 export function buildClientStore(middlewares: Middleware[]) {
+  const listenerMiddleware = createListenerMiddleware();
+
   return configureStore({
     reducer: buildClientReducers(),
-    middleware: getDefault => getDefault().concat(logMiddleware, ...middlewares)
-  });  
+    middleware: getDefault => getDefault()
+      .prepend(listenerMiddleware.middleware)
+      .concat(logMiddleware, ...middlewares)
+  });
 }
 
 export type AppStore = ReturnType<typeof buildClientStore>;
@@ -42,6 +48,8 @@ export type AppThunk<ReturnType = void> = ThunkAction<
   Action<string>
 >;
 
+export type AppStartListening = TypedStartListening<RootState, AppDispatch>;
+export const addAppListener = addListener as TypedAddListener<RootState, AppDispatch>;
 
 // Use throughout your app instead of plain `useDispatch` and `useSelector`
 export const useAppDispatch = () => useDispatch<AppDispatch>();

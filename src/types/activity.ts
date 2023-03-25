@@ -1,5 +1,17 @@
 import { v4 as uuid } from "uuid";
 
+const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[]) => {
+  return (object: any) => {
+    const resultObject: ObjectType = {} as unknown as ObjectType;
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys[index] as unknown as keyof ObjectType;
+      resultObject[key] = object[key];
+    }
+
+    return resultObject as ObjectType;
+  }
+}
+
 export enum ResponderStatus {
   Unavailable = 0,
   Standby = 2,
@@ -39,10 +51,12 @@ export interface Activity {
   isMission: boolean;
   asMission: boolean;
   startTime: number;
+
   participants: Record<string, Participant>;
   organizations: Record<string, ParticipatingOrg>;
 }
 
+export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'location', 'ownerOrgId', 'isMission', 'asMission', 'startTime']);
 
 export type ActivityType = 'missions'|'events';
 

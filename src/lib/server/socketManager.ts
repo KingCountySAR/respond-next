@@ -2,22 +2,23 @@ import { SocketInterface } from '@respond/pages/api/socket-keepalive';
 import { SocketAuthDoc } from '@respond/types/data/socketAuthDoc';
 import UserAuth from '@respond/types/userAuth';
 import { ObjectId } from 'mongodb';
+import { ActivityActions } from '../state';
 import mongoPromise from './mongodb';
 import { getServices } from './services';
 
 export default class SocketManager {
   private readonly connectedSockets: Record<string, SocketInterface> = {};
 
-  async handleNewSocket(socket: SocketInterface) {
+  async handleNewSocket(socket: SocketInterface & { auth?: UserAuth }) {
     this.connectedSockets[socket.id] = socket;
     let authTimeout: NodeJS.Timeout|undefined = setTimeout(() => {
       console.log('socket did not auth in time. disconnecting');
       socket.disconnect();
     }, 3000);
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       delete this.connectedSockets[socket.id];
-      getServices().stateManager.removeClient(socket.id);
+      (await getServices()).stateManager.removeClient(socket.id);
     });
 
     socket.on('hello', async key => {
@@ -33,18 +34,25 @@ export default class SocketManager {
         socket.disconnect();
       } else {
         console.log(`authd socket for ${socketAuth.user.email}`);
-        getServices().stateManager.addClient({
+        socket.auth = socketAuth.user;
+        const stateManager = (await getServices()).stateManager;
+        stateManager.addClient({
           id: socket.id,
           broadcastAction(action, reporterId) {
             socket.emit('broadcastAction', action, reporterId);
           },
         })
         socket.emit('welcome', socket.id);
+        socket.emit('broadcastAction', ActivityActions.reload(stateManager.getStateForUser(socketAuth.user)), '');
       }
     });
 
     socket.on('reportAction', async (action, reporterId) => {
-      getServices().stateManager.handleIncomingAction(action, reporterId);
+      if (!socket.auth) {
+        // TODO, let user know they aren't authenticated
+        return;
+      }
+      (await getServices()).stateManager.handleIncomingAction(action, reporterId, socket.auth);
     });
   }
 

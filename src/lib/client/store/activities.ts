@@ -1,11 +1,7 @@
-import { createAction, createSlice } from '@reduxjs/toolkit';
-import { Activity, createNewActivity, OrganizationStatus, ResponderStatus } from '@respond/types/activity';
-import merge from 'lodash.merge';
-import { RootState } from '.';
-
-export interface ActivityState {
-  list: Activity[];
-}
+import { createSlice, isAnyOf } from '@reduxjs/toolkit';
+import { Activity, ResponderStatus } from '@respond/types/activity';
+import { AppStartListening, RootState } from '.';
+import { ActivityState, ActivityActions, BasicReducers } from '@respond/lib/state';
 
 let initialState: ActivityState = {
   list: [],
@@ -15,60 +11,20 @@ if (typeof localStorage !== 'undefined' && localStorage.activities) {
   initialState = JSON.parse(localStorage.activities);
 }
 
-const update = createAction('activity/update', (updates: Partial<Activity> & { id: string }) => ({
-  payload: updates,
-  meta: { sync: true },
-}));
-
-const remove = createAction('activity/remove', (activityId: string) => ({
-  payload: { id: activityId },
-  meta: { sync: true },
-}))
-
-const appendOrganizationTimeline = createAction('participatingOrg/append', (
-  activityId: string,
-  org: { id: string, title: string, rosterName?: string },
-  status: { time: number, status: OrganizationStatus }
-) => ({
-  payload: { activityId, orgId: org.id, org, status },
-  meta: { sync: true },
-}));
-
 const activitiesSlice = createSlice({
   name: 'activities',
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(update, (state, { payload }) => {
-        let target = state.list.find(a => a.id === payload.id);
-        if (!target) {
-          target = createNewActivity();
-          state.list.push(target);
-        }
-        merge(target, payload);
-      })
-      .addCase(remove, (state, { payload }) => {
-        state.list = state.list.filter(f => f.id !== payload.id)
-      })
-      .addCase(appendOrganizationTimeline, (state, { payload }) => {
-        const activity = state.list.find(f => f.id === payload.activityId);
-        if (activity) {
-          activity.organizations[payload.orgId] = Object.assign(activity.organizations[payload.orgId] ?? { timeline: [] }, payload.org);
-          activity.organizations[payload.orgId].timeline.unshift(payload.status);
-        }
-      })
+      .addCase(ActivityActions.reload, BasicReducers[ActivityActions.reload.type])
+      .addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type])
+      .addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type])
+      .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type])
   },
 });
 
 export default activitiesSlice.reducer;
-
-export const ActivityActions = {
-  ...activitiesSlice.actions,
-  update,
-  remove,
-  appendOrganizationTimeline,
-}
 
 export function buildActivityTypeSelector(missions: boolean) {
   return (state: RootState) => state.activities.list.filter(f => f.isMission === missions);
@@ -81,3 +37,12 @@ export function getActiveParticipants(a: Activity) {
 export function buildActivitySelector(id?: string) {
   return (state: RootState) => id ? state.activities.list.find(a => a.id === id) : undefined;
 }
+
+// export function addListeners(listenTo: AppStartListening) {
+//   listenTo({
+//     matcher: isAnyOf(ActivityActions.reload),
+//     effect: (action) => {
+//       console.log('listener side effect. ', action.type, action.payload);
+//     },
+//   });
+// };

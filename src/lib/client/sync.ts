@@ -1,9 +1,10 @@
 import io, { Socket } from 'socket.io-client';
 import type { ServerToClientEvents, ClientToServerEvents } from '@respond/types/syncSocket';
-import { AppDispatch, buildClientStore, RootState } from './store';
+import { addAppListener, AppDispatch, AppStore } from './store';
 import { Actions as SyncActions } from './store/sync';
-import { Middleware } from '@reduxjs/toolkit';
+import { isAnyOf } from '@reduxjs/toolkit';
 import { apiFetch } from '../api';
+import { ActivityAction, ActivityActions } from '../state';
 
 export class ClientSync {
   // This property is set during the build method below, so it's effectively set in the constructor
@@ -12,7 +13,7 @@ export class ClientSync {
   private socket: Socket<ServerToClientEvents, ClientToServerEvents>;
   private key: string = '';
 
-  private constructor() {
+  constructor(store: AppStore) {
     this.socket = io('/',
     {
       autoConnect: false,
@@ -27,6 +28,8 @@ export class ClientSync {
     this.socket.on('connect_error', () => fetch('/api/socket-keepalive?after=error'));
 
     this.socket.on('welcome', (id) => this.authenticated(id));
+    this.socket.on('broadcastAction', (action, reporterId) => this.handleServerAction(action, reporterId));
+    this.dispatch = store.dispatch;
   }
 
   connected(): void {
@@ -43,32 +46,45 @@ export class ClientSync {
 
   async start() {
     console.log('starting sync');
+    this.dispatch(addAppListener({
+      predicate: (action, _currentState, _previousState) => {
+        console.log('SEND SYNC', action, action.meta?.sync ?? false);
+        return action.meta?.sync ?? false;
+      },
+      effect: (action, _listenerApi) => {
+        console.log('ACTING ON SYNC');
+        this.handleLocalAction(action as ActivityAction);
+      },
+    }));
+
+    // Listen for actions that update the activities list. We want to save a copy so we
+    // can use it when we reload.
+    this.dispatch(addAppListener({
+      matcher: isAnyOf(ActivityActions.reload, ActivityActions.update),
+      effect: (_action, listenerApi) => {
+        console.log('SHOULD SAVE TO LOCALSTORAGE', listenerApi.getState().activities);
+        localStorage.activities = JSON.stringify(listenerApi.getState().activities);
+      },
+    }))
+
+    if (localStorage.activities) {
+      this.dispatch(ActivityActions.reload(JSON.parse(localStorage.activities)));
+    }
+
     // make sure the socket is listening...
     this.key = (await apiFetch<{key: string}>('/api/socket-keepalive')).key;
     // and then connect to it.
     this.socket.connect();
-    //this.dispatch(loadEnvironment());
   }
 
-  handleLocalAction(action: { type: string, payload: any }, state: RootState) {
-    console.log('SYNC action', action);
-    localStorage.activities = JSON.stringify(state.activities);
-    this.socket.emit('reportAction', action,this.socket.id);
+  handleLocalAction(action: ActivityAction) {
+    this.socket.emit('reportAction', action, this.socket.id);
   }
 
-  static buildSyncAndStore() {
-    const sync = new ClientSync();
-
-    const syncMiddleware: Middleware<{}, RootState> = storeApi => next => (action: {type: string, payload: any, meta?: { sync?: boolean }}) => {
-      const result = next(action);
-      if (action?.meta?.sync) {
-        sync.handleLocalAction(action, storeApi.getState());
-      }
-      return result;
-    }
-
-    const store = buildClientStore([syncMiddleware]);
-    sync.dispatch = store.dispatch;
-    return { store, sync }
+  handleServerAction(action: ActivityAction, reporterId: string) {
+    console.log('handleServerAction', reporterId, this.socket.id);
+    if (reporterId === this.socket.id) return;
+    console.log('YAY handleServerAction', action);
+    this.dispatch(action);
   }
 }
