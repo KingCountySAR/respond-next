@@ -112,6 +112,12 @@ Now, complete a build using the configured environment:
 ### TODO
 - Define user for running the next.js app
 - Configure `pm2` to run at startup
+- Better instructions for updating site
+  - git pull
+  - (turn swap on)
+  - yarn install && yarn build
+  - (turn swap off)
+  - pm2 restart respond-dev
 
 
 ### Crontab tasks
