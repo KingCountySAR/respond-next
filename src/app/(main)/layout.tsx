@@ -34,7 +34,7 @@ export default function MainLayout({
           {shortTitle} Check-In
         </Typography>
         <Typography variant="h6" noWrap component="div">
-          {id} {connected ? <CloudIcon fontSize='medium' /> : <NoCloudIcon fontSize='medium' />}
+          {id?.substring(0, 4)} {connected ? <CloudIcon fontSize='medium' /> : <NoCloudIcon fontSize='medium' />}
         </Typography>
         <AppMenu />
       </Toolbar>
