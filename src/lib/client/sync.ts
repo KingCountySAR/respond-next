@@ -5,6 +5,8 @@ import { Actions as SyncActions } from './store/sync';
 import { isAnyOf } from '@reduxjs/toolkit';
 import { apiFetch } from '../api';
 import { ActivityAction, ActivityActions } from '../state';
+import { connect } from 'http2';
+import { AuthActions } from './store/auth';
 
 export class ClientSync {
   // This property is set during the build method below, so it's effectively set in the constructor
@@ -46,6 +48,15 @@ export class ClientSync {
 
   async start() {
     console.log('starting sync');
+    // When we log in/out, we should restart the socket connection.
+    this.dispatch(addAppListener({
+      matcher: isAnyOf(AuthActions.set, AuthActions.logout.fulfilled),
+      effect: () => {
+        this.restart();
+      }
+    }));
+
+    // Listen for actions that should have copies sent to the server.
     this.dispatch(addAppListener({
       predicate: (action, _currentState, _previousState) => {
         console.log('SEND SYNC', action, action.meta?.sync ?? false);
@@ -71,10 +82,21 @@ export class ClientSync {
       this.dispatch(ActivityActions.reload(JSON.parse(localStorage.activities)));
     }
 
-    // make sure the socket is listening...
+    await this.restart();
+  }
+
+  async restart() {
+    console.log('restarting sync');
+    if (this.socket.connected) {
+      this.socket.disconnect();
+    }
+
+    // make sure the socket is listening, and we have an auth token for it...
     this.key = (await apiFetch<{key: string}>('/api/socket-keepalive')).key;
-    // and then connect to it.
-    this.socket.connect();
+    if (this.key) {
+      // and then connect to it.
+      this.socket.connect();
+    }
   }
 
   handleLocalAction(action: ActivityAction) {

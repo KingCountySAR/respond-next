@@ -6,15 +6,13 @@ export interface AuthState {
   userInfo?: UserInfo,
 }
 
-let initialState: AuthState = {
-  
-};
+let initialState: AuthState = {};
 
 export const logoutUser = createAsyncThunk(
   'auth/logout',
-  async (any, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { method: 'POST' });
       delete localStorage.userAuth;
       return {};
     } catch (err: unknown) {
