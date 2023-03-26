@@ -10,12 +10,8 @@ Create the file:
 sudo dd if=/dev/zero of=/mnt/4GiB.swap bs=1024 count=4194304
 sudo chmod 600 /mnt/4GiB.swap
 sudo mkswap /mnt/4GiB.swap
-```
-
-To start/stop using swap:
-```bash
+echo '/mnt/4GiB.swap none swap sw 0 0' | sudo tee -a /etc/fstab
 sudo swapon /mnt/4GiB.swap
-sudo swapoff /mnt/4GiB.swap
 ```
 
 ## Setup Nginx
