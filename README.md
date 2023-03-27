@@ -42,6 +42,8 @@ yarn dev
 
 Most of the site should auto-compile and update when the source file is saved. One exception seems to be the socket server (code initialized by `/api/socket-keepalive`), which needs you to Ctrl-C the server and start `yarn dev` again.
 
+As updates are made, the site will re-compile on demand (page load). You may notice a delay when navigating between pages.
+
 ### SSL Proxy
 There are parts of the application (specifically Google authentication, possibly future geolocation) that don't work on an insecure (http://) site. To get into a secure context, we'll use an SSL proxy. HTTPS traffic on port 9001 is forwarded to an HTTP server on port 3000.
 

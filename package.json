@@ -25,6 +25,7 @@
     "eslint": "8.36.0",
     "eslint-config-next": "13.2.4",
     "google-auth-library": "^8.7.0",
+    "immer": "^9.0.21",
     "iron-session": "^6.3.1",
     "lodash.merge": "^4.6.2",
     "mongodb": "^5.1.0",
