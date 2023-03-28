@@ -1,37 +1,25 @@
-import { combineReducers, configureStore, createSlice, Middleware, PayloadAction } from '@reduxjs/toolkit';
-import mongoPromise from '@respond/lib/server/mongodb';
-import { ActivityAction, ActivityActions, ActivityState, BasicReducers } from '@respond/lib/state';
-import { Activity } from '@respond/types/activity';
+import mongoPromise, { getRelatedOrgIds } from '@respond/lib/server/mongodb';
+import type { ActivityAction, ActivityState } from '@respond/lib/state';
+import { BasicReducers } from '@respond/lib/state';
+import type { Activity } from '@respond/types/activity';
 import produce from 'immer';
-import { monthsToQuarters } from 'date-fns';
-import UserAuth from '@respond/types/userAuth';
+import type UserAuth from '@respond/types/userAuth';
 
-export interface StateManagerClient {
-  get id(): string;
-  broadcastAction(action: ActivityAction, reporterId: string): void;
+export interface ActionListener {
+  broadcastAction(action: ActivityAction, toRooms: string[], reporterId: string): void;
 }
 
 export class StateManager {
-  private readonly clients: Record<string, StateManagerClient> = {};
+  private listeners: ActionListener[] = [];
   private activityState: ActivityState = { list: [] };
 
-  // private readonly store: ServerStore;
-  // storeActions: { load: (value: ActivityState) => PayloadAction<ActivityState> };
 
-  constructor() {
-    //const { store, actions } = buildServerStore();
-    // this.store = store;
-    // this.storeActions = actions;
+  addClient(listener: ActionListener) {
+    this.listeners = [ ...this.listeners, listener ];
   }
 
-  addClient(client: StateManagerClient) {
-    this.clients[client.id] = client;
-    console.log(`${Object.keys(this.clients).length} clients connected to state manager`, Object.keys(this.clients));
-  }
-
-  removeClient(clientId: string) {
-    delete this.clients[clientId];
-    console.log(`${Object.keys(this.clients).length} clients connected to state manager`, Object.keys(this.clients));
+  removeClient(listener: ActionListener) {
+    this.listeners = this.listeners.filter(f => f !== listener);
   }
 
   async start() {
@@ -39,12 +27,16 @@ export class StateManager {
     this.activityState = {
       list: await mongo.db().collection<Activity>('activities').find().toArray()
     };
-   // this.store.dispatch(this.storeActions.load({ list: dbActivities }));
   }
 
-  getStateForUser(user: UserAuth) {
+  async getStateForUser(user: UserAuth) {
     console.log('getting state for ' + user.userId);
-    return this.activityState;
+    
+    const myOrgIds = await getRelatedOrgIds(user.organizationId);
+  
+    return {
+      list: this.activityState.list.filter(a => myOrgIds.includes(a.ownerOrgId)),
+    };
   }
 
   async handleIncomingAction(action: ActivityAction, reporterId: string, auth: UserAuth) {
@@ -62,7 +54,6 @@ export class StateManager {
     // TODO: Validate nextState
     this.activityState = nextState;
 
-    //console.log(nextState);
     const mongo = await mongoPromise;
 
     await mongo.db().collection('history').insertOne({
@@ -72,80 +63,38 @@ export class StateManager {
       email: auth.email,
     });
 
+    const affectedOrgs = new Set<string>();
     const currentActivities: Record<string, Activity> = this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
     for (const updatedId of Object.keys(currentActivities).filter(k => oldActivities[k] !== currentActivities[k])) {
       console.log('MONGO update activity', updatedId);
+      const isSummaryLevelUpdate = (action.type === 'activity/update');
+
+      (await this.getOrgsInterestedInAction(isSummaryLevelUpdate, oldActivities[updatedId])).forEach(o => affectedOrgs.add(o));
+      (await this.getOrgsInterestedInAction(isSummaryLevelUpdate, currentActivities[updatedId])).forEach(o => affectedOrgs.add(o));
+
       await mongo.db().collection<Activity>('activities').replaceOne({ id: updatedId }, currentActivities[updatedId], { upsert: true });  
     }
     for (const removedId of Object.keys(oldActivities).filter(k => currentActivities[k] == undefined)) {
       console.log('MONGO remove activity', removedId);
-      // delete (oldActivities[removedId] as any)._id;
-      // await mongo.db().collection<Activity>('activities-del').insertOne( oldActivities[removedId]);
+      (await this.getOrgsInterestedInAction(true, oldActivities[removedId])).forEach(o => affectedOrgs.add(o));
       await mongo.db().collection<Activity>('activities').deleteOne({id: removedId });
     }
 
-   // this.store.dispatch(action);
-
-    //const currentActivities: Record<string, Activity> = this.store.getState().activities.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
-    
-    // const mongo = await mongoPromise;
-
-    // for (const updatedId of Object.keys(currentActivities).filter(k => oldActivities[k] !== currentActivities[k])) {
-    //   console.log('MONGO update activity', updatedId);
-    //   await mongo.db().collection<Activity>('activities').replaceOne({ id: updatedId }, currentActivities[updatedId], { upsert: true });  
-    // }
-    // for (const removedId of Object.keys(oldActivities).filter(k => currentActivities[k] == undefined)) {
-    //   console.log('MONGO remove activity', removedId);
-    //   await mongo.db().collection<Activity>('activities-del').insertOne( oldActivities[removedId]);
-    //   await mongo.db().collection<Activity>('activities').deleteOne({id: removedId });
-    // }
-
     action.meta.sync = false;
-    Object.values(this.clients).forEach(c => c.broadcastAction(action, reporterId));
+    
+    const toRooms = Array.from(affectedOrgs).map(o => `org:${o}`);
+    for (const listener of this.listeners) {
+      listener.broadcastAction(action, toRooms, reporterId);
+    }
+  }
+
+  private async getOrgsInterestedInAction(summaryLevelUpdate: boolean, activity?: Activity): Promise<string[]> {
+    if (!activity) {
+      return [];
+    }
+
+    const participatingOrgs = Object.values(activity.organizations ?? {}).map(o => o.id);
+    const interestedIds = Array.from(new Set([ /*...partnerOrgs,*/ ...participatingOrgs ]));
+    return interestedIds;
   }
 }
-
-// function buildServerStore() {
-//   let initialState: ActivityState = {
-//     list: [],
-//   };
-
-//   if (typeof localStorage !== 'undefined' && localStorage.activities) {
-//     initialState = JSON.parse(localStorage.activities);
-//   }
-
-//   const activitiesSlice = createSlice({
-//     name: 'activities',
-//     initialState,
-//     reducers: {
-//       load: (state, action: PayloadAction<ActivityState>) => {
-//         Object.assign(state, action.payload);
-//       }
-//     },
-//     extraReducers: (builder) => {
-//       builder
-//         .addCase(ActivityActions.update, BasicReducers.update)
-//         .addCase(ActivityActions.remove, BasicReducers.remove)
-//         .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers.appendOrganizationTimeline)
-//     },
-//   });
-
-//   const rootReducer = combineReducers({
-//     activities: activitiesSlice.reducer,
-//   });
-
-//   type ServerStoreState = ReturnType<typeof rootReducer>;
-//   const logMiddleware: Middleware<{}, ServerStoreState> = storeApi => next => (action: {type: string, payload: any, meta?: { sync?: boolean }}) => {
-//     console.log('server store ' + action.type, action.payload);
-//     const result = next(action);
-//     return result;
-//   }
-
-//   const store = configureStore({
-//     reducer: rootReducer,
-//     middleware: getDefault => getDefault().concat(logMiddleware)
-//   });
-//   return { store, actions: activitiesSlice.actions };
-// }
-
-// type ServerStore = ReturnType<typeof buildServerStore>['store'];

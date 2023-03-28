@@ -1,13 +1,53 @@
-import { SocketInterface } from '@respond/pages/api/socket-keepalive';
-import { SocketAuthDoc } from '@respond/types/data/socketAuthDoc';
-import UserAuth from '@respond/types/userAuth';
+import type { Server as HTTPServer } from 'http';
+import { BroadcastOperator, Server as IOServer, Socket } from 'socket.io';
 import { ObjectId } from 'mongodb';
+import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@respond/types/syncSocket';
+import type { SocketAuthDoc } from '@respond/types/data/socketAuthDoc';
+import type UserAuth from '@respond/types/userAuth';
 import { ActivityActions } from '../state';
-import mongoPromise from './mongodb';
+import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import { getServices } from './services';
+
+export type SocketHTTPServer = HTTPServer & { io?: IOServer };
+
+export type SocketInterface = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+
+export class SocketServer extends IOServer<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData
+> {
+}
 
 export default class SocketManager {
   private readonly connectedSockets: Record<string, SocketInterface> = {};
+  private io?: SocketServer;
+
+  async ensureServer(server: SocketHTTPServer) {
+    if (server.io) {
+      //console.log('Socket is already running')
+    } else {
+      console.log('Socket server is initializing');
+      this.io = new SocketServer(server);
+      server.io = this.io;
+      this.io.on('connection', async socket => (await getServices()).socketManager.handleNewSocket(socket));
+      const manager = this;
+
+      (await getServices()).stateManager.addClient({
+        broadcastAction(action, toRooms, reporterId) {
+          if (!manager.io) {
+            return;
+          }
+          let emitter: BroadcastOperator<ServerToClientEvents, SocketData>|undefined;
+          for (const room of toRooms) {
+            emitter = emitter ? emitter.to(room) : manager.io.to(room);
+          }
+          emitter?.emit('broadcastAction', action, reporterId);
+        },
+      });
+    }
+  }
 
   async handleNewSocket(socket: SocketInterface & { auth?: UserAuth }) {
     this.connectedSockets[socket.id] = socket;
@@ -18,7 +58,6 @@ export default class SocketManager {
 
     socket.on('disconnect', async () => {
       delete this.connectedSockets[socket.id];
-      (await getServices()).stateManager.removeClient(socket.id);
     });
 
     socket.on('hello', async key => {
@@ -33,17 +72,15 @@ export default class SocketManager {
         console.log('couldnt find socket auth. disconnecting');
         socket.disconnect();
       } else {
+        const stateManager = (await getServices()).stateManager;
         console.log(`authd socket for ${socketAuth.user.email}`);
         socket.auth = socketAuth.user;
-        const stateManager = (await getServices()).stateManager;
-        stateManager.addClient({
-          id: socket.id,
-          broadcastAction(action, reporterId) {
-            socket.emit('broadcastAction', action, reporterId);
-          },
-        })
+        const userOrgIds = await getRelatedOrgIds(socketAuth.user.organizationId);
+        for (const orgId of userOrgIds) {
+          socket.join(`org:${orgId}`);
+        }
         socket.emit('welcome', socket.id);
-        socket.emit('broadcastAction', ActivityActions.reload(stateManager.getStateForUser(socketAuth.user)), '');
+        socket.emit('broadcastAction', ActivityActions.reload(await stateManager.getStateForUser(socketAuth.user)), '');
       }
     });
 

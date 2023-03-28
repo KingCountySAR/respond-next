@@ -39,3 +39,15 @@ export async function getOrganizationForDomain(domain: string) {
   const organization = await client.db().collection<OrganizationDoc>(ORGANIZATION_COLLECTION).findOne({ domain });
   return organization;
 }
+
+export async function getRelatedOrgIds(orgId: string): Promise<string[]> {
+  const mongo = await clientPromise;
+  const userOrg = await mongo.db().collection<OrganizationDoc>('organizations').findOne({ id: orgId });
+  if (!userOrg) return [];
+
+  const myOrgIds = [
+    userOrg.id,
+    ...userOrg.partners?.map(p => p.id) ?? [],
+  ]
+  return myOrgIds;
+}
