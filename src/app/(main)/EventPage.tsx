@@ -1,14 +1,69 @@
 import { useEffect, useState } from "react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Alert, Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, ListItemText, Stack, Typography } from "@mui/material"; 
+import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, ListItemText, Stack, Typography } from "@mui/material"; 
+import differenceInDays from 'date-fns/differenceInDays';
+import formatDate from 'date-fns/format';
 
 import DeleteIcon from "@mui/icons-material/Delete";
 import { RelativeTimeText } from "@respond/components/RelativeTimeText";
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
-import { OrganizationStatus } from '@respond/types/activity';
+import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
 import { ActivityActions } from '@respond/lib/state';
+import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
+
+import styles from './EventPage.module.css';
+
+const ROSTER_COLORS: Record<ResponderStatus, string> = {
+  [ResponderStatus.Unavailable]: 'red',
+  [ResponderStatus.Responding]: 'green',
+  [ResponderStatus.Standby]: 'yellow',
+  [ResponderStatus.Cleared]: 'grey',
+}
+
+const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
+  const handleRowClick: GridEventListener<'rowClick'> = (
+    params, // GridRowParams
+    event, // MuiEvent<React.MouseEvent<HTMLElement>>
+    details, // GridCallbackDetails
+  ) => {
+    console.log('handle row click');
+  };
+  
+
+  const rows: GridRowsProp = Object.values(participants).filter(f => f.timeline[0].status !== ResponderStatus.Unavailable).map(f => ({
+    ...f,
+    orgName: orgs[f.organizationId]?.rosterName ?? orgs[f.organizationId]?.title,
+    status: f.timeline[0].status,
+    time: f.timeline[0].time,
+  }));
+  
+  const columns: GridColDef[] = [
+    { field: 'status', headerName: '', width: 10, minWidth:15, valueFormatter: () => '', disableColumnMenu: true,
+      cellClassName: ({value}: { value?: ResponderStatus}) => `roster-status roster-status-${ResponderStatus[value!]}`},
+    { field: 'lastname', headerName: 'Last Name', flex: 1, cellClassName: styles.rosterNameCell },
+    { field: 'firstname', headerName: 'First Name', flex: 1, cellClassName: styles.rosterNameCell },
+    { field: 'orgName', headerName: 'Organization', flex: 1 },
+    { field: 'time', headerName: 'Time', valueFormatter: o => {
+      const dayDiff = differenceInDays(startTime, o.value);
+      return `${dayDiff > 0 ? dayDiff + '' : ''}${formatDate(o.value, 'HHmm')}`;
+    }, flex: 1 },
+  ];
+
+  return (
+    <DataGrid
+      className={styles.roster}
+      rows={rows}
+      columns={columns}
+      autoHeight
+      disableRowSelectionOnClick
+      hideFooter
+      rowSelection={false}
+      onRowClick={handleRowClick}
+    />
+  )
+}
 
 export const EventPage = ({ eventId }: { eventId: string }) => {
   const dispatch = useAppDispatch();
@@ -49,7 +104,18 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
 
         <Box>
           <Typography>Participating Organizations:</Typography>
-          <List>
+          <Box sx={{ mb: 2}}>
+            {Object.entries(activity.organizations ?? {}).map(([id, org]) => {
+              const status = org.timeline[0]?.status;
+              const color = (status === OrganizationStatus.Responding) ? 'success' :
+                            (status === OrganizationStatus.Standby) ? 'warning' : 'default';
+
+              return (
+                <Chip key={id} sx={{m: 1}} label={org.rosterName ?? org.title} color={color} variant="outlined" />
+              );
+            })}
+          </Box>
+          {/* <List>
           {Object.entries(activity.organizations ?? {}).map(([id, org]) => (
             <ListItem key={id}>
               <ListItemText
@@ -58,7 +124,12 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
               />
             </ListItem>
           ))}
-          </List>
+          </List> */}
+        </Box>
+
+        <Box>
+          <Typography>Roster:</Typography>
+          <Roster participants={activity.participants} orgs={activity.organizations} startTime={activity.startTime} />
         </Box>
 
         <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>

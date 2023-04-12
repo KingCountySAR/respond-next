@@ -51,5 +51,6 @@ export function userFromAuth(ticket?: UserAuth): UserInfo|undefined {
     domain: ticket.hd ?? '',
     picture: ticket.picture,
     given_name: ticket.given_name,
+    family_name: ticket.family_name,
   }
 }

@@ -35,7 +35,12 @@ export default function ClientProviders(
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const hydratedTheme = useMemo(() => {
     console.log('rendering theme');
-    const theme = merge({}, config.theme, { palette: { mode: prefersDarkMode ? 'dark' : 'light'}});
+    const theme = merge({}, config.theme, { palette: {
+      mode: prefersDarkMode ? 'dark' : 'light'},
+      background: {
+        default: '#f00',
+      }
+    });
     return createTheme(theme);
   }, [ prefersDarkMode, config.theme ]);
 

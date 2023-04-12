@@ -14,7 +14,14 @@ html, body {
 body, #root {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto
+  flex: 1 1 auto;
+  background-color: #eee;
+}
+
+@media (prefers-color-scheme: dark) {
+  #root {
+    background-color: #222;
+  }
 }
 
 code {

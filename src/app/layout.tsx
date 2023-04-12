@@ -55,7 +55,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head />
-      <body>
+      <body id="root">
         <ClientOnly>
           <ClientProviders googleClient={process.env.GOOGLE_ID ?? ''} config={siteConfig} user={user} myOrg={myOrg}>
             {children}

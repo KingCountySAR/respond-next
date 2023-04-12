@@ -1,7 +1,8 @@
 import { createSlice, isAnyOf } from '@reduxjs/toolkit';
-import { Activity, ResponderStatus } from '@respond/types/activity';
+import { Activity, ResponderStatus, ResponderUpdate } from '@respond/types/activity';
 import { AppStartListening, RootState } from '.';
 import { ActivityState, ActivityActions, BasicReducers } from '@respond/lib/state';
+import { UserInfo } from '@respond/types/userInfo';
 
 let initialState: ActivityState = {
   list: [],
@@ -38,11 +39,24 @@ export function buildActivitySelector(id?: string) {
   return (state: RootState) => id ? state.activities.list.find(a => a.id === id) : undefined;
 }
 
-// export function addListeners(listenTo: AppStartListening) {
-//   listenTo({
-//     matcher: isAnyOf(ActivityActions.reload),
-//     effect: (action) => {
-//       console.log('listener side effect. ', action.type, action.payload);
-//     },
-//   });
-// };
+export function buildMyActivitySelector() {
+  return (state: RootState) => {
+    const userId = state.auth.userInfo?.userId;
+    if (!userId) {
+      return [];
+    }
+
+    const myParticipation: { activity: Activity, status: ResponderUpdate }[] = [];
+    for (const activity of state.activities.list) {
+      const myUpdate = activity.participants[userId]?.timeline[0];
+      if (myUpdate) myParticipation.push({ activity, status: myUpdate });
+    }
+
+    return myParticipation.sort((a, b) => {
+      if (a.activity.isMission === b.activity.isMission) {
+        return (a.activity.startTime > b.activity.startTime) ? 1 : -1;
+      }
+      return a.activity.isMission ? 1 : -1;
+    });
+  }
+}

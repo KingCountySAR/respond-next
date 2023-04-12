@@ -1,0 +1,11 @@
+.rosterNameCell {
+  font-weight: bold;
+}
+
+div.roster :global(div.MuiDataGrid-cell):focus {
+  outline: none;
+}
+
+.roster :global(.roster-status-Responding) {
+  background-color: green;
+}

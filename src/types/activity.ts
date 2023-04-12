@@ -27,12 +27,18 @@ export enum OrganizationStatus {
   Cleared = 5,
 }
 
+export interface ResponderUpdate {
+  time: number;
+  organizationId: string;
+  status: ResponderStatus;
+}
+
 export interface Participant {
   id: string;
   firstname: string;
   lastname: string;
   organizationId: string;
-  timeline: { time: number, status: ResponderStatus }[];
+  timeline: ResponderUpdate[];
 }
 
 export interface ParticipatingOrg {

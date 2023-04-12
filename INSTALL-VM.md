@@ -53,7 +53,7 @@ sudo ln -s /etc/nginx/sites-available/respond-next /etc/nginx/sites-enabled/
 Setup Let's Encrypt:
 ```bash
 sudo apt update
-sudp apt install -y certbot python3-certbot-nginx
+sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d respond-dev.kcesar.org -d respond-smr.kcesar.org -d respond-4x4.kcesar.org
 # enable HTTP->HTTPS redirects
 sudo systemctl restart nginx

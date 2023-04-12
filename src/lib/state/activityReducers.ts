@@ -1,5 +1,5 @@
 import { Draft } from '@reduxjs/toolkit';
-import { createNewActivity, pickActivityProperties } from '@respond/types/activity';
+import { createNewActivity, pickActivityProperties, ResponderStatus } from '@respond/types/activity';
 import merge from 'lodash.merge';
 import { ActivityState } from '.';
 import { ActivityActionsType, ActivityActions } from './activityActions';
@@ -31,5 +31,34 @@ export const BasicReducers: ActivityReducers = {
       activity.organizations[payload.orgId] = Object.assign(activity.organizations[payload.orgId] ?? { timeline: [] }, payload.org);
       activity.organizations[payload.orgId].timeline.unshift(payload.status);
     }
-  }
+  },
+
+  [ActivityActions.participantUpdate.type]: (state, { payload }) => {
+    // TODO - doesn't support insert time events. Times must always be more recent than the last update.
+    const activity = state.list.find(f => f.id === payload.activityId);
+    if (activity) {
+      console.log('found activity')
+      let person = activity.participants[payload.participant.id];
+      if (person) {
+        console.log('found person');
+        const lastUpdate = person.timeline[0];
+        if (lastUpdate.organizationId !== payload.participant.organizationId) {
+          person.timeline.unshift({ organizationId: lastUpdate.organizationId, time: payload.update.time, status: ResponderStatus.Cleared });
+        } else if (lastUpdate.status === payload.update.status) {
+          // Don't record updates if there's no change in status.
+          return;
+        }
+      } else {
+        person = {
+          ...payload.participant,
+          timeline: []
+        };
+        console.log('new person');
+        activity.participants[payload.participant.id] = person;
+      }
+      Object.assign(person, payload.participant);
+      person.timeline.unshift({ ... payload.update, organizationId: payload.participant.organizationId });
+      console.log('state', state);
+    }
+  },
 };
