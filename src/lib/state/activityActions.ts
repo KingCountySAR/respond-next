@@ -26,11 +26,11 @@ const appendOrganizationTimeline = createAction('participatingOrg/append', (
   meta: { sync: true },
 }));
 
-const participantUpdate = createAction('participant/update', (activityId: string, id: string, firstname: string, lastname: string, organizationId: string, time: number, status: ResponderStatus) => ({
+const participantUpdate = createAction('participant/update', (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ResponderStatus) => ({
   payload: {
     activityId,
     participant: {
-      id,
+      id: participantId,
       firstname,
       lastname,
       organizationId,

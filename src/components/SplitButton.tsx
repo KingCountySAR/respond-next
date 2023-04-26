@@ -1,6 +1,6 @@
 import { Button, ButtonGroup, ClickAwayListener, Grow, MenuItem, MenuList, Paper, Popper } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { EnumMember } from 'typescript';
 
 interface IdOption<T = string|number|EnumMember> {
@@ -21,6 +21,10 @@ export function SplitButton<K extends string|number|EnumMember, T extends IdOpti
 
   const [selectedIndex, setSelectedIndex] = useState(options.findIndex(o => o.id === selected));
 
+  useEffect(() => {
+    setSelectedIndex(options.findIndex(o => o.id === selected));
+  }, [ selected ]);
+  
   const handleClick = () => {
     onClick?.(options[selectedIndex].id);
   };

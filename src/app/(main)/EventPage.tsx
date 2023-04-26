@@ -14,6 +14,7 @@ import { ActivityActions } from '@respond/lib/state';
 import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
 
 import styles from './EventPage.module.css';
+import { StatusUpdater } from '@respond/components/StatusUpdater';
 
 const ROSTER_COLORS: Record<ResponderStatus, string> = {
   [ResponderStatus.Unavailable]: 'red',
@@ -82,6 +83,8 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   }, [activity]);
 
   const org = useAppSelector(state => state.organization.mine);
+  const user = useAppSelector(state => state.auth.userInfo);
+  const myParticipation = activity?.participants[user?.userId ?? ''];
 
   let body;
   if (!org) {
@@ -98,6 +101,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
         <Box>Start Time: <RelativeTimeText time={activity.startTime} baseTime={nowTime}/></Box>
 
         <Stack direction="row" spacing={1} sx={{mt:2, mb:2}}>
+          <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
           <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${eventId}/edit`}>Edit</Button>
           <IconButton color="danger" onClick={() => setPromptingRemove(true)}><DeleteIcon/></IconButton>
         </Stack>

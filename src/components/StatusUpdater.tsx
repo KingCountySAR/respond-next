@@ -11,6 +11,7 @@ const options = [
   { id: ResponderStatus.Responding, text: 'Respond' },
   { id: ResponderStatus.Cleared, text: 'Clear' },
 ]
+const optionTexts = options.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.text }), {} as Record<string, string>);
 
 function getRecommendedAction(current: ResponderStatus|undefined, startTime: number): ResponderStatus {
   const now = new Date().getTime();
@@ -31,17 +32,17 @@ export const StatusUpdater = ({activity, current}: {activity: Activity, current?
   const [ confirming, setConfirming ] = useState<boolean>(false);
   const [ confirmTitle, setConfirmTitle ] = useState<string>('');
   const [ confirmActivity, setConfirmActivity ] = useState<Activity>();
-  const [ confirmActionText, setConfirmActionText ] = useState<string>('Respond');
+  const [ confirmStatus, setConfirmStatus ] = useState<ResponderStatus>(ResponderStatus.Responding);
 
   if (!user) {
     return <></>;
   }
+  
+  current = current ?? activity.participants[user.participantId]?.timeline[0]?.status;
 
-  current = current ?? activity.participants[user.userId]?.timeline[0]?.status;
-
-  function confirmPrompt(title: string, actionText: string, activity: Activity) {
+  function confirmPrompt(title: string, newStatus: ResponderStatus, activity: Activity) {
     setConfirmTitle(title);
-    setConfirmActionText(actionText);
+    setConfirmStatus(newStatus);
     setConfirmActivity(activity);
     setConfirming(true);
   }
@@ -51,34 +52,39 @@ export const StatusUpdater = ({activity, current}: {activity: Activity, current?
     if (confirm /* typescript asserts ->> */&& confirmActivity && user && thisOrg) {
       dispatch(ActivityActions.participantUpdate(
         confirmActivity.id,
-        user.userId,
+        user.participantId,
         user.given_name ?? '',
         user.family_name ?? '',
         thisOrg.id,
         new Date().getTime(),
-        ResponderStatus.Responding,
+        confirmStatus,
       ));
     }
   }
 
+  const recommendedAction = getRecommendedAction(current, activity.startTime);
   return (
     <>
-      <SplitButton options={options} selected={getRecommendedAction(current, activity.startTime)} onClick={(newStatus) => { confirmPrompt('abc', 'asdf', activity)}} />
+      <SplitButton
+        options={options}
+        selected={recommendedAction}
+        onClick={(newStatus) => { confirmPrompt('Update Status', newStatus, activity)}}
+      />
       <Dialog
         open={confirming}
         onClose={() => finishPrompt(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        aria-labelledby="status-update-dialog-title"
+        aria-describedby="status-update-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">{confirmTitle}</DialogTitle>
+        <DialogTitle id="status-update-dialog-title">{confirmTitle}</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Do the thing for {confirmActivity?.title}?
+          <DialogContentText id="status-update-dialog-description">
+            Change your status for {confirmActivity?.title}?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => finishPrompt(false)}>Cancel</Button>
-          <Button onClick={() => finishPrompt(true)} autoFocus>{confirmActionText}</Button>
+          <Button onClick={() => finishPrompt(true)} autoFocus>{optionTexts[confirmStatus]}</Button>
         </DialogActions>
       </Dialog>
     </>

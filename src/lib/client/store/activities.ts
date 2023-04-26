@@ -1,8 +1,7 @@
-import { createSlice, isAnyOf } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import { Activity, ResponderStatus, ResponderUpdate } from '@respond/types/activity';
-import { AppStartListening, RootState } from '.';
+import { RootState } from '.';
 import { ActivityState, ActivityActions, BasicReducers } from '@respond/lib/state';
-import { UserInfo } from '@respond/types/userInfo';
 
 let initialState: ActivityState = {
   list: [],
@@ -22,6 +21,7 @@ const activitiesSlice = createSlice({
       .addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type])
       .addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type])
       .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type])
+      .addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type])
   },
 });
 
@@ -41,14 +41,14 @@ export function buildActivitySelector(id?: string) {
 
 export function buildMyActivitySelector() {
   return (state: RootState) => {
-    const userId = state.auth.userInfo?.userId;
-    if (!userId) {
+    const participantId = state.auth.userInfo?.participantId;
+    if (!participantId) {
       return [];
     }
 
     const myParticipation: { activity: Activity, status: ResponderUpdate }[] = [];
     for (const activity of state.activities.list) {
-      const myUpdate = activity.participants[userId]?.timeline[0];
+      const myUpdate = activity.participants[participantId]?.timeline[0];
       if (myUpdate) myParticipation.push({ activity, status: myUpdate });
     }
 
