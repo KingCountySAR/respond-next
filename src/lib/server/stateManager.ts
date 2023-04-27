@@ -4,6 +4,9 @@ import { BasicReducers } from '@respond/lib/state';
 import type { Activity } from '@respond/types/activity';
 import produce from 'immer';
 import type UserAuth from '@respond/types/userAuth';
+import { getServices } from './services';
+import { OrganizationDoc, ORGANIZATION_COLLECTION } from '@respond/types/data/organizationDoc';
+import { ActivityActions, ParticipantUpdateAction } from '../state/activityActions';
 
 export interface ActionListener {
   broadcastAction(action: ActivityAction, toRooms: string[], reporterId: string): void;
@@ -39,7 +42,7 @@ export class StateManager {
     };
   }
 
-  async handleIncomingAction(action: ActivityAction, reporterId: string, auth: UserAuth) {
+  async handleIncomingAction(action: ActivityAction, reporterId: string, auth: { userId: string, email: string }) {
     console.log('stateManager reportAction', action);
     
     // If everything checks out, play the action into our store.
@@ -62,6 +65,10 @@ export class StateManager {
       userId: auth.userId,
       email: auth.email,
     });
+
+    if (action.type == 'participant/update') {
+      this.loadTagsIfNewParticipant(action);
+    }
 
     const affectedOrgs = new Set<string>();
     const currentActivities: Record<string, Activity> = this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
@@ -86,6 +93,43 @@ export class StateManager {
     for (const listener of this.listeners) {
       listener.broadcastAction(action, toRooms, reporterId);
     }
+  }
+
+  private async loadTagsIfNewParticipant(action: ParticipantUpdateAction) {
+    const activity = this.activityState.list.find(f => f.id === action.payload.activityId);
+    const isNew = activity?.participants[action.payload.participant.id].tags === undefined;
+    if (!isNew) {
+      return;
+    }
+
+    let orgTags: string[] = [];
+    const doAction = () => this.handleIncomingAction(
+      ActivityActions.tagParticipant(action.payload.activityId, action.payload.participant.id, orgTags),
+      'SYSTEM',
+      { email: 'SYSTEM', userId: 'SYSTEM' }
+    );
+
+    const mongo = await mongoPromise;
+    const organization = await mongo.db().collection<OrganizationDoc>(ORGANIZATION_COLLECTION).findOne({ id: action.payload.participant.organizationId });
+    if (!organization) {
+      await doAction();
+      return;
+    }
+    
+    const memberProvider = (await getServices()).memberProviders.get(organization?.memberProvider?.provider);
+    if (!memberProvider) {
+      await doAction();
+      return;
+    }
+
+    const entry = await memberProvider.getMemberInfoById(action.payload.participant.id);
+    if (!entry) {
+      await doAction();
+      return;
+    }
+
+    orgTags = organization.tags?.filter(f => entry.groups.find(g => g === f.groupId)).map(f => f.label) ?? [];
+    await doAction();
   }
 
   private async getOrgsInterestedInAction(summaryLevelUpdate: boolean, activity?: Activity): Promise<string[]> {

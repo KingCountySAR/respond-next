@@ -1,6 +1,6 @@
 'use client';
 
-import { createTheme, ThemeOptions, ThemeProvider, useMediaQuery } from '@mui/material';
+import { createTheme, ThemeOptions, ThemeProvider, useMediaQuery } from '@respond/components/Material';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 

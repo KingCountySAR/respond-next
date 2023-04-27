@@ -11,6 +11,7 @@ export interface MemberAuthInfo {
 
 export interface MemberProvider {
   getMemberInfo(organizationId: string, authPayload: MemberAuthInfo, providerOptions: any): Promise<MemberInfo|undefined>;
+  getMemberInfoById(memberId: string): Promise<MemberInfo|undefined>;
   refresh(force?: boolean): Promise<{ ok: boolean, runtime: number, cached?: boolean }>;
 }
 

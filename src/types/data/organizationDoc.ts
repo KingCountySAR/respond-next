@@ -27,4 +27,8 @@ export interface OrganizationDoc {
   canCreateEvents: boolean;
   canCreateMissions: boolean;
   partners: OrganizationPartner[];
+  tags?: {
+    groupId: string;
+    label: string;
+  }[];
 }

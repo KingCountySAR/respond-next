@@ -39,6 +39,13 @@ export default class D4HMembersProvider implements MemberProvider {
 
   readonly tokenFetchInfo: {[token: string]: FetchForTokenEntry} = {};
 
+  async getMemberInfoById(memberId: string) {
+    await this.initialize();
+
+    const d4hMember = Object.values(this.tokenFetchInfo).map(f => f.lookup[memberId])?.find(f => f.memberInfo);
+    return d4hMember?.memberInfo;
+  }
+
   async getMemberInfo(organizationId: string, auth: MemberAuthInfo): Promise<MemberInfo | undefined> {
     await this.initialize();
 

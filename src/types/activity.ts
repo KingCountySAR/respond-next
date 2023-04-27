@@ -39,6 +39,7 @@ export interface Participant {
   lastname: string;
   organizationId: string;
   timeline: ResponderUpdate[];
+  tags?: string[];
 }
 
 export interface ParticipatingOrg {

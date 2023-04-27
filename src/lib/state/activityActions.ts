@@ -43,14 +43,25 @@ const participantUpdate = createAction('participant/update', (activityId: string
   meta: { sync: true },
 }))
 
+const tagParticipant = createAction('participant/tag', (activityId: string, participantId: string, tags: string[]) => ({
+  payload: {
+    activityId,
+    participantId,
+    tags,
+  },
+  meta: { sync: false },
+}));
+
 export const ActivityActions = {
   reload,
   update,
   remove,
   appendOrganizationTimeline,
   participantUpdate,
+  tagParticipant,
 };
 
 export type ActivityActionsType = typeof ActivityActions;
 type AllActivityActions = { [K in keyof ActivityActionsType]: ReturnType<ActivityActionsType[K]>};
 export type ActivityAction = AllActivityActions[keyof AllActivityActions];
+export type ParticipantUpdateAction = AllActivityActions['participantUpdate'];

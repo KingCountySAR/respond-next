@@ -43,9 +43,14 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
   const columns: GridColDef[] = [
     { field: 'status', headerName: '', width: 10, minWidth:15, valueFormatter: () => '', disableColumnMenu: true,
       cellClassName: ({value}: { value?: ResponderStatus}) => `roster-status roster-status-${ResponderStatus[value!]}`},
-    { field: 'lastname', headerName: 'Last Name', flex: 1, cellClassName: styles.rosterNameCell },
-    { field: 'firstname', headerName: 'First Name', flex: 1, cellClassName: styles.rosterNameCell },
-    { field: 'orgName', headerName: 'Organization', flex: 1 },
+    { field: 'lastname', headerName: 'Last Name', minWidth:15, flex: 1, cellClassName: styles.rosterNameCell },
+    { field: 'firstname', headerName: 'First Name', minWidth: 15, flex: 1, cellClassName: styles.rosterNameCell },
+    { field: 'orgName', headerName: 'Organization', flex: 1, renderCell: o => {
+      return <div>
+        <div>{o.value}</div>
+        <div style={{fontSize: '80%'}}>{o.row.tags?.join(', ')}</div>
+      </div>
+    } },
     { field: 'time', headerName: 'Time', valueFormatter: o => {
       const dayDiff = differenceInDays(startTime, o.value);
       return `${dayDiff > 0 ? dayDiff + '' : ''}${formatDate(o.value, 'HHmm')}`;

@@ -43,7 +43,10 @@ export const BasicReducers: ActivityReducers = {
         console.log('found person');
         const lastUpdate = person.timeline[0];
         if (lastUpdate.organizationId !== payload.participant.organizationId) {
-          person.timeline.unshift({ organizationId: lastUpdate.organizationId, time: payload.update.time, status: ResponderStatus.Cleared });
+          if (lastUpdate.status !== ResponderStatus.Cleared && lastUpdate.status !== ResponderStatus.Unavailable) {
+            person.timeline.unshift({ organizationId: lastUpdate.organizationId, time: payload.update.time, status: ResponderStatus.Cleared });
+          }
+          person.tags = undefined;
         } else if (lastUpdate.status === payload.update.status) {
           // Don't record updates if there's no change in status.
           return;
@@ -58,7 +61,16 @@ export const BasicReducers: ActivityReducers = {
       }
       Object.assign(person, payload.participant);
       person.timeline.unshift({ ... payload.update, organizationId: payload.participant.organizationId });
-      console.log('state', state);
+    }
+  },
+
+  [ActivityActions.tagParticipant.type]: (state, { payload }) => {
+    const activity = state.list.find(f => f.id === payload.activityId);
+    if (activity) {
+      let person = activity.participants[payload.participantId];
+      if (person) {
+        person.tags = payload.tags;
+      }
     }
   },
 };
