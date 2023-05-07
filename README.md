@@ -53,7 +53,7 @@ npx local-ssl-proxy --target 3000
 ```
 
 ### Connect to app
-Open a web browser to https://localhost:3000
+Open a web browser to https://localhost:9001
 
 
 ## Seed Data
