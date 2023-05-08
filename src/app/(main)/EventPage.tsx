@@ -77,6 +77,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   const activity = useAppSelector(buildActivitySelector(eventId));
 
   const [promptingRemove, setPromptingRemove ] = useState<boolean>(false);
+  const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
   const [ nowTime, setNowTime ] = useState<number>(new Date().getTime());
 
   useEffect(() => {
@@ -90,6 +91,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   const org = useAppSelector(state => state.organization.mine);
   const user = useAppSelector(state => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
+  const isActivityActive = !activity?.endTime
 
   let body;
   if (!org) {
@@ -104,10 +106,12 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
         <Box>State #: {activity.idNumber}</Box>
         {activity.ownerOrgId !== org?.id && <Box>Agency: {activity.organizations[activity.ownerOrgId]?.title}</Box>}
         <Box>Start Time: <RelativeTimeText time={activity.startTime} baseTime={nowTime}/></Box>
+        {!isActivityActive && <Box>End Time: <RelativeTimeText time={activity.endTime ?? 0} baseTime={nowTime}/></Box>}
 
         <Stack direction="row" spacing={1} sx={{mt:2, mb:2}}>
-          <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
+          {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
           <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${eventId}/edit`}>Edit</Button>
+          <Button variant="outlined" size="small" onClick={() => setPromptingActivityState(true)}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
           <IconButton color="danger" onClick={() => setPromptingRemove(true)}><DeleteIcon/></IconButton>
         </Stack>
 
@@ -152,6 +156,20 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
               dispatch(ActivityActions.remove(activity.id));
               router.replace('/');
              }}>Remove</Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={promptingActivityState} onClose={() => setPromptingActivityState(false)}>
+        <DialogTitle>{isActivityActive ? 'Complete' : 'Reactivate'} event?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPromptingRemove(false)}>Cancel</Button>
+            <Button autoFocus onClick={() => {
+              dispatch(ActivityActions.update({ id: activity.id, endTime: isActivityActive ? new Date().getTime() : null }));
+              setPromptingActivityState(false);
+             }}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
           </DialogActions>
         </Dialog>
       </Box>
