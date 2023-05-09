@@ -25,6 +25,34 @@ export const BasicReducers: ActivityReducers = {
     state.list = state.list.filter(f => f.id !== payload.id)
   },
 
+  [ActivityActions.reactivate.type]: (state, { payload }) => {
+    const activity = state.list.find(f => f.id === payload.id);
+    if (activity) {
+      activity.endTime = null;
+    }
+  },
+
+  [ActivityActions.complete.type]: (state, { payload }) => {
+    const activity = state.list.find(f => f.id === payload.id);
+    if (activity) {
+      activity.endTime = payload.endTime;
+
+      // Then clear every participant
+      for (const pId in activity.participants) {
+        const participant = activity.participants[pId]
+        BasicReducers['participant/update'](state, {
+          payload: {
+            activityId: activity.id,
+            participant: { ...participant },
+            update: {
+              time: payload.endTime,
+              status: ResponderStatus.Cleared,
+            }
+          }});
+      }
+    }
+  },
+
   [ActivityActions.appendOrganizationTimeline.type]: (state, { payload }) => {
     const activity = state.list.find(f => f.id === payload.activityId);
     if (activity) {

@@ -8,7 +8,7 @@ import formatDate from 'date-fns/format';
 import DeleteIcon from "@mui/icons-material/Delete";
 import { RelativeTimeText } from "@respond/components/RelativeTimeText";
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector } from '@respond/lib/client/store/activities';
+import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
 import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
 import { ActivityActions } from '@respond/lib/state';
 import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
@@ -91,7 +91,6 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   const org = useAppSelector(state => state.organization.mine);
   const user = useAppSelector(state => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
-  const isActivityActive = !activity?.endTime
 
   let body;
   if (!org) {
@@ -99,6 +98,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   }  if (!activity) {
     body = (<Alert severity="error">Activity not found</Alert>);
   } else {
+    const isActivityActive = isActive(activity)
     body = (
       <Box>
         <Typography variant="h4">{activity.title}</Typography>
@@ -160,14 +160,16 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
         </Dialog>
 
         <Dialog open={promptingActivityState} onClose={() => setPromptingActivityState(false)}>
-        <DialogTitle>{isActivityActive ? 'Complete' : 'Reactivate'} event?</DialogTitle>
+          <DialogTitle>{isActivityActive ? 'Complete' : 'Reactivate'} event?</DialogTitle>
           <DialogContent>
             <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setPromptingRemove(false)}>Cancel</Button>
             <Button autoFocus onClick={() => {
-              dispatch(ActivityActions.update({ id: activity.id, endTime: isActivityActive ? new Date().getTime() : null }));
+              dispatch(isActivityActive
+                ? ActivityActions.complete(activity.id, new Date().getTime())
+                : ActivityActions.reactivate(activity.id));
               setPromptingActivityState(false);
              }}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
           </DialogActions>

@@ -15,7 +15,17 @@ const update = createAction('activity/update', (updates: Partial<Activity> & { i
 const remove = createAction('activity/remove', (activityId: string) => ({
   payload: { id: activityId },
   meta: { sync: true },
-}))
+}));
+
+const reactivate = createAction('activity/reactivate', (activityId: string) => ({
+  payload: { id: activityId },
+  meta: { sync: true },
+}));
+
+const complete = createAction('activity/complete', (activityId: string, endTime: number) => ({
+  payload: { id: activityId, endTime },
+  meta: { sync: true },
+}));
 
 const appendOrganizationTimeline = createAction('participatingOrg/append', (
   activityId: string,
@@ -43,6 +53,13 @@ const participantUpdate = createAction('participant/update', (activityId: string
   meta: { sync: true },
 }))
 
+const participantClear = createAction('participant/clear', (activityId: string, participantId: string) => ({
+  payload: {
+    activityId,
+    participantId,
+  }
+}));
+
 const tagParticipant = createAction('participant/tag', (activityId: string, participantId: string, tags: string[]) => ({
   payload: {
     activityId,
@@ -56,6 +73,8 @@ export const ActivityActions = {
   reload,
   update,
   remove,
+  reactivate,
+  complete,
   appendOrganizationTimeline,
   participantUpdate,
   tagParticipant,

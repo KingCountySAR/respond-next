@@ -6,7 +6,7 @@ import { Box, Button, Card, CardActionArea, CardActions, CardContent, Dialog, Di
 //import styles from './page.module.css';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { buildActivityTypeSelector, getActiveParticipants } from '@respond/lib/client/store/activities';
+import { buildActivityTypeSelector, getActiveParticipants, isActive, isComplete } from '@respond/lib/client/store/activities';
 import { useEffect, useState } from 'react';
 import { Activity, ResponderStatus } from '@respond/types/activity';
 import { ActivityActions } from '@respond/lib/state';
@@ -20,8 +20,11 @@ function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible:
   // Most recent first
   const sort = (a: Activity, b: Activity) => a.startTime > b.startTime ? -1 : 1;
 
-  const active = activities.filter(a => !a.endTime).sort(sort);
-  const complete = activities.filter(a => a.endTime && a.startTime > oldestVisible).sort(sort).slice(0, maxCompletedVisible);
+  const active = activities.filter(isActive).sort(sort);
+  const complete = activities
+    .filter(a => isComplete(a) && a.startTime > oldestVisible)
+    .sort(sort)
+    .slice(0, maxCompletedVisible);
 
   return active.concat(complete)
 }
@@ -61,7 +64,7 @@ export default function Home() {
                 </Typography>
               </CardContent>
               </CardActionArea>
-              {(!a.endTime) && (
+              {(isActive(a)) && (
                 <CardActions>
                   <StatusUpdater activity={a} />
                   {/* <Button size="small" color="primary" variant="contained" onClick={() => confirmPrompt('Respond to Mission', 'Respond', a)}>Respond</Button> */}
@@ -92,7 +95,7 @@ export default function Home() {
                 </Typography>
               </CardContent>
               </CardActionArea>
-              {(!a.endTime) && (
+              {(isActive(a)) && (
                 <CardActions>
                   <StatusUpdater activity={a} />
                   {/* <Button size="small" color="primary" onClick={() => confirmPrompt('Attend Event', 'Attend', a)}>Attend</Button> */}
