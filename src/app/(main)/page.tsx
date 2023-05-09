@@ -12,14 +12,32 @@ import { Activity, ResponderStatus } from '@respond/types/activity';
 import { ActivityActions } from '@respond/lib/state';
 import { MyActivity } from './MyActivity';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
+import addDays from 'date-fns/addDays'
 
 //const inter = Inter({ subsets: ['latin'] })
 
+function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible: number, oldestVisible: number) {
+  // Most recent first
+  const sort = (a: Activity, b: Activity) => a.startTime > b.startTime ? -1 : 1;
+
+  const active = activities.filter(a => !a.endTime).sort(sort);
+  const complete = activities.filter(a => a.endTime && a.startTime > oldestVisible).sort(sort).slice(0, maxCompletedVisible);
+
+  return active.concat(complete)
+}
+
 export default function Home() {
+  const maxCompletedActivitiesVisible = 3;
+  const oldestCompletedActivityVisible = addDays(new Date(), -3).getTime();
+
   const canCreateM = useAppSelector(state => canCreateMissions(state));
   const canCreateE = useAppSelector(state => canCreateEvents(state));
-  const missions = useAppSelector(buildActivityTypeSelector(true));
-  const events = useAppSelector(buildActivityTypeSelector(false));
+
+  let missions = useAppSelector(buildActivityTypeSelector(true));
+  missions = filterActivitiesForDisplay(missions, maxCompletedActivitiesVisible, oldestCompletedActivityVisible);
+  
+  let events = useAppSelector(buildActivityTypeSelector(false));
+  events = filterActivitiesForDisplay(events, maxCompletedActivitiesVisible, oldestCompletedActivityVisible);
 
   useEffect(() => {
     document.title = "Event list";
@@ -43,10 +61,12 @@ export default function Home() {
                 </Typography>
               </CardContent>
               </CardActionArea>
-              <CardActions>
-                <StatusUpdater activity={a} />
-                {/* <Button size="small" color="primary" variant="contained" onClick={() => confirmPrompt('Respond to Mission', 'Respond', a)}>Respond</Button> */}
-              </CardActions>
+              {(!a.endTime) && (
+                <CardActions>
+                  <StatusUpdater activity={a} />
+                  {/* <Button size="small" color="primary" variant="contained" onClick={() => confirmPrompt('Respond to Mission', 'Respond', a)}>Respond</Button> */}
+                </CardActions>
+                )}
             </Card>
           ))}
           {missions.length === 0 && <Typography>No recent missions</Typography>}
@@ -72,10 +92,12 @@ export default function Home() {
                 </Typography>
               </CardContent>
               </CardActionArea>
-              <CardActions>
-                <StatusUpdater activity={a} />
-                {/* <Button size="small" color="primary" onClick={() => confirmPrompt('Attend Event', 'Attend', a)}>Attend</Button> */}
-              </CardActions>
+              {(!a.endTime) && (
+                <CardActions>
+                  <StatusUpdater activity={a} />
+                  {/* <Button size="small" color="primary" onClick={() => confirmPrompt('Attend Event', 'Attend', a)}>Attend</Button> */}
+                </CardActions>
+              )}
             </Card>
           ))}
           {events.length === 0 && <Typography>No recent events</Typography>}
