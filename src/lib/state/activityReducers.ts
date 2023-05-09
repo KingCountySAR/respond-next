@@ -35,6 +35,7 @@ export const BasicReducers: ActivityReducers = {
   [ActivityActions.complete.type]: (state, { payload }) => {
     const activity = state.list.find(f => f.id === payload.id);
     if (activity) {
+      // First set the end time
       activity.endTime = payload.endTime;
 
       // Then clear every participant
