@@ -36,7 +36,7 @@ export default async function RootLayout({
   };
 
   const user = userFromAuth(await getCookieAuth());
-  const myOrg = org ? {
+  const myOrg = (user && org) ? {
     id: org.id,
     rosterName: org.rosterName,
     mouName: org.mouName,
