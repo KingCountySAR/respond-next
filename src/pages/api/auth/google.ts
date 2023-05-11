@@ -6,6 +6,7 @@ import * as Mongo from '@respond/lib/server/mongodb';
 import * as Auth from '@respond/lib/server/auth';
 import { MemberProvider } from '@respond/lib/server/memberProviders/memberProvider';
 import { TokenPayload } from 'google-auth-library';
+import { AuthResponse } from '@respond/types/authResponse'
 
 async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -78,7 +79,14 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
 
     console.log(`Logging in user ${payload.email}`);
     await req.session.save();
-    res.json(Auth.userFromAuth(req.session.auth));
+
+    const userInfo = Auth.userFromAuth(req.session.auth)
+    const responseBody: AuthResponse = {
+      userInfo,
+      organization: userInfo ? organization : undefined
+    }
+
+    res.json(responseBody);
   } catch (error) {
     res.status(500).json({message: (error as Error).message });
   }

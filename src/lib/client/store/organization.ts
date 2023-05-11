@@ -2,6 +2,7 @@ import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { MyOrganization } from '@respond/types/organization';
 import merge from 'lodash.merge';
 import { RootState } from '.';
+import { logoutUser } from './auth'
 
 export interface OrganizationState {
   mine?: MyOrganization;
@@ -20,6 +21,12 @@ const slice = createSlice({
       Object.assign(state, action.payload);
     }
   },
+  extraReducers: (builder) => {
+    builder
+  .addCase(logoutUser.fulfilled, state => {
+    state.mine = undefined
+  });
+}
 });
 
 export default slice.reducer;
