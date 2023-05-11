@@ -28,7 +28,7 @@ export const BasicReducers: ActivityReducers = {
   [ActivityActions.reactivate.type]: (state, { payload }) => {
     const activity = state.list.find(f => f.id === payload.id);
     if (activity) {
-      activity.endTime = null;
+      activity.endTime = undefined;
     }
   },
 

@@ -58,7 +58,7 @@ export interface Activity {
   isMission: boolean;
   asMission: boolean;
   startTime: number;
-  endTime: number | null;
+  endTime?: number;
 
   participants: Record<string, Participant>;
   organizations: Record<string, ParticipatingOrg>;
@@ -79,7 +79,6 @@ export function createNewActivity(): Activity {
     title: '',
     location: { title: '' },
     startTime: new Date().getTime(),
-    endTime: null,
     isMission: false,
     asMission: false,
     ownerOrgId: '',
