@@ -101,19 +101,25 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
     const isActivityActive = isActive(activity)
     body = (
       <Box>
-        <Typography variant="h4">{activity.title}</Typography>
+        <Stack direction="row" spacing={1} sx={{mt:2, mb:2}}>
+          <Typography variant="h4" sx={{mr:"auto"}}>{activity.title}</Typography>
+          
+          <Stack direction="row" spacing={1} sx={{height:"2.125rem"}}>
+            <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${eventId}/edit`}>Edit</Button>
+            <Button variant="outlined" size="small" onClick={() => setPromptingActivityState(true)}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
+            <IconButton color="danger" onClick={() => setPromptingRemove(true)}><DeleteIcon/></IconButton>
+          </Stack>
+        </Stack>
+
         <Box>Location: {activity.location.title}</Box>
         <Box>State #: {activity.idNumber}</Box>
         {activity.ownerOrgId !== org?.id && <Box>Agency: {activity.organizations[activity.ownerOrgId]?.title}</Box>}
         <Box>Start Time: <RelativeTimeText time={activity.startTime} baseTime={nowTime}/></Box>
         {!isActivityActive && <Box>End Time: <RelativeTimeText time={activity.endTime ?? 0} baseTime={nowTime}/></Box>}
 
-        <Stack direction="row" spacing={1} sx={{mt:2, mb:2}}>
+        <Box sx={{mt:2, mb:2}}>
           {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
-          <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${eventId}/edit`}>Edit</Button>
-          <Button variant="outlined" size="small" onClick={() => setPromptingActivityState(true)}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
-          <IconButton color="danger" onClick={() => setPromptingRemove(true)}><DeleteIcon/></IconButton>
-        </Stack>
+        </Box>
 
         <Box>
           <Typography>Participating Organizations:</Typography>
