@@ -51,7 +51,9 @@ export function buildMyActivitySelector() {
     const myParticipation: { activity: Activity, status: ResponderUpdate }[] = [];
     for (const activity of state.activities.list) {
       const myUpdate = activity.participants[participantId]?.timeline[0];
-      if (myUpdate) myParticipation.push({ activity, status: myUpdate });
+      if (myUpdate?.status === ResponderStatus.Responding || myUpdate?.status === ResponderStatus.Standby) {
+        myParticipation.push({ activity, status: myUpdate });
+      }
     }
 
     return myParticipation.sort((a, b) => {
