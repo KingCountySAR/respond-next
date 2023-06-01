@@ -15,8 +15,8 @@ const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[])
 export enum ResponderStatus {
   Unavailable = 0,
   Standby = 2,
-  Responding = 3,
-  Cleared = 4,
+  SignedIn = 3,
+  SignedOut = 4,
 }
 export enum OrganizationStatus {
   Unknown = 0,

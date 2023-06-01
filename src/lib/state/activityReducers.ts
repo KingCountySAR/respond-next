@@ -47,7 +47,7 @@ export const BasicReducers: ActivityReducers = {
             participant: { ...participant },
             update: {
               time: payload.endTime,
-              status: ResponderStatus.Cleared,
+              status: ResponderStatus.SignedOut,
             }
           }});
       }
@@ -72,8 +72,8 @@ export const BasicReducers: ActivityReducers = {
         console.log('found person');
         const lastUpdate = person.timeline[0];
         if (lastUpdate.organizationId !== payload.participant.organizationId) {
-          if (lastUpdate.status !== ResponderStatus.Cleared && lastUpdate.status !== ResponderStatus.Unavailable) {
-            person.timeline.unshift({ organizationId: lastUpdate.organizationId, time: payload.update.time, status: ResponderStatus.Cleared });
+          if (lastUpdate.status !== ResponderStatus.SignedOut && lastUpdate.status !== ResponderStatus.Unavailable) {
+            person.timeline.unshift({ organizationId: lastUpdate.organizationId, time: payload.update.time, status: ResponderStatus.SignedOut });
           }
           person.tags = undefined;
         } else if (lastUpdate.status === payload.update.status) {

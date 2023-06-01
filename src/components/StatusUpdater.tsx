@@ -8,20 +8,20 @@ import { SplitButton } from './SplitButton';
 const options = [
   { id: ResponderStatus.Unavailable, text: 'Not Available' },
   { id: ResponderStatus.Standby, text: 'Stand By' },
-  { id: ResponderStatus.Responding, text: 'Respond' },
-  { id: ResponderStatus.Cleared, text: 'Clear' },
+  { id: ResponderStatus.SignedIn, text: 'Sign In' },
+  { id: ResponderStatus.SignedOut, text: 'Sign Out' },
 ]
 const optionTexts = options.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.text }), {} as Record<string, string>);
 
 function getRecommendedAction(current: ResponderStatus|undefined, startTime: number): ResponderStatus {
   const now = new Date().getTime();
-  if (current === ResponderStatus.Responding) {
-    return ResponderStatus.Cleared;
+  if (current === ResponderStatus.SignedIn) {
+    return ResponderStatus.SignedOut;
   }
   if (startTime - 60 * 60 * 1000 > now) {
     return ResponderStatus.Standby;
   }
-  return ResponderStatus.Responding;
+  return ResponderStatus.SignedIn;
 }
 
 export const StatusUpdater = ({activity, current}: {activity: Activity, current?: ResponderStatus}) => {
@@ -32,7 +32,7 @@ export const StatusUpdater = ({activity, current}: {activity: Activity, current?
   const [ confirming, setConfirming ] = useState<boolean>(false);
   const [ confirmTitle, setConfirmTitle ] = useState<string>('');
   const [ confirmActivity, setConfirmActivity ] = useState<Activity>();
-  const [ confirmStatus, setConfirmStatus ] = useState<ResponderStatus>(ResponderStatus.Responding);
+  const [ confirmStatus, setConfirmStatus ] = useState<ResponderStatus>(ResponderStatus.SignedIn);
 
   if (!user) {
     return <></>;

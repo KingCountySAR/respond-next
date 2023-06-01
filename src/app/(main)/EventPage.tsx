@@ -16,13 +16,6 @@ import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-da
 import styles from './EventPage.module.css';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 
-const ROSTER_COLORS: Record<ResponderStatus, string> = {
-  [ResponderStatus.Unavailable]: 'red',
-  [ResponderStatus.Responding]: 'green',
-  [ResponderStatus.Standby]: 'yellow',
-  [ResponderStatus.Cleared]: 'grey',
-}
-
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
     params, // GridRowParams
