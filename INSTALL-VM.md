@@ -105,6 +105,14 @@ Now, complete a build using the configured environment:
  pm2 start npm --name respond-dev -- start
  ```
 
+## Iterative Deploy
+```
+cd /web
+git pull
+yarn build
+pm2 restart respond-dev
+```
+
 ### TODO
 - Define user for running the next.js app
 - Configure `pm2` to run at startup
