@@ -20,6 +20,8 @@ const activitiesSlice = createSlice({
       .addCase(ActivityActions.reload, BasicReducers[ActivityActions.reload.type])
       .addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type])
       .addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type])
+      .addCase(ActivityActions.reactivate, BasicReducers[ActivityActions.reactivate.type])
+      .addCase(ActivityActions.complete, BasicReducers[ActivityActions.complete.type])
       .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type])
       .addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type])
   },
@@ -59,4 +61,12 @@ export function buildMyActivitySelector() {
       return a.activity.isMission ? 1 : -1;
     });
   }
+}
+
+export function isActive(a: Activity) {
+  return !isComplete(a);
+}
+
+export function isComplete(a: Activity) {
+  return !!a.endTime;
 }

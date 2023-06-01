@@ -58,12 +58,13 @@ export interface Activity {
   isMission: boolean;
   asMission: boolean;
   startTime: number;
+  endTime?: number;
 
   participants: Record<string, Participant>;
   organizations: Record<string, ParticipatingOrg>;
 }
 
-export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'location', 'ownerOrgId', 'isMission', 'asMission', 'startTime']);
+export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'location', 'ownerOrgId', 'isMission', 'asMission', 'startTime', 'endTime']);
 
 export type ActivityType = 'missions'|'events';
 
