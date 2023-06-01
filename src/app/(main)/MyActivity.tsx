@@ -5,6 +5,21 @@ import { buildMyActivitySelector } from '@respond/lib/client/store/activities';
 import { ResponderStatus } from '@respond/types/activity';
 import Link from 'next/link';
 
+function getStatusText(status: ResponderStatus): string {
+  switch (status) {
+    case ResponderStatus.SignedIn:
+      return "Signed In";
+    
+    case ResponderStatus.SignedOut:
+      return "Signed Out";
+    
+    case ResponderStatus.Standby:
+      return "Standby";
+    
+    case ResponderStatus.Unavailable:
+      return "Not Available";
+  }
+}
 
 export const MyActivity = () => {
   const myUpdates = useAppSelector(buildMyActivitySelector());
@@ -23,7 +38,7 @@ export const MyActivity = () => {
             <CardContent sx={{display: 'flex', alignItems:'center'}}>
               <Box sx={{flex: '1 1 auto'}}>
                 <Typography variant="h5" component="div">
-                  {up.activity.title} - {ResponderStatus[up.status.status]}
+                  {up.activity.title} - {getStatusText(up.status.status)}
                 </Typography>
               </Box>
             </CardContent>
