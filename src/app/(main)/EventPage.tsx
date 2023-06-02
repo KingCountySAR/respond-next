@@ -101,10 +101,10 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
     const isActivityActive = isActive(activity)
     body = (
       <Box>
-        <Stack direction="row" spacing={1} sx={{mt:2, mb:2}}>
-          <Typography variant="h4" sx={{mr:"auto"}}>{activity.title}</Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="start" sx={{mt:2, mb:2}}>
+          <Typography variant="h4" flexGrow={1}>{activity.title}</Typography>
           
-          <Stack direction="row" spacing={1} sx={{height:"2.125rem"}}>
+          <Stack direction="row" spacing={1} alignItems="center">
             <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${eventId}/edit`}>Edit</Button>
             <Button variant="outlined" size="small" onClick={() => setPromptingActivityState(true)}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
             <IconButton color="danger" onClick={() => setPromptingRemove(true)}><DeleteIcon/></IconButton>
