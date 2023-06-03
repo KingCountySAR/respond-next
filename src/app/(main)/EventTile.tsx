@@ -8,22 +8,23 @@ export const EventTile = ({ activity }: { activity: Activity }) => {
 
     return (
         <Card key={activity.id}>
-            <CardActionArea component={Link} href={`/${getActivityPath(activity)}/${activity.id}`}> 
-            <CardContent>
-            <Typography gutterBottom variant="h5" component="div">
-                {activity.idNumber} {activity.title}
-            </Typography>
-            <Typography>
-                Active Responders: {getActiveParticipants(activity).length}
-            </Typography>
-            </CardContent>
+            <CardActionArea component={Link} href={getActivityPath(activity)}>
+                <CardContent>
+                    <Typography gutterBottom variant="h5" component="div">
+                        {activity.idNumber} {activity.title}
+                    </Typography>
+                    <Typography>
+                        Active Responders:{" "}
+                        {getActiveParticipants(activity).length}
+                    </Typography>
+                </CardContent>
             </CardActionArea>
-            {(isActive(activity)) && (
+            {isActive(activity) && (
                 <CardActions>
                     <StatusUpdater activity={activity} />
                 </CardActions>
             )}
         </Card>
     );
-
-}
+    
+};

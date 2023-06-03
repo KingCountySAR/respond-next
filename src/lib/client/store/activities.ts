@@ -74,5 +74,5 @@ export function isComplete(a: Activity) {
 }
 
 export function getActivityPath(activity: Activity) {
-  return activity.isMission ? 'mission' : 'event';
+  return `/${activity.isMission ? 'mission' : 'event'}/${activity.id}`
 }
