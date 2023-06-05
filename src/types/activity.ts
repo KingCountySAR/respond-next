@@ -40,6 +40,7 @@ export interface Participant {
   organizationId: string;
   timeline: ResponderUpdate[];
   tags?: string[];
+  miles?: number;
 }
 
 export interface ParticipatingOrg {
