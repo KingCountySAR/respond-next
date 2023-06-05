@@ -72,3 +72,7 @@ export function isActive(a: Activity) {
 export function isComplete(a: Activity) {
   return !!a.endTime;
 }
+
+export function getActivityPath(activity: Activity) {
+  return `/${activity.isMission ? 'mission' : 'event'}/${activity.id}`
+}

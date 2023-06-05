@@ -1,18 +1,17 @@
 'use client';
 import Link from 'next/link';
 //import { Inter } from 'next/font/google';
-import { Box, Button, Card, CardActionArea, CardActions, CardContent, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 
 //import styles from './page.module.css';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
 import { buildActivityTypeSelector, getActiveParticipants, isActive, isComplete } from '@respond/lib/client/store/activities';
 import { useEffect, useState } from 'react';
-import { Activity, ResponderStatus } from '@respond/types/activity';
-import { ActivityActions } from '@respond/lib/state';
+import { Activity } from '@respond/types/activity';
 import { MyActivity } from './MyActivity';
-import { StatusUpdater } from '@respond/components/StatusUpdater';
 import addDays from 'date-fns/addDays'
+import { EventTile } from './EventTile';
 
 //const inter = Inter({ subsets: ['latin'] })
 
@@ -53,24 +52,7 @@ export default function Home() {
         <Typography variant="h5">Missions</Typography>
         <Stack spacing={1}>
           {missions.map(a => (
-            <Card key={a.id}>
-              <CardActionArea component={Link} href={`/mission/${a.id}`}> 
-              <CardContent>
-                <Typography gutterBottom variant="h5" component="div">
-                  {a.idNumber} {a.title}
-                </Typography>
-                <Typography>
-                  Active Responders: {getActiveParticipants(a).length}
-                </Typography>
-              </CardContent>
-              </CardActionArea>
-              {(isActive(a)) && (
-                <CardActions>
-                  <StatusUpdater activity={a} />
-                  {/* <Button size="small" color="primary" variant="contained" onClick={() => confirmPrompt('Respond to Mission', 'Respond', a)}>Respond</Button> */}
-                </CardActions>
-                )}
-            </Card>
+            <EventTile key={a.id} activity={a} />
           ))}
           {missions.length === 0 && <Typography>No recent missions</Typography>}
         </Stack>
@@ -84,24 +66,7 @@ export default function Home() {
         <Typography variant="h5">Trainings and Other Events</Typography>
         <Stack spacing={1}>
           {events.map(a => (
-            <Card key={a.id}>
-              <CardActionArea component={Link} href={`/event/${a.id}`}> 
-              <CardContent>
-                <Typography gutterBottom variant="h5" component="div">
-                  {a.idNumber} {a.title}
-                </Typography>
-                <Typography>
-                  Active Responders: {getActiveParticipants(a).length}
-                </Typography>
-              </CardContent>
-              </CardActionArea>
-              {(isActive(a)) && (
-                <CardActions>
-                  <StatusUpdater activity={a} />
-                  {/* <Button size="small" color="primary" onClick={() => confirmPrompt('Attend Event', 'Attend', a)}>Attend</Button> */}
-                </CardActions>
-              )}
-            </Card>
+            <EventTile key={a.id} activity={a} />
           ))}
           {events.length === 0 && <Typography>No recent events</Typography>}
         </Stack>
