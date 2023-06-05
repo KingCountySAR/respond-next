@@ -72,6 +72,7 @@ export function useFormLogic(
     errors: form.formState.errors,
     doSubmit: form.handleSubmit(onSubmit),
     context: {
+      newStatus,
       activity,
       participant,
     },
@@ -94,9 +95,7 @@ export const TotalMilesInput = ({control, errors}: { control: Control<FormValues
   )
 };
 
-export const UpdateStatusForm = ({ form: { context, control, errors, getValues, setValue } }: { form: FormType }) => {
-  const { activity, participant } = context;
-  const existingMiles = participant?.miles;
+const MileageSection = ({ existingMiles, form: { control, errors, getValues, setValue } }: { form: FormType, existingMiles: number|undefined }) => {
   const [ isTotalMiles, setIsTotalMiles ] = useState<boolean>(true);
   const [ addMilesPreview, setAddMilesPreview ] = useState<number|''>(getValues().addMiles);
 
@@ -125,46 +124,51 @@ export const UpdateStatusForm = ({ form: { context, control, errors, getValues, 
     return Number(existing ?? 0) + Number(added ?? 0);
   }
 
-  const mileageSection = existingMiles == null ? (
-    <TotalMilesInput control={control} errors={errors} />
-  ) : (
-    <Box>
-      <Typography>You currently have {existingMiles} round-trip miles.</Typography>
-      <FormControl>
-        <RadioGroup row value={isTotalMiles} onChange={handleMilesType}>
-        <FormControlLabel value="true" control={<Radio size="small" />} label="Change total" />
-          <FormControlLabel value="false" control={<Radio size="small" />} label="Add leg" />
-        </RadioGroup>
-      </FormControl>
-      { isTotalMiles ? (
-        <Box><TotalMilesInput control={control} errors={errors} /></Box>
-      ) : (
-      <>
-        <Box>
-        <Controller
-          name="addMiles"
-          control={control}
-          render={({ field }) => (
-            <FormControl error={!!errors.miles?.message}>
-              <TextField {...field} onChange={handleAddMiles} type="number" variant="filled" size="small" label="Leg Miles" />
-              <FormHelperText>{errors.miles?.message}</FormHelperText>
-            </FormControl>
-          )}
-        />
-        </Box>
-        <Typography>New Total Miles: {formatMilesSum(getValues().miles, addMilesPreview)}</Typography>
-      </>
-      )}
-    </Box>
-  )
+  return (
+    existingMiles == null ? (
+      <TotalMilesInput control={control} errors={errors} />
+    ) : (
+      <Box>
+        <Typography>You currently have {existingMiles} round-trip miles.</Typography>
+        <FormControl>
+          <RadioGroup row value={isTotalMiles} onChange={handleMilesType}>
+          <FormControlLabel value="true" control={<Radio size="small" />} label="Change total" />
+            <FormControlLabel value="false" control={<Radio size="small" />} label="Add leg" />
+          </RadioGroup>
+        </FormControl>
+        { isTotalMiles ? (
+          <Box><TotalMilesInput control={control} errors={errors} /></Box>
+        ) : (
+        <>
+          <Box>
+          <Controller
+            name="addMiles"
+            control={control}
+            render={({ field }) => (
+              <FormControl error={!!errors.miles?.message}>
+                <TextField {...field} onChange={handleAddMiles} type="number" variant="filled" size="small" label="Leg Miles" />
+                <FormHelperText>{errors.miles?.message}</FormHelperText>
+              </FormControl>
+            )}
+          />
+          </Box>
+          <Typography>New Total Miles: {formatMilesSum(getValues().miles, addMilesPreview)}</Typography>
+        </>
+        )}
+      </Box>
+    )
+  );
+}
+
+export const UpdateStatusForm = ({ form }: { form: FormType }) => {
+  const { activity, participant, newStatus } = form.context;
 
   return (
     <Stack spacing={2} alignItems="flex-start">
       <DialogContentText id="status-update-dialog-description">
         Change your status for {activity.title}?
       </DialogContentText>
-      {mileageSection}
-
+      {newStatus === ResponderStatus.SignedOut ? <MileageSection form={form} existingMiles={participant?.miles} /> : undefined}
     </Stack>
   );
 }
