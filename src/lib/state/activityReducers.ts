@@ -66,10 +66,8 @@ export const BasicReducers: ActivityReducers = {
     // TODO - doesn't support insert time events. Times must always be more recent than the last update.
     const activity = state.list.find(f => f.id === payload.activityId);
     if (activity) {
-      console.log('found activity')
       let person = activity.participants[payload.participant.id];
       if (person) {
-        console.log('found person');
         const lastUpdate = person.timeline[0];
         if (lastUpdate.organizationId !== payload.participant.organizationId) {
           if (lastUpdate.status !== ResponderStatus.SignedOut && lastUpdate.status !== ResponderStatus.Unavailable) {
@@ -85,11 +83,20 @@ export const BasicReducers: ActivityReducers = {
           ...payload.participant,
           timeline: []
         };
-        console.log('new person');
         activity.participants[payload.participant.id] = person;
       }
       Object.assign(person, payload.participant);
       person.timeline.unshift({ ... payload.update, organizationId: payload.participant.organizationId });
+
+      // If the user is signed into another mission or event, sign them out.
+      state.list
+        .filter(f => f.id !== payload.activityId && f.participants[payload.participant.id])
+        .forEach(otherActivity => {
+          const timeline = otherActivity.participants[payload.participant.id].timeline;
+          if (timeline[0].status === ResponderStatus.SignedIn) {
+            timeline.unshift({ time: payload.update.time, status: ResponderStatus.SignedOut, organizationId: timeline[0].organizationId });
+          }
+        });
     }
   },
 
