@@ -23,7 +23,7 @@ export function SplitButton<K extends string|number|EnumMember, T extends IdOpti
 
   useEffect(() => {
     setSelectedIndex(options.findIndex(o => o.id === selected));
-  }, [ selected ]);
+  }, [ options, selected ]);
   
   const handleClick = () => {
     onClick?.(options[selectedIndex].id);

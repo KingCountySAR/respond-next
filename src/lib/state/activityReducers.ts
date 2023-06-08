@@ -44,7 +44,11 @@ export const BasicReducers: ActivityReducers = {
         BasicReducers['participant/update'](state, {
           payload: {
             activityId: activity.id,
-            participant: { ...participant },
+            participant: {
+              ...participant,
+              // avoid TypeScript error abount optional vs number|undefined
+              miles: participant.miles,
+            },
             update: {
               time: payload.endTime,
               status: ResponderStatus.SignedOut,

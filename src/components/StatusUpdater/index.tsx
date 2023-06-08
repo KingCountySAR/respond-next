@@ -1,9 +1,11 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/lib/state';
-import { Activity, ResponderStatus } from '@respond/types/activity';
 import { useState } from 'react';
-import { SplitButton } from './SplitButton';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle  } from '../Material';
+import { useAppSelector } from '@respond/lib/client/store';
+import { Activity, ResponderStatus } from '@respond/types/activity';
+import { MyOrganization } from '@respond/types/organization';
+import { UserInfo } from '@respond/types/userInfo';
+import { SplitButton } from '../SplitButton';
+import { useFormLogic, UpdateStatusForm } from './UpdateStatusForm';
 
 const options = [
   { id: ResponderStatus.Unavailable, text: 'Not Available' },
@@ -25,41 +27,41 @@ function getRecommendedAction(current: ResponderStatus|undefined, startTime: num
 }
 
 export const StatusUpdater = ({activity, current}: {activity: Activity, current?: ResponderStatus}) => {
-  const dispatch = useAppDispatch();
   const user = useAppSelector(state => state.auth.userInfo);
   const thisOrg = useAppSelector(state => state.organization.mine);
-  
+
+  return (user && thisOrg) ? (
+    <StatusUpdaterProtected
+      activity={activity}
+      current={current}
+      user={user}
+      thisOrg={thisOrg}
+    />
+   ) : null;
+}
+
+const StatusUpdaterProtected = ({activity, current, user, thisOrg}: {activity: Activity, user: UserInfo, thisOrg: MyOrganization, current?: ResponderStatus}) => {
   const [ confirming, setConfirming ] = useState<boolean>(false);
   const [ confirmTitle, setConfirmTitle ] = useState<string>('');
-  const [ confirmActivity, setConfirmActivity ] = useState<Activity>();
   const [ confirmStatus, setConfirmStatus ] = useState<ResponderStatus>(ResponderStatus.SignedIn);
 
-  if (!user) {
-    return <></>;
-  }
-  
   current = current ?? activity.participants[user.participantId]?.timeline[0]?.status;
 
-  function confirmPrompt(title: string, newStatus: ResponderStatus, activity: Activity) {
+  const formLogic = useFormLogic(
+    activity,
+    user,
+    thisOrg.id,
+    activity.participants[user.participantId],
+    current,
+    confirmStatus,
+    () => setConfirming(false),
+  );
+
+
+  function confirmPrompt(title: string, newStatus: ResponderStatus) {
     setConfirmTitle(title);
     setConfirmStatus(newStatus);
-    setConfirmActivity(activity);
     setConfirming(true);
-  }
-
-  function finishPrompt(confirm: boolean) {
-    setConfirming(false);
-    if (confirm /* typescript asserts ->> */&& confirmActivity && user && thisOrg) {
-      dispatch(ActivityActions.participantUpdate(
-        confirmActivity.id,
-        user.participantId,
-        user.given_name ?? '',
-        user.family_name ?? '',
-        thisOrg.id,
-        new Date().getTime(),
-        confirmStatus,
-      ));
-    }
   }
 
   const recommendedAction = getRecommendedAction(current, activity.startTime);
@@ -68,24 +70,24 @@ export const StatusUpdater = ({activity, current}: {activity: Activity, current?
       <SplitButton
         options={options}
         selected={recommendedAction}
-        onClick={(newStatus) => { confirmPrompt('Update Status', newStatus, activity)}}
+        onClick={(newStatus) => { confirmPrompt('Update Status', newStatus)}}
       />
       <Dialog
         open={confirming}
-        onClose={() => finishPrompt(false)}
+        onClose={() => setConfirming(false)}
         aria-labelledby="status-update-dialog-title"
         aria-describedby="status-update-dialog-description"
       >
-        <DialogTitle id="status-update-dialog-title">{confirmTitle}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="status-update-dialog-description">
-            Change your status for {confirmActivity?.title}?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => finishPrompt(false)}>Cancel</Button>
-          <Button onClick={() => finishPrompt(true)} autoFocus>{optionTexts[confirmStatus]}</Button>
-        </DialogActions>
+        <form onSubmit={formLogic.doSubmit}>
+          <DialogTitle id="status-update-dialog-title">{confirmTitle}</DialogTitle>
+          <DialogContent>
+            <UpdateStatusForm form={formLogic} />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirming(false)}>Cancel</Button>
+            <Button type="submit" autoFocus>{optionTexts[confirmStatus]}</Button>
+          </DialogActions>
+        </form>
       </Dialog>
     </>
   );
