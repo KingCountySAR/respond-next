@@ -78,7 +78,7 @@ export function useFormLogic(
     },
   };
 }
-type FormType = ReturnType<typeof useFormLogic>;
+type FormLogic = ReturnType<typeof useFormLogic>;
 
 export const TotalMilesInput = ({control, errors}: { control: Control<FormValues, any>, errors: FieldErrors<FormValues> }) => {
   return (
@@ -95,7 +95,7 @@ export const TotalMilesInput = ({control, errors}: { control: Control<FormValues
   )
 };
 
-const MileageSection = ({ existingMiles, form: { control, errors, getValues, setValue } }: { form: FormType, existingMiles: number|undefined }) => {
+const MileageSection = ({ existingMiles, form: { control, errors, getValues, setValue } }: { form: FormLogic, existingMiles: number|undefined }) => {
   const [ isTotalMiles, setIsTotalMiles ] = useState<boolean>(true);
   const [ addMilesPreview, setAddMilesPreview ] = useState<number|''>(getValues().addMiles);
 
@@ -160,7 +160,7 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
   );
 }
 
-export const UpdateStatusForm = ({ form }: { form: FormType }) => {
+export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
   const { activity, participant, newStatus } = form.context;
 
   return (
