@@ -33,7 +33,7 @@ export default function Home() {
 
   function getMyStatus(activity: Activity) {
     return myActivities.find(f => f.activity.id === activity.id)?.status.status;
-}
+  }
 
   const maxCompletedActivitiesVisible = 3;
   const oldestCompletedActivityVisible = addDays(new Date(), -3).getTime();
