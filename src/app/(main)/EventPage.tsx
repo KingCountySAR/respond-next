@@ -164,7 +164,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
             <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setPromptingRemove(false)}>Cancel</Button>
+            <Button onClick={() => setPromptingActivityState(false)}>Cancel</Button>
             <Button autoFocus onClick={() => {
               dispatch(isActivityActive
                 ? ActivityActions.complete(activity.id, new Date().getTime())
