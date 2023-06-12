@@ -2,40 +2,29 @@ import { Chip } from '@mui/material';
 import { Circle } from '@mui/icons-material';
 import { ResponderStatus } from '@respond/types/activity';
 
+const STATUS_COLORS = {
+  [ResponderStatus.SignedIn]: 'success',
+  [ResponderStatus.SignedOut]: 'error',
+  [ResponderStatus.Standby]: 'warning',
+  [ResponderStatus.Unavailable]: 'disabled'
+};
+
+const STATUS_TEXT = {
+  [ResponderStatus.SignedIn]: 'Signed In',
+  [ResponderStatus.SignedOut]: 'Signed Out',
+  [ResponderStatus.Standby]: 'Standby',
+  [ResponderStatus.Unavailable]: 'Unavailable'
+};
+
 export const StatusChip = ({ status }: { status: ResponderStatus }) => {
 
-    switch (status) {
-        case ResponderStatus.SignedIn:
-          return (<Chip
-                    icon={<Circle color="success" />}
-                    label="Signed In"
-                    variant="outlined"
-                    size="small"
-                  />);
-        
-        case ResponderStatus.SignedOut:
-          return (<Chip
-                    icon={<Circle color="error" />}
-                    label="Signed Out"
-                    variant="outlined"
-                    size="small"
-                  />);
-        
-        case ResponderStatus.Standby:
-          return (<Chip
-                    icon={<Circle color="warning" />}
-                    label="Standby"
-                    variant="outlined"
-                    size="small"
-                  />);
-        
-        case ResponderStatus.Unavailable:
-          return (<Chip
-                    icon={<Circle color="disabled" />}
-                    label="Not Available"
-                    variant="outlined"
-                    size="small"
-                  />);
-      }
+  return (
+    <Chip
+      icon={<Circle color={STATUS_COLORS[status]} />}
+      label={STATUS_TEXT[status]}
+      variant="outlined"
+      size="small"
+    />
+  );
 
 }
