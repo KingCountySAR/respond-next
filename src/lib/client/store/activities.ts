@@ -37,18 +37,6 @@ export function getActiveParticipants(activity: Activity) {
   return filterParticipantsByStatus(Object.values(activity.participants), [ResponderStatus.SignedIn])
 }
 
-export function getSignedInCount(activity: Activity) {
-  return filterParticipantsByStatus(Object.values(activity.participants), [ResponderStatus.SignedIn]).length;
-}
-
-export function getStandbyCount(activity: Activity) {
-  return filterParticipantsByStatus(Object.values(activity.participants), [ResponderStatus.Standby]).length;
-}
-
-export function getSignedOutCount(activity: Activity) {
-  return filterParticipantsByStatus(Object.values(activity.participants), [ResponderStatus.SignedOut]).length;
-}
-
 function filterParticipantsByStatus(participants: Participant[], statuses: ResponderStatus[]) {
   return participants.filter(participant => statuses.includes(participant.timeline[0].status));
 }
