@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { Activity, ResponderStatus, ResponderUpdate } from '@respond/types/activity';
+import { Activity, Participant, ResponderStatus, ResponderUpdate } from '@respond/types/activity';
 import { RootState } from '.';
 import { ActivityState, ActivityActions, BasicReducers } from '@respond/lib/state';
 
@@ -33,8 +33,12 @@ export function buildActivityTypeSelector(missions: boolean) {
   return (state: RootState) => state.activities.list.filter(f => f.isMission === missions);
 }
 
-export function getActiveParticipants(a: Activity) {
-  return Object.values(a.participants).filter(p => (p.timeline.slice(-1)?.[0].status ?? ResponderStatus.Unavailable) & 0x01);
+export function getActiveParticipants(activity: Activity) {
+  return filterParticipantsByStatus(Object.values(activity.participants), [ResponderStatus.SignedIn])
+}
+
+function filterParticipantsByStatus(participants: Participant[], statuses: ResponderStatus[]) {
+  return participants.filter(participant => statuses.includes(participant.timeline[0].status));
 }
 
 export function buildActivitySelector(id?: string) {
