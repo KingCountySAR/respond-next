@@ -92,7 +92,10 @@ export const BasicReducers: ActivityReducers = {
       Object.assign(person, payload.participant);
       person.timeline.unshift({ ... payload.update, organizationId: payload.participant.organizationId });
 
-      // If the user is signed into another mission or event, sign them out.
+      // If this is not a sign-in, then we are done.
+      if (payload.update.status !== ResponderStatus.SignedIn) { return; }
+
+      // If this is a sign-in and the user is already signed into another activity, sign them out of the other activity.
       state.list
         .filter(f => f.id !== payload.activityId && f.participants[payload.participant.id])
         .forEach(otherActivity => {
