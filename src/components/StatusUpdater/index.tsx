@@ -8,7 +8,7 @@ import { SplitButton } from '../SplitButton';
 import { useFormLogic, UpdateStatusForm } from './UpdateStatusForm';
 
 const options = [
-  { id: ResponderStatus.Unavailable, text: 'Not Available' },
+  //{ id: ResponderStatus.Unavailable, text: 'Not Available' },
   { id: ResponderStatus.Standby, text: 'Stand By' },
   { id: ResponderStatus.SignedIn, text: 'Sign In' },
   { id: ResponderStatus.SignedOut, text: 'Sign Out' },
