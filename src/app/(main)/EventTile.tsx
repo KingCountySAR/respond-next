@@ -28,9 +28,11 @@ export const EventTile = ({ activity, status, children }: { activity: Activity, 
           <CardActions sx={{ p: 1 }}>
             <Grid container justifyContent="space-between" alignItems="center">
               <Grid item>
-                <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
-                  <img src="/sartopo-logo.svg" alt="Sartopo Logo" />
-                </IconButton>
+                {activity.mapId && 
+                  <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
+                    <img src="/sartopo-logo.svg" alt="Sartopo Logo" />
+                  </IconButton>
+                }
                 {/* TODO: When we have necessary attribute to implement nav button, do it here.
                 <Button aria-label="Navigate" color="info">
                   <NearMe /> Navigate
