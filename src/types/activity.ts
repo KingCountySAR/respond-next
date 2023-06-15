@@ -55,6 +55,7 @@ export interface Activity {
   idNumber: string;
   title: string;
   location: { title: string };
+  mapId: string;
   ownerOrgId: string;
   isMission: boolean;
   asMission: boolean;
@@ -65,7 +66,7 @@ export interface Activity {
   organizations: Record<string, ParticipatingOrg>;
 }
 
-export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'location', 'ownerOrgId', 'isMission', 'asMission', 'startTime', 'endTime']);
+export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'startTime', 'endTime']);
 
 export type ActivityType = 'missions'|'events';
 
@@ -79,6 +80,7 @@ export function createNewActivity(): Activity {
     idNumber: '',
     title: '',
     location: { title: '' },
+    mapId:'',
     startTime: new Date().getTime(),
     isMission: false,
     asMission: false,

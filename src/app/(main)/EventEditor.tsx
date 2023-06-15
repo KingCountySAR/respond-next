@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 //import { Link as Link, useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller, SubmitHandler, Resolver, ResolverResult } from "react-hook-form";
-import { Box, Button, FormControl, FormControlLabel, FormHelperText, FormGroup, Stack, Switch, TextField, InputLabel, Select, MenuItem } from "@mui/material";
+import { Box, Button, FormControl, FormControlLabel, FormHelperText, FormGroup, Stack, Switch, TextField, InputLabel, Select, MenuItem, Grid } from "@mui/material";
 import { parse as parseDate } from "date-fns";
 
 // import { useAppSelector, useAppDispatch } from "../../app/hooks";
@@ -123,92 +123,133 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
 
   return (<>
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={1}>
-        <Controller
-          name="title"
-          control={control}
-          render={({ field }) => (
-            <FormControl fullWidth error={!!errors.title?.message}>
-              <TextField {...field} inputRef={focusRef} variant="filled" label="Name" />
-              <FormHelperText>{errors.title?.message}</FormHelperText>
-            </FormControl>
-          )}
-        />
+      <Grid container spacing={1}>
 
-        <Controller
-          name="location.title"
-          control={control}
-          render={({ field }) => (
-            <FormControl fullWidth error={!!errors.location?.message}>
-              <TextField {...field} variant="filled" label="Location" />
-              <FormHelperText>{errors.location?.message}</FormHelperText>
-            </FormControl>
-          )}
-        />
+        {/* Mission  */}
+        <Grid item xs={12}>
+          <Grid container spacing={1}>
+            <Grid item xs={12}>
+              <Controller
+                name="title"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.title?.message}>
+                    <TextField {...field} inputRef={focusRef} variant="filled" label="Name" required />
+                    <FormHelperText>{errors.title?.message}</FormHelperText>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="location.title"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.location?.message}>
+                    <TextField {...field} variant="filled" label="Location" required />
+                    <FormHelperText>{errors.location?.message}</FormHelperText>
+                  </FormControl>
+                )}
+              />
+            </Grid>
 
-        <Controller
-          name="idNumber"
-          control={control}
-          render={({ field }) => (
-            <FormControl fullWidth error={!!errors.idNumber?.message}>
-              <TextField {...field} variant="filled" label="State Number" />
-              <FormHelperText>{errors.idNumber?.message}</FormHelperText>
-            </FormControl>
-          )}
-        />
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="mapId"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <TextField {...field} variant="filled" label="Map Id" />
+                    <FormHelperText></FormHelperText>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+          </Grid>
+        </Grid>
 
-        <Controller
-          name="ownerOrgId"
-          control={control}
-          render={({ field }) => (
-            <FormControl fullWidth error={!!errors.ownerOrgId?.message}>
-              <InputLabel variant="filled">Responsible Agency</InputLabel>
-              <Select  {...field} variant="filled" label="Responsible Agency">
-                {ownerOptions.map(p => (
-                  <MenuItem key={p.id} value={p.id}>{p.title}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-        />
+        <Grid item xs={12} sm={6}>
+          <Controller
+            name="idNumber"
+            control={control}
+            render={({ field }) => (
+              <FormControl fullWidth error={!!errors.idNumber?.message}>
+                <TextField {...field} variant="filled" label="State Number" />
+                <FormHelperText>{errors.idNumber?.message}</FormHelperText>
+              </FormControl>
+            )}
+          />
+        </Grid>
 
-        <FormControl fullWidth error={!!errors.startTime?.message || !!errors.startTime?.date?.message || !!errors.startTime?.time?.message}>
-          <Box>
-            <Controller
-              name="startTime.date"
-              control={control}
-              render={({ field }) => <TextField {...field} fullWidth variant="filled" label="Start Date" sx={{ width: 1 / 2 }} />}
-            />
-            <Controller
-              name="startTime.time"
-              control={control}
-              render={({ field }) => <TextField {...field} fullWidth variant="filled" label="Start Time" sx={{ width: 1 / 2 }} />}
-            />
-          </Box>
-          <FormHelperText>{errors.startTime?.message}</FormHelperText>
-        </FormControl>
+        <Grid item xs={12} sm={6}>
+          <Controller
+            name="ownerOrgId"
+            control={control}
+            render={({ field }) => (
+              <FormControl fullWidth error={!!errors.ownerOrgId?.message}>
+                <InputLabel variant="filled">Responsible Agency</InputLabel>
+                <Select  {...field} variant="filled" label="Responsible Agency">
+                  {ownerOptions.map(p => (
+                    <MenuItem key={p.id} value={p.id}>{p.title}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          />
+        </Grid>
 
+        <Grid item xs={12}>
+          <FormControl fullWidth error={!!errors.startTime?.message || !!errors.startTime?.date?.message || !!errors.startTime?.time?.message}>
+            <Grid container spacing={1}>
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="startTime.date"
+                  control={control}
+                  render={({ field }) => <TextField {...field} fullWidth variant="filled" label="Start Date" required />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="startTime.time"
+                  control={control}
+                  render={({ field }) => <TextField {...field} fullWidth variant="filled" label="Start Time" required />}
+                />
+              </Grid>
+            </Grid>
+            <FormHelperText>{errors.startTime?.message}</FormHelperText>
+          </FormControl>
+        </Grid>
+
+        
         {activityType === 'missions' ? null : (
-          <FormGroup>
-            <Controller
-              name="asMission"
-              control={control}
-              render={({field}) => <FormControlLabel control={<Switch {...field} color="primary" />} label="Run as mock mission" />}
-            />
-          </FormGroup>
+          <Grid item xs={12}>
+            <FormGroup>
+              <Controller
+                name="asMission"
+                control={control}
+                render={({field}) => <FormControlLabel control={<Switch {...field} color="primary" />} label="Run as mock mission" />}
+              />
+            </FormGroup>
+          </Grid>
         )}
+
 
         {isNew && (
-          <Box sx={{mt: 2}}>
-            {org.title} will start as a participating unit.
-          </Box>
+          <Grid item xs={12}>
+            <Box sx={{mt: 2}}>
+              {org.title} will start as a participating unit.
+            </Box>
+          </Grid>
         )}
 
-        <Stack direction="row" spacing={1} sx={{mt: 2}}>
-          <Button type="submit" variant="contained">Save {activityType === 'missions' ? 'Mission' : 'Event'}</Button>
-          <Button onClick={() => router.back()}>Cancel</Button>
-        </Stack>
-      </Stack>
+        <Grid item xs={12}>
+          <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1} sx={{mt: 2}} >
+            <Button onClick={() => router.back()}>Cancel</Button>
+            <Button type="submit" variant="contained">Save {activityType === 'missions' ? 'Mission' : 'Event'}</Button>
+          </Stack>
+        </Grid>
+      </Grid>
     </form>
   </>
   );
