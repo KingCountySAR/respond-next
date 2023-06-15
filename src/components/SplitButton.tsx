@@ -33,7 +33,7 @@ export function SplitButton<K extends string|number|EnumMember, T extends IdOpti
     event: React.MouseEvent<HTMLLIElement, MouseEvent>,
     index: number,
   ) => {
-    setSelectedIndex(index);
+    onClick?.(options[index].id);
     setOpen(false);
   };
 
