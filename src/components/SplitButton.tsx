@@ -91,7 +91,6 @@ export function SplitButton<K extends string|number|EnumMember, T extends IdOpti
                 {menuOptions.map((option, index) => (
                   <MenuItem
                     key={option.id + ''}
-                    selected={index === selectedIndex}
                     onClick={(event) => handleMenuItemClick(event, index)}
                   >
                     {option.text}
