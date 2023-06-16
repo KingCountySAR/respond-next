@@ -14,8 +14,8 @@ const options = [
 ]
 const optionTexts = options.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.text }), {} as Record<string, string>);
 
-function isFuture(startTime: number) {
-  return (startTime - 60 * 60 * 1000) > new Date().getTime();
+function isFuture(time: number) {
+  return (time - 60 * 60 * 1000) > new Date().getTime();
 };
 
 function getRecommendedAction(current: ResponderStatus|undefined, startTime: number): ResponderStatus {
