@@ -33,7 +33,7 @@ export function SplitButton<K extends string|number|EnumMember, T extends IdOpti
     event: React.MouseEvent<HTMLLIElement, MouseEvent>,
     index: number,
   ) => {
-    onClick?.(options[index].id);
+    onClick?.(menuOptions[index].id);
     setOpen(false);
   };
 
@@ -52,10 +52,11 @@ export function SplitButton<K extends string|number|EnumMember, T extends IdOpti
     setOpen(false);
   };
 
+  const menuOptions = options.filter(option => option.id !== selected);
   return (<>
     <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button">
       <Button onClick={handleClick}>{options[selectedIndex].text}</Button>
-      <Button
+      {!!menuOptions.length && <Button
         size="small"
         aria-controls={open ? 'split-button-menu' + buttonId : undefined}
         aria-expanded={open ? 'true' : undefined}
@@ -64,7 +65,7 @@ export function SplitButton<K extends string|number|EnumMember, T extends IdOpti
         onClick={handleToggle}
       >
         <ArrowDropDownIcon />
-      </Button>
+      </Button>}
     </ButtonGroup>
     <Popper
       sx={{
@@ -87,7 +88,7 @@ export function SplitButton<K extends string|number|EnumMember, T extends IdOpti
           <Paper>
             <ClickAwayListener onClickAway={handleClose}>
               <MenuList id={`split-button-menu${buttonId}`} autoFocusItem>
-                {options.map((option, index) => (
+                {menuOptions.map((option, index) => (
                   <MenuItem
                     key={option.id + ''}
                     selected={index === selectedIndex}

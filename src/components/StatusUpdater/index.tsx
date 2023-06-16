@@ -8,22 +8,38 @@ import { SplitButton } from '../SplitButton';
 import { useFormLogic, UpdateStatusForm } from './UpdateStatusForm';
 
 const options = [
-  { id: ResponderStatus.Unavailable, text: 'Not Available' },
   { id: ResponderStatus.Standby, text: 'Stand By' },
   { id: ResponderStatus.SignedIn, text: 'Sign In' },
   { id: ResponderStatus.SignedOut, text: 'Sign Out' },
 ]
 const optionTexts = options.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.text }), {} as Record<string, string>);
 
+function isFuture(startTime: number) {
+  return (startTime - 60 * 60 * 1000) > new Date().getTime();
+};
+
 function getRecommendedAction(current: ResponderStatus|undefined, startTime: number): ResponderStatus {
-  const now = new Date().getTime();
   if (current === ResponderStatus.SignedIn) {
     return ResponderStatus.SignedOut;
   }
-  if (startTime - 60 * 60 * 1000 > now) {
-    return ResponderStatus.Standby;
+  if (isFuture(startTime)) {
+    return current === ResponderStatus.Standby ? ResponderStatus.SignedOut : ResponderStatus.Standby;
   }
   return ResponderStatus.SignedIn;
+}
+
+function getCurrentOptions(current: ResponderStatus|undefined, startTime: number) {
+  if (current === undefined) { return options; }
+  if (isFuture(startTime)) {
+    if (current === ResponderStatus.Standby) {
+      return options.filter(option => option.id === ResponderStatus.SignedOut);
+    }
+    return options.filter(option => option.id === ResponderStatus.Standby);
+  }
+  if (current === undefined || current === ResponderStatus.Unavailable) {
+    return options.filter(option => option.id !== ResponderStatus.SignedOut);
+  }
+  return options.filter(option => option.id !== current)
 }
 
 export const StatusUpdater = ({activity, current}: {activity: Activity, current?: ResponderStatus}) => {
@@ -64,11 +80,12 @@ const StatusUpdaterProtected = ({activity, current, user, thisOrg}: {activity: A
     setConfirming(true);
   }
 
+  const currentOptions = getCurrentOptions(current, activity.startTime);
   const recommendedAction = getRecommendedAction(current, activity.startTime);
   return (
     <>
       <SplitButton
-        options={options}
+        options={currentOptions}
         selected={recommendedAction}
         onClick={(newStatus) => { confirmPrompt('Update Status', newStatus)}}
       />
