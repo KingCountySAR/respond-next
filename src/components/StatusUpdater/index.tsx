@@ -29,7 +29,6 @@ function getRecommendedAction(current: ResponderStatus|undefined, startTime: num
 }
 
 function getCurrentOptions(current: ResponderStatus|undefined, startTime: number) {
-  if (current === undefined) { return options; }
   if (isFuture(startTime)) {
     if (current === ResponderStatus.Standby) {
       return options.filter(option => option.id === ResponderStatus.SignedOut);
