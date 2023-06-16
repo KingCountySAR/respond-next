@@ -105,7 +105,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
         </Stack>
 
         <Box>Location: {activity.location.title}</Box>
-        <Box>Map: <Link href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">{activity.mapId}</Link></Box>
+        {!!activity.mapId && <Box>Map: <Link href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">{activity.mapId}</Link></Box>}
         <Box>State #: {activity.idNumber}</Box>
         {activity.ownerOrgId !== org?.id && <Box>Agency: {activity.organizations[activity.ownerOrgId]?.title}</Box>}
         <Box>Start Time: <RelativeTimeText time={activity.startTime} baseTime={nowTime}/></Box>
