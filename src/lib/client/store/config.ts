@@ -14,7 +14,7 @@ export interface ConfigStore {
 const slice = createSlice({
   name: 'config',
   initialState: {
-    dev: { noExternalNetwork: false },
+    dev: { noExternalNetwork: false, buildId: '' },
     organization: { title: '', shortTitle: ''}
   },
   reducers: {

@@ -4,7 +4,6 @@ import { getOrganizationForRequest } from '@respond/lib/server/request';
 import { headers } from 'next/headers';
 import ClientProviders, { SiteConfig } from './ClientProviders';
 import "./globals.css"
-import LoginPanel from './LoginPanel';
 
 export const metadata = {
   title: 'Respond Site',
@@ -17,11 +16,12 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const hdrs = headers();
-  
+
   const org = await getOrganizationForRequest();
   const siteConfig: SiteConfig = {
     dev: {
-      noExternalNetwork: !!process.env.DEV_NETWORK_DISABLED
+      noExternalNetwork: !!process.env.DEV_NETWORK_DISABLED,
+      buildId: process.env.CONFIG_BUILD_ID ?? 'unknown',
     },
     organization: {
       title: org?.title ?? 'Team',

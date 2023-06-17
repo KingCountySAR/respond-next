@@ -16,7 +16,7 @@ import merge from 'lodash.merge';
 
 export interface SiteConfig {
   theme: ThemeOptions;
-  dev: { noExternalNetwork: boolean };
+  dev: { noExternalNetwork: boolean, buildId: string };
   organization: { title: string, shortTitle: string };
 }
 
