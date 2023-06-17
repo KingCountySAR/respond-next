@@ -30,7 +30,6 @@ function getRecommendedAction(current: ResponderStatus|undefined, startTime: num
 }
 
 function getCurrentOptions(current: ResponderStatus|undefined, startTime: number) {
-  console.log('!!!', current, startTime);
   if (isFuture(startTime)) {
     return current === ResponderStatus.Standby ? [options.standdown] : [options.standby];
   }
