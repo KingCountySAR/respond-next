@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@mui/material';
-import { CredentialResponse, GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { Box, Button } from '@respond/components/Material';
+import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
 import Api from '@respond/lib/api';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { AuthActions } from '@respond/lib/client/store/auth';
@@ -18,22 +18,22 @@ export default function LoginPanel() {
     }
     return await finishLogin(data.credential);
   }
-  
+
   async function doOfflineLogin() {
     return await finishLogin('');
   }
-  
+
   async function finishLogin(token: string) {
     const res = await Api.post<any>('/api/auth/google', { token }) as AuthResponse;
     localStorage.userAuth = JSON.stringify(res.userInfo);
-  
+
     console.log('login response', res);
     dispatch(AuthActions.set({ userInfo: res.userInfo }));
     dispatch(OrgActions.set({ mine: res.organization }))
     return res;
   }
 
-  return (<>
+  return (<Box sx={{flexGrow: 1, display: 'flex', justifyContent:'center'}}>
     {noExternalNetwork
     ?<Button onClick={doOfflineLogin}>offline login</Button>
     : <GoogleLogin
@@ -41,7 +41,6 @@ export default function LoginPanel() {
         onError={() => console.log('Google error')}
       />
     }
-    <button onClick={() => dispatch(AuthActions.logout())}>logout</button>
-  </>
+  </Box>
   )
 }
