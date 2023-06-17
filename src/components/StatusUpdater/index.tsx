@@ -7,12 +7,13 @@ import { UserInfo } from '@respond/types/userInfo';
 import { SplitButton } from '../SplitButton';
 import { useFormLogic, UpdateStatusForm } from './UpdateStatusForm';
 
-const options = [
-  { id: ResponderStatus.Standby, text: 'Stand By' },
-  { id: ResponderStatus.SignedIn, text: 'Sign In' },
-  { id: ResponderStatus.SignedOut, text: 'Sign Out' },
-]
-const optionTexts = options.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.text }), {} as Record<string, string>);
+const options = {
+  standdown: { id: ResponderStatus.Cancel, text: 'Stand Down' },
+  standby: { id: ResponderStatus.Standby, text: 'Stand By' },
+  signin: { id: ResponderStatus.SignedIn, text: 'Sign In' },
+  signout: { id: ResponderStatus.SignedOut, text: 'Sign Out' },
+}
+const optionTexts = Object.values(options).reduce((accum, cur) => ({ ...accum, [cur.id]: cur.text }), {} as Record<string, string>);
 
 function isFuture(time: number) {
   return (time - 60 * 60 * 1000) > new Date().getTime();
@@ -23,22 +24,26 @@ function getRecommendedAction(current: ResponderStatus|undefined, startTime: num
     return ResponderStatus.SignedOut;
   }
   if (isFuture(startTime)) {
-    return current === ResponderStatus.Standby ? ResponderStatus.SignedOut : ResponderStatus.Standby;
+    return current === ResponderStatus.Standby ? ResponderStatus.Cancel : ResponderStatus.Standby;
   }
   return ResponderStatus.SignedIn;
 }
 
 function getCurrentOptions(current: ResponderStatus|undefined, startTime: number) {
+  console.log('!!!', current, startTime);
   if (isFuture(startTime)) {
-    if (current === ResponderStatus.Standby) {
-      return options.filter(option => option.id === ResponderStatus.SignedOut);
-    }
-    return options.filter(option => option.id === ResponderStatus.Standby);
+    return current === ResponderStatus.Standby ? [options.standdown] : [options.standby];
   }
-  if (current === undefined || current === ResponderStatus.Unavailable) {
-    return options.filter(option => option.id !== ResponderStatus.SignedOut);
+  if (current === ResponderStatus.Standby) {
+    return [options.signin, options.standdown];
   }
-  return options.filter(option => option.id !== current)
+  if (current === ResponderStatus.SignedIn) {
+    return [options.signout];
+  }
+  if (current === ResponderStatus.SignedOut) {
+    return [options.signin, options.standby];
+  }
+  return [options.signin, options.standby];
 }
 
 export const StatusUpdater = ({activity, current}: {activity: Activity, current?: ResponderStatus}) => {
