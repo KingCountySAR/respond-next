@@ -18,7 +18,7 @@ export const BuildInfo = ({ open, onClose }: { open: boolean, onClose: () => voi
           { commit === 'development' ? (
             'Development Build'
           ) : (
-            <>Build: <a target="_blank" href={`https://github.com/KingCountySAR/respond-next/commit/${commit}`}>{buildId}</a></>
+            <>Build: <a target="_blank" href={`https://github.com/KingCountySAR/respond-next/commits/${commit}`}>{buildId}</a></>
           )}
         </DialogContentText>
       </DialogContent>
