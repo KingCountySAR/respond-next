@@ -28,10 +28,8 @@ export default async function RootLayout({
       shortTitle: org?.rosterName ?? org?.title ?? 'Team',
     },
     theme: {
-      palette: {
-        primary: { main: org?.brand.primary ?? 'rgb(200, 100, 100)' },
-        danger: { main: 'rgb(192,0,0)', contrastText: 'white' },
-      },
+      primary: org?.brand.primary ?? 'rgb(200, 100, 100)',
+      primaryDark: org?.brand.primaryDark,
     }
   };
 

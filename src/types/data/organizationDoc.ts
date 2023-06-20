@@ -22,6 +22,7 @@ export interface OrganizationDoc {
   mouName?: string;
   brand: {
     primary: string;
+    primaryDark?: string;
   };
   memberProvider: D4HConfig;
   canCreateEvents: boolean;
