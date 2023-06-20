@@ -71,7 +71,8 @@ In your MongoDB database, make sure there is a collection called `organizations`
   "rosterName": "CRT",
   "mouName": "CRT",
   "brand": {
-    "primary": "#154515"
+    "primary": "#154515",
+    "primaryDark": "#31A031"
   },
   "domain": "<YOUR-PREFERRED-HOSTNAME-EX-localhost>",
   "memberProvider": {
