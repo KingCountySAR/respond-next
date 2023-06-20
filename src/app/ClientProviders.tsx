@@ -13,9 +13,10 @@ import { OrgActions } from '@respond/lib/client/store/organization';
 import { AppStore, buildClientStore } from '@respond/lib/client/store';
 import { ClientSync } from '@respond/lib/client/sync';
 import merge from 'lodash.merge';
+import { PaletteMode } from '@mui/material';
 
 export interface SiteConfig {
-  theme: ThemeOptions;
+  theme: { primary: string; primaryDark?: string };
   dev: { noExternalNetwork: boolean, buildId: string };
   organization: { title: string, shortTitle: string };
 }
@@ -32,21 +33,21 @@ export default function ClientProviders(
     sync.start();
   }, [sync]);
 
-  // We need to figure out how to keep brand colors to display with high enough contrast when in dark mode.
-  //const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const hydratedTheme = useMemo(() => {
     console.log('rendering theme');
-    const theme = merge({}, config.theme, {
+    const theme: ThemeOptions = {
       palette: {
-        //mode: prefersDarkMode ? 'dark' : 'light'},
-        mode: 'light',
+        mode: prefersDarkMode ? 'dark' : 'light',
+        background: {
+          default: '#f00',
+        },
+        primary: { main: (prefersDarkMode ? config.theme.primaryDark : config.theme.primary) ?? config.theme.primary },
+        danger: { main: 'rgb(192,0,0)', contrastText: 'white' },
       },
-      background: {
-        default: '#f00',
-      }
-    });
+    }
     return createTheme(theme);
-  }, [ /*prefersDarkMode*/, config.theme ]);
+  }, [ prefersDarkMode, config.theme ]);
 
 
   if (!store) {
