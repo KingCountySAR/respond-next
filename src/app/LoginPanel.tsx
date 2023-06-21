@@ -8,7 +8,7 @@ import { AuthActions } from '@respond/lib/client/store/auth';
 import { OrgActions } from '@respond/lib/client/store/organization'
 import { AuthResponse } from '@respond/types/authResponse'
 import { useState } from 'react'
-import { ApiError } from '@respond/lib/apiErrors'
+import { AuthError } from '@respond/lib/apiErrors'
 import { Alert, AlertTitle } from '@mui/material'
 
 export default function LoginPanel() {
@@ -39,7 +39,7 @@ export default function LoginPanel() {
       dispatch(OrgActions.set({ mine: res.organization }));
     } else {
       switch (res.error) {
-        case ApiError.USER_NOT_KNOWN:
+        case AuthError.USER_NOT_KNOWN:
           setError("Could not find email address in D4H");
           setErrorDetails("Please contact your unit's database manager to have your email address added to your D4H profile, or log in with an email address in your profile.");
           break;
