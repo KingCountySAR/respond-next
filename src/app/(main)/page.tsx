@@ -44,7 +44,7 @@ export default function Home() {
 
   let missions = useAppSelector(buildActivityTypeSelector(true));
   missions = filterActivitiesForDisplay(missions, maxCompletedActivitiesVisible, oldestCompletedActivityVisible);
-  
+
   let events = useAppSelector(buildActivityTypeSelector(false));
   events = filterActivitiesForDisplay(events, maxCompletedActivitiesVisible, oldestCompletedActivityVisible);
 
@@ -54,16 +54,18 @@ export default function Home() {
 
   return (
     <main>
-      <Box sx={{mb:3}}>
-        <Box sx={{mb:1}}>
-          <Typography variant="h5">My Activity</Typography>
+      { myCurrentActivities.length < 1 ? null : (
+        <Box sx={{mb:3}}>
+          <Box sx={{mb:1}}>
+            <Typography variant="h5">My Activity</Typography>
+          </Box>
+          <Stack spacing={1}>
+            {myCurrentActivities.map(up => (
+              <EventTile key={up.activity.id} activity={up.activity} status={up.status.status} />
+            ))}
+          </Stack>
         </Box>
-        <Stack spacing={1}>
-          {myCurrentActivities.map(up => (
-            <EventTile key={up.activity.id} activity={up.activity} status={up.status.status} />
-          ))}
-        </Stack>
-      </Box>
+      )}
       <Box sx={{mb:3}}>
         <Box sx={{mb:1, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <Typography variant="h5">Missions</Typography>
