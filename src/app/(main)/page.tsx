@@ -65,8 +65,9 @@ export default function Home() {
         </Stack>
       </Box>
       <Box sx={{mb:3}}>
-        <Box sx={{mb:1}}>
+        <Box sx={{mb:1, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <Typography variant="h5">Missions</Typography>
+          {canCreateM  && <Button variant="outlined" component={Link} href="/mission/new">New Mission</Button>}
         </Box>
         <Stack spacing={1}>
           {missions.map(a => (
@@ -80,15 +81,11 @@ export default function Home() {
           ))}
           {missions.length === 0 && <Typography>No recent missions</Typography>}
         </Stack>
-        {canCreateM ? ( 
-          <Box sx={{mt: 2, display:'flex', flexDirection:'row-reverse'}}> 
-            <Button variant="outlined" component={Link} href="/mission/new">New Mission</Button> 
-          </Box>
-        ) : null} 
       </Box>
       <Box>
-        <Box sx={{mb:1}}>
-          <Typography variant="h5">Trainings and Other Events</Typography>
+        <Box sx={{mb:1, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <Typography variant="h5">Events</Typography>
+          {canCreateE && <Button variant="outlined" component={Link} href="/event/new">New Event</Button>}
         </Box>
         <Stack spacing={1}>
           {events.map(a => (
@@ -99,11 +96,6 @@ export default function Home() {
           ))}
           {events.length === 0 && <Typography>No recent events</Typography>}
         </Stack>
-        {canCreateE ? ( 
-          <Box sx={{mt: 2, display:'flex', flexDirection:'row-reverse'}}> 
-            <Button variant="outlined" component={Link} href="/event/new">New Event</Button> 
-          </Box> 
-        ) : null} 
       </Box>
     </main>
   );
