@@ -58,8 +58,8 @@ export default function LoginPanel() {
     <Box sx={{flexGrow: 1, display: 'flex', justifyContent:'center'}}>
       {noExternalNetwork
       ? <Button onClick={doOfflineLogin}>offline login</Button>
-      : <Stack>
-          { error && <Alert severity="error" sx={{mb:2}}>
+      : <Stack spacing={2}>
+          { error && <Alert severity="error">
             <AlertTitle>{error}</AlertTitle>
             {errorDetails}
           </Alert> }
