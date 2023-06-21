@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Button, Stack, Typography } from '@respond/components/Material';
+import { Box, Button, Stack } from '@respond/components/Material';
 import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
 import Api from '@respond/lib/api';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
@@ -29,8 +29,7 @@ export default function LoginPanel() {
   }
 
   async function finishLogin(token: string) {
-    const res1 = await Api.post<any>('/api/auth/google', { token });
-    const res = res1 as AuthResponse;
+    const res = await Api.post<any>('/api/auth/google', { token }) as AuthResponse;
     console.log('login response', res);
 
     if (res.userInfo) {
