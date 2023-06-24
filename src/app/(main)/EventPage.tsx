@@ -46,7 +46,7 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
     } },
     { field: 'time', headerName: 'Time', valueFormatter: o => {
       const dayDiff = differenceInDays(startTime, o.value);
-      return `${dayDiff > 0 ? dayDiff + '' : ''}${formatDate(o.value, 'HHmm')}`;
+      return `${dayDiff > 0 ? dayDiff + '+' : ''}${formatDate(o.value, 'HHmm')}`;
     }, flex: 1 },
   ];
 
