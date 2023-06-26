@@ -17,7 +17,9 @@ The app is multi-tenant, and matches hostnames to organizations stored in the da
 The application also has integration with D4H, so you will need an API key, either generated yourself or from your member database admin.
 **Note that a D4H API key is equivalent to your password: it provides full access to personal information for every KCSARA member - even the bits that are marked ‘private’. Make sure you don't make this key public (e.g. by checking it in).**
 Try to get a key yourself:
-- Go to https://kcsara.d4h.org/members/api_settings
+- Login to D4H
+- Click on the small head icon in the upper right and go to "My Settings"
+- Click on API access keys
 - Give your key a name and click "Generate API Access Key". You'll use this key in the next section. 
 
 If this fails, contact your database admin to ask for a key. 
@@ -80,7 +82,7 @@ Remember that your username/password in the connection string are for the databa
 
 ### Add Google auth configuration
 - Setup an OAuth 2.0 Client web app with Google (See https://support.google.com/cloud/answer/6158849?hl=en#zippy=%2Cweb-applications).
-	- In the OAuth Client, add hostnames `https://localhost:3000`, `http://localhost:3000`, and `http://localhost` to the Authorized Javascript Origins.
+	- In the OAuth Client, add hostnames `http://localhost:3000` and `http://localhost` to the Authorized Javascript Origins.
 - Add authentication information to `.env.local`:
 ```
 GOOGLE_ID=<client-id>.apps.googleusercontent.com
