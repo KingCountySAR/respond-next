@@ -8,7 +8,6 @@ import { SplitButton } from '../SplitButton';
 import { useFormLogic, UpdateStatusForm } from './UpdateStatusForm';
 
 const options = {
-  standdown: { id: ResponderStatus.Cancel, text: 'Stand Down' },
   standby: { id: ResponderStatus.Standby, text: 'Stand By' },
   signin: { id: ResponderStatus.SignedIn, text: 'Sign In' },
   signout: { id: ResponderStatus.SignedOut, text: 'Sign Out' },
@@ -24,17 +23,17 @@ function getRecommendedAction(current: ResponderStatus|undefined, startTime: num
     return ResponderStatus.SignedOut;
   }
   if (isFuture(startTime)) {
-    return current === ResponderStatus.Standby ? ResponderStatus.Cancel : ResponderStatus.Standby;
+    return current === ResponderStatus.Standby ? ResponderStatus.SignedOut : ResponderStatus.Standby;
   }
   return ResponderStatus.SignedIn;
 }
 
 function getCurrentOptions(current: ResponderStatus|undefined, startTime: number) {
   if (isFuture(startTime)) {
-    return current === ResponderStatus.Standby ? [options.standdown] : [options.standby];
+    return current === ResponderStatus.Standby ? [options.signout] : [options.standby];
   }
   if (current === ResponderStatus.Standby) {
-    return [options.signin, options.standdown];
+    return [options.signin, options.signout];
   }
   if (current === ResponderStatus.SignedIn) {
     return [options.signout];
