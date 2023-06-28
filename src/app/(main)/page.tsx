@@ -12,6 +12,8 @@ import { Activity, ResponderStatus } from '@respond/types/activity';
 import addDays from 'date-fns/addDays'
 import { EventTile } from './EventTile';
 import { OrganizationChip } from './OrganizationChip';
+import { OutputForm } from '@respond/components/OutputForm';
+import { OutputField } from '@respond/components/OutputField';
 
 //const inter = Inter({ subsets: ['latin'] })
 
@@ -61,7 +63,12 @@ export default function Home() {
           </Box>
           <Stack spacing={1}>
             {myCurrentActivities.map(up => (
-              <EventTile key={up.activity.id} activity={up.activity} status={up.status.status} />
+              <EventTile key={up.activity.id} activity={up.activity} status={up.status.status}>
+                <OutputForm>
+                  <OutputField label="Location" value={up.activity.location.title} />
+                  <OutputField label="Active Responders" value={getActiveParticipants(up.activity).length.toString()} />
+                </OutputForm>
+              </EventTile>
             ))}
           </Stack>
         </Box>
@@ -74,9 +81,12 @@ export default function Home() {
         <Stack spacing={1}>
           {missions.map(a => (
             <EventTile key={a.id} activity={a} status={getMyStatus(a)}>
-              <Box>State #: {a.idNumber}</Box>
-              <Box>Active Responders: {getActiveParticipants(a).length}</Box>
-              <Box sx={{ pt: 1 }}>
+              <OutputForm>
+                <OutputField label="Location" value={a.location.title} />
+                <OutputField label="Active Responders" value={getActiveParticipants(a).length.toString()} />
+                <OutputField label="State #" value={a.idNumber} />
+              </OutputForm>
+              <Box sx={{ pt: 2 }}>
                   {Object.entries(a.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} />)}
               </Box>
             </EventTile>
@@ -92,8 +102,11 @@ export default function Home() {
         <Stack spacing={1}>
           {events.map(a => (
             <EventTile key={a.id} activity={a}>
-              <Box>State #: {a.idNumber}</Box>
-              <Box>Participants: {getActiveParticipants(a).length}</Box>
+              <OutputForm>
+                <OutputField label="Location" value={a.location.title} />
+                <OutputField label="Participants" value={getActiveParticipants(a).length.toString()} />
+                <OutputField label="State #" value={a.idNumber} />
+              </OutputForm>
             </EventTile>
           ))}
           {events.length === 0 && <Typography>No recent events</Typography>}
