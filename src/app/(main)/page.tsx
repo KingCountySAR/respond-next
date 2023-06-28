@@ -84,7 +84,7 @@ export default function Home() {
           {missions.length === 0 && <Typography>No recent missions</Typography>}
         </Stack>
       </Box>
-      <Box>
+      <Box sx={{ pb: 4 }}>
         <Box sx={{mb:1, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <Typography variant="h5">Events</Typography>
           {canCreateE && <Button variant="outlined" component={Link} href="/event/new">New Event</Button>}
