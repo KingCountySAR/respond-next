@@ -5,6 +5,7 @@ import { Activity, ResponderStatus } from '@respond/types/activity';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { getActivityPath, isActive } from '@respond/lib/client/store/activities';
 import { StatusChip } from './StatusChip';
+import Image from 'next/image';
 
 export const EventTile = ({ activity, status, children }: { activity: Activity, status?: ResponderStatus, children?: ReactNode }) => {
 
@@ -30,7 +31,7 @@ export const EventTile = ({ activity, status, children }: { activity: Activity, 
               <Grid item>
                 {activity.mapId && 
                   <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
-                    <img src="/sartopo-logo.svg" alt="Sartopo Logo" />
+                    <Image src="/sartopo-logo.svg" alt="Sartopo Logo" width={25} height={25} />
                   </IconButton>
                 }
                 {/* TODO: When we have necessary attribute to implement nav button, do it here.
