@@ -1,15 +1,15 @@
 ## Configure Development Environment
 
 ### Install dev/build tools
+- [Node.js] (https://nodejs.org/en) 16.x or higher
 - [Yarn](https://yarnpkg.com)
-- Node.js 16.x or higher (installed with yarn)
 
 ### Create dev database
 Development is supported on either a local or remote MongoDB server.
 - For a local installation, it's recommended to install the [Community Server](https://www.mongodb.com/try/download/community) and [Compass UI](https://www.mongodb.com/try/download/compass).
 - For a remote DB, use [Mongo Atlas](https://www.mongodb.com/atlas/database). You can also use [Compass UI](https://www.mongodb.com/try/download/compass), but isn't strictly necessary. 
 
-In your MongoDB, add a database named `respond-dev`. Then also add a user for that database. In Mongo Atlas this is done by clicking on "Database Access" from the left side bar navigation. Then click the "Add new database user" and give them read/write permission. This username/password is what you'll use in your connection string below. 
+In your MongoDB, add a database named `respond-dev`. If you're using Mongo Atlas, also add a user for that database. Click on "Database Access" from the left side bar navigation, then click the "Add new database user" and give them read/write permission. This username/password is what you'll use in your connection string below. 
 
 #### Add Seed Data to MongoDB
 The app is multi-tenant, and matches hostnames to organizations stored in the database. To be able to use the application, at least one organization must be created in the database. Below are two documents that should allow you to get up and running.
@@ -24,7 +24,7 @@ Try to get a key yourself:
 
 If this fails, contact your database admin to ask for a key. 
 
-To fully test multi-tenancy you'll also need to be able to refer to the site by multiple host names. It may be possible to do this with a combination of `localhost` and your computer's hostname. You may also want/need to add aliases to your local machine in your `/etc/hosts` file or router DNS configuration. These hostnames will be used in the seed data. However this is optional for an initial setup. 
+To fully test multi-tenancy you'll also need to be able to refer to the site by multiple host names. It may be possible to do this with a combination of `localhost` and your computer's hostname. You may also want/need to add aliases to your local machine in your hosts file (`/etc/hosts` on Linux or `C:\Windows\System32\drivers\etc\hosts` on Windows) or router DNS configuration. These hostnames will be used in the seed data. However this is optional for an initial setup. 
 
 In your MongoDB database, make sure there is a collection called `organizations` and add the following two documents. Note the two placeholders needing replacement. The first is usually "localhost", and the second is your API key:
 ```json
