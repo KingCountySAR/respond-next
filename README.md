@@ -11,6 +11,8 @@ Development is supported on either a local or remote MongoDB server.
 
 In your MongoDB, add a database named `respond-dev`. If you're using Mongo Atlas, also add a user for that database. Click on "Database Access" from the left side bar navigation, then click the "Add new database user" and give them read/write permission. This username/password is what you'll use in your connection string below. 
 
+Mongo Atlas has a database creation wizard which shows up for new accounts, and may walk you through the steps above. 
+
 #### Add Seed Data to MongoDB
 The app is multi-tenant, and matches hostnames to organizations stored in the database. To be able to use the application, at least one organization must be created in the database. Below are two documents that should allow you to get up and running.
 
