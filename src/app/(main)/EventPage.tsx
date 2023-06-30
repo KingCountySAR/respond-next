@@ -26,7 +26,7 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
   };
   
 
-  const rows: GridRowsProp = Object.values(participants).filter(f => f.timeline[0].status !== ResponderStatus.Unavailable).map(f => ({
+  const rows: GridRowsProp = Object.values(participants).filter(f => f.timeline[0].status !== ResponderStatus.NotResponding).map(f => ({
     ...f,
     orgName: orgs[f.organizationId]?.rosterName ?? orgs[f.organizationId]?.title,
     status: f.timeline[0].status,
