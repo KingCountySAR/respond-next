@@ -32,7 +32,7 @@ const statusOptions: Record<ResponderStatus, { id: number, newStatus: ResponderS
   [ResponderStatus.SignedOut]: [statusTransitions.signIn, statusTransitions.standBy, statusTransitions.inTown],
 }
 
-const futureOptions: Record<ResponderStatus, { id: number, newStatus: ResponderStatus, text: string }[]> = {
+const futureStatusOptions: Record<ResponderStatus, { id: number, newStatus: ResponderStatus, text: string }[]> = {
   [ResponderStatus.NotResponding]: [statusTransitions.standBy],
   [ResponderStatus.Standby]: [statusTransitions.standDown],
   [ResponderStatus.Remote]: [statusTransitions.resetStatus],
@@ -43,16 +43,20 @@ const futureOptions: Record<ResponderStatus, { id: number, newStatus: ResponderS
   [ResponderStatus.SignedOut]: [statusTransitions.standBy],
 }
 
-const fourHourEarlySigninWindow = 4 * 60 * 60 * 1000;
+/**
+ * @description Members can sign in prior to the start time of a future mission.
+ * @return 4 Hours in milliseconds.
+ */
+const earlySigninWindow = 4 * 60 * 60 * 1000;
 
 function isFuture(time: number) {
-  return (time - fourHourEarlySigninWindow) > new Date().getTime();
+  return (time - earlySigninWindow) > new Date().getTime();
 };
 
 function getStatusOptions(current: ResponderStatus|undefined, startTime: number) {
   let status = current ?? ResponderStatus.NotResponding;
   if (isFuture(startTime)) {
-    return futureOptions[status];
+    return futureStatusOptions[status];
   }
   return statusOptions[status];
 }
