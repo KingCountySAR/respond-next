@@ -16,7 +16,9 @@ const statusTransitions = {
   arriveBase: { id: 5, newStatus: ResponderStatus.Available, text: 'Arrive Base' },
   departBase: { id: 6, newStatus: ResponderStatus.Demobilized, text: 'Depart Base' },
   signOut: { id: 7, newStatus: ResponderStatus.SignedOut, text: 'Sign Out' },
-  resetStatus: { id: 8, newStatus: ResponderStatus.NotResponding, text: 'Reset Status' } // clear status in edge cases that shouldn't generally be possible.
+  resetStatus: { id: 8, newStatus: ResponderStatus.NotResponding, text: 'Reset Status' }, // clear status in edge cases that shouldn't generally be possible.
+  assigned: { id: 9, newStatus: ResponderStatus.Assigned, text: 'Assigned' },
+  available: { id: 10, newStatus: ResponderStatus.Available, text: 'Available' }
 }
 
 const statusOptions: Record<ResponderStatus, { id: number, newStatus: ResponderStatus, text: string }[]> = {
@@ -24,8 +26,8 @@ const statusOptions: Record<ResponderStatus, { id: number, newStatus: ResponderS
   [ResponderStatus.Standby]: [statusTransitions.signIn, statusTransitions.standDown],
   [ResponderStatus.Remote]: [statusTransitions.signOut],
   [ResponderStatus.SignedIn]: [statusTransitions.arriveBase, statusTransitions.turnAround, statusTransitions.signOut],
-  [ResponderStatus.Available]: [statusTransitions.departBase],
-  [ResponderStatus.Assigned]: [statusTransitions.resetStatus],
+  [ResponderStatus.Available]: [statusTransitions.departBase, statusTransitions.assigned],
+  [ResponderStatus.Assigned]: [statusTransitions.available],
   [ResponderStatus.Demobilized]: [statusTransitions.signOut, statusTransitions.signIn, statusTransitions.arriveBase],
   [ResponderStatus.SignedOut]: [statusTransitions.signIn, statusTransitions.standBy, statusTransitions.inTown],
 }
