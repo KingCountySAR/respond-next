@@ -55,7 +55,7 @@ export function buildMyActivitySelector() {
     const myParticipation: { activity: Activity, status: ResponderUpdate }[] = [];
     for (const activity of state.activities.list) {
       const myUpdate = activity.participants[participantId]?.timeline[0];
-      if ([ResponderStatus.Standby, ResponderStatus.SignedIn, ResponderStatus.SignedOut].includes(myUpdate?.status)) {
+      if (myUpdate && myUpdate.status !== ResponderStatus.NotResponding) {
         myParticipation.push({ activity, status: myUpdate });
       }
     }

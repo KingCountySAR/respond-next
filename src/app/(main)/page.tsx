@@ -8,7 +8,7 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
 import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, isActive, isComplete } from '@respond/lib/client/store/activities';
 import { useEffect } from 'react';
-import { Activity, ResponderStatus } from '@respond/types/activity';
+import { Activity, isActive as isResponderStatusActive } from '@respond/types/activity';
 import addDays from 'date-fns/addDays'
 import { EventTile } from './EventTile';
 import { OrganizationChip } from './OrganizationChip';
@@ -32,7 +32,7 @@ function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible:
 
 export default function Home() {
   let myActivities = useAppSelector(buildMyActivitySelector());
-  let myCurrentActivities = myActivities.filter(activity => [ResponderStatus.SignedIn,ResponderStatus.Standby].includes(activity.status.status));
+  let myCurrentActivities = myActivities.filter(activity => isResponderStatusActive(activity.status.status) === true);
 
   function getMyStatus(activity: Activity) {
     return myActivities.find(f => f.activity.id === activity.id)?.status.status;

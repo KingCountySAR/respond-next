@@ -7,23 +7,52 @@ import { UserInfo } from '@respond/types/userInfo';
 import { SplitButton } from '../SplitButton';
 import { useFormLogic, UpdateStatusForm } from './UpdateStatusForm';
 
-const options = [
-  { id: ResponderStatus.Unavailable, text: 'Not Available' },
-  { id: ResponderStatus.Standby, text: 'Stand By' },
-  { id: ResponderStatus.SignedIn, text: 'Sign In' },
-  { id: ResponderStatus.SignedOut, text: 'Sign Out' },
-]
-const optionTexts = options.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.text }), {} as Record<string, string>);
+const statusTransitions = {
+  standBy: { id: 0, newStatus: ResponderStatus.Standby, text: 'Stand By' },
+  standDown: { id: 1, newStatus: ResponderStatus.SignedOut, text: 'Stand Down' },
+  inTown: { id: 2, newStatus: ResponderStatus.Remote, text: 'In Town' },
+  signIn: { id: 3, newStatus: ResponderStatus.SignedIn, text: 'Sign In' },
+  turnAround: { id: 4, newStatus: ResponderStatus.Demobilized, text: 'Turn Around' },
+  arriveBase: { id: 5, newStatus: ResponderStatus.Available, text: 'Arrive Base' },
+  departBase: { id: 6, newStatus: ResponderStatus.Demobilized, text: 'Depart Base' },
+  signOut: { id: 7, newStatus: ResponderStatus.SignedOut, text: 'Sign Out' },
+  resetStatus: { id: 8, newStatus: ResponderStatus.NotResponding, text: 'Reset Status' } // clear status in edge cases that shouldn't generally be possible.
+}
 
-function getRecommendedAction(current: ResponderStatus|undefined, startTime: number): ResponderStatus {
-  const now = new Date().getTime();
-  if (current === ResponderStatus.SignedIn) {
-    return ResponderStatus.SignedOut;
+const statusOptions: Record<ResponderStatus, { id: number, newStatus: ResponderStatus, text: string }[]> = {
+  [ResponderStatus.NotResponding]: [statusTransitions.signIn, statusTransitions.standBy, statusTransitions.inTown],
+  [ResponderStatus.Standby]: [statusTransitions.signIn, statusTransitions.standDown],
+  [ResponderStatus.Remote]: [statusTransitions.signOut],
+  [ResponderStatus.SignedIn]: [statusTransitions.arriveBase, statusTransitions.turnAround, statusTransitions.signOut],
+  [ResponderStatus.Available]: [statusTransitions.departBase],
+  [ResponderStatus.Assigned]: [statusTransitions.resetStatus],
+  [ResponderStatus.Demobilized]: [statusTransitions.signOut, statusTransitions.signIn, statusTransitions.arriveBase],
+  [ResponderStatus.SignedOut]: [statusTransitions.signIn, statusTransitions.standBy, statusTransitions.inTown],
+}
+
+const futureOptions: Record<ResponderStatus, { id: number, newStatus: ResponderStatus, text: string }[]> = {
+  [ResponderStatus.NotResponding]: [statusTransitions.standBy],
+  [ResponderStatus.Standby]: [statusTransitions.standDown],
+  [ResponderStatus.Remote]: [statusTransitions.resetStatus],
+  [ResponderStatus.SignedIn]: [statusTransitions.resetStatus],
+  [ResponderStatus.Available]: [statusTransitions.resetStatus],
+  [ResponderStatus.Assigned]: [statusTransitions.resetStatus],
+  [ResponderStatus.Demobilized]: [statusTransitions.resetStatus],
+  [ResponderStatus.SignedOut]: [statusTransitions.standBy],
+}
+
+const fourHourEarlySigninWindow = 4 * 60 * 60 * 1000;
+
+function isFuture(time: number) {
+  return (time - fourHourEarlySigninWindow) > new Date().getTime();
+};
+
+function getStatusOptions(current: ResponderStatus|undefined, startTime: number) {
+  let status = current ?? ResponderStatus.NotResponding;
+  if (isFuture(startTime)) {
+    return futureOptions[status];
   }
-  if (startTime - 60 * 60 * 1000 > now) {
-    return ResponderStatus.Standby;
-  }
-  return ResponderStatus.SignedIn;
+  return statusOptions[status];
 }
 
 export const StatusUpdater = ({activity, current}: {activity: Activity, current?: ResponderStatus}) => {
@@ -44,6 +73,7 @@ const StatusUpdaterProtected = ({activity, current, user, thisOrg}: {activity: A
   const [ confirming, setConfirming ] = useState<boolean>(false);
   const [ confirmTitle, setConfirmTitle ] = useState<string>('');
   const [ confirmStatus, setConfirmStatus ] = useState<ResponderStatus>(ResponderStatus.SignedIn);
+  const [ confirmLabel, setConfirmLabel ] = useState<string>('');
 
   current = current ?? activity.participants[user.participantId]?.timeline[0]?.status;
 
@@ -58,19 +88,21 @@ const StatusUpdaterProtected = ({activity, current, user, thisOrg}: {activity: A
   );
 
 
-  function confirmPrompt(title: string, newStatus: ResponderStatus) {
+  function confirmPrompt(title: string, optionId: number) {
+    let option = Object.values(statusTransitions).find(f => f.id === optionId);
     setConfirmTitle(title);
-    setConfirmStatus(newStatus);
+    setConfirmStatus(option?.newStatus ?? 0);
+    setConfirmLabel(option?.text ?? '');
     setConfirming(true);
   }
 
-  const recommendedAction = getRecommendedAction(current, activity.startTime);
+  const actions = getStatusOptions(current, activity.startTime);
   return (
     <>
       <SplitButton
-        options={options}
-        selected={recommendedAction}
-        onClick={(newStatus) => { confirmPrompt('Update Status', newStatus)}}
+        options={actions}
+        selected={actions[0].id}
+        onClick={(optionId) => { confirmPrompt('Update Status', optionId)}}
       />
       <Dialog
         open={confirming}
@@ -85,7 +117,7 @@ const StatusUpdaterProtected = ({activity, current, user, thisOrg}: {activity: A
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setConfirming(false)}>Cancel</Button>
-            <Button type="submit" autoFocus>{optionTexts[confirmStatus]}</Button>
+            <Button type="submit" autoFocus>{confirmLabel}</Button>
           </DialogActions>
         </form>
       </Dialog>
