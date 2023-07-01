@@ -44,10 +44,10 @@ export const OutputText = ({ label, value }: { label: string, value?: string }) 
   );
 }
 
-export const OutputLink = ({ label, value, href, target }: { label: string, value?: string, href: string, target?: '_blank' | '_parent' | '_self' | '_top' }) => {
+export const OutputLink = ({ label, value, href, target }: { label: string, value?: string, href?: string, target?: '_blank' | '_parent' | '_self' | '_top' }) => {
   return (
     <OutputField label={label}>
-      <Link href={href} target={target ?? '_blank'}>{value}</Link>
+      <Link href={href ?? '#'} target={target ?? '_blank'}>{value}</Link>
     </OutputField>
   );
 }
