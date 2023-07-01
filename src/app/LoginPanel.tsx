@@ -39,28 +39,30 @@ export default function LoginPanel() {
       dispatch(OrgActions.set({ mine: res.organization }));
     } else {
       const organization = res.organization;
-      let supportEmail: string | undefined = undefined;
+      let supportContact: string | undefined = undefined;
       let memberProviderName = undefined;
 
       if (organization) {
-        supportEmail = organization.supportEmail;
+        supportContact = organization.supportEmail;
         memberProviderName = MemberProviderName[organization.memberProvider];
       }
+
+      supportContact ??= "your unit's operations leader";
 
       switch (res.error) {
         case AuthError.USER_NOT_KNOWN:
           if (memberProviderName) {
             setError(`Could not find your email address in ${memberProviderName}`);
-            setErrorDetails(`Please log in with an email address in your ${memberProviderName} profile. If your email address is not in your profile, contact ${supportEmail ?? "your unit's operations leader"} for support.`);
+            setErrorDetails(`Please log in with an email address in your ${memberProviderName} profile. If your email address is not in your profile, contact ${supportContact} for support.`);
           } else {
             setError("Could not find your email address");
-            setErrorDetails(`Please log in with an authorized email address or contact ${supportEmail ?? "your unit's operations leader"} for support.`);
+            setErrorDetails(`Please log in with an authorized email address or contact ${supportContact} for support.`);
           }
           break;
         
         default:
           setError("Error logging in" + (res.error ? ` - ${res.error}` : ""));
-          setErrorDetails(`Please try again. If you continue encountering this error, contact ${supportEmail ?? "your unit's operations leader"}.`);
+          setErrorDetails(`Please try again. If you continue encountering this error, contact ${supportContact}.`);
           break;
       }
       
