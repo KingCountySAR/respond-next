@@ -3,6 +3,7 @@ import { MemberProviderRegistry } from './memberProviders/memberProvider';
 import D4HMembersProvider from './memberProviders/d4hMembersProvider';
 import SocketManager from './socketManager';
 import { StateManager } from './stateManager';
+import { MemberProviderType } from '@respond/types/data/MemberProviderType'
 
 export interface Services {
   authClient: OAuth2Client;
@@ -24,7 +25,7 @@ export async function getServices(): Promise<Services> {
     };
 
     //defaultMembersRepositoryRegistry.register('LocalDatabaseMembers', new LocalDatabaseMembersProvider(repo, this.log));
-    instance.memberProviders.register('D4HMembers', new D4HMembersProvider());
+    instance.memberProviders.register(MemberProviderType.D4H, new D4HMembersProvider());
 
     await instance.stateManager.start();
   }

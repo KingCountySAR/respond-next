@@ -1,5 +1,7 @@
-export interface D4HConfig {
-  provider: 'd4hMembers',
+import { MemberProviderType } from './MemberProviderType'
+
+export interface MemberProviderConfig {
+  provider: MemberProviderType,
   token: string,
   moreEmailsField: 'Secondary Email',
 }
@@ -24,9 +26,10 @@ export interface OrganizationDoc {
     primary: string;
     primaryDark?: string;
   };
-  memberProvider: D4HConfig;
+  memberProvider: MemberProviderConfig;
   canCreateEvents: boolean;
   canCreateMissions: boolean;
+  supportEmail?: string;
   partners: OrganizationPartner[];
   tags?: {
     groupId: string;
