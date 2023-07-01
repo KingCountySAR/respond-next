@@ -11,21 +11,24 @@ export const EventTile = ({ activity, status, children }: { activity: Activity, 
 
     return (
       <Card>
-        <Box paddingX={1} paddingTop={1} sx={{ display: "flex", flexDirection: "row" }} alignItems="center">
-          <Box sx={{ flexGrow: 1 }}>
-            <Link href={getActivityPath(activity)} color="textPrimary" underline="hover">
-              <Typography sx={{ fontWeight: "bold" }} variant="h6">
-                {activity.title}
-              </Typography>
-            </Link>
+        <Box padding={1}>
+          <Box sx={{ pb: 2, display: "flex", flexDirection: "row" }} alignItems="center">
+            <Box sx={{ flexGrow: 1 }}>
+              <Link href={getActivityPath(activity)} color="textPrimary" underline="hover">
+                <Typography sx={{ fontWeight: "bold" }} variant="h6">
+                  {activity.title}
+                </Typography>
+              </Link>
+            </Box>
+            <Box>
+              {status && <StatusChip status={status} />}
+            </Box>
           </Box>
-          <Box>
-            {status && <StatusChip status={status} />}
-          </Box>
+          <Box>{children}</Box>
         </Box>
-        <Box sx={{ px: 1 }}>{children}</Box>
+        
         {isActive(activity) && (
-          <CardActions sx={{ p: 1 }}>
+          <CardActions>
             <Grid container justifyContent="space-between" alignItems="center">
               <Grid item>
                 {activity.mapId && 
