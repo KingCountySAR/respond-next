@@ -39,7 +39,7 @@ const OutputField = ({ label, children }: { label: string, children: React.React
 export const OutputText = ({ label, value }: { label: string, value?: string }) => {
   return (
     <OutputField label={label}>
-      <Typography variant="body1">{value}</Typography>
+      {(value !== undefined) && <Typography variant="body1">{value}</Typography>}
     </OutputField>
   );
 }
@@ -47,7 +47,7 @@ export const OutputText = ({ label, value }: { label: string, value?: string }) 
 export const OutputLink = ({ label, value, href, target }: { label: string, value?: string, href?: string, target?: '_blank' | '_parent' | '_self' | '_top' }) => {
   return (
     <OutputField label={label}>
-      <Link href={href ?? '#'} target={target ?? '_blank'}>{value}</Link>
+      {(value !== undefined) && <Link href={href ?? '#'} target={target ?? '_blank'}>{value}</Link>}
     </OutputField>
   );
 }
@@ -65,7 +65,7 @@ export const OutputTime = ({ label, time, relative }: { label: string, time?: nu
 
   return (
     <OutputField label={label}>
-      <RelativeTimeText time={time ?? 0} baseTime={nowTime} defaultToTime={!relative} />
+      {time && <RelativeTimeText time={time} baseTime={nowTime} defaultToTime={!relative} />}
     </OutputField>
   );
 }
