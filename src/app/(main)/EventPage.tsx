@@ -73,14 +73,9 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
 
   const [promptingRemove, setPromptingRemove ] = useState<boolean>(false);
   const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
-  const [ nowTime, setNowTime ] = useState<number>(new Date().getTime());
 
   useEffect(() => {
     document.title = `${activity?.idNumber} ${activity?.title}`;
-    const interval = setInterval(() => setNowTime(new Date().getTime()), 5000);
-    return () => {
-      clearInterval(interval);
-    }
   }, [activity]);
 
   const org = useAppSelector(state => state.organization.mine);
