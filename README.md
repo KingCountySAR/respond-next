@@ -84,7 +84,7 @@ Remember that your username/password in the connection string are for the databa
 
 ### Add Google auth configuration
 - Setup an OAuth 2.0 Client web app with Google (See https://support.google.com/cloud/answer/6158849?hl=en#zippy=%2Cweb-applications).
-	- In the OAuth Client, add hostnames `http://localhost:3000` and `http://localhost` to the Authorized Javascript Origins.
+	- In the OAuth Client, add hostnames `http://localhost:3000` and `http://localhost` (`http://localhost` possibly not required? Shouldn't be used by the site) to the Authorized Javascript Origins.
 - Add authentication information to `.env.local`:
 ```
 GOOGLE_ID=<client-id>.apps.googleusercontent.com
@@ -105,7 +105,7 @@ Most of the site should auto-compile and update when the source file is saved. O
 As updates are made, the site will re-compile on demand (page load). You may notice a delay when navigating between pages.
 
 ### SSL Proxy
-There are parts of the application (specifically Google authentication, possibly future geolocation) that don't work on an insecure (http://) site. To get into a secure context, we'll use an SSL proxy. HTTPS traffic on port 9001 is forwarded to an HTTP server on port 3000. If needed you can run a proxy using npx. In this case you probably need to update your OAuth client's Authorized Javascript Origins to include `https://localhost:9001` and `https://localhost`,
+There are parts of the application (specifically Google authentication, possibly future geolocation) that don't work on an insecure (http://) site. To get into a secure context, we'll use an SSL proxy. HTTPS traffic on port 9001 is forwarded to an HTTP server on port 3000. If needed you can run a proxy using npx. In this case you probably need to update your OAuth client's Authorized Javascript Origins to include `https://localhost:9001` and `https://localhost` (`https://localhost` possibly not required? Shouldn't be used by the site).
 
 In another terminal window, start the proxy:
 ```bash
