@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, ListItemText, Stack, Typography } from "@mui/material"; 
+import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Paper, Stack, Typography } from "@mui/material"; 
 import differenceInDays from 'date-fns/differenceInDays';
 import formatDate from 'date-fns/format';
 
 import DeleteIcon from "@mui/icons-material/Delete";
-import { RelativeTimeText } from "@respond/components/RelativeTimeText";
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
 import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
@@ -15,6 +14,9 @@ import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-da
 
 import styles from './EventPage.module.css';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
+import { OutputForm } from '@respond/components/OutputForm';
+import { OutputField } from '@respond/components/OutputField';
+import { OutputTime } from '@respond/components/OutputTime';
 
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
@@ -93,8 +95,8 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   } else {
     const isActivityActive = isActive(activity)
     body = (
-      <Box>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="start" sx={{mt:2, mb:2}}>
+      <Paper sx={{ p: 2, mb: 4 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="start" sx={{ mb:2}}>
           <Typography variant="h4" flexGrow={1}>{activity.title}</Typography>
           
           <Stack direction="row" spacing={1} alignItems="center">
@@ -104,14 +106,21 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
           </Stack>
         </Stack>
 
-        <Box>Location: {activity.location.title}</Box>
-        {!!activity.mapId && <Box>Map: <Link href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">{activity.mapId}</Link></Box>}
-        <Box>State #: {activity.idNumber}</Box>
-        {activity.ownerOrgId !== org?.id && <Box>Agency: {activity.organizations[activity.ownerOrgId]?.title}</Box>}
-        <Box>Start Time: <RelativeTimeText time={activity.startTime} baseTime={nowTime}/></Box>
-        {!isActivityActive && <Box>End Time: <RelativeTimeText time={activity.endTime ?? 0} baseTime={nowTime}/></Box>}
+        <OutputForm>
+          <Box>
+            <OutputField label="Location" value={activity.location.title} />
+            <OutputField label="State #" value={activity.idNumber} />
+            <OutputField label="Agency" value={activity.organizations[activity.ownerOrgId]?.title} />
+            <OutputField label="Map" value={activity.mapId} href={`https://sartopo.com/m/${activity.mapId}`} />
+          </Box>
+          <Box>
+            <OutputField label="Status" value={isActivityActive ? 'In Progress' : 'Complete'} />
+            <OutputTime label="Start Time" time={activity.startTime}></OutputTime>
+            <OutputTime label="End Time" time={activity.endTime}></OutputTime>
+          </Box>
+        </OutputForm>
 
-        <Box sx={{mt:2, mb:2}}>
+        <Box sx={{ my:2 }}>
           {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
         </Box>
 
@@ -128,19 +137,9 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
               );
             })}
           </Box>
-          {/* <List>
-          {Object.entries(activity.organizations ?? {}).map(([id, org]) => (
-            <ListItem key={id}>
-              <ListItemText
-                primary={org.rosterName ?? org.title}
-                secondary={<>{`${OrganizationStatus[org.timeline[0]?.status]} as of`} <RelativeTimeText time={org.timeline[0]?.time ?? 0} baseTime={nowTime} lowercase={true} /></>}
-              />
-            </ListItem>
-          ))}
-          </List> */}
         </Box>
 
-        <Box sx={{ mb: 4 }}>
+        <Box>
           <Typography>Roster:</Typography>
           <Roster participants={activity.participants} orgs={activity.organizations} startTime={activity.startTime} />
         </Box>
@@ -174,7 +173,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
              }}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
           </DialogActions>
         </Dialog>
-      </Box>
+      </Paper>
     )
   }
 
