@@ -140,7 +140,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
           </List> */}
         </Box>
 
-        <Box>
+        <Box sx={{ mb: 4 }}>
           <Typography>Roster:</Typography>
           <Roster participants={activity.participants} orgs={activity.organizations} startTime={activity.startTime} />
         </Box>
