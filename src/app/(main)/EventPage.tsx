@@ -14,9 +14,7 @@ import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-da
 
 import styles from './EventPage.module.css';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
-import { OutputForm } from '@respond/components/OutputForm';
-import { OutputField } from '@respond/components/OutputField';
-import { OutputTime } from '@respond/components/OutputTime';
+import { OutputForm, OutputLink, OutputText, OutputTime } from '@respond/components/OutputForm';
 
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
@@ -103,13 +101,13 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
 
         <OutputForm>
           <Box>
-            <OutputField label="Location" value={activity.location.title} />
-            <OutputField label="State #" value={activity.idNumber} />
-            <OutputField label="Agency" value={activity.organizations[activity.ownerOrgId]?.title} />
-            <OutputField label="Map" value={activity.mapId} href={`https://sartopo.com/m/${activity.mapId}`} />
+            <OutputText label="Location" value={activity.location.title} />
+            <OutputText label="State #" value={activity.idNumber} />
+            <OutputText label="Agency" value={activity.organizations[activity.ownerOrgId]?.title} />
+            <OutputLink label="Map" value={activity.mapId} href={`https://sartopo.com/m/${activity.mapId}`} />
           </Box>
           <Box>
-            <OutputField label="Status" value={isActivityActive ? 'In Progress' : 'Complete'} />
+            <OutputText label="Status" value={isActivityActive ? 'In Progress' : 'Complete'} />
             <OutputTime label="Start Time" time={activity.startTime}></OutputTime>
             <OutputTime label="End Time" time={activity.endTime}></OutputTime>
           </Box>
