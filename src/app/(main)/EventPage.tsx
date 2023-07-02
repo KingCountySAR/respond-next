@@ -16,6 +16,8 @@ import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-da
 import styles from './EventPage.module.css';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 
+import { STATUS_TEXT } from './StatusChip';
+
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
     params, // GridRowParams
@@ -29,24 +31,26 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
   const rows: GridRowsProp = Object.values(participants).filter(f => f.timeline[0].status !== ResponderStatus.Unavailable).map(f => ({
     ...f,
     orgName: orgs[f.organizationId]?.rosterName ?? orgs[f.organizationId]?.title,
-    status: f.timeline[0].status,
+    fullName: f.lastname + ", " + f.firstname,
+    statusColor: f.timeline[0].status,
+    statusDescription: STATUS_TEXT[f.timeline[0].status],
     time: f.timeline[0].time,
   }));
   
   const columns: GridColDef[] = [
-    { field: 'status', headerName: '', width: 10, minWidth:15, valueFormatter: () => '', disableColumnMenu: true,
+    { field: 'statusColor', headerName: '', width: 10, minWidth:15, valueFormatter: () => '', disableColumnMenu: true,
       cellClassName: ({value}: { value?: ResponderStatus}) => `roster-status roster-status-${ResponderStatus[value!]}`},
-    { field: 'lastname', headerName: 'Last Name', minWidth:15, flex: 1, cellClassName: styles.rosterNameCell },
-    { field: 'firstname', headerName: 'First Name', minWidth: 15, flex: 1, cellClassName: styles.rosterNameCell },
-    { field: 'orgName', headerName: 'Organization', flex: 1, renderCell: o => {
+    { field: 'fullName', headerName: 'Name', minWidth:15, flex: 1, cellClassName: styles.rosterNameCell },
+    { field: 'orgName', headerName: 'Org', flex: 1, renderCell: o => {
       return <div>
         <div>{o.value}</div>
         <div style={{fontSize: '80%'}}>{o.row.tags?.join(', ')}</div>
       </div>
     } },
+    { field: 'statusDescription', headerName: 'Status', minWidth:15, flex: 1},
     { field: 'time', headerName: 'Time', valueFormatter: o => {
       const dayDiff = differenceInDays(startTime, o.value);
-      return `${dayDiff > 0 ? dayDiff + '+' : ''}${formatDate(o.value, 'HHmm')}`;
+      return `${dayDiff != 0 ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HH:mm')}`;
     }, flex: 1 },
   ];
 
@@ -60,6 +64,7 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
       hideFooter
       rowSelection={false}
       onRowClick={handleRowClick}
+      getRowHeight={() => 'auto'}
     />
   )
 }

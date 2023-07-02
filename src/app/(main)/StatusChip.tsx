@@ -9,7 +9,7 @@ const STATUS_COLORS: Record<ResponderStatus, 'success'|'error'|'warning'|'disabl
   [ResponderStatus.Unavailable]: 'disabled'
 };
 
-const STATUS_TEXT: Record<ResponderStatus, string> = {
+export const STATUS_TEXT: Record<ResponderStatus, string> = {
   [ResponderStatus.SignedIn]: 'Signed In',
   [ResponderStatus.SignedOut]: 'Signed Out',
   [ResponderStatus.Standby]: 'Standby',
