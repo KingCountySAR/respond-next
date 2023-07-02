@@ -6,6 +6,20 @@ div.roster :global(div.MuiDataGrid-cell):focus {
   outline: none;
 }
 
-.roster :global(.roster-status-SignedIn) {
+.roster :global(.roster-status-Standby) {
+  background-color: orange;
+}
+
+.roster :global(.roster-status-SignedIn),
+.roster :global(.roster-status-Available),
+.roster :global(.roster-status-Assigned) {
   background-color: green;
+}
+
+.roster :global(.roster-status-Demobilized) {
+  background-color: darkred;
+}
+
+.roster :global(.roster-status-Remote) {
+  background-color: blue;
 }
