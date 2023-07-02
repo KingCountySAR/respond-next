@@ -1,21 +1,20 @@
-import { useEffect, useState } from "react";
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, ListItemText, Stack, Typography } from "@mui/material"; 
+import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Stack, Typography } from "@mui/material";
 import differenceInDays from 'date-fns/differenceInDays';
 import formatDate from 'date-fns/format';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
 
 import DeleteIcon from "@mui/icons-material/Delete";
+import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
 import { RelativeTimeText } from "@respond/components/RelativeTimeText";
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
-import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
 import { ActivityActions } from '@respond/lib/state';
-import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
+import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
 
-import styles from './EventPage.module.css';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
-
+import styles from './EventPage.module.css';
 import { STATUS_TEXT } from './StatusChip';
 
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
@@ -49,8 +48,8 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
     } },
     { field: 'statusDescription', headerName: 'Status', minWidth:15, flex: 1},
     { field: 'time', headerName: 'Time', valueFormatter: o => {
-      const dayDiff = differenceInDays(startTime, o.value);
-      return `${dayDiff != 0 ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HH:mm')}`;
+      const isToday = new Date().setHours(0,0,0,0) === new Date(o.value).setHours(0,0,0,0);
+      return `${!isToday ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HH:mm')}`;
     }, flex: 1 },
   ];
 
