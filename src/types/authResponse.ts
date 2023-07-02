@@ -2,6 +2,7 @@ import { MyOrganization } from './organization'
 import { UserInfo } from './userInfo'
 
 export interface AuthResponse {
-    userInfo: UserInfo | undefined
-    organization: MyOrganization | undefined
+    userInfo?: UserInfo
+    organization?: MyOrganization
+    error?: string
 }

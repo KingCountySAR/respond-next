@@ -74,7 +74,7 @@ export const BasicReducers: ActivityReducers = {
       if (person) {
         const lastUpdate = person.timeline[0];
         if (lastUpdate.organizationId !== payload.participant.organizationId) {
-          if (lastUpdate.status !== ResponderStatus.SignedOut && lastUpdate.status !== ResponderStatus.Unavailable) {
+          if (lastUpdate.status !== ResponderStatus.SignedOut && lastUpdate.status !== ResponderStatus.NotResponding) {
             person.timeline.unshift({ organizationId: lastUpdate.organizationId, time: payload.update.time, status: ResponderStatus.SignedOut });
           }
           person.tags = undefined;

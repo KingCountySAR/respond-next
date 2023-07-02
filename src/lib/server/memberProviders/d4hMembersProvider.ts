@@ -65,11 +65,15 @@ export default class D4HMembersProvider implements MemberProvider {
       throw new Error("Server is out of sync with member database");
     }
 
-    const info = this.tokenFetchInfo[config.token]?.lookup[this.tokenFetchInfo[config.token]?.authEmailToD4HId?.[auth.email]].memberInfo;
-    return {
-      ...info,
-      id: `${organizationId}:${info.id}`,
-    };
+    const info = this.tokenFetchInfo[config.token]?.lookup[this.tokenFetchInfo[config.token]?.authEmailToD4HId?.[auth.email]]?.memberInfo;
+    if (info) {
+      return {
+        ...info,
+        id: `${organizationId}:${info.id}`,
+      };
+    } else {
+      return undefined;
+    }
   }
 
   private async initialize() {

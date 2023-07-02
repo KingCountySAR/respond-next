@@ -7,6 +7,7 @@ import * as Auth from '@respond/lib/server/auth';
 import { MemberProvider } from '@respond/lib/server/memberProviders/memberProvider';
 import { TokenPayload } from 'google-auth-library';
 import { AuthResponse } from '@respond/types/authResponse'
+import { AuthError } from '@respond/lib/apiErrors'
 
 async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -34,11 +35,12 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
     }
     
     if (!payload) {
-      res.status(500).json({message: 'Could not get ticket'});
+      res.status(500).json({error: AuthError.NO_TICKET});
       return;
     }
+
     if (!payload.email) {
-      res.status(500).json({message: 'Could not get user email'});
+      res.status(500).json({error: AuthError.NO_EMAIL});
       return;
     }
 
@@ -46,14 +48,14 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
     const organization = await Mongo.getOrganizationForDomain(domain);
     if (!organization) {
       console.log(`${payload.email} trying to login with unknown domain ${domain}`);
-      res.status(403).json({message: 'Invalid domain'});
+      res.status(403).json({error: AuthError.INVALID_DOMAIN});
       return;
     }
 
     memberProvider = (await getServices()).memberProviders.get(organization.memberProvider?.provider);
     if (!memberProvider) {
       console.log(`Can't find memberProvider for org ${organization.id}: ${organization.memberProvider?.provider}`);
-      res.status(500).json({message: 'Invalid configuration'});
+      res.status(500).json({error: AuthError.INVALID_CONFIGURATION});
       return;
     }
 
@@ -61,12 +63,12 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
       provider: 'google',
       email: payload.email,
     };
+    
     const memberInfo = await memberProvider.getMemberInfo(organization.id, authInfo, organization.memberProvider);
     if (!memberInfo) {
-      res.status(403).json({error: 'User not known' });
+      res.status(403).json({error: AuthError.USER_NOT_KNOWN });
       return;
     }
-
 
     req.session.auth = {
       email: payload.email,
@@ -88,8 +90,9 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
 
     res.json(responseBody);
   } catch (error) {
-    res.status(500).json({message: (error as Error).message });
+    res.status(500).json({error: (error as Error).message });
   }
+  
   res.end();
   memberProvider?.refresh();
 }

@@ -13,11 +13,41 @@ const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[])
 }
 
 export enum ResponderStatus {
-  Unavailable = 0,
+  NotResponding = 0,
+  Remote = 1,
   Standby = 2,
   SignedIn = 3,
   SignedOut = 4,
+  Available = 5,
+  Assigned = 6,
+  Demobilized = 7,
 }
+
+export function isActive(status: ResponderStatus) {
+  return [
+    ResponderStatus.Standby,
+    ResponderStatus.Remote,
+    ResponderStatus.SignedIn,
+    ResponderStatus.Available,
+    ResponderStatus.Assigned,
+    ResponderStatus.Demobilized
+  ].includes(status);
+}
+
+export function isInTransit(status: ResponderStatus) {
+  return [
+    ResponderStatus.SignedIn,
+    ResponderStatus.Demobilized
+  ].includes(status);
+}
+
+export function isCheckedIn(status: ResponderStatus) {
+  return [
+    ResponderStatus.Available,
+    ResponderStatus.Assigned
+  ].includes(status);
+}
+
 export enum OrganizationStatus {
   Unknown = 0,
   Invited = 1,
