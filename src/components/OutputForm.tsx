@@ -5,7 +5,6 @@ import { useEffect, useState, useRef } from 'react';
 import { RelativeTimeText } from './RelativeTimeText';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { ContactEmergency } from '@mui/icons-material';
 
 const DEFAULT_LINE_HEIGHT_PIXELS = 24;
 
