@@ -54,15 +54,15 @@ export const OutputText = ({ label, value }: { label: string, value?: string }) 
 export const OutputTextArea = ({ label, value, rows }: { label: string, value?: string, rows?: number }) => {
 
   const rowLimit = Math.max(rows ?? 0, 0);
-  const maxHeightPixels = DEFAULT_LINE_HEIGHT_PIXELS * rowLimit;
+  const collapsedHeightPixels = DEFAULT_LINE_HEIGHT_PIXELS * rowLimit;
 
   const contentElement = useRef<any>(null);
   const isCollapsible = useRef<boolean>(false);
 
   useEffect(() => {
-    isCollapsible.current = !!maxHeightPixels && maxHeightPixels < contentElement.current?.offsetHeight;
+    isCollapsible.current = !!collapsedHeightPixels && collapsedHeightPixels < contentElement.current?.offsetHeight;
     setCollapse(isCollapsible.current);
-  }, [maxHeightPixels]);
+  }, [collapsedHeightPixels]);
 
   const [collapse, setCollapse] = useState<boolean>(false);
   const handleClick = () => {
