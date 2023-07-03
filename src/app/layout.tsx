@@ -50,14 +50,14 @@ export default async function RootLayout({
     })) ?? [],
   } : undefined;
 
-  const favicon = org?.brand.favicon;
-  const homeScreenIcon = org?.brand.homeScreenIcon;
+  const faviconUrl = org?.brand.faviconUrl;
+  const homeScreenIconUrl = org?.brand.homeScreenIconUrl;
 
   return (
     <html lang="en">
       <head>
-        { favicon && <link rel="icon" href={ favicon } /> }
-        { homeScreenIcon && <link rel="apple-touch-icon" href={ homeScreenIcon } /> }
+        { faviconUrl && <link rel="icon" href={ faviconUrl } /> }
+        { homeScreenIconUrl && <link rel="apple-touch-icon" href={ homeScreenIconUrl } /> }
       </head>
       <body id="root">
         <ClientOnly>

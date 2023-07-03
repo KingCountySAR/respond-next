@@ -23,8 +23,8 @@ export interface OrganizationDoc {
   brand: {
     primary: string;
     primaryDark?: string;
-    favicon?: string;
-    homeScreenIcon?: string;
+    faviconUrl?: string;
+    homeScreenIconUrl?: string;
   };
   memberProvider: D4HConfig;
   canCreateEvents: boolean;
