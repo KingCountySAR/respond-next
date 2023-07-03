@@ -12,8 +12,7 @@ import { Activity, isActive as isResponderStatusActive } from '@respond/types/ac
 import addDays from 'date-fns/addDays'
 import { EventTile } from './EventTile';
 import { OrganizationChip } from './OrganizationChip';
-import { OutputForm } from '@respond/components/OutputForm';
-import { OutputField } from '@respond/components/OutputField';
+import { OutputForm, OutputText } from '@respond/components/OutputForm';
 
 //const inter = Inter({ subsets: ['latin'] })
 
@@ -65,8 +64,8 @@ export default function Home() {
             {myCurrentActivities.map(up => (
               <EventTile key={up.activity.id} activity={up.activity} status={up.status.status}>
                 <OutputForm>
-                  <OutputField label="Location" value={up.activity.location.title} />
-                  <OutputField label="Active Responders" value={getActiveParticipants(up.activity).length.toString()} />
+                  <OutputText label="Location" value={up.activity.location.title} />
+                  <OutputText label="Active Responders" value={getActiveParticipants(up.activity).length.toString()} />
                 </OutputForm>
               </EventTile>
             ))}
@@ -82,9 +81,9 @@ export default function Home() {
           {missions.map(a => (
             <EventTile key={a.id} activity={a} status={getMyStatus(a)}>
               <OutputForm>
-                <OutputField label="Location" value={a.location.title} />
-                <OutputField label="Active Responders" value={getActiveParticipants(a).length.toString()} />
-                <OutputField label="State #" value={a.idNumber} />
+                <OutputText label="Location" value={a.location.title} />
+                <OutputText label="Active Responders" value={getActiveParticipants(a).length.toString()} />
+                <OutputText label="State #" value={a.idNumber} />
               </OutputForm>
               <Box sx={{ pt: 2 }}>
                   {Object.entries(a.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} />)}
@@ -103,9 +102,9 @@ export default function Home() {
           {events.map(a => (
             <EventTile key={a.id} activity={a}>
               <OutputForm>
-                <OutputField label="Location" value={a.location.title} />
-                <OutputField label="Participants" value={getActiveParticipants(a).length.toString()} />
-                <OutputField label="State #" value={a.idNumber} />
+                <OutputText label="Location" value={a.location.title} />
+                <OutputText label="Participants" value={getActiveParticipants(a).length.toString()} />
+                <OutputText label="State #" value={a.idNumber} />
               </OutputForm>
             </EventTile>
           ))}
