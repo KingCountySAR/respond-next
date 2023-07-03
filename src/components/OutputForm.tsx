@@ -52,7 +52,7 @@ export const OutputTextArea = ({ label, value }: { label: string, value?: string
     <OutputField label={label} multiline>
       {(value !== undefined) &&  (value.split('\n').map((v,i) => {
         if (v === '') {
-          return <br key={i} />
+          return (<Typography key={i} sx={{ lineHeight: .5 }} ><br /></Typography>)
         }
         return <Typography key={i} variant="body1">{v}</Typography>
       }))}
