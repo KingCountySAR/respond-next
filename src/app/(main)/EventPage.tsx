@@ -1,21 +1,19 @@
-import { useEffect, useState } from "react";
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Paper, Stack, Typography } from "@mui/material"; 
-import differenceInDays from 'date-fns/differenceInDays';
+import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Paper, Stack, Typography } from "@mui/material";
 import formatDate from 'date-fns/format';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 
 import DeleteIcon from "@mui/icons-material/Delete";
+import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
 import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
 
-import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { OutputForm, OutputLink, OutputText, OutputTime } from '@respond/components/OutputForm';
+import { StatusUpdater } from '@respond/components/StatusUpdater';
+import styles from './EventPage.module.css';
 import { STATUS_TEXT } from './StatusChip';
 
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
