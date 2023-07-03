@@ -1,5 +1,6 @@
 .rosterNameCell {
   font-weight: bold;
+  min-height: 2.5lh !important;
 }
 
 div.roster :global(div.MuiDataGrid-cell):focus {
@@ -21,5 +22,5 @@ div.roster :global(div.MuiDataGrid-cell):focus {
 }
 
 .roster :global(.roster-status-Remote) {
-  background-color: blue;
+  background-color: turquoise;
 }
