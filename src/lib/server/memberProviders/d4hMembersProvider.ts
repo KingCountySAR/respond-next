@@ -1,6 +1,6 @@
 import mongoPromise from '@respond/lib/server/mongodb';
 import { MemberAuthInfo, MemberInfo, MemberProvider } from "./memberProvider";
-import { D4HConfig, OrganizationDoc, ORGANIZATION_COLLECTION } from '@respond/types/data/organizationDoc';
+import { MemberProviderConfig, OrganizationDoc, ORGANIZATION_COLLECTION } from '@respond/types/data/organizationDoc';
 
 const D4H_MEMBER_REFRESH_SECS = 15 * 60;
 const D4H_FETCH_LIMIT = 250;
@@ -55,7 +55,7 @@ export default class D4HMembersProvider implements MemberProvider {
       throw new Error('Unknown Organization');
     }
 
-    const config = organization?.memberProvider as D4HConfig;
+    const config = organization?.memberProvider as MemberProviderConfig;
     if (!config || !config.token) {
       console.log("Could not find memberProvider config or D4H token for org " + organizationId);
       throw new Error("Invalid Configuration");

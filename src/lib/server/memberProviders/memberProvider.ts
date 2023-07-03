@@ -1,3 +1,5 @@
+import { MemberProviderType } from '@respond/types/data/MemberProviderType'
+
 export interface MemberInfo {
   id: string;
   groups: string[];
@@ -18,7 +20,7 @@ export interface MemberProvider {
 export class MemberProviderRegistry {
   private lookup: {[key:string]: MemberProvider} = {};
 
-  register(key: string, provider: MemberProvider) {
+  register(key: MemberProviderType, provider: MemberProvider) {
     this.lookup[key] = provider;
   }
 
