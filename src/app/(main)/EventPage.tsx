@@ -11,7 +11,7 @@ import { buildActivitySelector, isActive } from '@respond/lib/client/store/activ
 import { ActivityActions } from '@respond/lib/state';
 import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
 
-import { OutputForm, OutputLink, OutputText, OutputTime } from '@respond/components/OutputForm';
+import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import styles from './EventPage.module.css';
 import { STATUS_TEXT } from './StatusChip';
@@ -115,6 +115,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
             <OutputTime label="End Time" time={activity.endTime}></OutputTime>
           </Box>
         </OutputForm>
+        <OutputTextArea label="Description" value={activity.description}></OutputTextArea>
 
         <Box sx={{ my:2 }}>
           {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
