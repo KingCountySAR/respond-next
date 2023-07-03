@@ -50,9 +50,15 @@ export default async function RootLayout({
     })) ?? [],
   } : undefined;
 
+  const favicon = org?.brand.favicon;
+  const homeScreenIcon = org?.brand.homeScreenIcon;
+
   return (
     <html lang="en">
-      <head />
+      <head>
+        { favicon && <link rel="icon" href={ favicon } /> }
+        { homeScreenIcon && <link rel="apple-touch-icon" href={ homeScreenIcon } /> }
+      </head>
       <body id="root">
         <ClientOnly>
           <ClientProviders googleClient={process.env.GOOGLE_ID ?? ''} config={siteConfig} user={user} myOrg={myOrg}>
