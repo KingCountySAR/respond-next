@@ -48,9 +48,9 @@ export const OutputText = ({ label, value }: { label: string, value?: string }) 
   );
 }
 
-export const OutputTextArea = ({ label, value, maxHeight }: { label: string, value?: string, maxHeight?: number }) => {
+export const OutputTextArea = ({ label, value, rows }: { label: string, value?: string, rows?: number }) => {
 
-  let content = (value !== undefined) &&  (
+  const content = (value !== undefined) &&  (
     value.split('\n').map((v,i) => {
       if (v === '') {
         return (<Typography key={i}><br /></Typography>)
@@ -59,21 +59,21 @@ export const OutputTextArea = ({ label, value, maxHeight }: { label: string, val
     })
   )
 
-  const [collapse, setCollapse] = useState<boolean>(!!maxHeight);
+  const [collapse, setCollapse] = useState<boolean>(!!rows);
   const handleClick = () => {
-    if (!maxHeight) { return; }
+    if (!rows) { return; }
     setCollapse(!collapse);
   }
 
-  let linesToShow = collapse && (Math.max(maxHeight ?? 0, 0) > 0) ? maxHeight : undefined;
-  let cursorStyle = maxHeight ? 'pointer' : 'default';
+  let linesToShow = collapse && (Math.max(rows ?? 0, 0) > 0) ? rows : undefined;
+  let cursorStyle = rows ? 'pointer' : 'default';
 
   return (
       <OutputField label={label} multiline>
         <div style={{ overflow: "hidden", maxHeight: linesToShow && `${linesToShow}lh`, cursor: cursorStyle }} onClick={handleClick} >
           {content}
         </div>
-        {maxHeight &&
+        {rows &&
             <div onClick={handleClick} style={{ cursor: 'pointer' }}>
               <Box sx={{ display: "flex", flexDirection: 'row', alignItems: 'center' }}>
                 <Typography variant='caption'>{collapse ? 'show more' : 'show less'}</Typography>

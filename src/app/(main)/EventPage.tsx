@@ -115,7 +115,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
             <OutputTime label="End Time" time={activity.endTime}></OutputTime>
           </Box>
         </OutputForm>
-        <OutputTextArea label="Description" value={activity.description} maxHeight={3}></OutputTextArea>
+        <OutputTextArea label="Description" value={activity.description} rows={3}></OutputTextArea>
 
         <Box sx={{ my:2 }}>
           {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
