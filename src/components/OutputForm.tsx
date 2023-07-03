@@ -42,15 +42,7 @@ const OutputField = ({ label, multiline, children }: { label: string, multiline?
 
 }
 
-export const OutputText = ({ label, value }: { label: string, value?: string }) => {
-  return (
-    <OutputField label={label}>
-      {(value !== undefined) && <Typography variant="body1">{value}</Typography>}
-    </OutputField>
-  );
-}
-
-export const OutputTextArea = ({ label, value, rows }: { label: string, value?: string, rows?: number }) => {
+const OutputShowMore = ({children, rows}: {children: ReactNode, rows?: number}) => {
 
   const rowLimit = Math.max(rows ?? 0, 0);
   const collapsedHeightPixels = DEFAULT_LINE_HEIGHT_PIXELS * rowLimit;
@@ -72,34 +64,48 @@ export const OutputTextArea = ({ label, value, rows }: { label: string, value?: 
   let linesToShow = collapse && rowLimit ? rowLimit : undefined;
   let cursorStyle = isCollapsible.current ? 'pointer' : 'default';
 
-  const content = (value !== undefined) &&  (
-    value.split('\n').map((v,i) => {
-      if (v === '') {
-        return (<Typography key={i}><br /></Typography>)
-      }
-      return <Typography key={i} variant="body1">{v}</Typography>
-    })
-  )
-
-  const showMoreButton = isCollapsible.current && (
-    <div onClick={handleClick} style={{ cursor: 'pointer' }}>
-      <Box sx={{ display: "flex", flexDirection: 'row', alignItems: 'center' }}>
-        <Typography variant='caption'>{collapse ? 'show more' : 'show less'}</Typography>
-        {collapse && <ExpandMoreIcon fontSize='small' />}
-        {!collapse && <ExpandLessIcon fontSize='small' />}
-      </Box>
-    </div>
-  )
-
   return (
-      <OutputField label={label} multiline>
-        <div style={{ overflow: "hidden", maxHeight: linesToShow && `${linesToShow}lh`, cursor: cursorStyle }} onClick={handleClick} ref={contentElement}>
-          {content}
+    <>
+      <div style={{ overflow: "hidden", maxHeight: linesToShow && `${linesToShow}lh`, cursor: cursorStyle }} onClick={handleClick} ref={contentElement}>
+        {children}
+      </div>
+      {isCollapsible.current && (
+        <div onClick={handleClick} style={{ cursor: 'pointer' }}>
+          <Box sx={{ display: "flex", flexDirection: 'row', alignItems: 'center' }}>
+            <Typography variant='caption'>{collapse ? 'show more' : 'show less'}</Typography>
+            {collapse && <ExpandMoreIcon fontSize='small' />}
+            {!collapse && <ExpandLessIcon fontSize='small' />}
+          </Box>
         </div>
-        {showMoreButton}
-      </OutputField>
+      )}
+    </>
   );
 
+}
+
+export const OutputText = ({ label, value }: { label: string, value?: string }) => {
+  return (
+    <OutputField label={label}>
+      {(value !== undefined) && <Typography variant="body1">{value}</Typography>}
+    </OutputField>
+  );
+}
+
+export const OutputTextArea = ({ label, value, rows }: { label: string, value?: string, rows?: number }) => {
+  return (
+    <OutputField label={label} multiline>
+      <OutputShowMore rows={rows}>
+        {(value !== undefined) && (
+          value.split('\n').map((v,i) => {
+            if (v === '') {
+              return (<Typography key={i}><br /></Typography>)
+            }
+            return <Typography key={i} variant="body1">{v}</Typography>
+          })
+        )}
+      </OutputShowMore>
+    </OutputField>
+  );
 }
 
 export const OutputLink = ({ label, value, href, target }: { label: string, value?: string, href?: string, target?: '_blank' | '_parent' | '_self' | '_top' }) => {
