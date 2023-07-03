@@ -47,6 +47,7 @@ In your MongoDB database, make sure there is a collection called `organizations`
   "id": "1",
   "canCreateEvents": true,
   "canCreateMissions": false,
+  "supportEmail": "support@cascaderescueteam.org",
   "partners": [
     {
       "id": "2",
