@@ -48,7 +48,7 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
     { field: 'statusDescription', headerName: 'Status', minWidth:15, flex: 1},
     { field: 'time', headerName: 'Time', valueFormatter: o => {
       const isToday = new Date().setHours(0,0,0,0) === new Date(o.value).setHours(0,0,0,0);
-      return `${!isToday ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HH:mm')}`;
+      return `${!isToday ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HHmm')}`;
     }, flex: 1 },
   ];
 
