@@ -123,7 +123,7 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
 
   return (<>
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Grid container spacing={1}>
+      <Grid container spacing={1} sx={{ mb: 4 }}>
 
         {/* Mission  */}
         <Grid item xs={12}>
