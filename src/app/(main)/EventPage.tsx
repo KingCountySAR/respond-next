@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
+import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Paper, Stack, Typography } from "@mui/material";
+import formatDate from 'date-fns/format';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, ListItemText, Stack, Typography } from "@mui/material"; 
-import differenceInDays from 'date-fns/differenceInDays';
-import formatDate from 'date-fns/format';
+import { useEffect, useState } from "react";
 
 import DeleteIcon from "@mui/icons-material/Delete";
-import { RelativeTimeText } from "@respond/components/RelativeTimeText";
+import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
-import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
 import { ActivityActions } from '@respond/lib/state';
-import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
+import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
 
-import styles from './EventPage.module.css';
+import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
+import styles from './EventPage.module.css';
+import { STATUS_TEXT } from './StatusChip';
 
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
@@ -29,24 +29,26 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
   const rows: GridRowsProp = Object.values(participants).filter(f => f.timeline[0].status !== ResponderStatus.NotResponding).map(f => ({
     ...f,
     orgName: orgs[f.organizationId]?.rosterName ?? orgs[f.organizationId]?.title,
-    status: f.timeline[0].status,
+    fullName: f.lastname + ", " + f.firstname,
+    statusColor: f.timeline[0].status,
+    statusDescription: STATUS_TEXT[f.timeline[0].status],
     time: f.timeline[0].time,
   }));
   
   const columns: GridColDef[] = [
-    { field: 'status', headerName: '', width: 10, minWidth:15, valueFormatter: () => '', disableColumnMenu: true,
+    { field: 'statusColor', headerName: '', width: 10, minWidth:15, valueFormatter: () => '', disableColumnMenu: true,
       cellClassName: ({value}: { value?: ResponderStatus}) => `roster-status roster-status-${ResponderStatus[value!]}`},
-    { field: 'lastname', headerName: 'Last Name', minWidth:15, flex: 1, cellClassName: styles.rosterNameCell },
-    { field: 'firstname', headerName: 'First Name', minWidth: 15, flex: 1, cellClassName: styles.rosterNameCell },
-    { field: 'orgName', headerName: 'Organization', flex: 1, renderCell: o => {
+    { field: 'fullName', headerName: 'Name', minWidth:15, flex: 1, cellClassName: styles.rosterNameCell },
+    { field: 'orgName', headerName: 'Org', flex: 1, renderCell: o => {
       return <div>
         <div>{o.value}</div>
         <div style={{fontSize: '80%'}}>{o.row.tags?.join(', ')}</div>
       </div>
     } },
+    { field: 'statusDescription', headerName: 'Status', minWidth:15, flex: 1},
     { field: 'time', headerName: 'Time', valueFormatter: o => {
-      const dayDiff = differenceInDays(startTime, o.value);
-      return `${dayDiff > 0 ? dayDiff + '+' : ''}${formatDate(o.value, 'HHmm')}`;
+      const isToday = new Date().setHours(0,0,0,0) === new Date(o.value).setHours(0,0,0,0);
+      return `${!isToday ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HH:mm')}`;
     }, flex: 1 },
   ];
 
@@ -60,6 +62,7 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
       hideFooter
       rowSelection={false}
       onRowClick={handleRowClick}
+      getRowHeight={() => 'auto'}
     />
   )
 }
@@ -71,14 +74,9 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
 
   const [promptingRemove, setPromptingRemove ] = useState<boolean>(false);
   const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
-  const [ nowTime, setNowTime ] = useState<number>(new Date().getTime());
 
   useEffect(() => {
     document.title = `${activity?.idNumber} ${activity?.title}`;
-    const interval = setInterval(() => setNowTime(new Date().getTime()), 5000);
-    return () => {
-      clearInterval(interval);
-    }
   }, [activity]);
 
   const org = useAppSelector(state => state.organization.mine);
@@ -93,8 +91,8 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   } else {
     const isActivityActive = isActive(activity)
     body = (
-      <Box>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="start" sx={{mt:2, mb:2}}>
+      <Paper sx={{ p: 2, mb: 4 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="start" sx={{ mb:2}}>
           <Typography variant="h4" flexGrow={1}>{activity.title}</Typography>
           
           <Stack direction="row" spacing={1} alignItems="center">
@@ -104,14 +102,22 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
           </Stack>
         </Stack>
 
-        <Box>Location: {activity.location.title}</Box>
-        {!!activity.mapId && <Box>Map: <Link href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">{activity.mapId}</Link></Box>}
-        <Box>State #: {activity.idNumber}</Box>
-        {activity.ownerOrgId !== org?.id && <Box>Agency: {activity.organizations[activity.ownerOrgId]?.title}</Box>}
-        <Box>Start Time: <RelativeTimeText time={activity.startTime} baseTime={nowTime}/></Box>
-        {!isActivityActive && <Box>End Time: <RelativeTimeText time={activity.endTime ?? 0} baseTime={nowTime}/></Box>}
+        <OutputForm>
+          <Box>
+            <OutputText label="Location" value={activity.location.title} />
+            <OutputText label="State #" value={activity.idNumber} />
+            <OutputText label="Agency" value={activity.organizations[activity.ownerOrgId]?.title} />
+            <OutputLink label="Map" value={activity.mapId} href={`https://sartopo.com/m/${activity.mapId}`} />
+          </Box>
+          <Box>
+            <OutputText label="Status" value={isActivityActive ? 'In Progress' : 'Complete'} />
+            <OutputTime label="Start Time" time={activity.startTime}></OutputTime>
+            <OutputTime label="End Time" time={activity.endTime}></OutputTime>
+          </Box>
+        </OutputForm>
+        <OutputTextArea label="Description" value={activity.description}></OutputTextArea>
 
-        <Box sx={{mt:2, mb:2}}>
+        <Box sx={{ my:2 }}>
           {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
         </Box>
 
@@ -128,16 +134,6 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
               );
             })}
           </Box>
-          {/* <List>
-          {Object.entries(activity.organizations ?? {}).map(([id, org]) => (
-            <ListItem key={id}>
-              <ListItemText
-                primary={org.rosterName ?? org.title}
-                secondary={<>{`${OrganizationStatus[org.timeline[0]?.status]} as of`} <RelativeTimeText time={org.timeline[0]?.time ?? 0} baseTime={nowTime} lowercase={true} /></>}
-              />
-            </ListItem>
-          ))}
-          </List> */}
         </Box>
 
         <Box>
@@ -174,7 +170,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
              }}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
           </DialogActions>
         </Dialog>
-      </Box>
+      </Paper>
     )
   }
 
