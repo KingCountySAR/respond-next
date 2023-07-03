@@ -1,6 +1,7 @@
 import ClientOnly from '@respond/components/ClientOnly';
 import { getCookieAuth, userFromAuth } from '@respond/lib/server/auth';
 import { getOrganizationForRequest } from '@respond/lib/server/request';
+import { MyOrganization } from '@respond/types/organization'
 import { headers } from 'next/headers';
 import ClientProviders, { SiteConfig } from './ClientProviders';
 import "./globals.css"
@@ -34,13 +35,14 @@ export default async function RootLayout({
   };
 
   const user = userFromAuth(await getCookieAuth());
-  const myOrg = (user && org) ? {
+  const myOrg: MyOrganization | undefined = (user && org) ? {
     id: org.id,
     rosterName: org.rosterName,
-    mouName: org.mouName,
     title: org.title,
     canCreateMissions: org.canCreateMissions,
     canCreateEvents: org.canCreateEvents,
+    memberProvider: org.memberProvider.provider,
+    supportEmail: org.supportEmail,
     partners: org.partners?.map(p => ({
       id: p.id,
       title: p.title,
@@ -50,9 +52,15 @@ export default async function RootLayout({
     })) ?? [],
   } : undefined;
 
+  const faviconUrl = org?.brand.faviconUrl;
+  const homeScreenIconUrl = org?.brand.homeScreenIconUrl;
+
   return (
     <html lang="en">
-      <head />
+      <head>
+        { faviconUrl && <link rel="icon" href={ faviconUrl } /> }
+        { homeScreenIconUrl && <link rel="apple-touch-icon" href={ homeScreenIconUrl } /> }
+      </head>
       <body id="root">
         <ClientOnly>
           <ClientProviders googleClient={process.env.GOOGLE_ID ?? ''} config={siteConfig} user={user} myOrg={myOrg}>

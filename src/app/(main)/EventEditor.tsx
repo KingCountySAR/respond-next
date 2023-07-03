@@ -123,7 +123,7 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
 
   return (<>
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Grid container spacing={1}>
+      <Grid container spacing={1} sx={{ mb: 4 }}>
 
         {/* Mission  */}
         <Grid item xs={12}>
@@ -221,7 +221,19 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
           </FormControl>
         </Grid>
 
-        
+        <Grid item xs={12}>
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <FormControl fullWidth error={!!errors.title?.message}>
+                <TextField {...field} multiline variant="filled" label="Description" />
+                <FormHelperText>{errors.title?.message}</FormHelperText>
+              </FormControl>
+            )}
+          />
+        </Grid>
+
         {activityType === 'missions' ? null : (
           <Grid item xs={12}>
             <FormGroup>
@@ -249,6 +261,7 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
             <Button type="submit" variant="contained">Save {activityType === 'missions' ? 'Mission' : 'Event'}</Button>
           </Stack>
         </Grid>
+
       </Grid>
     </form>
   </>

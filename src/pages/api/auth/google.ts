@@ -8,6 +8,7 @@ import { MemberProvider } from '@respond/lib/server/memberProviders/memberProvid
 import { TokenPayload } from 'google-auth-library';
 import { AuthResponse } from '@respond/types/authResponse'
 import { AuthError } from '@respond/lib/apiErrors'
+import { MyOrganization } from '@respond/types/organization'
 
 async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -35,27 +36,49 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
     }
     
     if (!payload) {
-      res.status(500).json({error: AuthError.NO_TICKET});
+      const error: AuthResponse = {
+        error: AuthError.NO_TICKET,
+      }
+
+      res.status(500).json(error);
       return;
     }
 
     if (!payload.email) {
-      res.status(500).json({error: AuthError.NO_EMAIL});
+      const error: AuthResponse = {
+        error: AuthError.NO_EMAIL,
+      }
+
+      res.status(500).json(error);
       return;
     }
 
     const domain = req.headers.host?.split(':')[0] ?? '';
-    const organization = await Mongo.getOrganizationForDomain(domain);
-    if (!organization) {
+    const organizationDoc = await Mongo.getOrganizationForDomain(domain);
+    if (!organizationDoc) {
       console.log(`${payload.email} trying to login with unknown domain ${domain}`);
-      res.status(403).json({error: AuthError.INVALID_DOMAIN});
+      const error: AuthResponse = {
+        error: AuthError.INVALID_DOMAIN,
+      }
+
+      res.status(403).json(error);
       return;
     }
 
-    memberProvider = (await getServices()).memberProviders.get(organization.memberProvider?.provider);
+    const organization: MyOrganization = {
+      ...organizationDoc,
+      memberProvider: organizationDoc.memberProvider.provider,
+    }
+
+    memberProvider = (await getServices()).memberProviders.get(organizationDoc.memberProvider.provider);
     if (!memberProvider) {
-      console.log(`Can't find memberProvider for org ${organization.id}: ${organization.memberProvider?.provider}`);
-      res.status(500).json({error: AuthError.INVALID_CONFIGURATION});
+      console.log(`Can't find memberProvider for org ${organization.id}: ${organizationDoc.memberProvider?.provider}`);
+      const error: AuthResponse = {
+        error: AuthError.INVALID_CONFIGURATION,
+        organization,
+      }
+
+      res.status(500).json(error);
       return;
     }
 
@@ -64,9 +87,14 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
       email: payload.email,
     };
     
-    const memberInfo = await memberProvider.getMemberInfo(organization.id, authInfo, organization.memberProvider);
+    const memberInfo = await memberProvider.getMemberInfo(organizationDoc.id, authInfo, organizationDoc.memberProvider);
     if (!memberInfo) {
-      res.status(403).json({error: AuthError.USER_NOT_KNOWN });
+      const error: AuthResponse = {
+        error: AuthError.USER_NOT_KNOWN,
+        organization,
+      }
+
+      res.status(403).json(error);
       return;
     }
 
