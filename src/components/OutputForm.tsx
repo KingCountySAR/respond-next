@@ -1,9 +1,10 @@
-import { Grid } from '@mui/material';
+import { Box, Typography, Grid, Button } from '@mui/material';
 import React, { ReactNode } from 'react';
-import { Box, Typography } from '@mui/material';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { RelativeTimeText } from './RelativeTimeText';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 export const OutputForm = ({ children }: { children: ReactNode }) => {
 
@@ -25,7 +26,7 @@ export const OutputForm = ({ children }: { children: ReactNode }) => {
 
 }
 
-const OutputField = ({ label, multiline, children, }: { label: string, multiline?: boolean, children: React.ReactNode }) => {
+const OutputField = ({ label, multiline, children }: { label: string, multiline?: boolean, children: React.ReactNode }) => {
 
   const flexDirection = multiline ? 'column' : 'Row';
   const alignItems = multiline ? 'start' : 'center';
@@ -47,17 +48,43 @@ export const OutputText = ({ label, value }: { label: string, value?: string }) 
   );
 }
 
-export const OutputTextArea = ({ label, value }: { label: string, value?: string }) => {
+export const OutputTextArea = ({ label, value, maxHeight }: { label: string, value?: string, maxHeight?: number }) => {
+
+  let content = (value !== undefined) &&  (
+    value.split('\n').map((v,i) => {
+      if (v === '') {
+        return (<Typography key={i}><br /></Typography>)
+      }
+      return <Typography key={i} variant="body1">{v}</Typography>
+    })
+  )
+
+  const [collapse, setCollapse] = useState<boolean>(!!maxHeight);
+  const handleClick = () => {
+    if (!maxHeight) { return; }
+    setCollapse(!collapse);
+  }
+
+  let linesToShow = collapse && (Math.max(maxHeight ?? 0, 0) > 0) ? maxHeight : undefined;
+  let cursorStyle = maxHeight ? 'pointer' : 'default';
+
   return (
-    <OutputField label={label} multiline>
-      {(value !== undefined) &&  (value.split('\n').map((v,i) => {
-        if (v === '') {
-          return (<Typography key={i} sx={{ lineHeight: .5 }} ><br /></Typography>)
+      <OutputField label={label} multiline>
+        <div style={{ overflow: "hidden", maxHeight: linesToShow && `${linesToShow}lh`, cursor: cursorStyle }} onClick={handleClick} >
+          {content}
+        </div>
+        {maxHeight &&
+            <div onClick={handleClick} style={{ cursor: 'pointer' }}>
+              <Box sx={{ display: "flex", flexDirection: 'row', alignItems: 'center' }}>
+                <Typography variant='caption'>{collapse ? 'show more' : 'show less'}</Typography>
+                {collapse && <ExpandMoreIcon fontSize='small' />}
+                {!collapse && <ExpandLessIcon fontSize='small' />}
+              </Box>
+            </div>
         }
-        return <Typography key={i} variant="body1">{v}</Typography>
-      }))}
-    </OutputField>
+      </OutputField>
   );
+
 }
 
 export const OutputLink = ({ label, value, href, target }: { label: string, value?: string, href?: string, target?: '_blank' | '_parent' | '_self' | '_top' }) => {
