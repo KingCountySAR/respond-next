@@ -1,10 +1,13 @@
 import { Box, Typography, Grid } from '@mui/material';
 import React, { ReactNode } from 'react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { RelativeTimeText } from './RelativeTimeText';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { ContactEmergency } from '@mui/icons-material';
+
+const DEFAULT_LINE_HEIGHT_PIXELS = 24;
 
 export const OutputForm = ({ children }: { children: ReactNode }) => {
 
@@ -50,6 +53,26 @@ export const OutputText = ({ label, value }: { label: string, value?: string }) 
 
 export const OutputTextArea = ({ label, value, rows }: { label: string, value?: string, rows?: number }) => {
 
+  const rowLimit = Math.max(rows ?? 0, 0);
+  const maxHeightPixels = DEFAULT_LINE_HEIGHT_PIXELS * rowLimit;
+
+  const contentElement = useRef<any>(null);
+  const isCollapsible = useRef<boolean>(false);
+
+  useEffect(() => {
+    isCollapsible.current = !!maxHeightPixels && maxHeightPixels < contentElement.current?.offsetHeight;
+    setCollapse(isCollapsible.current);
+  }, [maxHeightPixels]);
+
+  const [collapse, setCollapse] = useState<boolean>(false);
+  const handleClick = () => {
+    if (!isCollapsible.current) { return; }
+    setCollapse(!collapse);
+  }
+
+  let linesToShow = collapse && rowLimit ? rowLimit : undefined;
+  let cursorStyle = isCollapsible.current ? 'pointer' : 'default';
+
   const content = (value !== undefined) &&  (
     value.split('\n').map((v,i) => {
       if (v === '') {
@@ -59,29 +82,22 @@ export const OutputTextArea = ({ label, value, rows }: { label: string, value?: 
     })
   )
 
-  const [collapse, setCollapse] = useState<boolean>(!!rows);
-  const handleClick = () => {
-    if (!rows) { return; }
-    setCollapse(!collapse);
-  }
-
-  let linesToShow = collapse && (Math.max(rows ?? 0, 0) > 0) ? rows : undefined;
-  let cursorStyle = rows ? 'pointer' : 'default';
+  const showMoreButton = isCollapsible.current && (
+    <div onClick={handleClick} style={{ cursor: 'pointer' }}>
+      <Box sx={{ display: "flex", flexDirection: 'row', alignItems: 'center' }}>
+        <Typography variant='caption'>{collapse ? 'show more' : 'show less'}</Typography>
+        {collapse && <ExpandMoreIcon fontSize='small' />}
+        {!collapse && <ExpandLessIcon fontSize='small' />}
+      </Box>
+    </div>
+  )
 
   return (
       <OutputField label={label} multiline>
-        <div style={{ overflow: "hidden", maxHeight: linesToShow && `${linesToShow}lh`, cursor: cursorStyle }} onClick={handleClick} >
+        <div style={{ overflow: "hidden", maxHeight: linesToShow && `${linesToShow}lh`, cursor: cursorStyle }} onClick={handleClick} ref={contentElement}>
           {content}
         </div>
-        {rows &&
-            <div onClick={handleClick} style={{ cursor: 'pointer' }}>
-              <Box sx={{ display: "flex", flexDirection: 'row', alignItems: 'center' }}>
-                <Typography variant='caption'>{collapse ? 'show more' : 'show less'}</Typography>
-                {collapse && <ExpandMoreIcon fontSize='small' />}
-                {!collapse && <ExpandLessIcon fontSize='small' />}
-              </Box>
-            </div>
-        }
+        {showMoreButton}
       </OutputField>
   );
 
