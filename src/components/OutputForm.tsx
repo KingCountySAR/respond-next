@@ -25,11 +25,14 @@ export const OutputForm = ({ children }: { children: ReactNode }) => {
 
 }
 
-const OutputField = ({ label, children }: { label: string, children: React.ReactNode }) => {
+const OutputField = ({ label, multiline, children, }: { label: string, multiline?: boolean, children: React.ReactNode }) => {
+
+  const flexDirection = multiline ? 'column' : 'Row';
+  const alignItems = multiline ? 'start' : 'center';
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderColor: 'grey.200' }} borderBottom={1} >
-      <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: "2em" }}>{label}:</Typography>
+    <Box sx={{ display: "flex", flexDirection: {flexDirection}, alignItems: {alignItems}, justifyContent: "space-between", borderColor: 'grey.200' }} borderBottom={1} >
+      <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: "2em" }}>{label}</Typography>
       {children}
     </Box>
   );
@@ -40,6 +43,19 @@ export const OutputText = ({ label, value }: { label: string, value?: string }) 
   return (
     <OutputField label={label}>
       {(value !== undefined) && <Typography variant="body1">{value}</Typography>}
+    </OutputField>
+  );
+}
+
+export const OutputTextArea = ({ label, value }: { label: string, value?: string }) => {
+  return (
+    <OutputField label={label} multiline>
+      {(value !== undefined) &&  (value.split('\n').map((v,i) => {
+        if (v === '') {
+          return <br key={i} />
+        }
+        return <Typography key={i} variant="body1">{v}</Typography>
+      }))}
     </OutputField>
   );
 }

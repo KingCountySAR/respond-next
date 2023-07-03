@@ -14,7 +14,7 @@ import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-da
 
 import styles from './EventPage.module.css';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
-import { OutputForm, OutputLink, OutputText, OutputTime } from '@respond/components/OutputForm';
+import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
 
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
@@ -112,6 +112,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
             <OutputTime label="End Time" time={activity.endTime}></OutputTime>
           </Box>
         </OutputForm>
+        <OutputTextArea label="Description" value={activity.description}></OutputTextArea>
 
         <Box sx={{ my:2 }}>
           {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}

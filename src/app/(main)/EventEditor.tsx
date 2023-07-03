@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 //import { Link as Link, useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller, SubmitHandler, Resolver, ResolverResult } from "react-hook-form";
-import { Box, Button, FormControl, FormControlLabel, FormHelperText, FormGroup, Stack, Switch, TextField, InputLabel, Select, MenuItem, Grid } from "@mui/material";
+import { Box, Button, FormControl, FormControlLabel, FormHelperText, FormGroup, Stack, Switch, TextField, InputLabel, Select, MenuItem, Grid, TextareaAutosize } from "@mui/material";
 import { parse as parseDate } from "date-fns";
 
 // import { useAppSelector, useAppDispatch } from "../../app/hooks";
@@ -221,7 +221,19 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
           </FormControl>
         </Grid>
 
-        
+        <Grid item xs={12}>
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <FormControl fullWidth error={!!errors.title?.message}>
+                <TextField {...field} multiline variant="filled" label="Description" />
+                <FormHelperText>{errors.title?.message}</FormHelperText>
+              </FormControl>
+            )}
+          />
+        </Grid>
+
         {activityType === 'missions' ? null : (
           <Grid item xs={12}>
             <FormGroup>
@@ -249,6 +261,7 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
             <Button type="submit" variant="contained">Save {activityType === 'missions' ? 'Mission' : 'Event'}</Button>
           </Stack>
         </Grid>
+
       </Grid>
     </form>
   </>
