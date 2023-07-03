@@ -47,7 +47,7 @@ export default function LoginPanel() {
         memberProviderName = MemberProviderName[organization.memberProvider];
       }
 
-      supportContact ??= "your unit's operations leader";
+      supportContact ??= "your unit's system administrator";
 
       switch (res.error) {
         case AuthError.USER_NOT_KNOWN:
