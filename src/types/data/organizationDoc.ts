@@ -25,6 +25,8 @@ export interface OrganizationDoc {
   brand: {
     primary: string;
     primaryDark?: string;
+    faviconUrl?: string;
+    homeScreenIconUrl?: string;
   };
   memberProvider: MemberProviderConfig;
   canCreateEvents: boolean;
