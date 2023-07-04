@@ -128,10 +128,10 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
           </Box>
           <Box>
             <OutputText label="Mission Status" value={getActivityStatus(activity)} />
-            <OutputText label="Active Responders" value={Object.values(activity.participants).reduce(reduceActive, 0)}></OutputText>
-            <OutputText label="Standby" value={Object.values(activity.participants).reduce(reduceStandby, 0)}></OutputText>
-            <OutputText label="Responding" value={Object.values(activity.participants).reduce(reduceSignedIn, 0)}></OutputText>
-            <OutputText label="Checked-In" value={Object.values(activity.participants).reduce(reduceCheckedIn, 0)}></OutputText>
+            <OutputText label="Active Responders" value={Object.values(activity.participants).reduce(reduceActive, 0).toString()}></OutputText>
+            <OutputText label="Standby" value={Object.values(activity.participants).reduce(reduceStandby, 0).toString()}></OutputText>
+            <OutputText label="Responding" value={Object.values(activity.participants).reduce(reduceSignedIn, 0).toString()}></OutputText>
+            <OutputText label="Checked-In" value={Object.values(activity.participants).reduce(reduceCheckedIn, 0).toString()}></OutputText>
             <OutputTime label="Start Time" time={activity.startTime}></OutputTime>
             <OutputTime label="End Time" time={activity.endTime}></OutputTime>
           </Box>
