@@ -105,6 +105,7 @@ export function getActivityStatus(a: Activity) {
   if (isStarted(a)) { return 'In Progress' }
   if (isOpen(a)) { return 'Open For Sign In' }
   if (isPending(a)) { return 'Not Started' }
+  return '';
 }
 
 export function getActivityPath(activity: Activity) {

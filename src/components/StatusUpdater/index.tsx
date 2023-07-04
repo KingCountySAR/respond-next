@@ -46,7 +46,7 @@ const futureStatusOptions: Record<ResponderStatus, { id: number, newStatus: Resp
 
 function getStatusOptions(current: ResponderStatus|undefined, startTime: number) {
   let status = current ?? ResponderStatus.NotResponding;
-  if (isFuture(startTime- earlySigninWindow)) {
+  if (isFuture(startTime - earlySigninWindow)) {
     return futureStatusOptions[status];
   }
   return statusOptions[status];
