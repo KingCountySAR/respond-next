@@ -1,9 +1,12 @@
-import { Grid } from '@mui/material';
+import { Box, Typography, Grid } from '@mui/material';
 import React, { ReactNode } from 'react';
-import { Box, Typography } from '@mui/material';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { RelativeTimeText } from './RelativeTimeText';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+
+const DEFAULT_LINE_HEIGHT_PIXELS = 24;
 
 export const OutputForm = ({ children }: { children: ReactNode }) => {
 
@@ -25,7 +28,7 @@ export const OutputForm = ({ children }: { children: ReactNode }) => {
 
 }
 
-const OutputField = ({ label, multiline, children, }: { label: string, multiline?: boolean, children: React.ReactNode }) => {
+const OutputField = ({ label, multiline, children }: { label: string, multiline?: boolean, children: React.ReactNode }) => {
 
   const flexDirection = multiline ? 'column' : 'Row';
   const alignItems = multiline ? 'start' : 'center';
@@ -39,6 +42,47 @@ const OutputField = ({ label, multiline, children, }: { label: string, multiline
 
 }
 
+const OutputShowMore = ({children, rows}: {children: ReactNode, rows?: number}) => {
+
+  const rowLimit = Math.max(rows ?? 0, 0);
+  const collapsedHeightPixels = DEFAULT_LINE_HEIGHT_PIXELS * rowLimit;
+
+  const contentElement = useRef<any>(null);
+  const isCollapsible = useRef<boolean>(false);
+
+  useEffect(() => {
+    isCollapsible.current = !!collapsedHeightPixels && collapsedHeightPixels < contentElement.current?.offsetHeight;
+    setCollapse(isCollapsible.current);
+  }, [collapsedHeightPixels]);
+
+  const [collapse, setCollapse] = useState<boolean>(false);
+  const handleClick = () => {
+    if (!isCollapsible.current) { return; }
+    setCollapse(!collapse);
+  }
+
+  let linesToShow = collapse && rowLimit ? rowLimit : undefined;
+  let cursorStyle = isCollapsible.current ? 'pointer' : 'default';
+
+  return (
+    <>
+      <div style={{ overflow: "hidden", maxHeight: linesToShow && `${linesToShow}lh`, cursor: cursorStyle }} onClick={handleClick} ref={contentElement}>
+        {children}
+      </div>
+      {isCollapsible.current && (
+        <div onClick={handleClick} style={{ cursor: 'pointer' }}>
+          <Box sx={{ display: "flex", flexDirection: 'row', alignItems: 'center' }}>
+            <Typography variant='caption'>{collapse ? 'show more' : 'show less'}</Typography>
+            {collapse && <ExpandMoreIcon fontSize='small' />}
+            {!collapse && <ExpandLessIcon fontSize='small' />}
+          </Box>
+        </div>
+      )}
+    </>
+  );
+
+}
+
 export const OutputText = ({ label, value }: { label: string, value?: string }) => {
   return (
     <OutputField label={label}>
@@ -47,15 +91,19 @@ export const OutputText = ({ label, value }: { label: string, value?: string }) 
   );
 }
 
-export const OutputTextArea = ({ label, value }: { label: string, value?: string }) => {
+export const OutputTextArea = ({ label, value, rows }: { label: string, value?: string, rows?: number }) => {
   return (
     <OutputField label={label} multiline>
-      {(value !== undefined) &&  (value.split('\n').map((v,i) => {
-        if (v === '') {
-          return (<Typography key={i} sx={{ lineHeight: .5 }} ><br /></Typography>)
-        }
-        return <Typography key={i} variant="body1">{v}</Typography>
-      }))}
+      <OutputShowMore rows={rows}>
+        {(value !== undefined) && (
+          value.split('\n').map((v,i) => {
+            if (v === '') {
+              return (<Typography key={i}><br /></Typography>)
+            }
+            return <Typography key={i} variant="body1">{v}</Typography>
+          })
+        )}
+      </OutputShowMore>
     </OutputField>
   );
 }

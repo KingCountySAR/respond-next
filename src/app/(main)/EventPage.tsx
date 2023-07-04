@@ -7,14 +7,15 @@ import { useEffect, useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
+import { buildActivitySelector, isActive, getActivityStatus } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
-import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
+import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus, isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn } from '@respond/types/activity';
 
 import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import styles from './EventPage.module.css';
 import { STATUS_TEXT } from './StatusChip';
+import { OrganizationChip } from './OrganizationChip';
 
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
@@ -48,7 +49,7 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
     { field: 'statusDescription', headerName: 'Status', minWidth:15, flex: 1},
     { field: 'time', headerName: 'Time', valueFormatter: o => {
       const isToday = new Date().setHours(0,0,0,0) === new Date(o.value).setHours(0,0,0,0);
-      return `${!isToday ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HH:mm')}`;
+      return `${!isToday ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HHmm')}`;
     }, flex: 1 },
   ];
 
@@ -83,6 +84,22 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   const user = useAppSelector(state => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
 
+  const reduceActive = (count: number, participant: Participant) => {
+    return count + (isParticpantActive(participant?.timeline[0].status) ? 1 : 0);
+  }
+
+  const reduceStandby = (count: number, participant: Participant) => {
+    return count + (participant?.timeline[0].status === ResponderStatus.Standby ? 1 : 0);
+  }
+
+  const reduceSignedIn = (count: number, participant: Participant) => {
+    return count + (participant?.timeline[0].status === ResponderStatus.SignedIn ? 1 : 0);
+  }
+
+  const reduceCheckedIn = (count: number, participant: Participant) => {
+    return count + (isParticpantCheckedIn(participant?.timeline[0].status) ? 1 : 0);
+  }
+
   let body;
   if (!org) {
     body = (<div>Loading org...</div>);
@@ -110,12 +127,16 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
             <OutputLink label="Map" value={activity.mapId} href={`https://sartopo.com/m/${activity.mapId}`} />
           </Box>
           <Box>
-            <OutputText label="Status" value={isActivityActive ? 'In Progress' : 'Complete'} />
+            <OutputText label="Mission Status" value={getActivityStatus(activity)} />
+            <OutputText label="Active Responders" value={Object.values(activity.participants).reduce(reduceActive, 0).toString()}></OutputText>
+            <OutputText label="Standby" value={Object.values(activity.participants).reduce(reduceStandby, 0).toString()}></OutputText>
+            <OutputText label="Responding" value={Object.values(activity.participants).reduce(reduceSignedIn, 0).toString()}></OutputText>
+            <OutputText label="Checked-In" value={Object.values(activity.participants).reduce(reduceCheckedIn, 0).toString()}></OutputText>
             <OutputTime label="Start Time" time={activity.startTime}></OutputTime>
             <OutputTime label="End Time" time={activity.endTime}></OutputTime>
           </Box>
         </OutputForm>
-        <OutputTextArea label="Description" value={activity.description}></OutputTextArea>
+        <OutputTextArea label="Description" value={activity.description} rows={3}></OutputTextArea>
 
         <Box sx={{ my:2 }}>
           {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
@@ -123,16 +144,8 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
 
         <Box>
           <Typography>Participating Organizations:</Typography>
-          <Box sx={{ mb: 2}}>
-            {Object.entries(activity.organizations ?? {}).map(([id, org]) => {
-              const status = org.timeline[0]?.status;
-              const color = (status === OrganizationStatus.Responding) ? 'success' :
-                            (status === OrganizationStatus.Standby) ? 'warning' : 'default';
-
-              return (
-                <Chip key={id} sx={{m: 1}} label={org.rosterName ?? org.title} color={color} variant="outlined" />
-              );
-            })}
+          <Box sx={{ my: 2}}>
+            {Object.entries(activity.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} activity={activity} />)}
           </Box>
         </Box>
 

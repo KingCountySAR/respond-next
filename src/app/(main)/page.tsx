@@ -6,9 +6,9 @@ import { Box, Button, Stack, Typography, Chip } from "@mui/material";
 //import styles from './page.module.css';
 import { useAppSelector } from '@respond/lib/client/store';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, isActive, isComplete } from '@respond/lib/client/store/activities';
+import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete } from '@respond/lib/client/store/activities';
 import { useEffect } from 'react';
-import { Activity, isActive as isResponderStatusActive } from '@respond/types/activity';
+import { Activity, isActive as isResponderStatusActive, ParticipatingOrg } from '@respond/types/activity';
 import addDays from 'date-fns/addDays'
 import { EventTile } from './EventTile';
 import { OrganizationChip } from './OrganizationChip';
@@ -65,7 +65,7 @@ export default function Home() {
               <EventTile key={up.activity.id} activity={up.activity} status={up.status.status}>
                 <OutputForm>
                   <OutputText label="Location" value={up.activity.location.title} />
-                  <OutputText label="Active Responders" value={getActiveParticipants(up.activity).length.toString()} />
+                  <OutputText label="Mission Status" value={getActivityStatus(up.activity)} />
                 </OutputForm>
               </EventTile>
             ))}
@@ -81,12 +81,17 @@ export default function Home() {
           {missions.map(a => (
             <EventTile key={a.id} activity={a} status={getMyStatus(a)}>
               <OutputForm>
-                <OutputText label="Location" value={a.location.title} />
-                <OutputText label="Active Responders" value={getActiveParticipants(a).length.toString()} />
-                <OutputText label="State #" value={a.idNumber} />
+                <Box>
+                  <OutputText label="Location" value={a.location.title} />
+                  <OutputText label="State #" value={a.idNumber} />
+                </Box>
+                <Box>
+                  <OutputText label="Mission Status" value={getActivityStatus(a)} />
+                  <OutputText label="Active Responders" value={getActiveParticipants(a).length.toString()} />
+                </Box>
               </OutputForm>
               <Box sx={{ pt: 2 }}>
-                  {Object.entries(a.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} />)}
+                  {Object.entries(a.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} activity={a} />)}
               </Box>
             </EventTile>
           ))}
@@ -102,9 +107,14 @@ export default function Home() {
           {events.map(a => (
             <EventTile key={a.id} activity={a}>
               <OutputForm>
-                <OutputText label="Location" value={a.location.title} />
-                <OutputText label="Participants" value={getActiveParticipants(a).length.toString()} />
-                <OutputText label="State #" value={a.idNumber} />
+                <Box>
+                  <OutputText label="Location" value={a.location.title} />
+                  <OutputText label="State #" value={a.idNumber} />
+                </Box>
+                <Box>
+                  <OutputText label="Mission Status" value={getActivityStatus(a)} />
+                  <OutputText label="Active Participants" value={getActiveParticipants(a).length.toString()} />
+                </Box>
               </OutputForm>
             </EventTile>
           ))}
