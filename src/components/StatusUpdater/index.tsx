@@ -6,6 +6,7 @@ import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 import { SplitButton } from '../SplitButton';
 import { useFormLogic, UpdateStatusForm } from './UpdateStatusForm';
+import { isFuture, earlySigninWindow } from '@respond/lib/client/store/activities';
 
 const statusTransitions = {
   standBy: { id: 0, newStatus: ResponderStatus.Standby, text: 'Stand By' },
@@ -43,19 +44,9 @@ const futureStatusOptions: Record<ResponderStatus, { id: number, newStatus: Resp
   [ResponderStatus.SignedOut]: [statusTransitions.standBy],
 }
 
-/**
- * @description Members can sign in prior to the start time of a future mission.
- * @return 4 Hours in milliseconds.
- */
-const earlySigninWindow = 4 * 60 * 60 * 1000;
-
-function isFuture(time: number) {
-  return (time - earlySigninWindow) > new Date().getTime();
-};
-
 function getStatusOptions(current: ResponderStatus|undefined, startTime: number) {
   let status = current ?? ResponderStatus.NotResponding;
-  if (isFuture(startTime)) {
+  if (isFuture(startTime - earlySigninWindow)) {
     return futureStatusOptions[status];
   }
   return statusOptions[status];
