@@ -7,9 +7,9 @@ import { useEffect, useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
+import { buildActivitySelector, isActive, getActivityStatus } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
-import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
+import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus, isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn } from '@respond/types/activity';
 
 import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
@@ -83,6 +83,22 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   const user = useAppSelector(state => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
 
+  const reduceActive = (count: number, participant: Participant) => {
+    return count + (isParticpantActive(participant?.timeline[0].status) ? 1 : 0);
+  }
+
+  const reduceStandby = (count: number, participant: Participant) => {
+    return count + (participant?.timeline[0].status === ResponderStatus.Standby ? 1 : 0);
+  }
+
+  const reduceSignedIn = (count: number, participant: Participant) => {
+    return count + (participant?.timeline[0].status === ResponderStatus.SignedIn ? 1 : 0);
+  }
+
+  const reduceCheckedIn = (count: number, participant: Participant) => {
+    return count + (isParticpantCheckedIn(participant?.timeline[0].status) ? 1 : 0);
+  }
+
   let body;
   if (!org) {
     body = (<div>Loading org...</div>);
@@ -110,7 +126,11 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
             <OutputLink label="Map" value={activity.mapId} href={`https://sartopo.com/m/${activity.mapId}`} />
           </Box>
           <Box>
-            <OutputText label="Status" value={isActivityActive ? 'In Progress' : 'Complete'} />
+            <OutputText label="Mission Status" value={getActivityStatus(activity)} />
+            <OutputText label="Active Responders" value={Object.values(activity.participants).reduce(reduceActive, 0)}></OutputText>
+            <OutputText label="Standby" value={Object.values(activity.participants).reduce(reduceStandby, 0)}></OutputText>
+            <OutputText label="Responding" value={Object.values(activity.participants).reduce(reduceSignedIn, 0)}></OutputText>
+            <OutputText label="Checked-In" value={Object.values(activity.participants).reduce(reduceCheckedIn, 0)}></OutputText>
             <OutputTime label="Start Time" time={activity.startTime}></OutputTime>
             <OutputTime label="End Time" time={activity.endTime}></OutputTime>
           </Box>

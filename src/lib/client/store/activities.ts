@@ -70,12 +70,41 @@ export function buildMyActivitySelector() {
   }
 }
 
+/**
+ * @description Members can sign in prior to the start time of a future mission.
+ * @return 4 Hours in milliseconds.
+ */
+export const earlySigninWindow = 4 * 60 * 60 * 1000;
+
+export function isFuture(time: number) {
+  return time > new Date().getTime();
+};
+
+export function isPending(a: Activity) {
+  return isActive(a) && !isOpen(a);
+}
+
+export function isOpen(a: Activity) {
+  return isActive(a) && !isFuture(a.startTime - earlySigninWindow);
+}
+
+export function isStarted(a: Activity) {
+  return isActive(a) && !isFuture(a.startTime);
+}
+
 export function isActive(a: Activity) {
   return !isComplete(a);
 }
 
 export function isComplete(a: Activity) {
   return !!a.endTime;
+}
+
+export function getActivityStatus(a: Activity) {
+  if (isComplete(a)) { return 'Closed' }
+  if (isStarted(a)) { return 'In Progress' }
+  if (isOpen(a)) { return 'Open For Sign In' }
+  if (isPending(a)) { return 'Not Started' }
 }
 
 export function getActivityPath(activity: Activity) {

@@ -39,7 +39,7 @@ const OutputField = ({ label, multiline, children, }: { label: string, multiline
 
 }
 
-export const OutputText = ({ label, value }: { label: string, value?: string }) => {
+export const OutputText = ({ label, value }: { label: string, value?: string | number }) => {
   return (
     <OutputField label={label}>
       {(value !== undefined) && <Typography variant="body1">{value}</Typography>}
