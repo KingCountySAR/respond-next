@@ -15,6 +15,7 @@ import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import styles from './EventPage.module.css';
 import { STATUS_TEXT } from './StatusChip';
+import { OrganizationChip } from './OrganizationChip';
 
 const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
@@ -123,16 +124,8 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
 
         <Box>
           <Typography>Participating Organizations:</Typography>
-          <Box sx={{ mb: 2}}>
-            {Object.entries(activity.organizations ?? {}).map(([id, org]) => {
-              const status = org.timeline[0]?.status;
-              const color = (status === OrganizationStatus.Responding) ? 'success' :
-                            (status === OrganizationStatus.Standby) ? 'warning' : 'default';
-
-              return (
-                <Chip key={id} sx={{m: 1}} label={org.rosterName ?? org.title} color={color} variant="outlined" />
-              );
-            })}
+          <Box sx={{ my: 2}}>
+            {Object.entries(activity.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} activity={activity} />)}
           </Box>
         </Box>
 

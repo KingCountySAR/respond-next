@@ -8,7 +8,7 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
 import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, isActive, isComplete } from '@respond/lib/client/store/activities';
 import { useEffect } from 'react';
-import { Activity, isActive as isResponderStatusActive } from '@respond/types/activity';
+import { Activity, isActive as isResponderStatusActive, ParticipatingOrg } from '@respond/types/activity';
 import addDays from 'date-fns/addDays'
 import { EventTile } from './EventTile';
 import { OrganizationChip } from './OrganizationChip';
@@ -86,7 +86,7 @@ export default function Home() {
                 <OutputText label="State #" value={a.idNumber} />
               </OutputForm>
               <Box sx={{ pt: 2 }}>
-                  {Object.entries(a.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} />)}
+                  {Object.entries(a.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} activity={a} />)}
               </Box>
             </EventTile>
           ))}
