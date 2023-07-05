@@ -71,6 +71,7 @@ export interface Participant {
   timeline: ResponderUpdate[];
   tags?: string[];
   miles?: number;
+  eta?: number;
 }
 
 export interface ParticipatingOrg {

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 
 import DeleteIcon from "@mui/icons-material/Delete";
-import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridEventListener, GridRowHeightParams, GridRowsProp, GridToolbar, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarDensitySelector, GridToolbarExport, GridToolbarFilterButton } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive, getActivityStatus } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
@@ -34,6 +34,7 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
     statusColor: f.timeline[0].status,
     statusDescription: STATUS_TEXT[f.timeline[0].status],
     time: f.timeline[0].time,
+    eta: (f.timeline[0].status === ResponderStatus.SignedIn && f.eta) ? formatDate(f.eta,'HHmm') : '',
   }));
   
   const columns: GridColDef[] = [
@@ -51,7 +52,19 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
       const isToday = new Date().setHours(0,0,0,0) === new Date(o.value).setHours(0,0,0,0);
       return `${!isToday ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HHmm')}`;
     }, flex: 1 },
+    { field: 'eta', headerName: 'ETA', flex: 1},
   ];
+
+  function CustomToolbar() {
+    return (
+      <GridToolbarContainer>
+        <GridToolbarColumnsButton />
+        {false && <GridToolbarFilterButton />}
+        <GridToolbarDensitySelector />
+        {false && <GridToolbarExport />}
+      </GridToolbarContainer>
+    );
+  }
 
   return (
     <DataGrid
@@ -63,7 +76,20 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
       hideFooter
       rowSelection={false}
       onRowClick={handleRowClick}
-      getRowHeight={() => 'auto'}
+      getRowHeight={({ densityFactor }: GridRowHeightParams) => {
+        return 52 * densityFactor;
+      }}
+      slots={{
+        toolbar: CustomToolbar,
+      }}
+      initialState={{
+        columns: {
+          columnVisibilityModel: {
+            // Hide these columns, the other columns will remain visible
+            eta: false,
+          },
+        },
+      }}
     />
   )
 }
