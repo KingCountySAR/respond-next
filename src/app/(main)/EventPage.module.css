@@ -1,6 +1,5 @@
 .rosterNameCell {
   font-weight: bold;
-  min-height: 2.5lh !important;
 }
 
 div.roster :global(div.MuiDataGrid-cell):focus {

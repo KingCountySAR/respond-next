@@ -6,8 +6,13 @@ import { Activity, Participant, ResponderStatus } from '@respond/types/activity'
 import { UserInfo } from '@respond/types/userInfo';
 import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 import { FormControlLabel } from '@mui/material';
+import { MobileTimePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import dayjs from 'dayjs';
 
 interface FormValues {
+  eta: number,
   miles: number|'',
   addMiles: number|'',
 }
@@ -63,6 +68,7 @@ export function useFormLogic(
       new Date().getTime(),
       newStatus,
       data.miles === '' ? undefined : data.miles,
+      data.eta === null ? undefined : new Date(data.eta).getTime(),
     ));
     onFinish();
   };
@@ -160,6 +166,25 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
   );
 }
 
+const EtaInput = ({ existingEta, form: { control, errors } }: { form: FormLogic, existingEta: number|undefined }) => {
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Controller
+        name="eta"
+        control={control}
+        render={({ field }) => (
+          <FormControl fullWidth error={!!errors.eta?.message}>
+            <MobileTimePicker { ...field } label='ETA' value={existingEta ? dayjs(existingEta) : null} ampm={false} />
+            <FormHelperText>{errors.eta?.message}</FormHelperText>
+          </FormControl>
+        )}
+      />
+    </LocalizationProvider>
+  )
+
+}
+
 export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
   const { activity, participant, newStatus } = form.context;
 
@@ -168,6 +193,7 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
       <DialogContentText id="status-update-dialog-description">
         Change your status for {activity.title}?
       </DialogContentText>
+      {newStatus === ResponderStatus.SignedIn && <EtaInput form={form} existingEta={participant?.eta} />}
       {newStatus === ResponderStatus.SignedOut ? <MileageSection form={form} existingMiles={participant?.miles} /> : undefined}
     </Stack>
   );

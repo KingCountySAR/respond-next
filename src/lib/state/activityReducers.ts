@@ -48,6 +48,7 @@ export const BasicReducers: ActivityReducers = {
               ...participant,
               // avoid TypeScript error abount optional vs number|undefined
               miles: participant.miles,
+              eta: participant.eta,
             },
             update: {
               time: payload.endTime,
