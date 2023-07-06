@@ -22,7 +22,12 @@ const reactivate = createAction('activity/reactivate', (activityId: string) => (
   meta: { sync: true },
 }));
 
-const complete = createAction('activity/complete', (activityId: string, endTime: number) => ({
+const complete = createAction('activity/complete', (activityId: string, completeTime: number) => ({
+  payload: { id: activityId, completeTime },
+  meta: { sync: true },
+}));
+
+const closed = createAction('activity/closed', (activityId: string, endTime: number) => ({
   payload: { id: activityId, endTime },
   meta: { sync: true },
 }));
@@ -76,6 +81,7 @@ export const ActivityActions = {
   remove,
   reactivate,
   complete,
+  closed,
   appendOrganizationTimeline,
   participantUpdate,
   tagParticipant,

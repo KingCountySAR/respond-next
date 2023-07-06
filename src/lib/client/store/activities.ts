@@ -22,6 +22,7 @@ const activitiesSlice = createSlice({
       .addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type])
       .addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type])
       .addCase(ActivityActions.reactivate, BasicReducers[ActivityActions.reactivate.type])
+      .addCase(ActivityActions.closed, BasicReducers[ActivityActions.closed.type])
       .addCase(ActivityActions.complete, BasicReducers[ActivityActions.complete.type])
       .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type])
       .addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type])
@@ -81,27 +82,32 @@ export function isFuture(time: number) {
 };
 
 export function isPending(a: Activity) {
-  return isActive(a) && !isOpen(a);
+  return isActive(a) && isFuture(a.startTime - earlySigninWindow);
 }
 
 export function isOpen(a: Activity) {
-  return isActive(a) && !isFuture(a.startTime - earlySigninWindow);
+  return isActive(a) && !isFuture(a.startTime - earlySigninWindow) && isFuture(a.startTime);
 }
 
 export function isStarted(a: Activity) {
-  return isActive(a) && !isFuture(a.startTime);
-}
-
-export function isActive(a: Activity) {
-  return !isComplete(a);
+  return isActive(a) && !isFuture(a.startTime) && !isComplete(a);
 }
 
 export function isComplete(a: Activity) {
+  return isActive(a) && !!a.completeTime;
+}
+
+export function isActive(a: Activity) {
+  return !isClosed(a);
+}
+
+export function isClosed(a: Activity) {
   return !!a.endTime;
 }
 
 export function getActivityStatus(a: Activity) {
-  if (isComplete(a)) { return 'Closed' }
+  if (isClosed(a)) { return 'Closed' }
+  if (isComplete(a)) { return 'Complete' }
   if (isStarted(a)) { return 'In Progress' }
   if (isOpen(a)) { return 'Open For Sign In' }
   if (isPending(a)) { return 'Not Started' }
