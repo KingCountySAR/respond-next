@@ -6,7 +6,7 @@ import { Box, Button, Stack, Typography, Chip } from "@mui/material";
 //import styles from './page.module.css';
 import { useAppSelector } from '@respond/lib/client/store';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete } from '@respond/lib/client/store/activities';
+import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isClosed } from '@respond/lib/client/store/activities';
 import { useEffect } from 'react';
 import { Activity, isActive as isResponderStatusActive, ParticipatingOrg } from '@respond/types/activity';
 import addDays from 'date-fns/addDays'
@@ -22,7 +22,7 @@ function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible:
 
   const active = activities.filter(isActive).sort(sort);
   const complete = activities
-    .filter(a => isComplete(a) && a.startTime > oldestVisible)
+    .filter(a => isClosed(a) && a.startTime > oldestVisible)
     .sort(sort)
     .slice(0, maxCompletedVisible);
 

@@ -1,4 +1,4 @@
-import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Paper, Stack, Typography } from "@mui/material";
 import formatDate from 'date-fns/format';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -7,17 +7,19 @@ import { useEffect, useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector, isActive, getActivityStatus } from '@respond/lib/client/store/activities';
+import { buildActivitySelector, isActive, getActivityStatus, isComplete, isOpen, isPending, isStarted } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
-import { OrganizationStatus, Participant, ParticipatingOrg, ResponderStatus, isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn } from '@respond/types/activity';
+import { Participant, ParticipatingOrg, ResponderStatus, Activity } from '@respond/types/activity';
 
 import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import styles from './EventPage.module.css';
 import { STATUS_TEXT } from './StatusChip';
 import { OrganizationChip } from './OrganizationChip';
+import { reduceActive, reduceCheckedIn, reduceDemobilized, reduceSignedIn, reduceStandby } from '@respond/types/participant';
+import ActivityTabs from '@respond/components/ActivityTabs';
 
-const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
+export const Roster = ({participants, orgs, startTime}: {participants: Record<string, Participant>, orgs: Record<string, ParticipatingOrg>, startTime: number }) => {
   const handleRowClick: GridEventListener<'rowClick'> = (
     params, // GridRowParams
     event, // MuiEvent<React.MouseEvent<HTMLElement>>
@@ -68,13 +70,85 @@ const Roster = ({participants, orgs, startTime}: {participants: Record<string, P
   )
 }
 
+const activityUpdateOptions = {
+  complete: { label: 'Complete', callback: (activity: Activity) => ActivityActions.complete(activity.id, new Date().getTime()) },
+  close: { label: 'Close', callback: (activity: Activity) => ActivityActions.closed(activity.id, new Date().getTime()) },
+  reactivate: { label: 'Reactivate', callback: (activity: Activity) => ActivityActions.reactivate(activity.id) }
+};
+
+const getActivityUpdateOption = (activity: Activity) => {
+  if (!isActive(activity)) { return activityUpdateOptions.reactivate; }
+  if (isComplete(activity)) { return activityUpdateOptions.close; }
+  return activityUpdateOptions.complete;
+}
+
+const ActivityStatusUpdater = ({activity}: {activity: Activity}) => {
+
+  const dispatch = useAppDispatch();
+  const action = getActivityUpdateOption(activity);
+  const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
+
+  return (
+    <>
+      <Button variant="outlined" size="small" onClick={() => setPromptingActivityState(true)}>{action.label}</Button>
+
+      <Dialog open={promptingActivityState} onClose={() => setPromptingActivityState(false)}>
+        <DialogTitle>{action.label} event?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPromptingActivityState(false)}>Cancel</Button>
+          <Button autoFocus onClick={() => {
+            dispatch(action.callback(activity));
+            setPromptingActivityState(false);
+            }}>{action.label}</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+
+}
+
+const ActivityStatusSummaryFields = ({activity}:{activity: Activity}) => {
+  const participants = Object.values(activity.participants);
+
+  if (isComplete(activity)) {
+    return (
+      <>
+        <OutputText label="Demobilized" value={participants.reduce(reduceDemobilized, 0).toString()} />
+        <OutputText label="Active" value={participants.reduce(reduceActive, 0).toString()} />
+      </>
+    )
+  }
+
+  if (isOpen(activity) || isStarted(activity)) {
+    return (
+      <>
+        <OutputText label="Responding" value={participants.reduce(reduceSignedIn, 0).toString()} />
+        <OutputText label="Checked-In" value={participants.reduce(reduceCheckedIn, 0).toString()} />
+      </>
+    )
+  }
+
+  if (isPending(activity)) {
+    return (
+      <>
+        <OutputTime label="Start Time" time={activity.startTime} />
+        <OutputText label="Standby" value={participants.reduce(reduceStandby, 0).toString()} />
+      </>
+    )
+  }
+
+  return <></>;
+}
+
 export const EventPage = ({ eventId }: { eventId: string }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const activity = useAppSelector(buildActivitySelector(eventId));
 
   const [promptingRemove, setPromptingRemove ] = useState<boolean>(false);
-  const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
 
   useEffect(() => {
     document.title = `${activity?.idNumber} ${activity?.title}`;
@@ -83,22 +157,6 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   const org = useAppSelector(state => state.organization.mine);
   const user = useAppSelector(state => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
-
-  const reduceActive = (count: number, participant: Participant) => {
-    return count + (isParticpantActive(participant?.timeline[0].status) ? 1 : 0);
-  }
-
-  const reduceStandby = (count: number, participant: Participant) => {
-    return count + (participant?.timeline[0].status === ResponderStatus.Standby ? 1 : 0);
-  }
-
-  const reduceSignedIn = (count: number, participant: Participant) => {
-    return count + (participant?.timeline[0].status === ResponderStatus.SignedIn ? 1 : 0);
-  }
-
-  const reduceCheckedIn = (count: number, participant: Participant) => {
-    return count + (isParticpantCheckedIn(participant?.timeline[0].status) ? 1 : 0);
-  }
 
   let body;
   if (!org) {
@@ -114,7 +172,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
           
           <Stack direction="row" spacing={1} alignItems="center">
             <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${eventId}/edit`}>Edit</Button>
-            <Button variant="outlined" size="small" onClick={() => setPromptingActivityState(true)}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
+            <ActivityStatusUpdater activity={activity} />
             <IconButton color="danger" onClick={() => setPromptingRemove(true)}><DeleteIcon/></IconButton>
           </Stack>
         </Stack>
@@ -123,36 +181,24 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
           <Box>
             <OutputText label="Location" value={activity.location.title} />
             <OutputText label="State #" value={activity.idNumber} />
-            <OutputText label="Agency" value={activity.organizations[activity.ownerOrgId]?.title} />
             <OutputLink label="Map" value={activity.mapId} href={`https://sartopo.com/m/${activity.mapId}`} />
           </Box>
           <Box>
             <OutputText label="Mission Status" value={getActivityStatus(activity)} />
-            <OutputText label="Active Responders" value={Object.values(activity.participants).reduce(reduceActive, 0).toString()}></OutputText>
-            <OutputText label="Standby" value={Object.values(activity.participants).reduce(reduceStandby, 0).toString()}></OutputText>
-            <OutputText label="Responding" value={Object.values(activity.participants).reduce(reduceSignedIn, 0).toString()}></OutputText>
-            <OutputText label="Checked-In" value={Object.values(activity.participants).reduce(reduceCheckedIn, 0).toString()}></OutputText>
-            <OutputTime label="Start Time" time={activity.startTime}></OutputTime>
-            <OutputTime label="End Time" time={activity.endTime}></OutputTime>
+            <ActivityStatusSummaryFields activity={activity} />
           </Box>
         </OutputForm>
-        <OutputTextArea label="Description" value={activity.description} rows={3}></OutputTextArea>
 
-        <Box sx={{ my:2 }}>
-          {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
-        </Box>
+        {activity.description && <OutputTextArea label="Description" value={activity.description} rows={1}></OutputTextArea>}
 
-        <Box>
-          <Typography>Participating Organizations:</Typography>
-          <Box sx={{ my: 2}}>
+        <Stack flexDirection={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'start', sm: 'center' }} spacing={{ xs: 2, sm: 0 }} justifyContent={{ xs: 'start', sm: 'space-between' }} sx={{ py: 2 }}>
+          <Box>
             {Object.entries(activity.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} activity={activity} />)}
           </Box>
-        </Box>
+          {isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}
+        </Stack>
 
-        <Box>
-          <Typography>Roster:</Typography>
-          <Roster participants={activity.participants} orgs={activity.organizations} startTime={activity.startTime} />
-        </Box>
+        <ActivityTabs activity={activity} />
 
         <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
           <DialogTitle>Remove Event?</DialogTitle>
@@ -168,21 +214,6 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
           </DialogActions>
         </Dialog>
 
-        <Dialog open={promptingActivityState} onClose={() => setPromptingActivityState(false)}>
-          <DialogTitle>{isActivityActive ? 'Complete' : 'Reactivate'} event?</DialogTitle>
-          <DialogContent>
-            <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setPromptingActivityState(false)}>Cancel</Button>
-            <Button autoFocus onClick={() => {
-              dispatch(isActivityActive
-                ? ActivityActions.complete(activity.id, new Date().getTime())
-                : ActivityActions.reactivate(activity.id));
-              setPromptingActivityState(false);
-             }}>{isActivityActive ? 'Complete' : 'Reactivate'}</Button>
-          </DialogActions>
-        </Dialog>
       </Paper>
     )
   }

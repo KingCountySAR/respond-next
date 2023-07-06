@@ -91,6 +91,7 @@ export interface Activity {
   isMission: boolean;
   asMission: boolean;
   startTime: number;
+  completeTime?: number;
   endTime?: number;
 
   participants: Record<string, Participant>;

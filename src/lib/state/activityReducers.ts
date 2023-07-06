@@ -28,11 +28,19 @@ export const BasicReducers: ActivityReducers = {
   [ActivityActions.reactivate.type]: (state, { payload }) => {
     const activity = state.list.find(f => f.id === payload.id);
     if (activity) {
+      activity.completeTime = undefined;
       activity.endTime = undefined;
     }
   },
 
   [ActivityActions.complete.type]: (state, { payload }) => {
+    const activity = state.list.find(f => f.id === payload.id);
+    if (activity) {
+      activity.completeTime = payload.completeTime;
+    }
+  },
+
+  [ActivityActions.closed.type]: (state, { payload }) => {
     const activity = state.list.find(f => f.id === payload.id);
     if (activity) {
       // First set the end time
