@@ -3,7 +3,6 @@
 ### Install dev/build tools
 - [Node.js] (https://nodejs.org/en) 16.x or higher
 - [Yarn](https://yarnpkg.com)
-- Node.js 16.x or higher (installed with yarn)
 
 ### Create dev database
 Development is supported on either a local or remote MongoDB server.
