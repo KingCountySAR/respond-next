@@ -43,6 +43,13 @@ const resolver: Resolver<EventFormValues> = async (values) => {
     result.errors.startTime = { type: 'validate', message: 'Invalid start time' };
   }
 
+  if (!!values.mapId) {
+    let urlParts = values.mapId.split("/");
+    if (urlParts.length > 1) {
+      values.mapId = urlParts[urlParts.length - 1];
+    }
+  }
+
   return result;
 };
 
