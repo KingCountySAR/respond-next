@@ -1,15 +1,17 @@
-import { useState } from 'react';
-import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, TextField, Typography, Select, MenuItem, Stack } from '../Material';
+import { FormControlLabel } from '@mui/material';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, Participant, ResponderStatus } from '@respond/types/activity';
 import { UserInfo } from '@respond/types/userInfo';
+import { useState } from 'react';
 import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
-import { FormControlLabel } from '@mui/material';
+import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
+import { format as formatDate, parse as parseDate  } from "date-fns";
 
 interface FormValues {
   miles: number|'',
   addMiles: number|'',
+  statusTime: Date|'',
 }
 
 export function useFormLogic(
@@ -41,12 +43,11 @@ export function useFormLogic(
 
   const form = useForm<FormValues>({
     resolver,
-    defaultValues: { miles: participant?.miles ?? '', addMiles: '' },
+    defaultValues: { miles: participant?.miles ?? '', addMiles: '' , statusTime: new Date()},
   });
   if (form.getValues().miles !== (participant?.miles ?? '')) {
     form.reset({ miles: participant?.miles ?? '', addMiles: '' });
   }
-
 
   const onSubmit: SubmitHandler<FormValues> = data => {
 
@@ -54,16 +55,25 @@ export function useFormLogic(
       data.miles = Number(data.miles ?? 0) + Number(data.addMiles);
     }
 
+    console.log("##### onSubmit" );
+    console.log("form.getValues().miles " + form.getValues().miles);
+    console.log("form.getValues().addMiles " + form.getValues().addMiles);
+    console.log("form.getValues().statusTime " + form.getValues().statusTime);
+
     dispatch(ActivityActions.participantUpdate(
       activity.id,
       user.participantId,
       user.given_name ?? '',
       user.family_name ?? '',
       respondingOrgId,
-      new Date().getTime(),
+      (data.statusTime === '' ? new Date() : data.statusTime).getTime(),
       newStatus,
       data.miles === '' ? undefined : data.miles,
     ));
+
+    data.statusTime = '';
+    data.addMiles = '';
+
     onFinish();
   };
 
@@ -160,6 +170,32 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
   );
 }
 
+export const StatusTimeInput = ({statusTime, form: { control, errors, setValue }}: {statusTime: Date, form: FormLogic}) => {
+  console.log("#### StatusTimeInput");
+  console.log("statusTime=" + statusTime);
+  const [ statusTimeState, setStatusTimeState ] = useState<String>(formatDate(statusTime as Date, "yyyy-MM-dd'T'HH:mm"));
+
+  function handleSetStatusTime(event: React.ChangeEvent<HTMLInputElement>) {
+    const statusTimeAsDate = parseDate(event.target.value, "yyyy-MM-dd'T'HH:mm", new Date());
+    setValue('statusTime', statusTimeAsDate);
+    setStatusTimeState(event.target.value);
+  }
+  
+  return (
+    <Controller
+      name="statusTime"
+      control={control}
+      render={({ field }) => (
+        <FormControl error={!!errors.statusTime?.message}>
+          <TextField {...field} type="datetime-local" variant="filled" size="small" value={statusTimeState}
+           onChange={handleSetStatusTime} />
+          <FormHelperText>{errors.statusTime?.message}</FormHelperText>
+        </FormControl>
+      )}
+    />
+  )
+};
+
 export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
   const { activity, participant, newStatus } = form.context;
 
@@ -168,6 +204,7 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
       <DialogContentText id="status-update-dialog-description">
         Change your status for {activity.title}?
       </DialogContentText>
+      <StatusTimeInput form={form} statusTime={new Date()} />
       {newStatus === ResponderStatus.SignedOut ? <MileageSection form={form} existingMiles={participant?.miles} /> : undefined}
     </Stack>
   );
