@@ -43,7 +43,7 @@ export function useFormLogic(
 
   const form = useForm<FormValues>({
     resolver,
-    defaultValues: { miles: participant?.miles ?? '', addMiles: '' , statusTime: new Date()},
+    defaultValues: { miles: participant?.miles ?? '', addMiles: '' , statusTime: ''},
   });
   if (form.getValues().miles !== (participant?.miles ?? '')) {
     form.reset({ miles: participant?.miles ?? '', addMiles: '' });
@@ -71,6 +71,7 @@ export function useFormLogic(
       data.miles === '' ? undefined : data.miles,
     ));
 
+    // Clear form data so it doesn't carry over to the next status update.
     data.statusTime = '';
     data.addMiles = '';
 
@@ -170,12 +171,15 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
   );
 }
 
-export const StatusTimeInput = ({statusTime, form: { control, errors, setValue }}: {statusTime: Date, form: FormLogic}) => {
+export const StatusTimeInput = ({form: { control, errors, setValue }}: {form: FormLogic}) => {
+  
+  const [ statusTimeState, setStatusTimeState ] = useState<String>(() => {return formatDate(new Date(), "yyyy-MM-dd'T'HH:mm")});
   console.log("#### StatusTimeInput");
-  console.log("statusTime=" + statusTime);
-  const [ statusTimeState, setStatusTimeState ] = useState<String>(formatDate(statusTime as Date, "yyyy-MM-dd'T'HH:mm"));
+  console.log("statusTime=" + statusTimeState);
 
   function handleSetStatusTime(event: React.ChangeEvent<HTMLInputElement>) {
+    console.log("#### handleSetStatusTime");
+
     const statusTimeAsDate = parseDate(event.target.value, "yyyy-MM-dd'T'HH:mm", new Date());
     setValue('statusTime', statusTimeAsDate);
     setStatusTimeState(event.target.value);
@@ -204,7 +208,7 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
       <DialogContentText id="status-update-dialog-description">
         Change your status for {activity.title}?
       </DialogContentText>
-      <StatusTimeInput form={form} statusTime={new Date()} />
+      <StatusTimeInput form={form} />
       {newStatus === ResponderStatus.SignedOut ? <MileageSection form={form} existingMiles={participant?.miles} /> : undefined}
     </Stack>
   );
