@@ -172,8 +172,8 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
 }
 
 export const StatusTimeInput = ({form: { control, errors, setValue }}: {form: FormLogic}) => {
-  
-  const [ statusTimeState, setStatusTimeState ] = useState<String>(() => {return formatDate(new Date(), "yyyy-MM-dd'T'HH:mm")});
+  const currentTime = new Date();
+  const [ statusTimeState, setStatusTimeState ] = useState<String>(() => {return formatDate(currentTime, "yyyy-MM-dd'T'HH:mm")});
   console.log("#### StatusTimeInput");
   console.log("statusTime=" + statusTimeState);
 
@@ -185,6 +185,7 @@ export const StatusTimeInput = ({form: { control, errors, setValue }}: {form: Fo
     setStatusTimeState(event.target.value);
   }
   
+  setValue('statusTime', currentTime);
   return (
     <Controller
       name="statusTime"
