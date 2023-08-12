@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, TextField, Typography, Select, MenuItem, Stack } from '../Material';
+import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, TextField, Typography, Stack } from '../Material';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, Participant, ResponderStatus } from '@respond/types/activity';
 import { UserInfo } from '@respond/types/userInfo';
 import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 import { FormControlLabel } from '@mui/material';
+import { MyOrganization } from '@respond/types/organization';
+import { OrganizationStatus } from '@respond/types/activity';
 
 interface FormValues {
   miles: number|'',
@@ -15,7 +17,7 @@ interface FormValues {
 export function useFormLogic(
   activity: Activity,
   user: UserInfo,
-  respondingOrgId: string,
+  respondingOrg: MyOrganization,
   participant: Participant|undefined,
   currentStatus: ResponderStatus|undefined,
   newStatus: ResponderStatus,
@@ -54,13 +56,22 @@ export function useFormLogic(
       data.miles = Number(data.miles ?? 0) + Number(data.addMiles);
     }
 
+    const time = new Date().getTime();
+
+    if (!activity.organizations[respondingOrg.id]) {
+      dispatch(ActivityActions.appendOrganizationTimeline(
+        activity.id,
+        { id: respondingOrg.id, title: respondingOrg.title, rosterName: respondingOrg.rosterName},
+        { status: newStatus === ResponderStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding, time },
+      ));
+    }
     dispatch(ActivityActions.participantUpdate(
       activity.id,
       user.participantId,
       user.given_name ?? '',
       user.family_name ?? '',
-      respondingOrgId,
-      new Date().getTime(),
+      respondingOrg.id,
+      time,
       newStatus,
       data.miles === '' ? undefined : data.miles,
     ));
