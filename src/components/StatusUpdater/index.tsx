@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle  } from '../Material';
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle  } from '../Material';
 import { useAppSelector } from '@respond/lib/client/store';
 import { Activity, ResponderStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
@@ -77,7 +77,7 @@ const StatusUpdaterProtected = ({activity, current, user, thisOrg}: {activity: A
   const formLogic = useFormLogic(
     activity,
     user,
-    thisOrg.id,
+    thisOrg,
     activity.participants[user.participantId],
     current,
     confirmStatus,
@@ -110,7 +110,10 @@ const StatusUpdaterProtected = ({activity, current, user, thisOrg}: {activity: A
         <form onSubmit={formLogic.doSubmit}>
           <DialogTitle id="status-update-dialog-title">{confirmTitle}</DialogTitle>
           <DialogContent>
-            <UpdateStatusForm form={formLogic} />
+            <>
+              {!activity.organizations[thisOrg.id] && (<Alert sx={{mb: 1}} severity="warning">You are the first responder for {thisOrg.rosterName}. Make sure you are authorized to commit {thisOrg.rosterName} to this {activity.isMission ? 'mission' : 'event'}.</Alert>)}
+              <UpdateStatusForm form={formLogic} />
+            </>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setConfirming(false)}>Cancel</Button>

@@ -1,5 +1,6 @@
 // Importing from the inner files is supposed to help compile time / tree shaking.
 
+export { default as Alert } from '@mui/material/Alert';
 export { default as Box } from '@mui/material/Box';
 export { default as Button } from '@mui/material/Button';
 export { default as Dialog } from '@mui/material/Dialog';
