@@ -6,13 +6,13 @@ import { Box, Button, Stack, Typography, Chip } from "@mui/material";
 //import styles from './page.module.css';
 import { useAppSelector } from '@respond/lib/client/store';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete } from '@respond/lib/client/store/activities';
+import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
 import { useEffect } from 'react';
 import { Activity, isActive as isResponderStatusActive, ParticipatingOrg } from '@respond/types/activity';
 import addDays from 'date-fns/addDays'
 import { EventTile } from './EventTile';
 import { OrganizationChip } from './OrganizationChip';
-import { OutputForm, OutputText } from '@respond/components/OutputForm';
+import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 
 //const inter = Inter({ subsets: ['latin'] })
 
@@ -64,8 +64,13 @@ export default function Home() {
             {myCurrentActivities.map(up => (
               <EventTile key={up.activity.id} activity={up.activity} status={up.status.status}>
                 <OutputForm>
-                  <OutputText label="Location" value={up.activity.location.title} />
-                  <OutputText label="Mission Status" value={getActivityStatus(up.activity)} />
+                  <Box>
+                    <OutputText label="Location" value={up.activity.location.title} />
+                  </Box>
+                  <Box>
+                    <OutputText label="Mission Status" value={getActivityStatus(up.activity)} />
+                    {isFuture(up.activity.startTime) && <OutputTime label="Start Time" time={up.activity.startTime}></OutputTime>}
+                  </Box>
                 </OutputForm>
               </EventTile>
             ))}
@@ -87,6 +92,7 @@ export default function Home() {
                 </Box>
                 <Box>
                   <OutputText label="Mission Status" value={getActivityStatus(a)} />
+                  {isFuture(a.startTime) && <OutputTime label="Start Time" time={a.startTime}></OutputTime>}
                   <OutputText label="Active Responders" value={getActiveParticipants(a).length.toString()} />
                 </Box>
               </OutputForm>
