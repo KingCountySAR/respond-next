@@ -119,6 +119,7 @@ export default function Home() {
                 </Box>
                 <Box>
                   <OutputText label="Mission Status" value={getActivityStatus(a)} />
+                  {isFuture(a.startTime) && <OutputTime label="Start Time" time={a.startTime}></OutputTime>}
                   <OutputText label="Active Participants" value={getActiveParticipants(a).length.toString()} />
                 </Box>
               </OutputForm>
