@@ -34,17 +34,21 @@ export class StateManager {
 
   async getStateForUser(user: UserAuth) {
     console.log('getting state for ' + user.userId);
-    
+
     const myOrgIds = await getRelatedOrgIds(user.organizationId);
-  
+
     return {
       list: this.activityState.list.filter(a => myOrgIds.includes(a.ownerOrgId)),
     };
   }
 
+  async getAllActivities() {
+    return this.activityState.list;
+  }
+
   async handleIncomingAction(action: ActivityAction, reporterId: string, auth: { userId: string, email: string }) {
     console.log('stateManager reportAction', action);
-    
+
     // If everything checks out, play the action into our store.
 
     const oldActivities: Record<string, Activity> = this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
@@ -79,7 +83,7 @@ export class StateManager {
       (await this.getOrgsInterestedInAction(isSummaryLevelUpdate, oldActivities[updatedId])).forEach(o => affectedOrgs.add(o));
       (await this.getOrgsInterestedInAction(isSummaryLevelUpdate, currentActivities[updatedId])).forEach(o => affectedOrgs.add(o));
 
-      await mongo.db().collection<Activity>('activities').replaceOne({ id: updatedId }, currentActivities[updatedId], { upsert: true });  
+      await mongo.db().collection<Activity>('activities').replaceOne({ id: updatedId }, currentActivities[updatedId], { upsert: true });
     }
     for (const removedId of Object.keys(oldActivities).filter(k => currentActivities[k] == undefined)) {
       console.log('MONGO remove activity', removedId);
@@ -88,7 +92,7 @@ export class StateManager {
     }
 
     action.meta.sync = false;
-    
+
     const toRooms = Array.from(affectedOrgs).map(o => `org:${o}`);
     for (const listener of this.listeners) {
       listener.broadcastAction(action, toRooms, reporterId);
@@ -115,7 +119,7 @@ export class StateManager {
       await doAction();
       return;
     }
-    
+
     const memberProvider = (await getServices()).memberProviders.get(organization?.memberProvider?.provider);
     if (!memberProvider) {
       await doAction();
