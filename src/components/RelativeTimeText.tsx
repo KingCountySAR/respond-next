@@ -1,4 +1,5 @@
-import enUS, { format as formatDate, formatRelative, Locale } from 'date-fns';
+import { format as formatDate, formatRelative, Locale } from 'date-fns';
+import enUS from 'date-fns/locale/en-US';
 import * as React from 'react';
 
 // Default time formatting for formatRelative is 12 hour time. We want 24 hour time.

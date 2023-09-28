@@ -32,6 +32,7 @@
         "varsIgnorePattern": "^_"
       }
     ],
+    "import/no-duplicates": "off",
     "import/no-named-as-default": "off",
     "import/no-unresolved": "error",
     "import/order": [
