@@ -1,8 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { Activity, Participant, ResponderStatus, ResponderUpdate } from '@respond/types/activity';
+
+import { ActivityActions, ActivityState, BasicReducers } from '@respond/lib/state';
+import { Activity, isActive as isResponderStatusActive, ResponderStatus, ResponderUpdate } from '@respond/types/activity';
+
 import { RootState } from '.';
-import { ActivityState, ActivityActions, BasicReducers } from '@respond/lib/state';
-import { isActive as isResponderStatusActive } from '@respond/types/activity';
 
 let initialState: ActivityState = {
   list: [],
@@ -17,33 +18,22 @@ const activitiesSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    builder
-      .addCase(ActivityActions.reload, BasicReducers[ActivityActions.reload.type])
-      .addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type])
-      .addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type])
-      .addCase(ActivityActions.reactivate, BasicReducers[ActivityActions.reactivate.type])
-      .addCase(ActivityActions.complete, BasicReducers[ActivityActions.complete.type])
-      .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type])
-      .addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type])
+    builder.addCase(ActivityActions.reload, BasicReducers[ActivityActions.reload.type]).addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type]).addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type]).addCase(ActivityActions.reactivate, BasicReducers[ActivityActions.reactivate.type]).addCase(ActivityActions.complete, BasicReducers[ActivityActions.complete.type]).addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type]).addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type]);
   },
 });
 
 export default activitiesSlice.reducer;
 
 export function buildActivityTypeSelector(missions: boolean) {
-  return (state: RootState) => state.activities.list.filter(f => f.isMission === missions);
+  return (state: RootState) => state.activities.list.filter((f) => f.isMission === missions);
 }
 
 export function getActiveParticipants(activity: Activity) {
-  return Object.values(activity.participants).filter(p => isResponderStatusActive(p.timeline[0].status) == true);
-}
-
-function filterParticipantsByStatus(participants: Participant[], statuses: ResponderStatus[]) {
-  return participants.filter(participant => statuses.includes(participant.timeline[0].status));
+  return Object.values(activity.participants).filter((p) => isResponderStatusActive(p.timeline[0].status) == true);
 }
 
 export function buildActivitySelector(id?: string) {
-  return (state: RootState) => id ? state.activities.list.find(a => a.id === id) : undefined;
+  return (state: RootState) => (id ? state.activities.list.find((a) => a.id === id) : undefined);
 }
 
 export function buildMyActivitySelector() {
@@ -53,7 +43,7 @@ export function buildMyActivitySelector() {
       return [];
     }
 
-    const myParticipation: { activity: Activity, status: ResponderUpdate }[] = [];
+    const myParticipation: { activity: Activity; status: ResponderUpdate }[] = [];
     for (const activity of state.activities.list) {
       const myUpdate = activity.participants[participantId]?.timeline[0];
       if (myUpdate && myUpdate.status !== ResponderStatus.NotResponding) {
@@ -63,11 +53,11 @@ export function buildMyActivitySelector() {
 
     return myParticipation.sort((a, b) => {
       if (a.activity.isMission === b.activity.isMission) {
-        return (a.activity.startTime > b.activity.startTime) ? 1 : -1;
+        return a.activity.startTime > b.activity.startTime ? 1 : -1;
       }
       return a.activity.isMission ? 1 : -1;
     });
-  }
+  };
 }
 
 /**
@@ -78,7 +68,7 @@ export const earlySigninWindow = 4 * 60 * 60 * 1000;
 
 export function isFuture(time: number) {
   return time > new Date().getTime();
-};
+}
 
 export function isPending(a: Activity) {
   return isActive(a) && !isOpen(a);
@@ -101,13 +91,21 @@ export function isComplete(a: Activity) {
 }
 
 export function getActivityStatus(a: Activity) {
-  if (isComplete(a)) { return 'Closed' }
-  if (isStarted(a)) { return 'In Progress' }
-  if (isOpen(a)) { return 'Open For Sign In' }
-  if (isPending(a)) { return 'Not Started' }
+  if (isComplete(a)) {
+    return 'Closed';
+  }
+  if (isStarted(a)) {
+    return 'In Progress';
+  }
+  if (isOpen(a)) {
+    return 'Open For Sign In';
+  }
+  if (isPending(a)) {
+    return 'Not Started';
+  }
   return '';
 }
 
 export function getActivityPath(activity: Activity) {
-  return `/${activity.isMission ? 'mission' : 'event'}/${activity.id}`
+  return `/${activity.isMission ? 'mission' : 'event'}/${activity.id}`;
 }

@@ -1,24 +1,25 @@
-import { sessionOptions } from '@respond/lib/session';
+import { TokenPayload } from 'google-auth-library';
 import { withIronSessionApiRoute } from 'iron-session/next';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServices } from '@respond/lib/server/services';
-import * as Mongo from '@respond/lib/server/mongodb';
+
+import { AuthError } from '@respond/lib/apiErrors';
 import * as Auth from '@respond/lib/server/auth';
 import { MemberProvider } from '@respond/lib/server/memberProviders/memberProvider';
-import { TokenPayload } from 'google-auth-library';
-import { AuthResponse } from '@respond/types/authResponse'
-import { AuthError } from '@respond/lib/apiErrors'
-import { MyOrganization } from '@respond/types/organization'
+import * as Mongo from '@respond/lib/server/mongodb';
+import { getServices } from '@respond/lib/server/services';
+import { sessionOptions } from '@respond/lib/session';
+import { AuthResponse } from '@respond/types/authResponse';
+import { MyOrganization } from '@respond/types/organization';
 
 async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    res.status(405).json({message: 'Login requires POST'});
+    res.status(405).json({ message: 'Login requires POST' });
     return;
   }
 
-  let memberProvider: MemberProvider|undefined = undefined;
+  let memberProvider: MemberProvider | undefined = undefined;
   try {
-    let payload: TokenPayload|undefined;
+    let payload: TokenPayload | undefined;
     if (process.env.DEV_NETWORK_DISABLED) {
       const data = process.env.DEV_AUTH_USER ?? '{}';
       console.log('login data', data);
@@ -34,11 +35,11 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
 
       payload = ticket.getPayload();
     }
-    
+
     if (!payload) {
       const error: AuthResponse = {
         error: AuthError.NO_TICKET,
-      }
+      };
 
       res.status(500).json(error);
       return;
@@ -47,7 +48,7 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
     if (!payload.email) {
       const error: AuthResponse = {
         error: AuthError.NO_EMAIL,
-      }
+      };
 
       res.status(500).json(error);
       return;
@@ -59,7 +60,7 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
       console.log(`${payload.email} trying to login with unknown domain ${domain}`);
       const error: AuthResponse = {
         error: AuthError.INVALID_DOMAIN,
-      }
+      };
 
       res.status(403).json(error);
       return;
@@ -68,7 +69,7 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
     const organization: MyOrganization = {
       ...organizationDoc,
       memberProvider: organizationDoc.memberProvider.provider,
-    }
+    };
 
     memberProvider = (await getServices()).memberProviders.get(organizationDoc.memberProvider.provider);
     if (!memberProvider) {
@@ -76,7 +77,7 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
       const error: AuthResponse = {
         error: AuthError.INVALID_CONFIGURATION,
         organization,
-      }
+      };
 
       res.status(500).json(error);
       return;
@@ -86,13 +87,13 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
       provider: 'google',
       email: payload.email,
     };
-    
+
     const memberInfo = await memberProvider.getMemberInfo(organizationDoc.id, authInfo, organizationDoc.memberProvider);
     if (!memberInfo) {
       const error: AuthResponse = {
         error: AuthError.USER_NOT_KNOWN,
         organization,
-      }
+      };
 
       res.status(403).json(error);
       return;
@@ -110,17 +111,17 @@ async function apiLogin(req: NextApiRequest, res: NextApiResponse) {
     console.log(`Logging in user ${payload.email}`);
     await req.session.save();
 
-    const userInfo = Auth.userFromAuth(req.session.auth)
+    const userInfo = Auth.userFromAuth(req.session.auth);
     const responseBody: AuthResponse = {
       userInfo,
-      organization: userInfo ? organization : undefined
-    }
+      organization: userInfo ? organization : undefined,
+    };
 
     res.json(responseBody);
   } catch (error) {
-    res.status(500).json({error: (error as Error).message });
+    res.status(500).json({ error: (error as Error).message });
   }
-  
+
   res.end();
   memberProvider?.refresh();
 }

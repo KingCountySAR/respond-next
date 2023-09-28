@@ -1,47 +1,46 @@
 'use client';
+import { Box, Button, Stack, Typography } from '@mui/material';
+import addDays from 'date-fns/addDays';
 import Link from 'next/link';
-//import { Inter } from 'next/font/google';
-import { Box, Button, Stack, Typography, Chip } from "@mui/material";
-
-//import styles from './page.module.css';
-import { useAppSelector } from '@respond/lib/client/store';
-import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
 import { useEffect } from 'react';
-import { Activity, isActive as isResponderStatusActive, ParticipatingOrg } from '@respond/types/activity';
-import addDays from 'date-fns/addDays'
+
+import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
+import { useAppSelector } from '@respond/lib/client/store';
+import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
+import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
+import { Activity, isActive as isResponderStatusActive } from '@respond/types/activity';
+
 import { EventTile } from './EventTile';
 import { OrganizationChip } from './OrganizationChip';
-import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 
 //const inter = Inter({ subsets: ['latin'] })
 
 function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible: number, oldestVisible: number) {
   // Most recent first
-  const sort = (a: Activity, b: Activity) => a.startTime > b.startTime ? -1 : 1;
+  const sort = (a: Activity, b: Activity) => (a.startTime > b.startTime ? -1 : 1);
 
   const active = activities.filter(isActive).sort(sort);
   const complete = activities
-    .filter(a => isComplete(a) && a.startTime > oldestVisible)
+    .filter((a) => isComplete(a) && a.startTime > oldestVisible)
     .sort(sort)
     .slice(0, maxCompletedVisible);
 
-  return active.concat(complete)
+  return active.concat(complete);
 }
 
 export default function Home() {
-  let myActivities = useAppSelector(buildMyActivitySelector());
-  let myCurrentActivities = myActivities.filter(activity => isResponderStatusActive(activity.status.status) === true);
+  const myActivities = useAppSelector(buildMyActivitySelector());
+  const myCurrentActivities = myActivities.filter((activity) => isResponderStatusActive(activity.status.status) === true);
 
   function getMyStatus(activity: Activity) {
-    return myActivities.find(f => f.activity.id === activity.id)?.status.status;
+    return myActivities.find((f) => f.activity.id === activity.id)?.status.status;
   }
 
   const maxCompletedActivitiesVisible = 3;
   const oldestCompletedActivityVisible = addDays(new Date(), -3).getTime();
 
-  const canCreateM = useAppSelector(state => canCreateMissions(state));
-  const canCreateE = useAppSelector(state => canCreateEvents(state));
+  const canCreateM = useAppSelector((state) => canCreateMissions(state));
+  const canCreateE = useAppSelector((state) => canCreateEvents(state));
 
   let missions = useAppSelector(buildActivityTypeSelector(true));
   missions = filterActivitiesForDisplay(missions, maxCompletedActivitiesVisible, oldestCompletedActivityVisible);
@@ -50,18 +49,18 @@ export default function Home() {
   events = filterActivitiesForDisplay(events, maxCompletedActivitiesVisible, oldestCompletedActivityVisible);
 
   useEffect(() => {
-    document.title = "Event list";
+    document.title = 'Event list';
   }, []);
 
   return (
     <main>
-      { myCurrentActivities.length < 1 ? null : (
-        <Box sx={{mb:3}}>
-          <Box sx={{mb:1}}>
+      {myCurrentActivities.length < 1 ? null : (
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 1 }}>
             <Typography variant="h5">My Activity</Typography>
           </Box>
           <Stack spacing={1}>
-            {myCurrentActivities.map(up => (
+            {myCurrentActivities.map((up) => (
               <EventTile key={up.activity.id} activity={up.activity} status={up.status.status}>
                 <OutputForm>
                   <Box>
@@ -77,13 +76,24 @@ export default function Home() {
           </Stack>
         </Box>
       )}
-      <Box sx={{mb:3}}>
-        <Box sx={{mb:1, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+      <Box sx={{ mb: 3 }}>
+        <Box
+          sx={{
+            mb: 1,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Typography variant="h5">Missions</Typography>
-          {canCreateM  && <Button variant="outlined" component={Link} href="/mission/new">New Mission</Button>}
+          {canCreateM && (
+            <Button variant="outlined" component={Link} href="/mission/new">
+              New Mission
+            </Button>
+          )}
         </Box>
         <Stack spacing={1}>
-          {missions.map(a => (
+          {missions.map((a) => (
             <EventTile key={a.id} activity={a} status={getMyStatus(a)}>
               <OutputForm>
                 <Box>
@@ -97,7 +107,9 @@ export default function Home() {
                 </Box>
               </OutputForm>
               <Box sx={{ pt: 2 }}>
-                  {Object.entries(a.organizations ?? {}).map(([id, org]) => <OrganizationChip key={id} org={org} activity={a} />)}
+                {Object.entries(a.organizations ?? {}).map(([id, org]) => (
+                  <OrganizationChip key={id} org={org} activity={a} />
+                ))}
               </Box>
             </EventTile>
           ))}
@@ -105,12 +117,23 @@ export default function Home() {
         </Stack>
       </Box>
       <Box sx={{ pb: 4 }}>
-        <Box sx={{mb:1, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <Box
+          sx={{
+            mb: 1,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Typography variant="h5">Events</Typography>
-          {canCreateE && <Button variant="outlined" component={Link} href="/event/new">New Event</Button>}
+          {canCreateE && (
+            <Button variant="outlined" component={Link} href="/event/new">
+              New Event
+            </Button>
+          )}
         </Box>
         <Stack spacing={1}>
-          {events.map(a => (
+          {events.map((a) => (
             <EventTile key={a.id} activity={a}>
               <OutputForm>
                 <Box>

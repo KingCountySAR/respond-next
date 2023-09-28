@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface SyncState {
   id?: string;
@@ -13,7 +13,7 @@ const syncSlice = createSlice({
   name: 'sync',
   initialState,
   reducers: {
-    connected: (state, action: PayloadAction<{id: string}>) => {
+    connected: (state, action: PayloadAction<{ id: string }>) => {
       state.id = action.payload.id;
       state.connected = true;
     },

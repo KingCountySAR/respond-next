@@ -3,8 +3,5 @@
 import { EventEditor } from '../../EventEditor';
 
 export default function NewEvent() {
-
-  return (
-    <EventEditor activityType="events" />
-  )
+  return <EventEditor activityType="events" />;
 }

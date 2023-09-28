@@ -1,16 +1,16 @@
-export async function apiFetch<T>(url: string, config?: RequestInit) :Promise<T> {
+export async function apiFetch<T>(url: string, config?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     method: 'GET',
     ...config,
     headers: {
       'Content-Type': 'application/json',
-      ...config?.headers
+      ...config?.headers,
     },
   });
   return await response.json();
 }
 
-export async function apiPost<T>(url:string, data: any) :Promise<T> {
+export async function apiPost<T>(url: string, data: any): Promise<T> {
   // Default options are marked with *
   const response = await fetch(url, {
     method: 'POST', // *GET, POST, PUT, DELETE, etc.
@@ -18,10 +18,10 @@ export async function apiPost<T>(url:string, data: any) :Promise<T> {
     cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
     credentials: 'same-origin', // include, *same-origin, omit
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
     redirect: 'follow', // manual, *follow, error
-    body: JSON.stringify(data) // body data type must match 'Content-Type' header
+    body: JSON.stringify(data), // body data type must match 'Content-Type' header
   });
   return await response.json(); // parses JSON response into native JavaScript objects
 }
@@ -29,6 +29,6 @@ export async function apiPost<T>(url:string, data: any) :Promise<T> {
 const group = {
   get: apiFetch,
   post: apiPost,
-}
+};
 
 export default group;

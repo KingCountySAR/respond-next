@@ -1,9 +1,11 @@
 import { OAuth2Client } from 'google-auth-library';
-import { MemberProviderRegistry } from './memberProviders/memberProvider';
+
+import { MemberProviderType } from '@respond/types/data/MemberProviderType';
+
 import D4HMembersProvider from './memberProviders/d4hMembersProvider';
+import { MemberProviderRegistry } from './memberProviders/memberProvider';
 import SocketManager from './socketManager';
 import { StateManager } from './stateManager';
-import { MemberProviderType } from '@respond/types/data/MemberProviderType'
 
 export interface Services {
   authClient: OAuth2Client;
@@ -16,7 +18,6 @@ let instance: Services;
 
 export async function getServices(): Promise<Services> {
   if (!instance) {
-    
     instance = {
       authClient: new OAuth2Client(process.env.GOOGLE_ID),
       memberProviders: new MemberProviderRegistry(),
