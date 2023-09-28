@@ -1,7 +1,7 @@
 'use client';
 
-import { EventPage } from '../../EventPage';
+import { ActivityPage } from '@respond/components/activities/ActivityPage';
 
 export default function ViewMission({ params }: { params: { missionId: string } }) {
-  return <EventPage eventId={params.missionId} />;
+  return <ActivityPage activityId={params.missionId} />;
 }

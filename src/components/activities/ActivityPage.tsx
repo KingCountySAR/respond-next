@@ -6,16 +6,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { OrganizationChip } from '@respond/components/OrganizationChip';
 import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
+import { STATUS_TEXT } from '@respond/components/StatusChip';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, getActivityStatus, isActive } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
 import { isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
 
-import styles from './EventPage.module.css';
-import { OrganizationChip } from './OrganizationChip';
-import { STATUS_TEXT } from './StatusChip';
+import styles from './ActivityPage.module.css';
 
 const Roster = ({ participants, orgs, startTime }: { participants: Record<string, Participant>; orgs: Record<string, ParticipatingOrg>; startTime: number }) => {
   const _startTime = startTime;
@@ -83,10 +83,10 @@ const Roster = ({ participants, orgs, startTime }: { participants: Record<string
   return <DataGrid className={styles.roster} rows={rows} columns={columns} autoHeight disableRowSelectionOnClick hideFooter rowSelection={false} onRowClick={handleRowClick} getRowHeight={() => 'auto'} />;
 };
 
-export const EventPage = ({ eventId }: { eventId: string }) => {
+export const ActivityPage = ({ activityId }: { activityId: string }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const activity = useAppSelector(buildActivitySelector(eventId));
+  const activity = useAppSelector(buildActivitySelector(activityId));
 
   const [promptingRemove, setPromptingRemove] = useState<boolean>(false);
   const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
@@ -131,7 +131,7 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
           </Typography>
 
           <Stack direction="row" spacing={1} alignItems="center">
-            <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${eventId}/edit`}>
+            <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${activityId}/edit`}>
               Edit
             </Button>
             <Button variant="outlined" size="small" onClick={() => setPromptingActivityState(true)}>
@@ -179,9 +179,9 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
         </Box>
 
         <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
-          <DialogTitle>Remove Event?</DialogTitle>
+          <DialogTitle>Remove Activity?</DialogTitle>
           <DialogContent>
-            <DialogContentText>Mark this event as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
+            <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setPromptingRemove(false)}>Cancel</Button>

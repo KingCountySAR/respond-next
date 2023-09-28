@@ -10,11 +10,9 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 
+import { AppMenu } from '@respond/components/AppMenu';
+import LoginPanel from '@respond/components/LoginPanel';
 import { useAppSelector } from '@respond/lib/client/store';
-
-import LoginPanel from '../LoginPanel';
-
-import { AppMenu } from './AppMenu';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { shortTitle } = useAppSelector((state) => state.config.organization);

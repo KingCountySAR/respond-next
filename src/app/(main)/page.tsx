@@ -4,14 +4,13 @@ import addDays from 'date-fns/addDays';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
+import { ActivityTile } from '@respond/components/activities/ActivityTile';
+import { OrganizationChip } from '@respond/components/OrganizationChip';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
 import { Activity, isActive as isParticipantStatusActive } from '@respond/types/activity';
-
-import { EventTile } from './EventTile';
-import { OrganizationChip } from './OrganizationChip';
 
 //const inter = Inter({ subsets: ['latin'] })
 
@@ -61,7 +60,7 @@ export default function Home() {
           </Box>
           <Stack spacing={1}>
             {myCurrentActivities.map((up) => (
-              <EventTile key={up.activity.id} activity={up.activity} status={up.status.status}>
+              <ActivityTile key={up.activity.id} activity={up.activity} status={up.status.status}>
                 <OutputForm>
                   <Box>
                     <OutputText label="Location" value={up.activity.location.title} />
@@ -71,7 +70,7 @@ export default function Home() {
                     {isFuture(up.activity.startTime) && <OutputTime label="Start Time" time={up.activity.startTime}></OutputTime>}
                   </Box>
                 </OutputForm>
-              </EventTile>
+              </ActivityTile>
             ))}
           </Stack>
         </Box>
@@ -94,7 +93,7 @@ export default function Home() {
         </Box>
         <Stack spacing={1}>
           {missions.map((a) => (
-            <EventTile key={a.id} activity={a} status={getMyStatus(a)}>
+            <ActivityTile key={a.id} activity={a} status={getMyStatus(a)}>
               <OutputForm>
                 <Box>
                   <OutputText label="Location" value={a.location.title} />
@@ -111,7 +110,7 @@ export default function Home() {
                   <OrganizationChip key={id} org={org} activity={a} />
                 ))}
               </Box>
-            </EventTile>
+            </ActivityTile>
           ))}
           {missions.length === 0 && <Typography>No recent missions</Typography>}
         </Stack>
@@ -134,7 +133,7 @@ export default function Home() {
         </Box>
         <Stack spacing={1}>
           {events.map((a) => (
-            <EventTile key={a.id} activity={a}>
+            <ActivityTile key={a.id} activity={a}>
               <OutputForm>
                 <Box>
                   <OutputText label="Location" value={a.location.title} />
@@ -146,7 +145,7 @@ export default function Home() {
                   <OutputText label="Active Participants" value={getActiveParticipants(a).length.toString()} />
                 </Box>
               </OutputForm>
-            </EventTile>
+            </ActivityTile>
           ))}
           {events.length === 0 && <Typography>No recent events</Typography>}
         </Stack>

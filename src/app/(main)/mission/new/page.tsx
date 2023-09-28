@@ -1,7 +1,7 @@
 'use client';
 
-import { EventEditor } from '../../EventEditor';
+import { ActivityEditForm } from '../../../../components/activities/ActivityEditForm';
 
 export default function NewMission() {
-  return <EventEditor activityType="missions" />;
+  return <ActivityEditForm activityType="missions" />;
 }

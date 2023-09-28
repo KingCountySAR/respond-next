@@ -11,15 +11,15 @@ import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
-type EventFormValues = FormUtils.ReplacedType<Activity, number, { date: string; time: string }, ['startTime']>;
+type ActivityFormValues = FormUtils.ReplacedType<Activity, number, { date: string; time: string }, ['startTime']>;
 
 /**
  * Validation resolver
  * @param values
  * @returns
  */
-const resolver: Resolver<EventFormValues> = async (values) => {
-  const result: ResolverResult<EventFormValues> = {
+const resolver: Resolver<ActivityFormValues> = async (values) => {
+  const result: ResolverResult<ActivityFormValues> = {
     values: values.id ? values : {},
     errors: {},
   };
@@ -56,11 +56,11 @@ const resolver: Resolver<EventFormValues> = async (values) => {
 /**
  *
  */
-export const EventEditor = ({ activityType, eventId }: { activityType: ActivityType; eventId?: string }) => {
+export const ActivityEditForm = ({ activityType, activityId }: { activityType: ActivityType; activityId?: string }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const org = useAppSelector((state) => state.organization.mine);
-  let activity = useAppSelector(buildActivitySelector(eventId));
+  let activity = useAppSelector(buildActivitySelector(activityId));
 
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
   const ownerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
@@ -78,7 +78,7 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<EventFormValues>({
+  } = useForm<ActivityFormValues>({
     resolver,
     defaultValues: activity ? FormUtils.toExpandedDates(activity, 'startTime') : undefined,
   });
@@ -93,7 +93,7 @@ export const EventEditor = ({ activityType, eventId }: { activityType: ActivityT
     return <Box>Waiting for org...</Box>;
   }
 
-  const onSubmit: SubmitHandler<EventFormValues> = (data) => {
+  const onSubmit: SubmitHandler<ActivityFormValues> = (data) => {
     const time = new Date().getTime();
     const updated = FormUtils.fromExpandedDates(data, 'startTime');
 

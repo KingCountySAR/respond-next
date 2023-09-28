@@ -1,9 +1,9 @@
 import ClientOnly from '@respond/components/ClientOnly';
+import ClientProviders, { SiteConfig } from '@respond/components/ClientProviders';
 import { getCookieAuth, userFromAuth } from '@respond/lib/server/auth';
 import { getOrganizationForRequest } from '@respond/lib/server/request';
 import { MyOrganization } from '@respond/types/organization';
 
-import ClientProviders, { SiteConfig } from './ClientProviders';
 import './globals.css';
 
 export const metadata = {
