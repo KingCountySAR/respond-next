@@ -1,15 +1,16 @@
-import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
+
 import { MyOrganization } from '@respond/types/organization';
-import merge from 'lodash.merge';
+
+import { logoutUser } from './auth';
+
 import { RootState } from '.';
-import { logoutUser } from './auth'
 
 export interface OrganizationState {
   mine?: MyOrganization;
 }
 
-const initialState: OrganizationState = {
-};
+const initialState: OrganizationState = {};
 
 const slice = createSlice({
   name: 'organization',
@@ -19,14 +20,13 @@ const slice = createSlice({
       //merge(state, action.payload);
       console.log('org set reducer', action.payload);
       Object.assign(state, action.payload);
-    }
+    },
   },
   extraReducers: (builder) => {
-    builder
-  .addCase(logoutUser.fulfilled, state => {
-    state.mine = undefined
-  });
-}
+    builder.addCase(logoutUser.fulfilled, (state) => {
+      state.mine = undefined;
+    });
+  },
 });
 
 export default slice.reducer;
@@ -39,9 +39,9 @@ export const canCreateMissions = createSelector(
     if (!org) {
       return false;
     }
-    return org.canCreateMissions || !!org.partners.find(f => f.canCreateMissions);
-  }
-)
+    return org.canCreateMissions || !!org.partners.find((f) => f.canCreateMissions);
+  },
+);
 
 export const canCreateEvents = createSelector(
   (state: RootState) => state.organization.mine,
@@ -49,6 +49,6 @@ export const canCreateEvents = createSelector(
     if (!org) {
       return false;
     }
-    return org.canCreateEvents || !!org.partners.find(f => f.canCreateEvents);
-  }
-)
+    return org.canCreateEvents || !!org.partners.find((f) => f.canCreateEvents);
+  },
+);

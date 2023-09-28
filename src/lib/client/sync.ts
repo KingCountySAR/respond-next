@@ -1,12 +1,14 @@
-import io, { Socket } from 'socket.io-client';
-import type { ServerToClientEvents, ClientToServerEvents } from '@respond/types/syncSocket';
-import { addAppListener, AppDispatch, AppStore } from './store';
-import { Actions as SyncActions } from './store/sync';
 import { isAnyOf } from '@reduxjs/toolkit';
+import io, { Socket } from 'socket.io-client';
+
+import type { ClientToServerEvents, ServerToClientEvents } from '@respond/types/syncSocket';
+
 import { apiFetch } from '../api';
 import { ActivityAction, ActivityActions } from '../state';
-import { connect } from 'http2';
+
+import { addAppListener, AppDispatch, AppStore } from './store';
 import { AuthActions } from './store/auth';
+import { Actions as SyncActions } from './store/sync';
 
 export class ClientSync {
   // This property is set during the build method below, so it's effectively set in the constructor
@@ -16,8 +18,7 @@ export class ClientSync {
   private key: string = '';
 
   constructor(store: AppStore) {
-    this.socket = io('/',
-    {
+    this.socket = io('/', {
       autoConnect: false,
       transports: ['websocket'],
     });
@@ -49,34 +50,40 @@ export class ClientSync {
   async start() {
     console.log('starting sync');
     // When we log in/out, we should restart the socket connection.
-    this.dispatch(addAppListener({
-      matcher: isAnyOf(AuthActions.set, AuthActions.logout.fulfilled),
-      effect: () => {
-        this.restart();
-      }
-    }));
+    this.dispatch(
+      addAppListener({
+        matcher: isAnyOf(AuthActions.set, AuthActions.logout.fulfilled),
+        effect: () => {
+          this.restart();
+        },
+      }),
+    );
 
     // Listen for actions that should have copies sent to the server.
-    this.dispatch(addAppListener({
-      predicate: (action, _currentState, _previousState) => {
-        console.log('SEND SYNC', action, action.meta?.sync ?? false);
-        return action.meta?.sync ?? false;
-      },
-      effect: (action, _listenerApi) => {
-        console.log('ACTING ON SYNC');
-        this.handleLocalAction(action as ActivityAction);
-      },
-    }));
+    this.dispatch(
+      addAppListener({
+        predicate: (action, _currentState, _previousState) => {
+          console.log('SEND SYNC', action, action.meta?.sync ?? false);
+          return action.meta?.sync ?? false;
+        },
+        effect: (action, _listenerApi) => {
+          console.log('ACTING ON SYNC');
+          this.handleLocalAction(action as ActivityAction);
+        },
+      }),
+    );
 
     // Listen for actions that update the activities list. We want to save a copy so we
     // can use it when we reload.
-    this.dispatch(addAppListener({
-      matcher: isAnyOf(ActivityActions.reload, ActivityActions.update),
-      effect: (_action, listenerApi) => {
-        console.log('SHOULD SAVE TO LOCALSTORAGE', listenerApi.getState().activities);
-        localStorage.activities = JSON.stringify(listenerApi.getState().activities);
-      },
-    }))
+    this.dispatch(
+      addAppListener({
+        matcher: isAnyOf(ActivityActions.reload, ActivityActions.update),
+        effect: (_action, listenerApi) => {
+          console.log('SHOULD SAVE TO LOCALSTORAGE', listenerApi.getState().activities);
+          localStorage.activities = JSON.stringify(listenerApi.getState().activities);
+        },
+      }),
+    );
 
     if (localStorage.activities) {
       this.dispatch(ActivityActions.reload(JSON.parse(localStorage.activities)));
@@ -92,7 +99,7 @@ export class ClientSync {
     }
 
     // make sure the socket is listening, and we have an auth token for it...
-    this.key = (await apiFetch<{key: string}>('/api/socket-keepalive')).key;
+    this.key = (await apiFetch<{ key: string }>('/api/socket-keepalive')).key;
     if (this.key) {
       // and then connect to it.
       this.socket.connect();

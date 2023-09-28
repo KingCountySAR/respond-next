@@ -1,4 +1,5 @@
-import type { IronSessionOptions } from 'iron-session'
+import type { IronSessionOptions } from 'iron-session';
+
 import UserAuth from '@respond/types/userAuth';
 
 export const sessionOptions: IronSessionOptions = {
@@ -8,7 +9,7 @@ export const sessionOptions: IronSessionOptions = {
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
   },
-}
+};
 
 // This is where we specify the typings of req.session.*
 declare module 'iron-session' {

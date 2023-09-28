@@ -1,24 +1,18 @@
 import ClientOnly from '@respond/components/ClientOnly';
 import { getCookieAuth, userFromAuth } from '@respond/lib/server/auth';
 import { getOrganizationForRequest } from '@respond/lib/server/request';
-import { MyOrganization } from '@respond/types/organization'
-import { headers } from 'next/headers';
+import { MyOrganization } from '@respond/types/organization';
+
 import ClientProviders, { SiteConfig } from './ClientProviders';
-import "./globals.css"
+import './globals.css';
 
 export const metadata = {
   title: 'Respond Site',
   description: 'Respond to search and rescue activities',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
-}
+};
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const hdrs = headers();
-
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const org = await getOrganizationForRequest();
   const siteConfig: SiteConfig = {
     dev: {
@@ -32,26 +26,30 @@ export default async function RootLayout({
     theme: {
       primary: org?.brand.primary ?? 'rgb(200, 100, 100)',
       primaryDark: org?.brand.primaryDark,
-    }
+    },
   };
 
   const user = userFromAuth(await getCookieAuth());
-  const myOrg: MyOrganization | undefined = (user && org) ? {
-    id: org.id,
-    rosterName: org.rosterName,
-    title: org.title,
-    canCreateMissions: org.canCreateMissions,
-    canCreateEvents: org.canCreateEvents,
-    memberProvider: org.memberProvider.provider,
-    supportEmail: org.supportEmail,
-    partners: org.partners?.map(p => ({
-      id: p.id,
-      title: p.title,
-      rosterName: p.rosterName,
-      canCreateMissions: p.canCreateMissions,
-      canCreateEvents: p.canCreateEvents,
-    })) ?? [],
-  } : undefined;
+  const myOrg: MyOrganization | undefined =
+    user && org
+      ? {
+          id: org.id,
+          rosterName: org.rosterName,
+          title: org.title,
+          canCreateMissions: org.canCreateMissions,
+          canCreateEvents: org.canCreateEvents,
+          memberProvider: org.memberProvider.provider,
+          supportEmail: org.supportEmail,
+          partners:
+            org.partners?.map((p) => ({
+              id: p.id,
+              title: p.title,
+              rosterName: p.rosterName,
+              canCreateMissions: p.canCreateMissions,
+              canCreateEvents: p.canCreateEvents,
+            })) ?? [],
+        }
+      : undefined;
 
   const faviconUrl = org?.brand.faviconUrl;
   const homeScreenIconUrl = org?.brand.homeScreenIconUrl;
@@ -59,8 +57,8 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
-        { faviconUrl && <link rel="icon" href={ faviconUrl } /> }
-        { homeScreenIconUrl && <link rel="apple-touch-icon" href={ homeScreenIconUrl } /> }
+        {faviconUrl && <link rel="icon" href={faviconUrl} />}
+        {homeScreenIconUrl && <link rel="apple-touch-icon" href={homeScreenIconUrl} />}
       </head>
       <body id="root">
         <ClientOnly>
@@ -70,5 +68,5 @@ export default async function RootLayout({
         </ClientOnly>
       </body>
     </html>
-  )
+  );
 }

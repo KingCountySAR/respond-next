@@ -1,4 +1,4 @@
-import { v4 as uuid } from "uuid";
+import { v4 as uuid } from 'uuid';
 
 const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[]) => {
   return (object: any) => {
@@ -9,8 +9,8 @@ const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[])
     }
 
     return resultObject as ObjectType;
-  }
-}
+  };
+};
 
 export enum ResponderStatus {
   NotResponding = 0,
@@ -24,28 +24,15 @@ export enum ResponderStatus {
 }
 
 export function isActive(status: ResponderStatus) {
-  return [
-    ResponderStatus.Standby,
-    ResponderStatus.Remote,
-    ResponderStatus.SignedIn,
-    ResponderStatus.Available,
-    ResponderStatus.Assigned,
-    ResponderStatus.Demobilized
-  ].includes(status);
+  return [ResponderStatus.Standby, ResponderStatus.Remote, ResponderStatus.SignedIn, ResponderStatus.Available, ResponderStatus.Assigned, ResponderStatus.Demobilized].includes(status);
 }
 
 export function isInTransit(status: ResponderStatus) {
-  return [
-    ResponderStatus.SignedIn,
-    ResponderStatus.Demobilized
-  ].includes(status);
+  return [ResponderStatus.SignedIn, ResponderStatus.Demobilized].includes(status);
 }
 
 export function isCheckedIn(status: ResponderStatus) {
-  return [
-    ResponderStatus.Available,
-    ResponderStatus.Assigned
-  ].includes(status);
+  return [ResponderStatus.Available, ResponderStatus.Assigned].includes(status);
 }
 
 export enum OrganizationStatus {
@@ -77,7 +64,7 @@ export interface ParticipatingOrg {
   id: string;
   title: string;
   rosterName?: string;
-  timeline: { time: number, status: OrganizationStatus }[];
+  timeline: { time: number; status: OrganizationStatus }[];
 }
 
 export interface Activity {
@@ -99,10 +86,10 @@ export interface Activity {
 
 export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'startTime', 'endTime']);
 
-export type ActivityType = 'missions'|'events';
+export type ActivityType = 'missions' | 'events';
 
 export interface OrgState {
-  list: Activity[],
+  list: Activity[];
 }
 
 export function createNewActivity(): Activity {
@@ -112,7 +99,7 @@ export function createNewActivity(): Activity {
     title: '',
     description: '',
     location: { title: '' },
-    mapId:'',
+    mapId: '',
     startTime: new Date().getTime(),
     isMission: false,
     asMission: false,

@@ -1,11 +1,10 @@
-import * as React from "react";
-import { format as formatDate, formatRelative, Locale } from "date-fns";
-import enUS from 'date-fns/locale/en-US';
+import enUS, { format as formatDate, formatRelative, Locale } from 'date-fns';
+import * as React from 'react';
 
 // Default time formatting for formatRelative is 12 hour time. We want 24 hour time.
 // To do this, we need to provide a custom locale. This GitHub comment shows the general approach:
 // https://github.com/date-fns/date-fns/issues/1218#issuecomment-599182307
-// 
+//
 // The default formatRelativeLocale for enUS can be found here:
 // https://github.com/date-fns/date-fns/blob/main/src/locale/en-US/_lib/formatRelative/index.ts
 //
@@ -22,7 +21,7 @@ const formatRelativeLocale: Record<string, string> = {
 const locale: Locale = {
   ...enUS,
   formatRelative: (token) => formatRelativeLocale[token],
-}
+};
 
 export interface RelativeTimeTextProps {
   time: number;
@@ -32,7 +31,7 @@ export interface RelativeTimeTextProps {
 }
 
 export const RelativeTimeText = ({ time, baseTime, defaultToTime, lowercase }: RelativeTimeTextProps) => {
-  const [ useRelative, setUseRelative ] = React.useState<boolean>(!(defaultToTime ?? false));
+  const [useRelative, setUseRelative] = React.useState<boolean>(!(defaultToTime ?? false));
   let text;
   if (useRelative) {
     text = formatRelative(time, baseTime, { locale });
@@ -44,6 +43,8 @@ export const RelativeTimeText = ({ time, baseTime, defaultToTime, lowercase }: R
   }
 
   return (
-    <span onClick={() => setUseRelative(!useRelative)} style={{cursor:'pointer'}}>{text}</span>
+    <span onClick={() => setUseRelative(!useRelative)} style={{ cursor: 'pointer' }}>
+      {text}
+    </span>
   );
-}
+};

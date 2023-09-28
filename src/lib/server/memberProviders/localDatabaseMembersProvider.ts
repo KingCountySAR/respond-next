@@ -19,7 +19,7 @@
 //         sub: `${auth.provider}:${auth.email}`,
 //       })
 //       .first();
-    
+
 //     if (!row) return undefined;
 
 //     return ({

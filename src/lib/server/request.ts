@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+
 import { getOrganizationForDomain } from './mongodb';
 
 export async function getOrganizationForRequest() {
