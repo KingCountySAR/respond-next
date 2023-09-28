@@ -1,7 +1,7 @@
 import { Draft } from '@reduxjs/toolkit';
 import merge from 'lodash.merge';
 
-import { createNewActivity, pickActivityProperties, ResponderStatus } from '@respond/types/activity';
+import { createNewActivity, ParticipantStatus, pickActivityProperties } from '@respond/types/activity';
 
 import { ActivityActions, ActivityActionsType } from './activityActions';
 
@@ -56,7 +56,7 @@ export const BasicReducers: ActivityReducers = {
             },
             update: {
               time: payload.endTime,
-              status: ResponderStatus.SignedOut,
+              status: ParticipantStatus.SignedOut,
             },
           },
         });
@@ -80,11 +80,11 @@ export const BasicReducers: ActivityReducers = {
       if (person) {
         const lastUpdate = person.timeline[0];
         if (lastUpdate.organizationId !== payload.participant.organizationId) {
-          if (lastUpdate.status !== ResponderStatus.SignedOut && lastUpdate.status !== ResponderStatus.NotResponding) {
+          if (lastUpdate.status !== ParticipantStatus.SignedOut && lastUpdate.status !== ParticipantStatus.NotResponding) {
             person.timeline.unshift({
               organizationId: lastUpdate.organizationId,
               time: payload.update.time,
-              status: ResponderStatus.SignedOut,
+              status: ParticipantStatus.SignedOut,
             });
           }
           person.tags = undefined;
@@ -106,7 +106,7 @@ export const BasicReducers: ActivityReducers = {
       });
 
       // If this is not a sign-in, then we are done.
-      if (payload.update.status !== ResponderStatus.SignedIn) {
+      if (payload.update.status !== ParticipantStatus.SignedIn) {
         return;
       }
 
@@ -115,10 +115,10 @@ export const BasicReducers: ActivityReducers = {
         .filter((f) => f.id !== payload.activityId && f.participants[payload.participant.id])
         .forEach((otherActivity) => {
           const timeline = otherActivity.participants[payload.participant.id].timeline;
-          if (timeline[0].status === ResponderStatus.SignedIn) {
+          if (timeline[0].status === ParticipantStatus.SignedIn) {
             timeline.unshift({
               time: payload.update.time,
-              status: ResponderStatus.SignedOut,
+              status: ParticipantStatus.SignedOut,
               organizationId: timeline[0].organizationId,
             });
           }

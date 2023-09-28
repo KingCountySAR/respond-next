@@ -4,11 +4,11 @@ import { ReactNode } from 'react';
 
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { getActivityPath, isActive } from '@respond/lib/client/store/activities';
-import { Activity, ResponderStatus } from '@respond/types/activity';
+import { Activity, ParticipantStatus } from '@respond/types/activity';
 
 import { StatusChip } from './StatusChip';
 
-export const EventTile = ({ activity, status, children }: { activity: Activity; status?: ResponderStatus; children?: ReactNode }) => {
+export const EventTile = ({ activity, status, children }: { activity: Activity; status?: ParticipantStatus; children?: ReactNode }) => {
   return (
     <Card>
       <Box padding={1}>

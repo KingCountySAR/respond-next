@@ -4,7 +4,7 @@ import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandl
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { Activity, OrganizationStatus, Participant, ResponderStatus } from '@respond/types/activity';
+import { Activity, OrganizationStatus, Participant, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
@@ -15,7 +15,7 @@ interface FormValues {
   addMiles: number | '';
 }
 
-export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: MyOrganization, participant: Participant | undefined, currentStatus: ResponderStatus | undefined, newStatus: ResponderStatus, onFinish: () => void) {
+export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: MyOrganization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
   const dispatch = useAppDispatch();
 
   const resolver: Resolver<FormValues> = async (values) => {
@@ -65,7 +65,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
             rosterName: respondingOrg.rosterName,
           },
           {
-            status: newStatus === ResponderStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding,
+            status: newStatus === ParticipantStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding,
             time,
           },
         ),
@@ -174,7 +174,7 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
   return (
     <Stack spacing={2} alignItems="flex-start">
       <DialogContentText id="status-update-dialog-description">Change your status for {activity.title}?</DialogContentText>
-      {newStatus === ResponderStatus.SignedOut ? <MileageSection form={form} existingMiles={participant?.miles} /> : undefined}
+      {newStatus === ParticipantStatus.SignedOut ? <MileageSection form={form} existingMiles={participant?.miles} /> : undefined}
     </Stack>
   );
 };

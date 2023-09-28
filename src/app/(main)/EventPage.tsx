@@ -11,7 +11,7 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, getActivityStatus, isActive } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
-import { isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipatingOrg, ResponderStatus } from '@respond/types/activity';
+import { isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
 
 import styles from './EventPage.module.css';
 import { OrganizationChip } from './OrganizationChip';
@@ -28,7 +28,7 @@ const Roster = ({ participants, orgs, startTime }: { participants: Record<string
   };
 
   const rows: GridRowsProp = Object.values(participants)
-    .filter((f) => f.timeline[0].status !== ResponderStatus.NotResponding)
+    .filter((f) => f.timeline[0].status !== ParticipantStatus.NotResponding)
     .map((f) => ({
       ...f,
       orgName: orgs[f.organizationId]?.rosterName ?? orgs[f.organizationId]?.title,
@@ -46,7 +46,7 @@ const Roster = ({ participants, orgs, startTime }: { participants: Record<string
       minWidth: 15,
       valueFormatter: () => '',
       disableColumnMenu: true,
-      cellClassName: ({ value }: { value?: ResponderStatus }) => `roster-status roster-status-${ResponderStatus[value!]}`,
+      cellClassName: ({ value }: { value?: ParticipantStatus }) => `roster-status roster-status-${ParticipantStatus[value!]}`,
     },
     {
       field: 'fullName',
@@ -104,11 +104,11 @@ export const EventPage = ({ eventId }: { eventId: string }) => {
   };
 
   const reduceStandby = (count: number, participant: Participant) => {
-    return count + (participant?.timeline[0].status === ResponderStatus.Standby ? 1 : 0);
+    return count + (participant?.timeline[0].status === ParticipantStatus.Standby ? 1 : 0);
   };
 
   const reduceSignedIn = (count: number, participant: Participant) => {
-    return count + (participant?.timeline[0].status === ResponderStatus.SignedIn ? 1 : 0);
+    return count + (participant?.timeline[0].status === ParticipantStatus.SignedIn ? 1 : 0);
   };
 
   const reduceCheckedIn = (count: number, participant: Participant) => {

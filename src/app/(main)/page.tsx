@@ -8,7 +8,7 @@ import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputFo
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { Activity, isActive as isResponderStatusActive } from '@respond/types/activity';
+import { Activity, isActive as isParticipantStatusActive } from '@respond/types/activity';
 
 import { EventTile } from './EventTile';
 import { OrganizationChip } from './OrganizationChip';
@@ -30,7 +30,7 @@ function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible:
 
 export default function Home() {
   const myActivities = useAppSelector(buildMyActivitySelector());
-  const myCurrentActivities = myActivities.filter((activity) => isResponderStatusActive(activity.status.status) === true);
+  const myCurrentActivities = myActivities.filter((activity) => isParticipantStatusActive(activity.status.status) === true);
 
   function getMyStatus(activity: Activity) {
     return myActivities.find((f) => f.activity.id === activity.id)?.status.status;

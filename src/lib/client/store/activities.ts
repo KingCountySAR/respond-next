@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 import { ActivityActions, ActivityState, BasicReducers } from '@respond/lib/state';
-import { Activity, isActive as isResponderStatusActive, ResponderStatus, ResponderUpdate } from '@respond/types/activity';
+import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
 import { RootState } from '.';
 
@@ -29,7 +29,7 @@ export function buildActivityTypeSelector(missions: boolean) {
 }
 
 export function getActiveParticipants(activity: Activity) {
-  return Object.values(activity.participants).filter((p) => isResponderStatusActive(p.timeline[0].status) == true);
+  return Object.values(activity.participants).filter((p) => isParticipantStatusActive(p.timeline[0].status) == true);
 }
 
 export function buildActivitySelector(id?: string) {
@@ -43,10 +43,10 @@ export function buildMyActivitySelector() {
       return [];
     }
 
-    const myParticipation: { activity: Activity; status: ResponderUpdate }[] = [];
+    const myParticipation: { activity: Activity; status: ParticipantUpdate }[] = [];
     for (const activity of state.activities.list) {
       const myUpdate = activity.participants[participantId]?.timeline[0];
-      if (myUpdate && myUpdate.status !== ResponderStatus.NotResponding) {
+      if (myUpdate && myUpdate.status !== ParticipantStatus.NotResponding) {
         myParticipation.push({ activity, status: myUpdate });
       }
     }

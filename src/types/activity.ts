@@ -12,7 +12,7 @@ const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[])
   };
 };
 
-export enum ResponderStatus {
+export enum ParticipantStatus {
   NotResponding = 0,
   Remote = 1,
   Standby = 2,
@@ -23,16 +23,16 @@ export enum ResponderStatus {
   Demobilized = 7,
 }
 
-export function isActive(status: ResponderStatus) {
-  return [ResponderStatus.Standby, ResponderStatus.Remote, ResponderStatus.SignedIn, ResponderStatus.Available, ResponderStatus.Assigned, ResponderStatus.Demobilized].includes(status);
+export function isActive(status: ParticipantStatus) {
+  return [ParticipantStatus.Standby, ParticipantStatus.Remote, ParticipantStatus.SignedIn, ParticipantStatus.Available, ParticipantStatus.Assigned, ParticipantStatus.Demobilized].includes(status);
 }
 
-export function isInTransit(status: ResponderStatus) {
-  return [ResponderStatus.SignedIn, ResponderStatus.Demobilized].includes(status);
+export function isInTransit(status: ParticipantStatus) {
+  return [ParticipantStatus.SignedIn, ParticipantStatus.Demobilized].includes(status);
 }
 
-export function isCheckedIn(status: ResponderStatus) {
-  return [ResponderStatus.Available, ResponderStatus.Assigned].includes(status);
+export function isCheckedIn(status: ParticipantStatus) {
+  return [ParticipantStatus.Available, ParticipantStatus.Assigned].includes(status);
 }
 
 export enum OrganizationStatus {
@@ -44,10 +44,10 @@ export enum OrganizationStatus {
   Cleared = 5,
 }
 
-export interface ResponderUpdate {
+export interface ParticipantUpdate {
   time: number;
   organizationId: string;
-  status: ResponderStatus;
+  status: ParticipantStatus;
 }
 
 export interface Participant {
@@ -55,7 +55,7 @@ export interface Participant {
   firstname: string;
   lastname: string;
   organizationId: string;
-  timeline: ResponderUpdate[];
+  timeline: ParticipantUpdate[];
   tags?: string[];
   miles?: number;
 }
