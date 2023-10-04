@@ -23,6 +23,7 @@
     "@types/uuid": "^9.0.1",
     "bufferutil": "^4.0.7",
     "date-fns": "^2.29.3",
+    "encoding": "^0.1.13",
     "eslint": "8.36.0",
     "eslint-config-next": "13.2.4",
     "google-auth-library": "^8.7.0",
