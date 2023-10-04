@@ -2,13 +2,12 @@ import { Box, Card, CardActions, Grid, IconButton, Link, Typography } from '@mui
 import Image from 'next/image';
 import { ReactNode } from 'react';
 
+import { StatusChip } from '@respond/components/StatusChip';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { getActivityPath, isActive } from '@respond/lib/client/store/activities';
-import { Activity, ResponderStatus } from '@respond/types/activity';
+import { Activity, ParticipantStatus } from '@respond/types/activity';
 
-import { StatusChip } from './StatusChip';
-
-export const EventTile = ({ activity, status, children }: { activity: Activity; status?: ResponderStatus; children?: ReactNode }) => {
+export const ActivityTile = ({ activity, status, children }: { activity: Activity; status?: ParticipantStatus; children?: ReactNode }) => {
   return (
     <Card>
       <Box padding={1}>

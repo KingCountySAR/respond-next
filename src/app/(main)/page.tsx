@@ -4,16 +4,13 @@ import addDays from 'date-fns/addDays';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
+import { ActivityStack } from '@respond/components/activities/ActivityStack';
+import { ActivityTile } from '@respond/components/activities/ActivityTile';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { useAppSelector } from '@respond/lib/client/store';
-import { buildActivityTypeSelector, buildMyActivitySelector, getActiveParticipants, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
+import { buildActivityTypeSelector, buildMyActivitySelector, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { Activity, isActive as isResponderStatusActive } from '@respond/types/activity';
-
-import { EventTile } from './EventTile';
-import { OrganizationChip } from './OrganizationChip';
-
-//const inter = Inter({ subsets: ['latin'] })
+import { Activity, isActive as isParticipantStatusActive } from '@respond/types/activity';
 
 function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible: number, oldestVisible: number) {
   // Most recent first
@@ -30,11 +27,9 @@ function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible:
 
 export default function Home() {
   const myActivities = useAppSelector(buildMyActivitySelector());
-  const myCurrentActivities = myActivities.filter((activity) => isResponderStatusActive(activity.status.status) === true);
+  const myCurrentActivities = myActivities.filter((activity) => isParticipantStatusActive(activity.status.status) === true);
 
-  function getMyStatus(activity: Activity) {
-    return myActivities.find((f) => f.activity.id === activity.id)?.status.status;
-  }
+  const statusMap = myActivities.reduce((accum, cur) => ({ [cur.activity.id]: cur.status.status, ...accum }), {});
 
   const maxCompletedActivitiesVisible = 3;
   const oldestCompletedActivityVisible = addDays(new Date(), -3).getTime();
@@ -61,7 +56,7 @@ export default function Home() {
           </Box>
           <Stack spacing={1}>
             {myCurrentActivities.map((up) => (
-              <EventTile key={up.activity.id} activity={up.activity} status={up.status.status}>
+              <ActivityTile key={up.activity.id} activity={up.activity} status={up.status.status}>
                 <OutputForm>
                   <Box>
                     <OutputText label="Location" value={up.activity.location.title} />
@@ -71,7 +66,7 @@ export default function Home() {
                     {isFuture(up.activity.startTime) && <OutputTime label="Start Time" time={up.activity.startTime}></OutputTime>}
                   </Box>
                 </OutputForm>
-              </EventTile>
+              </ActivityTile>
             ))}
           </Stack>
         </Box>
@@ -92,29 +87,7 @@ export default function Home() {
             </Button>
           )}
         </Box>
-        <Stack spacing={1}>
-          {missions.map((a) => (
-            <EventTile key={a.id} activity={a} status={getMyStatus(a)}>
-              <OutputForm>
-                <Box>
-                  <OutputText label="Location" value={a.location.title} />
-                  <OutputText label="State #" value={a.idNumber} />
-                </Box>
-                <Box>
-                  <OutputText label="Mission Status" value={getActivityStatus(a)} />
-                  {isFuture(a.startTime) && <OutputTime label="Start Time" time={a.startTime}></OutputTime>}
-                  <OutputText label="Active Responders" value={getActiveParticipants(a).length.toString()} />
-                </Box>
-              </OutputForm>
-              <Box sx={{ pt: 2 }}>
-                {Object.entries(a.organizations ?? {}).map(([id, org]) => (
-                  <OrganizationChip key={id} org={org} activity={a} />
-                ))}
-              </Box>
-            </EventTile>
-          ))}
-          {missions.length === 0 && <Typography>No recent missions</Typography>}
-        </Stack>
+        <ActivityStack type="missions" activities={missions} statusMap={statusMap} showOrgs />
       </Box>
       <Box sx={{ pb: 4 }}>
         <Box
@@ -132,24 +105,7 @@ export default function Home() {
             </Button>
           )}
         </Box>
-        <Stack spacing={1}>
-          {events.map((a) => (
-            <EventTile key={a.id} activity={a}>
-              <OutputForm>
-                <Box>
-                  <OutputText label="Location" value={a.location.title} />
-                  <OutputText label="State #" value={a.idNumber} />
-                </Box>
-                <Box>
-                  <OutputText label="Mission Status" value={getActivityStatus(a)} />
-                  {isFuture(a.startTime) && <OutputTime label="Start Time" time={a.startTime}></OutputTime>}
-                  <OutputText label="Active Participants" value={getActiveParticipants(a).length.toString()} />
-                </Box>
-              </OutputForm>
-            </EventTile>
-          ))}
-          {events.length === 0 && <Typography>No recent events</Typography>}
-        </Stack>
+        <ActivityStack type="events" activities={events} statusMap={statusMap} />
       </Box>
     </main>
   );

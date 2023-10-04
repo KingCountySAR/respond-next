@@ -1,6 +1,6 @@
 import { createAction } from '@reduxjs/toolkit';
 
-import { Activity, OrganizationStatus, pickActivityProperties, ResponderStatus } from '@respond/types/activity';
+import { Activity, OrganizationStatus, ParticipantStatus, pickActivityProperties } from '@respond/types/activity';
 
 import { ActivityState } from '.';
 
@@ -34,7 +34,7 @@ const appendOrganizationTimeline = createAction('participatingOrg/append', (acti
   meta: { sync: true },
 }));
 
-const participantUpdate = createAction('participant/update', (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ResponderStatus, miles?: number) => ({
+const participantUpdate = createAction('participant/update', (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ParticipantStatus, miles?: number) => ({
   payload: {
     activityId,
     participant: {
