@@ -44,6 +44,10 @@ export class StateManager {
     };
   }
 
+  async getAllActivities() {
+    return this.activityState.list;
+  }
+
   async handleIncomingAction(action: ActivityAction, reporterId: string, auth: { userId: string; email: string }) {
     console.log('stateManager reportAction', action);
 
