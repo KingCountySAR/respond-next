@@ -17,7 +17,7 @@ import { isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, P
 
 import styles from './ActivityPage.module.css';
 
-const Roster = ({ participants, orgs, startTime }: { participants: Record<string, Participant>; orgs: Record<string, ParticipatingOrg>; startTime: number }) => {
+const Roster = ({ participants, orgs, orgFilter, startTime }: { participants: Record<string, Participant>; orgs: Record<string, ParticipatingOrg>; orgFilter: string; startTime: number }) => {
   const _startTime = startTime;
   const handleRowClick: GridEventListener<'rowClick'> = (
     _params, // GridRowParams
@@ -29,6 +29,7 @@ const Roster = ({ participants, orgs, startTime }: { participants: Record<string
 
   const rows: GridRowsProp = Object.values(participants)
     .filter((f) => f.timeline[0].status !== ParticipantStatus.NotResponding)
+    .filter((f) => (orgFilter ? f.organizationId == orgFilter : true))
     .map((f) => ({
       ...f,
       orgName: orgs[f.organizationId]?.rosterName ?? orgs[f.organizationId]?.title,
@@ -90,6 +91,7 @@ export const ActivityPage = ({ activityId }: { activityId: string }) => {
 
   const [promptingRemove, setPromptingRemove] = useState<boolean>(false);
   const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
+  const [rosterOrgFilter, setRosterOrgFilter] = useState<string>('');
 
   useEffect(() => {
     document.title = `${activity?.idNumber} ${activity?.title}`;
@@ -168,14 +170,14 @@ export const ActivityPage = ({ activityId }: { activityId: string }) => {
           <Typography>Participating Organizations:</Typography>
           <Box sx={{ my: 2 }}>
             {Object.entries(activity.organizations ?? {}).map(([id, org]) => (
-              <OrganizationChip key={id} org={org} activity={activity} />
+              <OrganizationChip key={id} org={org} activity={activity} selected={rosterOrgFilter == id} onClick={() => (rosterOrgFilter == id ? setRosterOrgFilter('') : setRosterOrgFilter(id))} />
             ))}
           </Box>
         </Box>
 
         <Box>
           <Typography>Roster:</Typography>
-          <Roster participants={activity.participants} orgs={activity.organizations} startTime={activity.startTime} />
+          <Roster participants={activity.participants} orgs={activity.organizations} orgFilter={rosterOrgFilter} startTime={activity.startTime} />
         </Box>
 
         <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
