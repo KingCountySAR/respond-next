@@ -4,6 +4,12 @@
 - [Node.js] (https://nodejs.org/en) 16.x or higher
 - [Yarn](https://yarnpkg.com)
 
+**Windows users**:
+- Ensure git's `autocrlf` setting is set to `false` for this repository. If it's not, Git will checkout the files with CRLF line endings and the linter will throw errors.
+- If your global setting is already `false` you have nothing to do.
+- To view your current setting in the terminal, run the following command from within this repository: `git config core.autocrlf`
+- To set `autocrlf` for this repository only (global unchanged) run the following command from within this repository: `git config core.autocrlf false`
+
 ### Create dev database
 Development is supported on either a local or remote MongoDB server.
 - For a local installation, it's recommended to install the [Community Server](https://www.mongodb.com/try/download/community) and [Compass UI](https://www.mongodb.com/try/download/compass).
