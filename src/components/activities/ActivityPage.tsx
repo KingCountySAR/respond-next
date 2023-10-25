@@ -170,7 +170,7 @@ export const ActivityPage = ({ activityId }: { activityId: string }) => {
           <Typography>Participating Organizations:</Typography>
           <Box sx={{ my: 2 }}>
             {Object.entries(activity.organizations ?? {}).map(([id, org]) => (
-              <OrganizationChip key={id} org={org} activity={activity} selected={rosterOrgFilter == id} onClick={() => (rosterOrgFilter == id ? setRosterOrgFilter('') : setRosterOrgFilter(id))} />
+              <OrganizationChip key={id} org={org} activity={activity} selected={rosterOrgFilter == id} isClickable={(count) => count > 0} onClick={() => (rosterOrgFilter == id ? setRosterOrgFilter('') : setRosterOrgFilter(id))} />
             ))}
           </Box>
         </Box>

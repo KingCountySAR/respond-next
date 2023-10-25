@@ -5,14 +5,20 @@ import { Activity, isActive as isParticipantStatusActive, OrganizationStatus, Pa
 
 function getOrgParticipantCount(activity: Activity, org: ParticipatingOrg) {
   const count = Object.values(activity.participants).filter((p) => isParticipantStatusActive(p.timeline[0].status) && p.organizationId === org.id).length;
-  return count ? count : '';
+  return count ? count : 0;
 }
 
-export const OrganizationChip = ({ org, activity, selected = false, onClick = undefined }: { org: ParticipatingOrg; activity: Activity; selected?: boolean; onClick?: MouseEventHandler<HTMLDivElement> }) => {
+export const OrganizationChip = ({ org, activity, selected = false, isClickable = undefined, onClick = undefined }: { org: ParticipatingOrg; activity: Activity; selected?: boolean; isClickable?: (participantCount: number) => boolean; onClick?: MouseEventHandler<HTMLDivElement> }) => {
   const participantCount = getOrgParticipantCount(activity, org);
+  const participantCountText = participantCount == 0 ? '' : participantCount;
 
   const status = org.timeline[0]?.status;
   const color = status === OrganizationStatus.Responding ? 'success' : status === OrganizationStatus.Standby ? 'warning' : 'default';
 
-  return <Chip size="small" sx={{ mr: 1 }} label={`${org.rosterName ?? org.title} ${participantCount}`} color={color} variant={selected ? 'filled' : 'outlined'} onClick={onClick} />;
+  // If isClickable isn't provided, assume it is clickable.
+  if (isClickable && !isClickable(participantCount)) {
+    onClick = undefined;
+  }
+
+  return <Chip size="small" sx={{ mr: 1 }} label={`${org.rosterName ?? org.title} ${participantCountText}`} color={color} variant={selected ? 'filled' : 'outlined'} onClick={onClick} />;
 };
