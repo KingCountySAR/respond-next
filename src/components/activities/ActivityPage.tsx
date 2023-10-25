@@ -1,6 +1,5 @@
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Alert, Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Paper, Stack, Typography } from '@mui/material';
-import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
+import { Alert, Box, Breadcrumbs, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Paper, Stack, Typography } from '@mui/material';
 import formatDate from 'date-fns/format';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -15,73 +14,88 @@ import { buildActivitySelector, getActivityStatus, isActive } from '@respond/lib
 import { ActivityActions } from '@respond/lib/state';
 import { isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
 
-import styles from './ActivityPage.module.css';
+function getStatusColor(status: ParticipantStatus) {
+  switch (status) {
+    case ParticipantStatus.SignedIn:
+    case ParticipantStatus.Available:
+    case ParticipantStatus.Assigned:
+      return 'green';
 
-const Roster = ({ participants, orgs, startTime }: { participants: Record<string, Participant>; orgs: Record<string, ParticipatingOrg>; startTime: number }) => {
-  const _startTime = startTime;
-  const handleRowClick: GridEventListener<'rowClick'> = (
-    _params, // GridRowParams
-    _event, // MuiEvent<React.MouseEvent<HTMLElement>>
-    _details, // GridCallbackDetails
-  ) => {
-    console.log('handle row click');
-  };
+    case ParticipantStatus.Standby:
+      return 'orange';
 
-  const rows: GridRowsProp = Object.values(participants)
-    .filter((f) => f.timeline[0].status !== ParticipantStatus.NotResponding)
-    .map((f) => ({
-      ...f,
-      orgName: orgs[f.organizationId]?.rosterName ?? orgs[f.organizationId]?.title,
-      fullName: f.lastname + ', ' + f.firstname,
-      statusColor: f.timeline[0].status,
-      statusDescription: STATUS_TEXT[f.timeline[0].status],
-      time: f.timeline[0].time,
-    }));
+    case ParticipantStatus.Demobilized:
+      return 'darkred';
 
-  const columns: GridColDef[] = [
-    {
-      field: 'statusColor',
-      headerName: '',
-      width: 10,
-      minWidth: 15,
-      valueFormatter: () => '',
-      disableColumnMenu: true,
-      cellClassName: ({ value }: { value?: ParticipantStatus }) => `roster-status roster-status-${ParticipantStatus[value!]}`,
-    },
-    {
-      field: 'fullName',
-      headerName: 'Name',
-      minWidth: 15,
-      flex: 1,
-      cellClassName: styles.rosterNameCell,
-    },
-    {
-      field: 'orgName',
-      headerName: 'Org',
-      flex: 1,
-      renderCell: (o) => {
-        return (
-          <div>
-            <div>{o.value}</div>
-            <div style={{ fontSize: '80%' }}>{o.row.tags?.join(', ')}</div>
-          </div>
-        );
-      },
-    },
-    { field: 'statusDescription', headerName: 'Status', minWidth: 15, flex: 1 },
-    {
-      field: 'time',
-      headerName: 'Time',
-      valueFormatter: (o) => {
-        const isToday = new Date().setHours(0, 0, 0, 0) === new Date(o.value).setHours(0, 0, 0, 0);
-        return `${!isToday ? formatDate(o.value, 'yyyy-MM-dd ') : ''}${formatDate(o.value, 'HHmm')}`;
-      },
-      flex: 1,
-    },
-  ];
+    case ParticipantStatus.Remote:
+      return 'turquoise';
 
-  return <DataGrid className={styles.roster} rows={rows} columns={columns} autoHeight disableRowSelectionOnClick hideFooter rowSelection={false} onRowClick={handleRowClick} getRowHeight={() => 'auto'} />;
-};
+    default:
+      return '';
+  }
+}
+
+function formatStatusTime(time: number) {
+  const isToday = new Date().setHours(0, 0, 0, 0) === new Date(time).setHours(0, 0, 0, 0);
+  return `${!isToday ? formatDate(time, 'yyyy-MM-dd ') : ''}${formatDate(time, 'HHmm')}`;
+}
+
+function Tag({ tag }: { tag: string }) {
+  return <Chip size="small" sx={{ mr: 1 }} label={tag} />;
+}
+
+function ResponderCard({ participant, org }: { participant: Participant; org: ParticipatingOrg }) {
+  const name = `${participant.lastname}, ${participant.firstname}`;
+  const orgName = org?.rosterName ?? org?.title;
+  const status = participant.timeline[0].status;
+  const statusTime = participant.timeline[0].time;
+  const tags = participant.tags;
+
+  return (
+    <Stack direction="row" sx={{ borderColor: 'grey.200', padding: 1 }} borderBottom={1}>
+      <Box minWidth="10px" sx={{ mr: 1, bgcolor: getStatusColor(status) }}></Box>
+      <Stack direction="column" sx={{ flexGrow: 1 }}>
+        <Stack direction="row" sx={{ mb: 1 }}>
+          <Typography sx={{ flexGrow: 1, flexShrink: 1, mr: 1 }}>{name}</Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>{tags?.map((t, index) => <Tag key={index} tag={t} />)}</Box>
+        </Stack>
+        <Stack direction="row" sx={{ alignItems: 'center' }}>
+          <Chip size="small" sx={{ mr: 1 }} label={orgName} />
+          <Box fontSize={13}>
+            <Typography fontSize="inherit" fontStyle="italic" display="inline">
+              {STATUS_TEXT[status]}
+            </Typography>{' '}
+            at {formatStatusTime(statusTime)}
+          </Box>
+        </Stack>
+      </Stack>
+    </Stack>
+  );
+}
+
+function Roster({ participants, orgs }: { participants: Record<string, Participant>; orgs: Record<string, ParticipatingOrg> }) {
+  return (
+    <Stack direction="column">
+      {Object.values(participants)
+        .filter((f) => f.timeline[0].status !== ParticipantStatus.NotResponding)
+        .map((p) => (
+          <ResponderCard key={p.id} participant={p} org={orgs[p.organizationId]} />
+        ))}
+
+      {Object.values(participants)
+        .filter((f) => f.timeline[0].status !== ParticipantStatus.NotResponding)
+        .map((p) => (
+          <ResponderCard key={p.id} participant={p} org={orgs[p.organizationId]} />
+        ))}
+
+      {Object.values(participants)
+        .filter((f) => f.timeline[0].status !== ParticipantStatus.NotResponding)
+        .map((p) => (
+          <ResponderCard key={p.id} participant={p} org={orgs[p.organizationId]} />
+        ))}
+    </Stack>
+  );
+}
 
 export const ActivityPage = ({ activityId }: { activityId: string }) => {
   const dispatch = useAppDispatch();
@@ -175,7 +189,7 @@ export const ActivityPage = ({ activityId }: { activityId: string }) => {
 
         <Box>
           <Typography>Roster:</Typography>
-          <Roster participants={activity.participants} orgs={activity.organizations} startTime={activity.startTime} />
+          <Roster participants={activity.participants} orgs={activity.organizations} />
         </Box>
 
         <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
