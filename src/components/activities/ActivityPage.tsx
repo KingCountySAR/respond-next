@@ -81,18 +81,6 @@ function Roster({ participants, orgs }: { participants: Record<string, Participa
         .map((p) => (
           <ResponderCard key={p.id} participant={p} org={orgs[p.organizationId]} />
         ))}
-
-      {Object.values(participants)
-        .filter((f) => f.timeline[0].status !== ParticipantStatus.NotResponding)
-        .map((p) => (
-          <ResponderCard key={p.id} participant={p} org={orgs[p.organizationId]} />
-        ))}
-
-      {Object.values(participants)
-        .filter((f) => f.timeline[0].status !== ParticipantStatus.NotResponding)
-        .map((p) => (
-          <ResponderCard key={p.id} participant={p} org={orgs[p.organizationId]} />
-        ))}
     </Stack>
   );
 }
