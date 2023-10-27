@@ -1,8 +1,7 @@
 import { DataGrid, GridColDef, GridEventListener, GridRowsProp } from '@mui/x-data-grid';
 import formatDate from 'date-fns/format';
 
-import { STATUS_TEXT } from '@respond/components/StatusChip';
-import { Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
+import { getStatusText, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
 
 import styles from './ActivityPage.module.css';
 
@@ -24,7 +23,7 @@ export const Roster = ({ participants, orgs, orgFilter, startTime }: { participa
       orgName: orgs[f.organizationId]?.rosterName ?? orgs[f.organizationId]?.title,
       fullName: f.lastname + ', ' + f.firstname,
       statusColor: f.timeline[0].status,
-      statusDescription: STATUS_TEXT[f.timeline[0].status],
+      statusDescription: getStatusText(f.timeline[0].status),
       time: f.timeline[0].time,
     }));
 

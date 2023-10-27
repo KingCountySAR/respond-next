@@ -15,6 +15,9 @@ interface D4HMemberResponse {
   mobilephone?: string;
   group_ids?: number[];
   custom_fields: any[];
+  urls: {
+    image?: string;
+  };
 }
 
 interface D4HMember {
@@ -47,6 +50,28 @@ export default class D4HMembersProvider implements MemberProvider {
       .map((f) => f.lookup[memberId])
       ?.find((f) => f.memberInfo);
     return d4hMember?.memberInfo;
+  }
+
+  async getMemberPhoto(memberId: string) {
+    await this.initialize();
+
+    // const imageUrl = Object.values(this.tokenFetchInfo)
+    //   .map((f) => f.lookup[memberId])
+    //   ?.find((f) => f.response.urls.image);
+    // console.log(imageUrl);
+
+    for (const token in this.tokenFetchInfo) {
+      const member = this.tokenFetchInfo[token].lookup[memberId].response;
+      if (!member) continue;
+
+      console.log('Found info', member.urls.image);
+      const response = await fetch(`https://api.d4h.org${member.urls.image}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return await response.arrayBuffer();
+    }
   }
 
   async getMemberInfo(organizationId: string, auth: MemberAuthInfo): Promise<MemberInfo | undefined> {

@@ -2,7 +2,6 @@ import { Box, Breadcrumbs, Paper, Stack, Typography } from '@mui/material';
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { OrganizationChip } from '@respond/components/OrganizationChip';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
@@ -11,6 +10,7 @@ import { Activity } from '@respond/types/activity';
 
 import { ActivityInfoPanel } from './ActivityInfoPanel';
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { Roster } from './Roster';
 
 export function MobileActivityPage({ activity }: { activity?: Activity }) {
@@ -49,12 +49,8 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
 
       <Box>
         <Typography>Participating Organizations:</Typography>
-        <Box sx={{ my: 2 }}>
-          {Object.entries(activity.organizations ?? {}).map(([id, org]) => (
-            <OrganizationChip key={id} org={org} activity={activity} selected={rosterOrgFilter == id} isClickable={(count) => count > 0} onClick={() => (rosterOrgFilter == id ? setRosterOrgFilter('') : setRosterOrgFilter(id))} />
-          ))}
-        </Box>
       </Box>
+      <ParticipatingOrgChips activity={activity} orgFilter={rosterOrgFilter} setOrgFilter={setRosterOrgFilter} />
 
       <Box>
         <Typography>Roster:</Typography>
