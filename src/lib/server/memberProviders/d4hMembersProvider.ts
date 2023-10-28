@@ -55,16 +55,10 @@ export default class D4HMembersProvider implements MemberProvider {
   async getMemberPhoto(memberId: string) {
     await this.initialize();
 
-    // const imageUrl = Object.values(this.tokenFetchInfo)
-    //   .map((f) => f.lookup[memberId])
-    //   ?.find((f) => f.response.urls.image);
-    // console.log(imageUrl);
-
     for (const token in this.tokenFetchInfo) {
       const member = this.tokenFetchInfo[token].lookup[memberId].response;
       if (!member) continue;
 
-      console.log('Found info', member.urls.image);
       const response = await fetch(`https://api.d4h.org${member.urls.image}`, {
         headers: {
           Authorization: `Bearer ${token}`,
