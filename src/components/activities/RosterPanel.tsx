@@ -36,7 +36,7 @@ export function RosterPanel({ activity, filter, participantContainerComponent: P
 
 export function RosterRowCard({ status, children, onClick, ...props }: PaperProps & { status: ParticipantStatus; children: ReactNode; onClick?: () => void }) {
   let cardContent = (
-    <Stack direction="row">
+    <Stack direction="row" minHeight="3rem">
       <Paper elevation={2} sx={{ width: 8, bgcolor: getStatusCssColor(status) ?? 'transparent', borderBottomRightRadius: 0, borderTopRightRadius: 0 }} />
       {children}
     </Stack>
