@@ -10,8 +10,9 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
 import { Activity, Participant, ParticipatingOrg } from '@respond/types/activity';
 
-import { ActivityInfoPanel } from './ActivityInfoPanel';
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { BriefingPanel } from './BriefingPanel';
+import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
@@ -43,10 +44,7 @@ function MobileBriefingScreen({ activity }: { activity: Activity }) {
   return (
     <>
       <Box sx={{ my: 2 }}>{isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}</Box>
-      <Box>
-        <strong>Make this the info interesting to responders (driving directions, location, description)</strong>
-      </Box>
-      <ActivityInfoPanel activity={activity} responsive />
+      <BriefingPanel activity={activity} />
     </>
   );
 }
@@ -103,10 +101,7 @@ function MobileManageScreen({ activity, startRemove, startChangeState }: { activ
   return (
     <>
       <ActivityActionsBar activity={activity} startRemove={startRemove} startChangeState={startChangeState} />
-      <Box>
-        <strong>Make this the info interesting to managers</strong>
-      </Box>
-      <ActivityInfoPanel activity={activity} responsive />
+      <ManagerPanel activity={activity} />
     </>
   );
 }

@@ -2,11 +2,15 @@ import { Divider, Typography } from '@mui/material';
 import { ReactNode, useState } from 'react';
 
 import { Box, Stack } from '@respond/components/Material';
+import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
+import { useAppSelector } from '@respond/lib/client/store';
+import { isActive } from '@respond/lib/client/store/activities';
 import { Activity, Participant, ParticipatingOrg } from '@respond/types/activity';
 
-import { ActivityInfoPanel } from './ActivityInfoPanel';
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { BriefingPanel } from './BriefingPanel';
+import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
@@ -15,6 +19,10 @@ export function DesktopActivityPage({ activity }: { activity?: Activity }) {
 }
 
 function DesktopActivityContents({ activity, startChangeState, startRemove }: ActivityContentProps) {
+  const user = useAppSelector((state) => state.auth.userInfo);
+  const myParticipation = activity?.participants[user?.userId ?? ''];
+  const isActivityActive = isActive(activity);
+
   const [orgFilter, setOrgFilter] = useState<string>('');
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
@@ -41,8 +49,14 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
             }}
           />
         </Box>
-        <Stack>
-          <ActivityInfoPanel activity={activity} />
+        <Stack alignItems="stretch">
+          <BriefingPanel activity={activity} />
+          {isActivityActive && (
+            <Box sx={{ my: 2 }} display="flex" justifyContent="end">
+              <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
+            </Box>
+          )}
+          <ManagerPanel activity={activity} />
         </Stack>
       </Stack>
       <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
