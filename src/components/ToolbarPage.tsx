@@ -8,6 +8,7 @@ import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import Link from 'next/link';
 import * as React from 'react';
 
 import { AppMenu } from '@respond/components/AppMenu';
@@ -28,7 +29,9 @@ export function ToolbarPage({ children, maxWidth }: { children: React.ReactNode;
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {shortTitle} Check-In
+            <Link href="/" style={{ textDecoration: 'inherit', color: 'inherit' }}>
+              {shortTitle} Check-In
+            </Link>
           </Typography>
           <Typography variant="h6" noWrap component="div">
             {id?.substring(0, 4)} {connected ? <CloudIcon fontSize="medium" /> : <NoCloudIcon fontSize="medium" />}
