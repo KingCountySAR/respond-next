@@ -37,7 +37,7 @@ const OutputField = ({ label, multiline, children }: { label: string; multiline?
       }}
       borderBottom={1}
     >
-      <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: '2em', mr: 2 }}>
+      <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: '2em', mr: { xs: 2, md: 5 } }}>
         {label}
       </Typography>
       {children}

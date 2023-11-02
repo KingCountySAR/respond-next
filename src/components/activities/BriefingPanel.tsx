@@ -1,15 +1,17 @@
+import { SxProps } from '@mui/material/styles';
+
 import { Paper } from '@respond/components/Material';
 import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
 import { getActivityStatus } from '@respond/lib/client/store/activities';
 import { Activity, Participant, ParticipantStatus } from '@respond/types/activity';
 
-export function BriefingPanel({ activity }: { activity: Activity }) {
+export function BriefingPanel({ activity, sx }: { activity: Activity; sx?: SxProps }) {
   const reduceSignedIn = (count: number, participant: Participant) => {
     return count + (participant?.timeline[0].status === ParticipantStatus.SignedIn ? 1 : 0);
   };
 
   return (
-    <Paper elevation={1} sx={{ p: 1 }}>
+    <Paper elevation={1} sx={{ p: 1, ...sx }}>
       <OutputForm>
         <OutputText label="Location" value={activity.location.title} />
         <OutputLink label="Map" value={activity.mapId} href={`https://caltopo.com/m/${activity.mapId}`} />

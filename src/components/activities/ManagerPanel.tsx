@@ -1,9 +1,11 @@
+import { SxProps } from '@mui/material/styles';
+
 import { Paper } from '@respond/components/Material';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { getActivityStatus } from '@respond/lib/client/store/activities';
 import { Activity, isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus } from '@respond/types/activity';
 
-export function ManagerPanel({ activity }: { activity: Activity }) {
+export function ManagerPanel({ activity, sx }: { activity: Activity; sx?: SxProps }) {
   const reduceActive = (count: number, participant: Participant) => {
     return count + (isParticpantActive(participant?.timeline[0].status) ? 1 : 0);
   };
@@ -21,7 +23,7 @@ export function ManagerPanel({ activity }: { activity: Activity }) {
   };
 
   return (
-    <Paper elevation={1} sx={{ p: 1 }}>
+    <Paper elevation={1} sx={{ p: 1, ...sx }}>
       <OutputForm>
         <OutputText label="State #" value={activity.idNumber} />
         <OutputText label="Agency" value={activity.organizations[activity.ownerOrgId]?.title} />

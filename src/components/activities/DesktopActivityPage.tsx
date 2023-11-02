@@ -50,13 +50,13 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
           />
         </Box>
         <Stack alignItems="stretch">
-          <BriefingPanel activity={activity} />
+          <BriefingPanel activity={activity} sx={{ px: 3 }} />
           {isActivityActive && (
             <Box sx={{ my: 2 }} display="flex" justifyContent="end">
               <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
             </Box>
           )}
-          <ManagerPanel activity={activity} />
+          <ManagerPanel activity={activity} sx={{ px: 3 }} />
         </Stack>
       </Stack>
       <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
