@@ -1,9 +1,7 @@
 'use client';
 
-import { EventPage } from '../../EventPage';
+import { ActivityPage } from '@respond/components/activities/ActivityPage';
 
-export default function ViewEvent({params}: { params: { eventId: string }}) {
-  return (
-    <EventPage eventId={params.eventId} />
-  )
+export default function ViewEvent({ params }: { params: { eventId: string } }) {
+  return <ActivityPage activityId={params.eventId} />;
 }

@@ -1,5 +1,7 @@
 import { createAction } from '@reduxjs/toolkit';
-import { Activity, OrganizationStatus, pickActivityProperties, ResponderStatus } from '@respond/types/activity';
+
+import { Activity, OrganizationStatus, ParticipantStatus, pickActivityProperties } from '@respond/types/activity';
+
 import { ActivityState } from '.';
 
 const reload = createAction('activities/load', (state: ActivityState) => ({
@@ -27,16 +29,12 @@ const complete = createAction('activity/complete', (activityId: string, endTime:
   meta: { sync: true },
 }));
 
-const appendOrganizationTimeline = createAction('participatingOrg/append', (
-  activityId: string,
-  org: { id: string, title: string, rosterName?: string },
-  status: { time: number, status: OrganizationStatus }
-) => ({
+const appendOrganizationTimeline = createAction('participatingOrg/append', (activityId: string, org: { id: string; title: string; rosterName?: string }, status: { time: number; status: OrganizationStatus }) => ({
   payload: { activityId, orgId: org.id, org, status },
   meta: { sync: true },
 }));
 
-const participantUpdate = createAction('participant/update', (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ResponderStatus, miles?: number) => ({
+const participantUpdate = createAction('participant/update', (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ParticipantStatus, miles?: number) => ({
   payload: {
     activityId,
     participant: {
@@ -49,16 +47,9 @@ const participantUpdate = createAction('participant/update', (activityId: string
     update: {
       time,
       status,
-    }
+    },
   },
   meta: { sync: true },
-}))
-
-const participantClear = createAction('participant/clear', (activityId: string, participantId: string) => ({
-  payload: {
-    activityId,
-    participantId,
-  }
 }));
 
 const tagParticipant = createAction('participant/tag', (activityId: string, participantId: string, tags: string[]) => ({
@@ -82,6 +73,8 @@ export const ActivityActions = {
 };
 
 export type ActivityActionsType = typeof ActivityActions;
-type AllActivityActions = { [K in keyof ActivityActionsType]: ReturnType<ActivityActionsType[K]>};
+type AllActivityActions = {
+  [K in keyof ActivityActionsType]: ReturnType<ActivityActionsType[K]>;
+};
 export type ActivityAction = AllActivityActions[keyof AllActivityActions];
 export type ParticipantUpdateAction = AllActivityActions['participantUpdate'];

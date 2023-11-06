@@ -1,4 +1,4 @@
-import { MemberProviderType } from '@respond/types/data/MemberProviderType'
+import { MemberProviderType } from '@respond/types/data/MemberProviderType';
 
 export interface MemberInfo {
   id: string;
@@ -12,13 +12,13 @@ export interface MemberAuthInfo {
 }
 
 export interface MemberProvider {
-  getMemberInfo(organizationId: string, authPayload: MemberAuthInfo, providerOptions: any): Promise<MemberInfo|undefined>;
-  getMemberInfoById(memberId: string): Promise<MemberInfo|undefined>;
-  refresh(force?: boolean): Promise<{ ok: boolean, runtime: number, cached?: boolean }>;
+  getMemberInfo(organizationId: string, authPayload: MemberAuthInfo, providerOptions: any): Promise<MemberInfo | undefined>;
+  getMemberInfoById(memberId: string): Promise<MemberInfo | undefined>;
+  refresh(force?: boolean): Promise<{ ok: boolean; runtime: number; cached?: boolean }>;
 }
 
 export class MemberProviderRegistry {
-  private lookup: {[key:string]: MemberProvider} = {};
+  private lookup: { [key: string]: MemberProvider } = {};
 
   register(key: MemberProviderType, provider: MemberProvider) {
     this.lookup[key] = provider;
