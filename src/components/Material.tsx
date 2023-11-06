@@ -1,5 +1,6 @@
 // Importing from the inner files is supposed to help compile time / tree shaking.
 
+export { default as Alert } from '@mui/material/Alert';
 export { default as Box } from '@mui/material/Box';
 export { default as Button } from '@mui/material/Button';
 export { default as Dialog } from '@mui/material/Dialog';
@@ -14,7 +15,7 @@ export type { ThemeOptions } from '@mui/material/styles/createTheme';
 export { default as ThemeProvider } from '@mui/material/styles/ThemeProvider';
 export { default as useMediaQuery } from '@mui/material/useMediaQuery';
 export { default as Select } from '@mui/material/Select';
-export { default as MenuItem } from '@mui/material/MenuItem'
+export { default as MenuItem } from '@mui/material/MenuItem';
 export { default as FormControl } from '@mui/material/FormControl';
 export { default as FormControlLabel } from '@mui/material/FormControlLabel';
 export { default as FormHelperText } from '@mui/material/FormHelperText';

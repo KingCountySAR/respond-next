@@ -1,4 +1,4 @@
-import { MemberProviderType } from './data/MemberProviderType'
+import { MemberProviderType } from './data/MemberProviderType';
 
 export interface BaseOrganization {
   id: string;

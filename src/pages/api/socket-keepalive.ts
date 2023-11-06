@@ -1,12 +1,12 @@
 import type { Socket as NetSocket } from 'net';
 
-import type { NextApiRequest, NextApiResponse } from 'next'
 import { withIronSessionApiRoute } from 'iron-session/next';
-import { sessionOptions } from '@respond/lib/session';
+import type { NextApiRequest, NextApiResponse } from 'next';
+
 import { getAuthFromApiCookies } from '@respond/lib/server/auth';
 import { getServices } from '@respond/lib/server/services';
 import type { SocketHTTPServer } from '@respond/lib/server/socketManager';
-
+import { sessionOptions } from '@respond/lib/session';
 
 interface NextSocketApiResponse extends NextApiResponse {
   socket: NetSocket & {
@@ -26,7 +26,7 @@ async function SocketHandler(req: NextApiRequest, res: NextApiResponse) {
 
   const user = await getAuthFromApiCookies(req.cookies);
   if (!user) {
-    res.status(401).json({message: 'Must authenticate'});
+    res.status(401).json({ message: 'Must authenticate' });
     return;
   }
 
@@ -38,7 +38,7 @@ async function SocketHandler(req: NextApiRequest, res: NextApiResponse) {
 
   res.json({
     key: req.session.socketKey,
-  })
-};
+  });
+}
 
 export default withIronSessionApiRoute(SocketHandler, sessionOptions);

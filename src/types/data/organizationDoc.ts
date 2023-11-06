@@ -1,12 +1,12 @@
-import { MemberProviderType } from './MemberProviderType'
+import { MemberProviderType } from './MemberProviderType';
 
 export interface MemberProviderConfig {
-  provider: MemberProviderType,
-  token: string,
-  moreEmailsField: 'Secondary Email',
+  provider: MemberProviderType;
+  token: string;
+  moreEmailsField: 'Secondary Email';
 }
 
-export const ORGANIZATION_COLLECTION = 'organizations';
+export const ORGS_COLLECTION = 'organizations';
 
 export interface OrganizationPartner {
   id: string;
