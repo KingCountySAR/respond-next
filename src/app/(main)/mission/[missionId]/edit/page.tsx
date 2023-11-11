@@ -1,7 +1,7 @@
 'use client';
 
-import { ActivityEditForm } from '@respond/components/activities/ActivityEditForm';
+import { ActivityEditPage } from '@respond/components/activities/ActivityEditPage';
 
 export default function EditMission({ params }: { params: { missionId: string } }) {
-  return <ActivityEditForm activityType="missions" activityId={params.missionId} />;
+  return <ActivityEditPage activityType="missions" activityId={params.missionId} />;
 }

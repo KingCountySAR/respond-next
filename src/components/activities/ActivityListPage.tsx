@@ -3,6 +3,7 @@ import { format as formatDate } from 'date-fns';
 import Link from 'next/link';
 import * as React from 'react';
 
+import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { apiFetch } from '@respond/lib/api';
 import { getActivityPath } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType } from '@respond/types/activity';
@@ -47,17 +48,19 @@ export function ActivityListPage({ activityType }: { activityType: ActivityType 
   }, [activityType, pageTitle]);
 
   return (
-    <main>
-      <Box sx={{ pb: 4 }}>
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-          <Link href="/">Home</Link>
-          <Typography color="text.primary">{pageTitle}</Typography>
-        </Breadcrumbs>
-        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h5">{pageTitle}</Typography>
+    <ToolbarPage>
+      <main>
+        <Box sx={{ pb: 4 }}>
+          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+            <Link href="/">Home</Link>
+            <Typography color="text.primary">{pageTitle}</Typography>
+          </Breadcrumbs>
+          <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h5">{pageTitle}</Typography>
+          </Box>
+          {loading ? <Typography>Loading ...</Typography> : <ActivityList activities={activities} />}
         </Box>
-        {loading ? <Typography>Loading ...</Typography> : <ActivityList activities={activities} />}
-      </Box>
-    </main>
+      </main>
+    </ToolbarPage>
   );
 }
