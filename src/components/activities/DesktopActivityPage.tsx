@@ -49,7 +49,7 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
             }}
           />
         </Box>
-        <Stack alignItems="stretch">
+        <Stack alignItems="stretch" sx={{ width: 400 }}>
           <BriefingPanel activity={activity} sx={{ px: 3 }} />
           {isActivityActive && (
             <Box sx={{ my: 2 }} display="flex" justifyContent="end">
