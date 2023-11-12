@@ -4,7 +4,6 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import { Divider, IconButton, Link, Menu, MenuItem } from '@mui/material';
 import * as React from 'react';
 
-import { BuildInfo } from '@respond/components/BuildInfo';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { AuthActions } from '@respond/lib/client/store/auth';
 
@@ -14,7 +13,6 @@ export function AppMenu() {
   const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement | null>(null);
   const handleMenu = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => setMenuAnchor(event.currentTarget);
   const handleClose = () => setMenuAnchor(null);
-  const [showingBuildInfo, setShowingBuildInfo] = React.useState<boolean>(false);
   return (
     <div style={{ display: 'inline-block' }}>
       <IconButton size="large" aria-label="account of current user" aria-controls="menu-appbar" aria-haspopup="true" onClick={handleMenu} color="inherit">
@@ -49,16 +47,7 @@ export function AppMenu() {
         <MenuItem component={Link} href="/about">
           About
         </MenuItem>
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            setShowingBuildInfo(true);
-          }}
-        >
-          Build Info
-        </MenuItem>
       </Menu>
-      <BuildInfo open={showingBuildInfo} onClose={() => setShowingBuildInfo(false)} />
     </div>
   );
 }

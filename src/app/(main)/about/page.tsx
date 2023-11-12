@@ -1,12 +1,12 @@
 'use client';
 import { Box, Divider, Grid, Link, Paper, Stack, Typography } from '@mui/material';
 
-import { getBuild } from '@respond/components/BuildInfo';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
+import { useAppSelector } from '@respond/lib/client/store';
 
 const APP_BAR_OFFSET = 52;
 
-export default function MissionList() {
+export default function About() {
   return (
     <ToolbarPage maxWidth="lg">
       <Paper elevation={1} sx={{ p: 3 }}>
@@ -32,13 +32,14 @@ export default function MissionList() {
 }
 
 function AboutMenu() {
-  const build = getBuild();
-
+  const buildId = useAppSelector((s) => s.config.dev.buildId);
+  const buildCommit = buildId.split('-')[0];
+  const buildUrl = buildCommit === 'development' ? '#' : `https://github.com/KingCountySAR/respond-next/commits/${buildCommit}`;
   return (
     <>
       <Typography variant="h6">Respond</Typography>
       <Typography variant="caption">
-        Build: <Link href={build.url}>{build.id}</Link>
+        Build: <Link href={buildUrl}>{buildId}</Link>
       </Typography>
       <Typography variant="caption">
         <Link href="https://forms.gle/VhMeCGUUbUHSw4or9">Submit Feature Request</Link>
