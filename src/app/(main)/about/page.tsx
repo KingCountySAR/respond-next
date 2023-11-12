@@ -181,7 +181,7 @@ function AboutSartopo() {
           </ol>
         </Typography>
         <Box sx={{ minWidth: 1 / 3, maxWidth: 300 }}>
-          <img src="/activity-tile.jpg" alt="Activity Tile" width="100%" />
+          <img src="/about/activity-tile.jpg" alt="Activity Tile" width="100%" />
         </Box>
       </Stack>
     </>
