@@ -1,7 +1,6 @@
 'use client';
-import { Box, Divider, Grid, Paper, Stack, Typography } from '@mui/material';
+import { Box, Divider, Grid, Link, Paper, Stack, Typography } from '@mui/material';
 import { Variant } from '@mui/material/styles/createTypography';
-import Link from 'next/link';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';

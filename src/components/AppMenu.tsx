@@ -1,7 +1,8 @@
 'use client';
 
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import { Divider, IconButton, Link, Menu, MenuItem } from '@mui/material';
+import { Divider, IconButton, Menu, MenuItem } from '@mui/material';
+import Link from 'next/link';
 import * as React from 'react';
 
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
