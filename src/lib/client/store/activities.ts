@@ -1,9 +1,14 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { CaseReducer, createSlice } from '@reduxjs/toolkit';
+import { TypedActionCreator } from '@reduxjs/toolkit/dist/mapBuilders';
 
 import { ActivityActions, ActivityState, BasicReducers } from '@respond/lib/state';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
 import { RootState } from '.';
+
+export interface ReducerBuilderStub {
+  addCase<ActionCreator extends TypedActionCreator<string>>(actionCreator: ActionCreator, reducer: CaseReducer<ActivityState, ReturnType<ActionCreator>>): ReducerBuilderStub;
+}
 
 let initialState: ActivityState = {
   list: [],
@@ -13,14 +18,24 @@ if (typeof localStorage !== 'undefined' && localStorage.activities) {
   initialState = JSON.parse(localStorage.activities);
 }
 
-const activitiesSlice = createSlice({
+const activitySliceArgs = {
   name: 'activities',
   initialState,
   reducers: {},
-  extraReducers: (builder) => {
-    builder.addCase(ActivityActions.reload, BasicReducers[ActivityActions.reload.type]).addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type]).addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type]).addCase(ActivityActions.reactivate, BasicReducers[ActivityActions.reactivate.type]).addCase(ActivityActions.complete, BasicReducers[ActivityActions.complete.type]).addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type]).addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type]);
+  extraReducers: (builder: ReducerBuilderStub) => {
+    builder //
+      .addCase(ActivityActions.reload, BasicReducers[ActivityActions.reload.type])
+      .addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type])
+      .addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type])
+      .addCase(ActivityActions.reactivate, BasicReducers[ActivityActions.reactivate.type])
+      .addCase(ActivityActions.complete, BasicReducers[ActivityActions.complete.type])
+      .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type])
+      .addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type])
+      .addCase(ActivityActions.tagParticipant, BasicReducers[ActivityActions.tagParticipant.type]);
   },
-});
+};
+
+const activitiesSlice = createSlice(activitySliceArgs);
 
 export default activitiesSlice.reducer;
 
@@ -109,3 +124,7 @@ export function getActivityStatus(a: Activity) {
 export function getActivityPath(activity: Activity) {
   return `/${activity.isMission ? 'mission' : 'event'}/${activity.id}`;
 }
+
+export const TestBits = {
+  activitySliceArgs,
+};
