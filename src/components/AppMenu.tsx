@@ -1,7 +1,7 @@
 'use client';
 
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import { Divider, IconButton, Menu, MenuItem, Link } from '@mui/material';
+import { Divider, IconButton, Link, Menu, MenuItem } from '@mui/material';
 import * as React from 'react';
 
 import { BuildInfo } from '@respond/components/BuildInfo';
@@ -46,7 +46,9 @@ export function AppMenu() {
           Sign Out
         </MenuItem>
         <Divider />
-        <MenuItem component={Link} href='/about'>About</MenuItem>
+        <MenuItem component={Link} href="/about">
+          About
+        </MenuItem>
         <MenuItem
           onClick={() => {
             handleClose();

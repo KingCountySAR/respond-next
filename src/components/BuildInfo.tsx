@@ -32,10 +32,10 @@ export const BuildInfo = ({ open, onClose }: { open: boolean; onClose: () => voi
 };
 
 type Build = {
-  id: string,
-  commit: string,
-  url: string
-}
+  id: string;
+  commit: string;
+  url: string;
+};
 
 export function getBuild(): Build {
   const buildId = useAppSelector((s) => s.config.dev.buildId);
@@ -43,6 +43,6 @@ export function getBuild(): Build {
   return {
     id: buildId,
     commit: buildId.split('-')[0],
-    url: commit === 'development' ? '#' : `https://github.com/KingCountySAR/respond-next/commits/${commit}`
+    url: commit === 'development' ? '#' : `https://github.com/KingCountySAR/respond-next/commits/${commit}`,
   };
 }
