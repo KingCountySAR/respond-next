@@ -30,7 +30,7 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
             <Grid item>
               {activity.mapId && (
                 <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
-                  <Image src="/sartopo-logo.svg" alt="Sartopo Logo" width={25} height={25} />
+                  <Image src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
                 </IconButton>
               )}
               {/* TODO: When we have necessary attribute to implement nav button, do it here.

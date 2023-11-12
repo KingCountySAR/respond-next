@@ -63,7 +63,7 @@ function AboutMenu() {
         </Grid>
         <Grid item>
           <Typography component={Link} href="#sartopo">
-            Sartopo Map
+            SARTopo Map
           </Typography>
         </Grid>
       </Grid>
@@ -167,17 +167,17 @@ function AboutSartopo() {
   return (
     <>
       <Typography variant="h4" sx={{ mt: 4 }}>
-        Sartopo Map
+        SARTopo Map
       </Typography>
       <Stack direction={{ md: 'row' }}>
         <Typography>
-          <p>The Map Id is expected to be a Sartopo Map Id. Only the Id is required. For example if the Map URL is http://sartopo.com/m/ABC12 then the Id is &quot;ABC12&quot;</p>
-          <p>When a Map Id has been provided it will be shown as a link on the Mission Detail page and as a button with the Sartopo logo on the Activity tiles, on the home page. Clicking on either the link, or the button will open the map in a new browser tab.</p>
+          <p>The Map Id is expected to be a SARTopo Map Id. Only the Id is required. For example if the Map URL is http://sartopo.com/m/ABC12 then the Id is &quot;ABC12&quot;</p>
+          <p>When a Map Id has been provided it will be shown as a link on the Mission Detail page and as a button with the SARTopo logo on the Activity tiles, on the home page. Clicking on either the link, or the button will open the map in a new browser tab.</p>
           <p>If you are on a mobile device, the map may open in the Caltopo App directly. Based on feedback we have received, Android users may need to give Caltopo permission to open links:</p>
           <ol>
             <li>Open Settings -&gt; Apps -&gt; CalTopo -&gt; Open by default</li>
             <li>Tap on &quot;Add Link&quot;, then select all 3 options.</li>
-            <li>The app should now open for CalTopo and SarTopo links.</li>
+            <li>The app should now open for CalTopo and SARTopo links.</li>
           </ol>
         </Typography>
         <Box sx={{ minWidth: 1 / 3, maxWidth: 300 }}>
