@@ -1,8 +1,6 @@
 import { FormControlLabel } from '@mui/material';
 import { format as formatDate, parse as parseDate } from 'date-fns';
 import { useState } from 'react';
-import { useState } from 'react';
-import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useAppDispatch } from '@respond/lib/client/store';
@@ -61,7 +59,9 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
     console.log('form.getValues().miles ' + form.getValues().miles);
     console.log('form.getValues().addMiles ' + form.getValues().addMiles);
     console.log('form.getValues().statusTime ' + form.getValues().statusTime);
-
+    console.log('data.statusTime' + data.statusTime);
+    
+    const time = (data.statusTime === '' ? new Date() : data.statusTime).getTime();
     if (!activity.organizations[respondingOrg.id]) {
       dispatch(
         ActivityActions.appendOrganizationTimeline(
@@ -73,7 +73,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
           },
           {
             status: newStatus === ParticipantStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding,
-            time: (data.statusTime === '' ? new Date() : data.statusTime).getTime(),
+            time: time,
           },
         ),
       );
@@ -189,6 +189,9 @@ export const StatusTimeInput = ({ form: { control, errors, setValue } }: { form:
     const statusTimeAsDate = parseDate(event.target.value, "yyyy-MM-dd'T'HH:mm", new Date());
     setValue('statusTime', statusTimeAsDate);
     setStatusTimeState(event.target.value);
+
+    console.log('statusTimeAsDate=' + statusTimeAsDate);
+    console.log('event.target.value' + event.target.value);
   }
 
   setValue('statusTime', currentTime);
