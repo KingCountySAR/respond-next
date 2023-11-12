@@ -23,6 +23,50 @@ export enum ParticipantStatus {
   Demobilized = 7,
 }
 
+const STATUS_MUI_COLORS: Record<ParticipantStatus, 'success' | 'error' | 'warning' | 'disabled'> = {
+  [ParticipantStatus.NotResponding]: 'disabled',
+  [ParticipantStatus.Standby]: 'warning',
+  [ParticipantStatus.Remote]: 'success',
+  [ParticipantStatus.SignedIn]: 'success',
+  [ParticipantStatus.Available]: 'success',
+  [ParticipantStatus.Assigned]: 'success',
+  [ParticipantStatus.Demobilized]: 'warning',
+  [ParticipantStatus.SignedOut]: 'error',
+};
+
+export function getStatusMuiColor(status: ParticipantStatus) {
+  return STATUS_MUI_COLORS[status];
+}
+
+const STATUS_COLORS: Partial<Record<ParticipantStatus, string>> = {
+  [ParticipantStatus.SignedIn]: 'green',
+  [ParticipantStatus.Available]: 'green',
+  [ParticipantStatus.Assigned]: 'green',
+  [ParticipantStatus.Standby]: 'orange',
+  [ParticipantStatus.Remote]: 'turquoise',
+  [ParticipantStatus.SignedOut]: 'dimgray',
+  [ParticipantStatus.Demobilized]: 'darkred',
+};
+
+export function getStatusCssColor(status: ParticipantStatus) {
+  return STATUS_COLORS[status] ?? 'transparent';
+}
+
+const STATUS_TEXT: Record<ParticipantStatus, string> = {
+  [ParticipantStatus.NotResponding]: 'Not Responding',
+  [ParticipantStatus.Standby]: 'Standby',
+  [ParticipantStatus.Remote]: 'In Town',
+  [ParticipantStatus.SignedIn]: 'Responding',
+  [ParticipantStatus.Available]: 'Available',
+  [ParticipantStatus.Assigned]: 'Assigned',
+  [ParticipantStatus.Demobilized]: 'Demobilized',
+  [ParticipantStatus.SignedOut]: 'Signed Out',
+};
+
+export function getStatusText(status: ParticipantStatus) {
+  return STATUS_TEXT[status];
+}
+
 export function isActive(status: ParticipantStatus) {
   return [ParticipantStatus.Standby, ParticipantStatus.Remote, ParticipantStatus.SignedIn, ParticipantStatus.Available, ParticipantStatus.Assigned, ParticipantStatus.Demobilized].includes(status);
 }

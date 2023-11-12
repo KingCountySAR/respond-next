@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { ActivityStack } from '@respond/components/activities/ActivityStack';
 import { ActivityTile } from '@respond/components/activities/ActivityTile';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
+import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivityTypeSelector, buildMyActivitySelector, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
@@ -48,65 +49,67 @@ export default function Home() {
   }, []);
 
   return (
-    <main>
-      {myCurrentActivities.length < 1 ? null : (
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="h5">My Activity</Typography>
+    <ToolbarPage>
+      <main>
+        {myCurrentActivities.length < 1 ? null : (
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="h5">My Activity</Typography>
+            </Box>
+            <Stack spacing={1}>
+              {myCurrentActivities.map((up) => (
+                <ActivityTile key={up.activity.id} activity={up.activity} status={up.status.status}>
+                  <OutputForm>
+                    <Box>
+                      <OutputText label="Location" value={up.activity.location.title} />
+                    </Box>
+                    <Box>
+                      <OutputText label="Mission Status" value={getActivityStatus(up.activity)} />
+                      {isFuture(up.activity.startTime) && <OutputTime label="Start Time" time={up.activity.startTime}></OutputTime>}
+                    </Box>
+                  </OutputForm>
+                </ActivityTile>
+              ))}
+            </Stack>
           </Box>
-          <Stack spacing={1}>
-            {myCurrentActivities.map((up) => (
-              <ActivityTile key={up.activity.id} activity={up.activity} status={up.status.status}>
-                <OutputForm>
-                  <Box>
-                    <OutputText label="Location" value={up.activity.location.title} />
-                  </Box>
-                  <Box>
-                    <OutputText label="Mission Status" value={getActivityStatus(up.activity)} />
-                    {isFuture(up.activity.startTime) && <OutputTime label="Start Time" time={up.activity.startTime}></OutputTime>}
-                  </Box>
-                </OutputForm>
-              </ActivityTile>
-            ))}
-          </Stack>
+        )}
+        <Box sx={{ mb: 3 }}>
+          <Box
+            sx={{
+              mb: 1,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Typography variant="h5">Missions</Typography>
+            {canCreateM && (
+              <Button variant="outlined" component={Link} href="/mission/new">
+                New Mission
+              </Button>
+            )}
+          </Box>
+          <ActivityStack type="missions" activities={missions} statusMap={statusMap} showOrgs />
         </Box>
-      )}
-      <Box sx={{ mb: 3 }}>
-        <Box
-          sx={{
-            mb: 1,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h5">Missions</Typography>
-          {canCreateM && (
-            <Button variant="outlined" component={Link} href="/mission/new">
-              New Mission
-            </Button>
-          )}
+        <Box sx={{ pb: 4 }}>
+          <Box
+            sx={{
+              mb: 1,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Typography variant="h5">Events</Typography>
+            {canCreateE && (
+              <Button variant="outlined" component={Link} href="/event/new">
+                New Event
+              </Button>
+            )}
+          </Box>
+          <ActivityStack type="events" activities={events} statusMap={statusMap} />
         </Box>
-        <ActivityStack type="missions" activities={missions} statusMap={statusMap} showOrgs />
-      </Box>
-      <Box sx={{ pb: 4 }}>
-        <Box
-          sx={{
-            mb: 1,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h5">Events</Typography>
-          {canCreateE && (
-            <Button variant="outlined" component={Link} href="/event/new">
-              New Event
-            </Button>
-          )}
-        </Box>
-        <ActivityStack type="events" activities={events} statusMap={statusMap} />
-      </Box>
-    </main>
+      </main>
+    </ToolbarPage>
   );
 }
