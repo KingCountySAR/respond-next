@@ -1,7 +1,7 @@
 'use client';
 
-import { ActivityEditForm } from '@respond/components/activities/ActivityEditForm';
+import { ActivityEditPage } from '@respond/components/activities/ActivityEditPage';
 
 export default function EditEvent({ params }: { params: { eventId: string } }) {
-  return <ActivityEditForm activityType="events" activityId={params.eventId} />;
+  return <ActivityEditPage activityType="events" activityId={params.eventId} />;
 }

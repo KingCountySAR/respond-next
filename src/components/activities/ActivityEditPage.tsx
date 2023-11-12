@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
+import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
 import * as FormUtils from '@respond/lib/formUtils';
@@ -56,7 +57,7 @@ const resolver: Resolver<ActivityFormValues> = async (values) => {
 /**
  *
  */
-export const ActivityEditForm = ({ activityType, activityId }: { activityType: ActivityType; activityId?: string }) => {
+export const ActivityEditPage = ({ activityType, activityId }: { activityType: ActivityType; activityId?: string }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const org = useAppSelector((state) => state.organization.mine);
@@ -141,7 +142,7 @@ export const ActivityEditForm = ({ activityType, activityId }: { activityType: A
   };
 
   return (
-    <>
+    <ToolbarPage>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={1} sx={{ mb: 4 }}>
           {/* Mission  */}
@@ -271,6 +272,6 @@ export const ActivityEditForm = ({ activityType, activityId }: { activityType: A
           </Grid>
         </Grid>
       </form>
-    </>
+    </ToolbarPage>
   );
 };
