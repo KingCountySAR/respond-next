@@ -79,6 +79,9 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
       );
     }
     dispatch(ActivityActions.participantUpdate(activity.id, user.participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles));
+    // Clear form data so it doesn't carry over to the next status update.
+    data.statusTime = '';
+    data.addMiles = '';
     onFinish();
   };
 
@@ -177,9 +180,10 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
 
 export const StatusTimeInput = ({ form: { control, errors, setValue } }: { form: FormLogic }) => {
   const currentTime = new Date();
-  const [statusTimeState, setStatusTimeState] = useState<string>(() => {
-    return formatDate(currentTime, "yyyy-MM-dd'T'HH:mm");
-  });
+  const currentTimeAsString = formatDate(currentTime, "yyyy-MM-dd'T'HH:mm");
+
+  const [statusTimeState, setStatusTimeState] = useState<string>(currentTimeAsString);
+
   console.log('#### StatusTimeInput');
   console.log('statusTime=' + statusTimeState);
 
@@ -191,7 +195,7 @@ export const StatusTimeInput = ({ form: { control, errors, setValue } }: { form:
     setStatusTimeState(event.target.value);
 
     console.log('statusTimeAsDate=' + statusTimeAsDate);
-    console.log('event.target.value' + event.target.value);
+    console.log('event.target.value=' + event.target.value);
   }
 
   setValue('statusTime', currentTime);
