@@ -25,6 +25,10 @@ const nextConfig = {
         'process.env.CONFIG_BUILD_ID': JSON.stringify(buildId)
       })
     );
+    config.module.rules.push({
+      test: /\.md$/,
+      type: 'asset/resource',
+    });
     return config;
   }
 }

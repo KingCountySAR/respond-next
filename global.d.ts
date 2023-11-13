@@ -15,3 +15,7 @@ declare module '@mui/material/styles' {
 }
 declare module '@mui/material/Button' { interface ButtonPropsColorOverrides { danger: true; } }
 declare module '@mui/material/IconButton' { interface IconButtonPropsColorOverrides { danger: true; } }
+declare module '*.md' {
+  const value: string;
+  export default value;
+}
