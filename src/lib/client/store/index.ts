@@ -1,4 +1,4 @@
-import type { Action, Middleware, ThunkAction } from '@reduxjs/toolkit';
+import type { Action, Middleware, PayloadAction, ThunkAction } from '@reduxjs/toolkit';
 import { addListener, combineReducers, configureStore, createListenerMiddleware, TypedAddListener, TypedStartListening } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
@@ -8,7 +8,7 @@ import configReducer from './config';
 import organizationReducer from './organization';
 import syncReducer from './sync';
 
-export const logMiddleware: Middleware<unknown, RootState> = (_storeApi) => (next) => (action: { type: string; payload: any; meta?: { sync?: boolean } }) => {
+export const logMiddleware: Middleware<unknown, RootState> = (_storeApi) => (next) => (action: PayloadAction) => {
   if (typeof window !== 'undefined') console.log('action ' + action.type, action.payload);
   const result = next(action);
   return result;
