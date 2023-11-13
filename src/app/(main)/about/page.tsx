@@ -39,7 +39,7 @@ function AboutMenu() {
         Build: <Link href={buildUrl}>{buildId}</Link>
       </Typography>
       <Typography variant="caption">
-        <Link href="https://forms.gle/VhMeCGUUbUHSw4or9">Submit Feature Request</Link>
+        <Link href="https://forms.gle/VhMeCGUUbUHSw4or9">Submit Feedback</Link>
       </Typography>
 
       <Grid container direction="column" spacing={2} sx={{ my: 1 }}>
@@ -84,7 +84,7 @@ function AboutHomePage() {
       <Paragraph>The Home page provides an overview of recent, ongoing, and future activities.</Paragraph>
 
       <Section variant="h6" title="My Activity">
-        <Paragraph>The &quot;My Activity&quot; section contains an abbreviated list of the activities that you are currently involved with. It will only be present if are currently signed into, or on standby for, an activity.</Paragraph>
+        <Paragraph>The &quot;My Activity&quot; section contains an abbreviated list of the activities that you are currently involved with. It will only be present if you are currently signed into, or on standby for, an activity.</Paragraph>
       </Section>
 
       <Section variant="h6" title="Missions">
@@ -109,7 +109,7 @@ function AboutResponding() {
         </Section>
 
         <Section variant="h6" title="Standby for a Future Activity">
-          <Paragraph>Respond is introducing a new feature that enables you to indicate that you are available for a current or future mission, but are not currently responding. Missions that are scheduled to start in the future will default to Stand By; you will not be able to sign into a mission that has not started. To cancel, you can choose Sign Out from the dropdown menu.</Paragraph>
+          <Paragraph>Respond allows you to indicate that you are available for a current or future mission, but are not currently responding. Missions that are scheduled to start in the future will default to Stand By; you will not be able to sign into a mission that has not started. To cancel, you can choose Stand Down from the dropdown menu.</Paragraph>
         </Section>
       </Section>
     </>
