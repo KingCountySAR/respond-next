@@ -7,6 +7,16 @@ const D4H_MEMBER_REFRESH_SECS = 15 * 60;
 const D4H_FETCH_LIMIT = 250;
 const D4H_CACHE_COLLECTION = 'd4hCache';
 
+interface CustomField {
+  label: string;
+  value: string;
+}
+
+interface Group {
+  id: number;
+  title: string;
+}
+
 interface D4HMemberResponse {
   id: number;
   ref?: string;
@@ -14,7 +24,7 @@ interface D4HMemberResponse {
   email?: string;
   mobilephone?: string;
   group_ids?: number[];
-  custom_fields: any[];
+  custom_fields: CustomField[];
   urls: {
     image?: string;
   };
@@ -166,7 +176,7 @@ export default class D4HMembersProvider implements MemberProvider {
   private async refreshMembersForToken(token: string, moreEmailsLabel?: string) {
     let offset: number = 0;
 
-    let groupRows: any[] = [];
+    let groupRows: Group[] = [];
     do {
       const chunk = (
         await (
@@ -176,7 +186,7 @@ export default class D4HMembersProvider implements MemberProvider {
             },
           })
         ).json()
-      )?.data as any[];
+      )?.data as Group[];
 
       offset += D4H_FETCH_LIMIT;
       groupRows = groupRows.concat(chunk);

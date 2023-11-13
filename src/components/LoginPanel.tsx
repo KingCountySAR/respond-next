@@ -31,9 +31,7 @@ export default function LoginPanel() {
   }
 
   async function finishLogin(token: string) {
-    const res = (await Api.post<any>('/api/auth/google', {
-      token,
-    })) as AuthResponse;
+    const res = await Api.postBody<{ token: string }, AuthResponse>('/api/auth/google', { token });
     console.log('login response', res);
 
     if (res.userInfo) {

@@ -10,7 +10,11 @@ export async function apiFetch<T>(url: string, config?: RequestInit): Promise<T>
   return await response.json();
 }
 
-export async function apiPost<T>(url: string, data: any): Promise<T> {
+export async function apiPost<TResponse>(url: string): Promise<TResponse> {
+  return apiPostBody(url, undefined);
+}
+
+export async function apiPostBody<TBody, TResponse>(url: string, data: TBody): Promise<TResponse> {
   // Default options are marked with *
   const response = await fetch(url, {
     method: 'POST', // *GET, POST, PUT, DELETE, etc.
@@ -29,6 +33,7 @@ export async function apiPost<T>(url: string, data: any): Promise<T> {
 const group = {
   get: apiFetch,
   post: apiPost,
+  postBody: apiPostBody,
 };
 
 export default group;
