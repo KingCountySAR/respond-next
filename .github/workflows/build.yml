@@ -18,3 +18,5 @@ jobs:
       run: yarn
     - name: Run build
       run: yarn build
+    - name: Run tests
+      run: yarn testpass
