@@ -30,6 +30,7 @@ Activities that are marked "Complete" can be re-opened by clicking "Reactivate"
 Clicking the Red delete icon will delete the mission, which removes it from the Home Page.
 
 ## Responding to a Mission
+![](/about/activity-tile.jpg)  
 The primary functionality of Respond is to enable members to sign in and report they are responding to a Mission, Training or other Event. It also provides a way for mission leadership to keep track of the status of responders and see their relevant qualifications. In the future, the timeline events will be used to automate roster entry into the database.
 
 ### Signing Into an Activity

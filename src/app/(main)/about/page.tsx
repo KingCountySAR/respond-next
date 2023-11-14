@@ -7,6 +7,8 @@ import { useAppSelector } from '@respond/lib/client/store';
 
 import about from './about.md';
 
+const APP_BAR_OFFSET = 100;
+
 export default function About() {
   return (
     <ToolbarPage maxWidth="lg">
@@ -16,7 +18,7 @@ export default function About() {
             <AboutMenu />
           </Stack>
           <Stack>
-            <MarkdownFromFile path={about} />
+            <MarkdownFromFile path={about} anchorOffset={APP_BAR_OFFSET} />
           </Stack>
         </Stack>
       </Paper>
@@ -40,22 +42,22 @@ function AboutMenu() {
 
       <Grid container direction="column" spacing={2} sx={{ my: 1 }}>
         <Grid item>
-          <Typography component={Link} href="#homepage">
+          <Typography component={Link} href="#home-page">
             Home Page
           </Typography>
         </Grid>
         <Grid item>
-          <Typography component={Link} href="#activity">
+          <Typography component={Link} href="#activity-detail-page">
             Activity Page
           </Typography>
         </Grid>
         <Grid item>
-          <Typography component={Link} href="#respond">
+          <Typography component={Link} href="#responding-to-a-mission">
             Responding
           </Typography>
         </Grid>
         <Grid item>
-          <Typography component={Link} href="#sartopo">
+          <Typography component={Link} href="#sartopo-map">
             SARTopo Map
           </Typography>
         </Grid>
