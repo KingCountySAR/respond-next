@@ -60,7 +60,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
     console.log('form.getValues().addMiles ' + form.getValues().addMiles);
     console.log('form.getValues().statusTime ' + form.getValues().statusTime);
     console.log('data.statusTime' + data.statusTime);
-    
+
     const time = (data.statusTime === '' ? new Date() : data.statusTime).getTime();
     if (!activity.organizations[respondingOrg.id]) {
       dispatch(
