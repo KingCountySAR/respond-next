@@ -12,6 +12,8 @@ import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
+import NumberInput from '../NumberPicker';
+
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, { date: string; time: string }, ['startTime']>;
 
 /**
@@ -233,6 +235,18 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               </Grid>
               <FormHelperText>{errors.startTime?.message}</FormHelperText>
             </FormControl>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Controller
+              name="earlySignInWindowMs"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.title?.message}>
+                  <NumberInput {...field} min={0} max={24} />
+                </FormControl>
+              )}
+            />
           </Grid>
 
           <Grid item xs={12}>

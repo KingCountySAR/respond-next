@@ -79,7 +79,7 @@ export function buildMyActivitySelector() {
  * @description Members can sign in prior to the start time of a future mission.
  * @return 4 Hours in milliseconds.
  */
-export const earlySigninWindow = 4 * 60 * 60 * 1000;
+export const defaultEarlySigninWindow = 4 * 60 * 60 * 1000;
 
 export function isFuture(time: number) {
   return time > new Date().getTime();
@@ -90,7 +90,7 @@ export function isPending(a: Activity) {
 }
 
 export function isOpen(a: Activity) {
-  return isActive(a) && !isFuture(a.startTime - earlySigninWindow);
+  return isActive(a) && (!a.earlySignInWindowMs || !isFuture(a.startTime - a.earlySignInWindowMs));
 }
 
 export function isStarted(a: Activity) {
