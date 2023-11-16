@@ -1,34 +1,43 @@
-/*import { Unstable_NumberInput as NumberInput, NumberInputProps, numberInputClasses } from '@mui/base/Unstable_NumberInput';
+import { Unstable_NumberInput as BaseNumberInput, NumberInputProps as BaseNumberInputProps } from '@mui/base';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { styled } from '@mui/system';
+import { ControllerRenderProps, FieldPath, FieldValues } from 'react-hook-form';
 
-// import { useState } from 'react';
+export interface NumberInputProps<TFieldValues extends FieldValues = FieldValues, TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>> {
+  field: ControllerRenderProps<TFieldValues, TName>;
+  props?: BaseNumberInputProps;
+}
 
-import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
-
-export default function NumberPicker({ min, max }: NumberPickerProps) {
-  // const [value, setValue] = useState<number>(defaultEarlySigninWindow);
-
-  return (
-    <NumberInput
-      slotProps={{
-        incrementButton: { children: <AddIcon fontSize="small" /> },
-        decrementButton: { children: <RemoveIcon fontSize="small" /> },
-      }}
-    />
-  );
-}*/
-
-import { Unstable_NumberInput as BaseNumberInput, NumberInputProps } from '@mui/base/Unstable_NumberInput';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import { styled } from '@mui/system';
-import * as React from 'react';
-
-const NumberInput = React.forwardRef(function CustomNumberInput(props: NumberInputProps, ref: React.ForwardedRef<HTMLDivElement>) {
+/**
+ * @description Styled wrapper around MUI NumberInput component that works well with react-hook-form.
+ */
+function NumberInput<TFieldValues extends FieldValues = FieldValues, TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>>({ field, props }: NumberInputProps<TFieldValues, TName>) {
   return (
     <BaseNumberInput
+      {...props}
+      {...field}
+      onChange={(e, v) => {
+        // NumberInput handles all input field events and normalizes them into a single onChange
+        // event with the source event and the new value.
+        //
+        // react-hook-form expects the onChange event to come directly from the input field
+        // and thus be structured a certain way.
+        //
+        // To make react-hook-form and NumberInput play nicely with each other, we can pass the value directly
+        // to react-hook-form's onChange event. Since it is a bare value, react-hook-form will
+        // use it directly.
+        //
+        // Here is the source where react-hook-form either pulls the value out of the event or,
+        // failing that, uses the event oject directly:
+        // https://github.com/react-hook-form/react-hook-form/blob/c7b7eacb00cd11fe8fd075c958589b5b00b2c49d/src/logic/getEventValue.ts
+        field.onChange(v);
+
+        // Pass on the event to the caller so they can react to it for other reasons if needed.
+        if (props?.onChange) {
+          props.onChange(e, v);
+        }
+      }}
       slots={{
         root: StyledInputRoot,
         input: StyledInput,
@@ -36,22 +45,43 @@ const NumberInput = React.forwardRef(function CustomNumberInput(props: NumberInp
         decrementButton: StyledButton,
       }}
       slotProps={{
+        ...props?.slotProps,
         incrementButton: {
           children: <AddIcon fontSize="small" />,
           className: 'increment',
+
+          // Spread the provided props after visual changes to
+          // allow for the caller to override.
+          ...props?.slotProps?.incrementButton,
+
+          // Buttons default to type "submit", which will submit the form.
+          // Force type "button" so it doesn't submit the form.
+          type: 'button',
         },
         decrementButton: {
           children: <RemoveIcon fontSize="small" />,
+          className: 'decrement',
+
+          // Spread the provided props after visual changes to
+          // allow for the caller to override.
+          ...props?.slotProps?.decrementButton,
+
+          // Buttons default to type "submit", which will submit the form.
+          // Force type "button" so it doesn't submit the form.
+          type: 'button',
+        },
+        input: {
+          ...props?.slotProps?.input,
+          inputMode: 'numeric', // Display appropriate mobile keyboard
         },
       }}
-      {...props}
-      ref={ref}
     />
   );
-});
+}
 
 export default NumberInput;
 
+// Styles taken from NumberInput examples: https://mui.com/base-ui/react-number-input/
 const blue = {
   100: '#daecff',
   200: '#b6daff',
@@ -142,7 +172,7 @@ const StyledButton = styled('button')(
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 120ms;
 
-  &:hover {
+  &:hover:enabled {
     cursor: pointer;
     background: ${theme.palette.mode === 'dark' ? blue[700] : blue[500]};
     border-color: ${theme.palette.mode === 'dark' ? blue[500] : blue[400]};

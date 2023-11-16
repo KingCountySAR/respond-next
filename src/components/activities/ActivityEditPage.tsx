@@ -7,12 +7,12 @@ import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 're
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector } from '@respond/lib/client/store/activities';
+import { buildActivitySelector, defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
 import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
-import NumberInput from '../NumberPicker';
+import NumberInput from '../NumberInput';
 
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, { date: string; time: string }, ['startTime']>;
 
@@ -77,13 +77,20 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     };
   }
 
+  const defaultValues = activity ? FormUtils.toExpandedDates(activity, 'startTime') : undefined;
+
+  if (defaultValues) {
+    const initialEarlySignInWindow = defaultValues.earlySignInWindow;
+    defaultValues.earlySignInWindow = initialEarlySignInWindow ? Number(initialEarlySignInWindow) : defaultEarlySigninWindow;
+  }
+
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm<ActivityFormValues>({
     resolver,
-    defaultValues: activity ? FormUtils.toExpandedDates(activity, 'startTime') : undefined,
+    defaultValues,
   });
 
   const focusRef = useRef<HTMLInputElement>();
@@ -239,13 +246,20 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
           <Grid item xs={12}>
             <Controller
-              name="earlySignInWindowMs"
+              name="earlySignInWindow"
               control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.title?.message}>
-                  <NumberInput {...field} min={0} max={24} />
-                </FormControl>
-              )}
+              render={({ field }) => {
+                return (
+                  <FormControl fullWidth error={!!errors.earlySignInWindow?.message}>
+                    <NumberInput
+                      field={field}
+                      props={{
+                        min: 0,
+                      }}
+                    />
+                  </FormControl>
+                );
+              }}
             />
           </Grid>
 
