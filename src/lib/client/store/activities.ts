@@ -77,9 +77,9 @@ export function buildMyActivitySelector() {
 
 /**
  * @description Members can sign in prior to the start time of a future mission.
- * @return 4 Hours.
+ * @return 4 Hours in milliseconds.
  */
-export const defaultEarlySigninWindow = 4;
+export const defaultEarlySigninWindow = 4 * 60 * 60 * 1000;
 
 export function isFuture(time: number) {
   return time > new Date().getTime();

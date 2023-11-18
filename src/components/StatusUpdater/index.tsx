@@ -105,7 +105,7 @@ const StatusUpdaterProtected = ({ activity, current, user, thisOrg }: { activity
     setConfirming(true);
   }
 
-  const actions = getStatusOptions(current, activity.startTime, activity.earlySignInWindowMs);
+  const actions = getStatusOptions(current, activity.startTime, activity.earlySignInWindow);
   return (
     <>
       <SplitButton

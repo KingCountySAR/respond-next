@@ -16,6 +16,8 @@ import NumberInput from '../NumberInput';
 
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, { date: string; time: string }, ['startTime']>;
 
+const maxEarlySigninWindow = 48;
+
 /**
  * Validation resolver
  * @param values
@@ -80,8 +82,13 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const defaultValues = activity ? FormUtils.toExpandedDates(activity, 'startTime') : undefined;
 
   if (defaultValues) {
-    const initialEarlySignInWindow = defaultValues.earlySignInWindow;
-    defaultValues.earlySignInWindow = initialEarlySignInWindow ? Number(initialEarlySignInWindow) : defaultEarlySigninWindow;
+    let initialEarlySignInWindow = defaultValues.earlySignInWindow;
+
+    // Force it to a number, as it's stored as a string.
+    initialEarlySignInWindow = initialEarlySignInWindow ? Number(initialEarlySignInWindow) : defaultEarlySigninWindow;
+
+    // The stored value is milliseconds, but we want to edit in hours. Convert to hours.
+    defaultValues.earlySignInWindow = initialEarlySignInWindow / 1000 / 60 / 60;
   }
 
   const {
@@ -106,6 +113,9 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const onSubmit: SubmitHandler<ActivityFormValues> = (data) => {
     const time = new Date().getTime();
     const updated = FormUtils.fromExpandedDates(data, 'startTime');
+
+    // Convert the hours the user was editing back to milliseconds for saving.
+    updated.earlySignInWindow = updated.earlySignInWindow ? updated.earlySignInWindow * 60 * 60 * 1000 : undefined;
 
     dispatch(ActivityActions.update(updated));
 
@@ -246,25 +256,6 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
           <Grid item xs={12}>
             <Controller
-              name="earlySignInWindow"
-              control={control}
-              render={({ field }) => {
-                return (
-                  <FormControl fullWidth error={!!errors.earlySignInWindow?.message}>
-                    <NumberInput
-                      field={field}
-                      props={{
-                        min: 0,
-                      }}
-                    />
-                  </FormControl>
-                );
-              }}
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <Controller
               name="description"
               control={control}
               render={({ field }) => (
@@ -291,11 +282,34 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
           )}
 
           <Grid item xs={12}>
-            <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1} sx={{ mt: 2 }}>
-              <Button onClick={() => router.back()}>Cancel</Button>
-              <Button type="submit" variant="contained">
-                Save {activityType === 'missions' ? 'Mission' : 'Event'}
-              </Button>
+            <Stack direction="row" justifyContent="space-between">
+              <Controller
+                name="earlySignInWindow"
+                control={control}
+                render={({ field }) => {
+                  return (
+                    <FormControl error={!!errors.earlySignInWindow?.message}>
+                      <Stack direction="column">
+                        <div>Early Sign In Window</div>
+                        <NumberInput
+                          field={field}
+                          props={{
+                            min: 0,
+                            max: maxEarlySigninWindow,
+                            endAdornment: 'hours',
+                          }}
+                        />
+                      </Stack>
+                    </FormControl>
+                  );
+                }}
+              />
+              <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1} sx={{ mt: 2 }}>
+                <Button onClick={() => router.back()}>Cancel</Button>
+                <Button type="submit" variant="contained">
+                  Save {activityType === 'missions' ? 'Mission' : 'Event'}
+                </Button>
+              </Stack>
             </Stack>
           </Grid>
         </Grid>
