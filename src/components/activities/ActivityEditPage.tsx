@@ -7,12 +7,22 @@ import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 're
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector, defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
+import { buildActivitySelector, defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
 import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
-type ActivityFormValues = FormUtils.ReplacedType<Activity, number, { date: string; time: string }, ['startTime']>;
+type FormDateTime = { date: string; time: string };
+type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
+
+function parseFormDateTime(dateTime: FormDateTime) {
+  return parseDate(`${dateTime.date} ${dateTime.time}`, 'yyyy-MM-dd HHmm', new Date());
+}
+
+function isFutureFormDate(dateTime: FormDateTime) {
+  const date = parseFormDateTime(dateTime);
+  return isFuture(date.getTime());
+}
 
 const earlySignInWindowOptions: { value: number; label: string }[] = [
   { value: hoursToMilliseconds(4), label: '4 hours' },
@@ -43,7 +53,7 @@ const resolver: Resolver<ActivityFormValues> = async (values) => {
     };
   }
 
-  const parsed = parseDate(`${values.startTime.date} ${values.startTime.time}`, 'yyyy-MM-dd HHmm', new Date());
+  const parsed = parseFormDateTime(values.startTime);
   if (isNaN(parsed.getTime())) {
     result.errors.startTime = {
       type: 'validate',
@@ -98,6 +108,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     control,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<ActivityFormValues>({
     resolver,
     defaultValues,
@@ -164,48 +175,43 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     <ToolbarPage>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={1} sx={{ mb: 4 }}>
-          {/* Mission  */}
           <Grid item xs={12}>
-            <Grid container spacing={1}>
-              <Grid item xs={12}>
-                <Controller
-                  name="title"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.title?.message}>
-                      <TextField {...field} inputRef={focusRef} variant="filled" label="Name" required />
-                      <FormHelperText>{errors.title?.message}</FormHelperText>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
+            <Controller
+              name="title"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.title?.message}>
+                  <TextField {...field} inputRef={focusRef} variant="filled" label="Name" required />
+                  <FormHelperText>{errors.title?.message}</FormHelperText>
+                </FormControl>
+              )}
+            />
+          </Grid>
 
-              <Grid item xs={12}>
-                <Controller
-                  name="location.title"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.location?.message}>
-                      <TextField {...field} variant="filled" label="Location" required />
-                      <FormHelperText>{errors.location?.message}</FormHelperText>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
+          <Grid item xs={12}>
+            <Controller
+              name="location.title"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.location?.message}>
+                  <TextField {...field} variant="filled" label="Location" required />
+                  <FormHelperText>{errors.location?.message}</FormHelperText>
+                </FormControl>
+              )}
+            />
+          </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <Controller
-                  name="mapId"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <TextField {...field} variant="filled" label="Map Id" />
-                      <FormHelperText></FormHelperText>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-            </Grid>
+          <Grid item xs={12} sm={6}>
+            <Controller
+              name="mapId"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth>
+                  <TextField {...field} variant="filled" label="Map Id" />
+                  <FormHelperText></FormHelperText>
+                </FormControl>
+              )}
+            />
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -245,7 +251,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               name="earlySignInWindow"
               control={control}
               render={({ field }) => (
-                <FormControl fullWidth error={!!errors.ownerOrgId?.message}>
+                <FormControl fullWidth error={!!errors.ownerOrgId?.message} disabled={isFutureFormDate(watch('startTime'))}>
                   <InputLabel variant="filled">Early Sign In Window</InputLabel>
                   <Select {...field} variant="filled" label="Early Sign In Window">
                     {earlySignInWindowOptions.map((p) => (
