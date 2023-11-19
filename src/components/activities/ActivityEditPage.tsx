@@ -1,6 +1,6 @@
 'use client';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
-import { parse as parseDate } from 'date-fns';
+import { hoursToMilliseconds, parse as parseDate } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
@@ -12,11 +12,14 @@ import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
-import NumberInput from '../NumberInput';
-
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, { date: string; time: string }, ['startTime']>;
 
-const maxEarlySigninWindow = 48;
+const earlySignInWindowOptions: { value: number; label: string }[] = [
+  { value: hoursToMilliseconds(4), label: '4 hours' },
+  { value: hoursToMilliseconds(12), label: '12 hours' },
+  { value: hoursToMilliseconds(24), label: '24 hours' },
+  { value: NaN, label: 'Unlimited' },
+];
 
 /**
  * Validation resolver
@@ -65,11 +68,13 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const dispatch = useAppDispatch();
   const router = useRouter();
   const org = useAppSelector((state) => state.organization.mine);
-  let activity = useAppSelector(buildActivitySelector(activityId));
+  const selectedActivity = useAppSelector(buildActivitySelector(activityId));
 
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
   const ownerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
-  const isNew = !activity;
+  const isNew = !selectedActivity;
+
+  let activity: Activity;
   if (isNew) {
     activity = {
       ...createNewActivity(),
@@ -77,18 +82,16 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       isMission: activityType === 'missions',
       asMission: activityType === 'missions',
     };
+  } else {
+    activity = selectedActivity;
   }
 
-  const defaultValues = activity ? FormUtils.toExpandedDates(activity, 'startTime') : undefined;
+  const defaultValues = FormUtils.toExpandedDates(activity, 'startTime');
 
-  if (defaultValues) {
-    let initialEarlySignInWindow = defaultValues.earlySignInWindow;
-
-    // Force it to a number, as it's stored as a string.
-    initialEarlySignInWindow = initialEarlySignInWindow ? Number(initialEarlySignInWindow) : defaultEarlySigninWindow;
-
-    // The stored value is milliseconds, but we want to edit in hours. Convert to hours.
-    defaultValues.earlySignInWindow = initialEarlySignInWindow / 1000 / 60 / 60;
+  // Sanitize stored values
+  const initialEarlySignInWindow = defaultValues.earlySignInWindow;
+  if (initialEarlySignInWindow == undefined || initialEarlySignInWindow == null || typeof initialEarlySignInWindow != 'number') {
+    defaultValues.earlySignInWindow = defaultEarlySigninWindow;
   }
 
   const {
@@ -113,9 +116,6 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const onSubmit: SubmitHandler<ActivityFormValues> = (data) => {
     const time = new Date().getTime();
     const updated = FormUtils.fromExpandedDates(data, 'startTime');
-
-    // Convert the hours the user was editing back to milliseconds for saving.
-    updated.earlySignInWindow = updated.earlySignInWindow ? updated.earlySignInWindow * 60 * 60 * 1000 : undefined;
 
     dispatch(ActivityActions.update(updated));
 
@@ -180,7 +180,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <Controller
                   name="location.title"
                   control={control}
@@ -240,6 +240,25 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
             />
           </Grid>
 
+          <Grid item xs={12} sm={6}>
+            <Controller
+              name="earlySignInWindow"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.ownerOrgId?.message}>
+                  <InputLabel variant="filled">Early Sign In Window</InputLabel>
+                  <Select {...field} variant="filled" label="Early Sign In Window">
+                    {earlySignInWindowOptions.map((p) => (
+                      <MenuItem key={p.value} value={p.value}>
+                        {p.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            />
+          </Grid>
+
           <Grid item xs={12}>
             <FormControl fullWidth error={!!errors.startTime?.message || !!errors.startTime?.date?.message || !!errors.startTime?.time?.message}>
               <Grid container spacing={1}>
@@ -282,34 +301,11 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
           )}
 
           <Grid item xs={12}>
-            <Stack direction="row" justifyContent="space-between">
-              <Controller
-                name="earlySignInWindow"
-                control={control}
-                render={({ field }) => {
-                  return (
-                    <FormControl error={!!errors.earlySignInWindow?.message}>
-                      <Stack direction="column">
-                        <div>Early Sign In Window</div>
-                        <NumberInput
-                          field={field}
-                          props={{
-                            min: 0,
-                            max: maxEarlySigninWindow,
-                            endAdornment: 'hours',
-                          }}
-                        />
-                      </Stack>
-                    </FormControl>
-                  );
-                }}
-              />
-              <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1} sx={{ mt: 2 }}>
-                <Button onClick={() => router.back()}>Cancel</Button>
-                <Button type="submit" variant="contained">
-                  Save {activityType === 'missions' ? 'Mission' : 'Event'}
-                </Button>
-              </Stack>
+            <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1} sx={{ mt: 2 }}>
+              <Button onClick={() => router.back()}>Cancel</Button>
+              <Button type="submit" variant="contained">
+                Save {activityType === 'missions' ? 'Mission' : 'Event'}
+              </Button>
             </Stack>
           </Grid>
         </Grid>

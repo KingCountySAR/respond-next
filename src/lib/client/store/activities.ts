@@ -1,5 +1,6 @@
 import { CaseReducer, createSlice } from '@reduxjs/toolkit';
 import { TypedActionCreator } from '@reduxjs/toolkit/dist/mapBuilders';
+import { hoursToMilliseconds } from 'date-fns'
 
 import { ActivityActions, ActivityState, BasicReducers } from '@respond/lib/state';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
@@ -79,7 +80,7 @@ export function buildMyActivitySelector() {
  * @description Members can sign in prior to the start time of a future mission.
  * @return 4 Hours in milliseconds.
  */
-export const defaultEarlySigninWindow = 4 * 60 * 60 * 1000;
+export const defaultEarlySigninWindow = hoursToMilliseconds(4);
 
 export function isFuture(time: number) {
   return time > new Date().getTime();
