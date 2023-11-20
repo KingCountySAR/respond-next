@@ -128,6 +128,7 @@ function ParticipantHoursText({ participant }: { participant: Participant }) {
   const lastTimeline = participant.timeline[0];
   const [latestTimeout, setLatestTimeout] = useState<number>(getLastTimeout(lastTimeline));
 
+  // Keep the timeline up to date while the dialog is open
   useEffect(() => {
     const timer = setTimeout(() => {
       setLatestTimeout(getLastTimeout(lastTimeline));
@@ -136,14 +137,17 @@ function ParticipantHoursText({ participant }: { participant: Participant }) {
   }, [lastTimeline, latestTimeout, participant.firstname]);
 
   let timeOnClock = 0;
-  let timeout = latestTimeout;
+  let lastTime: number = latestTimeout;
   for (const t of participant.timeline) {
     if (isOnClock(t.status)) {
-      timeOnClock += timeout - t.time;
-    } else {
-      timeout = t.time;
+      timeOnClock += lastTime - t.time;
     }
+
+    lastTime = t.time;
   }
 
-  return <>{Math.round(timeOnClock / 1000 / 60 / 15) / 4}</>;
+  // Round to the nearest quarter hour.
+  const hours = Math.round(timeOnClock / 1000 / 60 / 15) / 4;
+
+  return <>{hours}</>;
 }
