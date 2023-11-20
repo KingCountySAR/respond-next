@@ -1,6 +1,6 @@
 import { CaseReducer, createSlice } from '@reduxjs/toolkit';
 import { TypedActionCreator } from '@reduxjs/toolkit/dist/mapBuilders';
-import { hoursToMilliseconds } from 'date-fns'
+import { hoursToMilliseconds } from 'date-fns';
 
 import { ActivityActions, ActivityState, BasicReducers } from '@respond/lib/state';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
@@ -77,10 +77,20 @@ export function buildMyActivitySelector() {
 }
 
 /**
+ * @return Valid options for the early sign in window, with labels.
+ */
+export const earlySignInWindowOptions: { value: number; label: string }[] = [
+  { value: hoursToMilliseconds(4), label: `4 hours` },
+  { value: hoursToMilliseconds(12), label: '12 hours' },
+  { value: hoursToMilliseconds(24), label: '24 hours' },
+  { value: NaN, label: 'Unlimited' },
+];
+
+/**
  * @description Members can sign in prior to the start time of a future mission.
  * @return 4 Hours in milliseconds.
  */
-export const defaultEarlySigninWindow = hoursToMilliseconds(4);
+export const defaultEarlySigninWindow = earlySignInWindowOptions[0].value;
 
 export function isFuture(time: number) {
   return time > new Date().getTime();

@@ -1,13 +1,13 @@
 'use client';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
-import { hoursToMilliseconds, parse as parseDate } from 'date-fns';
+import { parse as parseDate } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector, defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
+import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
 import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
@@ -23,13 +23,6 @@ function isFutureFormDate(dateTime: FormDateTime) {
   const date = parseFormDateTime(dateTime);
   return isFuture(date.getTime());
 }
-
-const earlySignInWindowOptions: { value: number; label: string }[] = [
-  { value: hoursToMilliseconds(4), label: '4 hours' },
-  { value: hoursToMilliseconds(12), label: '12 hours' },
-  { value: hoursToMilliseconds(24), label: '24 hours' },
-  { value: NaN, label: 'Unlimited' },
-];
 
 /**
  * Validation resolver
@@ -251,7 +244,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               name="earlySignInWindow"
               control={control}
               render={({ field }) => (
-                <FormControl fullWidth error={!!errors.ownerOrgId?.message} disabled={isFutureFormDate(watch('startTime'))}>
+                <FormControl fullWidth error={!!errors.earlySignInWindow?.message} disabled={!isFutureFormDate(watch('startTime'))}>
                   <InputLabel variant="filled">Early Sign In Window</InputLabel>
                   <Select {...field} variant="filled" label="Early Sign In Window">
                     {earlySignInWindowOptions.map((p) => (
