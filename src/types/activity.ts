@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 
-import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities'
+import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
 
 const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[]) => {
   return (object: any) => {
