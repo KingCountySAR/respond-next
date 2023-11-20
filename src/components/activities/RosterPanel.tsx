@@ -147,7 +147,5 @@ function ParticipantHoursText({ participant }: { participant: Participant }) {
   }
 
   // Round to the nearest quarter hour.
-  const hours = Math.round(timeOnClock / 1000 / 60 / 15) / 4;
-
-  return <>{hours}</>;
+  return <>{Math.round(timeOnClock / 1000 / 60 / 15) / 4}</>;
 }
