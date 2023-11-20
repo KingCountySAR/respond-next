@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
-import { isFuture } from '@respond/lib/client/store/activities';
+import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
 import { Activity, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
@@ -73,7 +73,12 @@ const futureStatusOptions: Record<ParticipantStatus, { id: number; newStatus: Pa
 
 function getStatusOptions(current: ParticipantStatus | undefined, startTime: number, earlySigninWindow?: number) {
   const status = current ?? ParticipantStatus.NotResponding;
-  if (!!earlySigninWindow && isFuture(startTime - earlySigninWindow)) {
+
+  if (earlySigninWindow === undefined) {
+    earlySigninWindow = defaultEarlySigninWindow;
+  }
+
+  if (Number.isNaN(earlySigninWindow) || isFuture(startTime - earlySigninWindow)) {
     return futureStatusOptions[status];
   }
 

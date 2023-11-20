@@ -1,5 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
+import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities'
+
 const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[]) => {
   return (object: any) => {
     const resultObject: ObjectType = {} as unknown as ObjectType;
@@ -146,6 +148,7 @@ export function createNewActivity(): Activity {
     location: { title: '' },
     mapId: '',
     startTime: new Date().getTime(),
+    earlySignInWindow: defaultEarlySigninWindow,
     isMission: false,
     asMission: false,
     ownerOrgId: '',
