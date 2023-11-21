@@ -78,7 +78,7 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
     earlySigninWindow = defaultEarlySigninWindow;
   }
 
-  if (Number.isNaN(earlySigninWindow) || isFuture(startTime - earlySigninWindow)) {
+  if (isFuture(startTime - earlySigninWindow)) {
     return futureStatusOptions[status];
   }
 

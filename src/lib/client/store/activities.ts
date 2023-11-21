@@ -80,10 +80,10 @@ export function buildMyActivitySelector() {
  * @return Valid options for the early sign in window, with labels.
  */
 export const earlySignInWindowOptions: { value: number; label: string }[] = [
-  { value: hoursToMilliseconds(4), label: `4 hours` },
+  { value: hoursToMilliseconds(4), label: '4 hours' },
   { value: hoursToMilliseconds(12), label: '12 hours' },
   { value: hoursToMilliseconds(24), label: '24 hours' },
-  { value: NaN, label: 'Unlimited' },
+  { value: Infinity, label: 'Open Immediately' },
 ];
 
 /**
