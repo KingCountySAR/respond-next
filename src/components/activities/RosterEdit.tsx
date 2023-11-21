@@ -65,10 +65,10 @@ function RosterRow({ rosterEntry }: { rosterEntry: RosterEntry }) {
   return (
     <TableRow>
       <TableCell size="small">{rosterEntry.participantName}</TableCell>
-      <TableCell size="small">{!!rosterEntry.timestamps[RosterStage.SignIn] && <RosterTime time={rosterEntry.timestamps[RosterStage.SignIn]} />}</TableCell>
-      <TableCell size="small">{!!rosterEntry.timestamps[RosterStage.ArriveBase] && <RosterTime time={rosterEntry.timestamps[RosterStage.ArriveBase]} />}</TableCell>
-      <TableCell size="small">{!!rosterEntry.timestamps[RosterStage.DepartBase] && <RosterTime time={rosterEntry.timestamps[RosterStage.DepartBase]} />}</TableCell>
-      <TableCell size="small">{!!rosterEntry.timestamps[RosterStage.SignOut] && <RosterTime time={rosterEntry.timestamps[RosterStage.SignOut]} />}</TableCell>
+      <TableCell size="small">{<RosterTime time={rosterEntry.timestamps[RosterStage.SignIn]} />}</TableCell>
+      <TableCell size="small">{<RosterTime time={rosterEntry.timestamps[RosterStage.ArriveBase]} />}</TableCell>
+      <TableCell size="small">{<RosterTime time={rosterEntry.timestamps[RosterStage.DepartBase]} />}</TableCell>
+      <TableCell size="small">{<RosterTime time={rosterEntry.timestamps[RosterStage.SignOut]} />}</TableCell>
     </TableRow>
   );
 }
@@ -78,8 +78,12 @@ function RosterTime({ time }: { time: number }) {
   const timeString = new Date(time).toLocaleString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(':', '');
   return (
     <Stack>
-      <Typography variant="h6">{timeString}</Typography>
-      <Typography variant="caption">{dateString}</Typography>
+      {!!time && (
+        <>
+          <Typography variant="h6">{timeString}</Typography>
+          <Typography variant="caption">{dateString}</Typography>
+        </>
+      )}
     </Stack>
   );
 }
