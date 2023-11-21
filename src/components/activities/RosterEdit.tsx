@@ -9,7 +9,7 @@ export function RosterEdit({ activityId }: { activityId: string }) {
   const activity = useAppSelector(buildActivitySelector(activityId));
   const rosterEntries: Array<RosterEntry> = [];
 
-  Object.entries(activity?.participants ?? {}).forEach(([participantId, participant]: [key: string, participant: Participant]) => {
+  Object.entries(activity?.participants ?? {}).forEach(([participantId, participant]: [participantId: string, participant: Participant]) => {
     for (let i = participant.timeline.length - 1; i >= 0; i--) {
       const update: ParticipantUpdate = participant.timeline[i];
       const stage: RosterStage = rosterStages[update.status] ?? undefined;
