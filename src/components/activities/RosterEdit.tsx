@@ -3,31 +3,33 @@ import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
-import { Participant, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
+import { Participant, ParticipantStatus } from '@respond/types/activity';
 
 export function RosterEdit({ activityId }: { activityId: string }) {
   const activity = useAppSelector(buildActivitySelector(activityId));
   const rosterEntries: Array<RosterEntry> = [];
 
-  Object.entries(activity?.participants ?? {}).forEach(([participantId, participant]: [participantId: string, participant: Participant]) => {
-    for (let i = participant.timeline.length - 1; i >= 0; i--) {
-      const update: ParticipantUpdate = participant.timeline[i];
-      const stage: RosterStage = rosterStages[update.status] ?? undefined;
-      if (!stage) {
-        // The participant status is not relavent to the roster.
-        continue;
-      }
-      if (!rosterEntries.some((f) => f.participant.id === participantId && !f.timestamps[RosterStage.SignOut])) {
-        // This participant does not have an active roster entry.
-        rosterEntries.unshift(new RosterEntry(participant));
-      }
-      const rosterEntry = rosterEntries.find((f) => f.participant.id === participantId && !f.timestamps[RosterStage.SignOut]);
-      if (rosterEntry!.timestamps[stage]) {
-        // The roster stage was already reached in a prior status update.
-        continue;
-      }
-      rosterEntry!.timestamps[stage] = update.time;
+  function getRosterEntry(participant: Participant): RosterEntry {
+    const filter = (entry: RosterEntry) => entry.participantId === participant.id && !entry.timestamps[RosterStage.SignOut];
+    if (!rosterEntries.some(filter)) {
+      // This participant does not have an active roster entry.
+      rosterEntries.unshift(new RosterEntry(participant));
     }
+    return rosterEntries.find(filter)!;
+  }
+
+  function buildRosterEntries(participant: Participant) {
+    for (let i = participant.timeline.length - 1; i >= 0; i--) {
+      const stage: RosterStage = rosterStages[participant.timeline[i].status] ?? undefined;
+      if (!stage) continue; // The participant status is not relavent to the roster.
+      const rosterEntry = getRosterEntry(participant);
+      if (rosterEntry.timestamps[stage]) continue; // The roster stage was already reached in a prior status update.
+      rosterEntry.timestamps[stage] = participant.timeline[i].time;
+    }
+  }
+
+  Object.values(activity?.participants ?? {}).forEach((participant: Participant) => {
+    buildRosterEntries(participant);
   });
 
   return (
@@ -35,7 +37,6 @@ export function RosterEdit({ activityId }: { activityId: string }) {
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Participant Id</TableCell>
             <TableCell>Particpant Name</TableCell>
             <TableCell>Sign In</TableCell>
             <TableCell>Arrive Base</TableCell>
@@ -43,7 +44,11 @@ export function RosterEdit({ activityId }: { activityId: string }) {
             <TableCell>Sign Out</TableCell>
           </TableRow>
         </TableHead>
-        <TableBody>{!!rosterEntries && rosterEntries.map((m, i) => <RosterRow key={i} rosterEntry={m} />)}</TableBody>
+        <TableBody>
+          {rosterEntries.map((entry, i) => (
+            <RosterRow key={i} rosterEntry={entry} />
+          ))}
+        </TableBody>
       </Table>
     </ToolbarPage>
   );
@@ -52,8 +57,7 @@ export function RosterEdit({ activityId }: { activityId: string }) {
 function RosterRow({ rosterEntry }: { rosterEntry: RosterEntry }) {
   return (
     <TableRow>
-      <TableCell>{rosterEntry.participant.id}</TableCell>
-      <TableCell>{`${rosterEntry.participant.firstname} ${rosterEntry.participant.lastname}`}</TableCell>
+      <TableCell>{rosterEntry.participantName}</TableCell>
       <TableCell>{!!rosterEntry.timestamps[RosterStage.SignIn] && formatTime(rosterEntry.timestamps[RosterStage.SignIn])}</TableCell>
       <TableCell>{!!rosterEntry.timestamps[RosterStage.ArriveBase] && formatTime(rosterEntry.timestamps[RosterStage.ArriveBase])}</TableCell>
       <TableCell>{!!rosterEntry.timestamps[RosterStage.DepartBase] && formatTime(rosterEntry.timestamps[RosterStage.DepartBase])}</TableCell>
@@ -78,7 +82,8 @@ enum RosterStage {
 }
 
 interface IRosterEntry {
-  participant: Partial<Participant>;
+  participantId: string;
+  participantName: string;
   timestamps: {
     [RosterStage.SignIn]: number;
     [RosterStage.ArriveBase]: number;
@@ -88,19 +93,18 @@ interface IRosterEntry {
 }
 
 class RosterEntry implements IRosterEntry {
-  participant: Partial<Participant>;
+  participantId;
+  participantName;
   timestamps;
   constructor(participant: Participant) {
-    this.participant = { id: participant.id, firstname: participant.firstname, lastname: participant.lastname };
+    this.participantId = participant.id;
+    this.participantName = `${participant.firstname} ${participant.lastname}`;
     this.timestamps = {
       [RosterStage.SignIn]: 0,
       [RosterStage.ArriveBase]: 0,
       [RosterStage.DepartBase]: 0,
       [RosterStage.SignOut]: 0,
     };
-  }
-  get name() {
-    return `${this.participant.firstname} ${this.participant.lastname}`;
   }
 }
 
