@@ -1,6 +1,6 @@
 import { FormControlLabel } from '@mui/material';
 import { format as formatDate, parse as parseDate } from 'date-fns';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useAppDispatch } from '@respond/lib/client/store';
@@ -11,10 +11,12 @@ import { UserInfo } from '@respond/types/userInfo';
 
 import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
 
+const TextBoxDateFormat: string = "yyyy-MM-dd'T'HH:mm";
+
 interface FormValues {
   miles: number | '';
   addMiles: number | '';
-  statusTime: Date | '';
+  statusTime: string;
 }
 
 export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: MyOrganization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
@@ -38,13 +40,24 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
         message: 'Must be a positive number',
       };
     }
+    const statusTimeAsDate = parseDate(values.statusTime, TextBoxDateFormat, new Date());
+    const lastStatusChangeTime = participant?.timeline[0].time;
+    if (lastStatusChangeTime && !isNaN(lastStatusChangeTime) && statusTimeAsDate.getTime() < lastStatusChangeTime) {
+      result.errors.statusTime = {
+        type: 'min',
+        message: 'Cannot be earlier than previous status change at ' + new Date(lastStatusChangeTime),
+      };
+    }
 
     return result;
   };
 
+  const currentTime = new Date();
+  const currentTimeAsString = formatDate(currentTime, TextBoxDateFormat);
+
   const form = useForm<FormValues>({
     resolver,
-    defaultValues: { miles: participant?.miles ?? '', addMiles: '', statusTime: '' },
+    defaultValues: { miles: participant?.miles ?? '', addMiles: '', statusTime: currentTimeAsString },
   });
   if (form.getValues().miles !== (participant?.miles ?? '')) {
     form.reset({ miles: participant?.miles ?? '', addMiles: '' });
@@ -55,13 +68,9 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
       data.miles = Number(data.miles ?? 0) + Number(data.addMiles);
     }
 
-    console.log('##### onSubmit');
-    console.log('form.getValues().miles ' + form.getValues().miles);
-    console.log('form.getValues().addMiles ' + form.getValues().addMiles);
-    console.log('form.getValues().statusTime ' + form.getValues().statusTime);
-    console.log('data.statusTime' + data.statusTime);
+    const statusTimeAsDate = parseDate(data.statusTime, TextBoxDateFormat, new Date());
+    const time = statusTimeAsDate.getTime();
 
-    const time = (data.statusTime === '' ? new Date() : data.statusTime).getTime();
     if (!activity.organizations[respondingOrg.id]) {
       dispatch(
         ActivityActions.appendOrganizationTimeline(
@@ -178,34 +187,14 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
   );
 };
 
-export const StatusTimeInput = ({ form: { control, errors, setValue } }: { form: FormLogic }) => {
-  const currentTime = new Date();
-  const currentTimeAsString = formatDate(currentTime, "yyyy-MM-dd'T'HH:mm");
-
-  const [statusTimeState, setStatusTimeState] = useState<string>(currentTimeAsString);
-
-  console.log('#### StatusTimeInput');
-  console.log('statusTime=' + statusTimeState);
-
-  function handleSetStatusTime(event: React.ChangeEvent<HTMLInputElement>) {
-    console.log('#### handleSetStatusTime');
-
-    const statusTimeAsDate = parseDate(event.target.value, "yyyy-MM-dd'T'HH:mm", new Date());
-    setValue('statusTime', statusTimeAsDate);
-    setStatusTimeState(event.target.value);
-
-    console.log('statusTimeAsDate=' + statusTimeAsDate);
-    console.log('event.target.value=' + event.target.value);
-  }
-
-  setValue('statusTime', currentTime);
+export const StatusTimeInput = ({ form: { control, errors } }: { form: FormLogic }) => {
   return (
     <Controller
       name="statusTime"
       control={control}
       render={({ field }) => (
         <FormControl error={!!errors.statusTime?.message}>
-          <TextField {...field} type="datetime-local" variant="filled" size="small" value={statusTimeState} onChange={handleSetStatusTime} />
+          <TextField {...field} type="datetime-local" variant="filled" size="small" />
           <FormHelperText>{errors.statusTime?.message}</FormHelperText>
         </FormControl>
       )}
@@ -215,6 +204,23 @@ export const StatusTimeInput = ({ form: { control, errors, setValue } }: { form:
 
 export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
   const { activity, participant, newStatus } = form.context;
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isInitialized) {
+      setIsInitialized(true);
+
+      // Reset the form as the same useForm object is reused.
+      form.reset();
+
+      const currentTime = new Date();
+      const currentTimeAsString = formatDate(currentTime, TextBoxDateFormat);
+
+      // Set fields with dynamic default values.
+      form.setValue('miles', participant?.miles ?? '');
+      form.setValue('statusTime', currentTimeAsString);
+    }
+  }, [isInitialized, form, participant?.miles]);
 
   return (
     <Stack spacing={2} alignItems="flex-start">
