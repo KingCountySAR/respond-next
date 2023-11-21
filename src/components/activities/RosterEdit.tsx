@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
@@ -34,22 +34,29 @@ export function RosterEdit({ activityId }: { activityId: string }) {
 
   return (
     <ToolbarPage maxWidth="lg">
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Particpant Name</TableCell>
-            <TableCell>Sign In</TableCell>
-            <TableCell>Arrive Base</TableCell>
-            <TableCell>Depart Base</TableCell>
-            <TableCell>Sign Out</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rosterEntries.map((entry, i) => (
-            <RosterRow key={i} rosterEntry={entry} />
-          ))}
-        </TableBody>
-      </Table>
+      <Paper>
+        <Box padding={2}>
+          <Typography variant="h4">
+            {activity?.idNumber} {activity?.title}
+          </Typography>
+        </Box>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 700, width: 20 }}>Particpant Name</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 20 }}>Sign In</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 20 }}>Arrive Base</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 20 }}>Depart Base</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 20 }}>Sign Out</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rosterEntries.map((entry, i) => (
+              <RosterRow key={i} rosterEntry={entry} />
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
     </ToolbarPage>
   );
 }
@@ -57,20 +64,24 @@ export function RosterEdit({ activityId }: { activityId: string }) {
 function RosterRow({ rosterEntry }: { rosterEntry: RosterEntry }) {
   return (
     <TableRow>
-      <TableCell>{rosterEntry.participantName}</TableCell>
-      <TableCell>{!!rosterEntry.timestamps[RosterStage.SignIn] && formatTime(rosterEntry.timestamps[RosterStage.SignIn])}</TableCell>
-      <TableCell>{!!rosterEntry.timestamps[RosterStage.ArriveBase] && formatTime(rosterEntry.timestamps[RosterStage.ArriveBase])}</TableCell>
-      <TableCell>{!!rosterEntry.timestamps[RosterStage.DepartBase] && formatTime(rosterEntry.timestamps[RosterStage.DepartBase])}</TableCell>
-      <TableCell>{!!rosterEntry.timestamps[RosterStage.SignOut] && formatTime(rosterEntry.timestamps[RosterStage.SignOut])}</TableCell>
+      <TableCell size="small">{rosterEntry.participantName}</TableCell>
+      <TableCell size="small">{!!rosterEntry.timestamps[RosterStage.SignIn] && <RosterTime time={rosterEntry.timestamps[RosterStage.SignIn]} />}</TableCell>
+      <TableCell size="small">{!!rosterEntry.timestamps[RosterStage.ArriveBase] && <RosterTime time={rosterEntry.timestamps[RosterStage.ArriveBase]} />}</TableCell>
+      <TableCell size="small">{!!rosterEntry.timestamps[RosterStage.DepartBase] && <RosterTime time={rosterEntry.timestamps[RosterStage.DepartBase]} />}</TableCell>
+      <TableCell size="small">{!!rosterEntry.timestamps[RosterStage.SignOut] && <RosterTime time={rosterEntry.timestamps[RosterStage.SignOut]} />}</TableCell>
     </TableRow>
   );
 }
 
-function formatTime(time: number) {
-  if (!time) {
-    return '';
-  }
-  return new Date(time).toLocaleString('en-US', { hour12: false });
+function RosterTime({ time }: { time: number }) {
+  const dateString = new Date(time).toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+  const timeString = new Date(time).toLocaleString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(':', '');
+  return (
+    <Stack>
+      <Typography variant="h6">{timeString}</Typography>
+      <Typography variant="caption">{dateString}</Typography>
+    </Stack>
+  );
 }
 
 enum RosterStage {
