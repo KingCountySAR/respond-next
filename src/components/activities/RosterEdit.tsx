@@ -9,7 +9,7 @@ export function RosterEdit({ activityId }: { activityId: string }) {
   const activity = useAppSelector(buildActivitySelector(activityId));
   const rosterEntries: Array<RosterEntry> = [];
 
-  Object.entries(activity?.participants ?? {}).forEach(([key, participant]: [key: string, participant: Participant]) => {
+  Object.entries(activity?.participants ?? {}).forEach(([participantId, participant]: [key: string, participant: Participant]) => {
     for (let i = participant.timeline.length - 1; i >= 0; i--) {
       const update: ParticipantUpdate = participant.timeline[i];
       const stage: RosterStage = rosterStages[update.status] ?? undefined;
@@ -17,11 +17,11 @@ export function RosterEdit({ activityId }: { activityId: string }) {
         // The participant status is not relavent to the roster.
         continue;
       }
-      if (!rosterEntries.some((f) => f.participant.id === participant.id && !f.timestamps[RosterStage.SignOut])) {
+      if (!rosterEntries.some((f) => f.participant.id === participantId && !f.timestamps[RosterStage.SignOut])) {
         // This participant does not have an active roster entry.
         rosterEntries.unshift(new RosterEntry(participant));
       }
-      const rosterEntry = rosterEntries.find((f) => f.participant.id === participant.id && !f.timestamps[RosterStage.SignOut]);
+      const rosterEntry = rosterEntries.find((f) => f.participant.id === participantId && !f.timestamps[RosterStage.SignOut]);
       if (rosterEntry!.timestamps[stage]) {
         // The roster stage was already reached in a prior status update.
         continue;
