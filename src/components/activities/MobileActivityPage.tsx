@@ -54,8 +54,12 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
 
+  const user = useAppSelector((state) => state.auth.userInfo);
+  const myParticipation = activity?.participants[user?.userId ?? ''];
+
   return (
     <>
+      <Box sx={{ my: 2 }}>{isActive(activity) && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}</Box>
       <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} />
       <Box style={{ overflowY: 'auto', height: 0, paddingBottom: '16px' }} flex="1 1 auto">
         <RosterPanel //
