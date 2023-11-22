@@ -52,12 +52,9 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
     return result;
   };
 
-  const currentTime = new Date();
-  const currentTimeAsString = formatDate(currentTime, TextBoxDateFormat);
-
   const form = useForm<FormValues>({
     resolver,
-    defaultValues: { miles: participant?.miles ?? '', addMiles: '', statusTime: currentTimeAsString },
+    defaultValues: { miles: participant?.miles ?? '', addMiles: '', statusTime: '' },
   });
   if (form.getValues().miles !== (participant?.miles ?? '')) {
     form.reset({ miles: participant?.miles ?? '', addMiles: '' });
@@ -88,9 +85,6 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
       );
     }
     dispatch(ActivityActions.participantUpdate(activity.id, user.participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles));
-    // Clear form data so it doesn't carry over to the next status update.
-    data.statusTime = '';
-    data.addMiles = '';
     onFinish();
   };
 
