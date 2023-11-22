@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { earlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { Activity, ParticipantStatus } from '@respond/types/activity';
+import { Activity, isActive, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
@@ -60,7 +60,7 @@ const statusOptions: Record<ParticipantStatus, { id: number; newStatus: Particip
   [ParticipantStatus.SignedOut]: [statusTransitions.signIn, statusTransitions.standBy, statusTransitions.inTown],
 };
 
-const futureStatusOptions: Record<ParticipantStatus, { id: number; newStatus: ParticipantStatus; text: string }[]> = {
+const standbyOnlyStatusOptions: Record<ParticipantStatus, { id: number; newStatus: ParticipantStatus; text: string }[]> = {
   [ParticipantStatus.NotResponding]: [statusTransitions.standBy],
   [ParticipantStatus.Standby]: [statusTransitions.standDown],
   [ParticipantStatus.Remote]: [statusTransitions.resetStatus],
@@ -74,8 +74,12 @@ const futureStatusOptions: Record<ParticipantStatus, { id: number; newStatus: Pa
 function getStatusOptions(current: ParticipantStatus | undefined, startTime: number, standbyOnly: boolean) {
   const status = current ?? ParticipantStatus.NotResponding;
 
-  if (standbyOnly || isFuture(startTime - earlySigninWindow)) {
-    return futureStatusOptions[status];
+  // Reasons an activity is treated as standby only:
+  // 1. The activity's sign-in window is in the future.
+  // 2. The activity is marked as standby only, and the current responder is not active.
+  //    If the responder is already active, let them update their status as normal.
+  if (isFuture(startTime - earlySigninWindow) || (standbyOnly && !isActive(status))) {
+    return standbyOnlyStatusOptions[status];
   }
 
   return statusOptions[status];
