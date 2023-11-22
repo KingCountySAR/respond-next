@@ -1,5 +1,6 @@
 import { FormControlLabel } from '@mui/material';
-import { useState } from 'react';
+import { format as formatDate, parse as parseDate } from 'date-fns';
+import { useEffect, useState } from 'react';
 import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useAppDispatch } from '@respond/lib/client/store';
@@ -10,9 +11,12 @@ import { UserInfo } from '@respond/types/userInfo';
 
 import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
 
+const TextBoxDateFormat: string = "yyyy-MM-dd'T'HH:mm";
+
 interface FormValues {
   miles: number | '';
   addMiles: number | '';
+  statusTime: string;
 }
 
 export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: MyOrganization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
@@ -36,13 +40,21 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
         message: 'Must be a positive number',
       };
     }
+    const statusTimeAsDate = parseDate(values.statusTime, TextBoxDateFormat, new Date());
+    const lastStatusChangeTime = participant?.timeline[0].time;
+    if (lastStatusChangeTime && !isNaN(lastStatusChangeTime) && statusTimeAsDate.getTime() < lastStatusChangeTime) {
+      result.errors.statusTime = {
+        type: 'min',
+        message: 'Cannot be earlier than previous status change at ' + new Date(lastStatusChangeTime),
+      };
+    }
 
     return result;
   };
 
   const form = useForm<FormValues>({
     resolver,
-    defaultValues: { miles: participant?.miles ?? '', addMiles: '' },
+    defaultValues: { miles: participant?.miles ?? '', addMiles: '', statusTime: '' },
   });
   if (form.getValues().miles !== (participant?.miles ?? '')) {
     form.reset({ miles: participant?.miles ?? '', addMiles: '' });
@@ -53,7 +65,8 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
       data.miles = Number(data.miles ?? 0) + Number(data.addMiles);
     }
 
-    const time = new Date().getTime();
+    const statusTimeAsDate = parseDate(data.statusTime, TextBoxDateFormat, new Date());
+    const time = statusTimeAsDate.getTime();
 
     if (!activity.organizations[respondingOrg.id]) {
       dispatch(
@@ -66,7 +79,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
           },
           {
             status: newStatus === ParticipantStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding,
-            time,
+            time: time,
           },
         ),
       );
@@ -168,12 +181,45 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
   );
 };
 
+export const StatusTimeInput = ({ form: { control, errors } }: { form: FormLogic }) => {
+  return (
+    <Controller
+      name="statusTime"
+      control={control}
+      render={({ field }) => (
+        <FormControl error={!!errors.statusTime?.message}>
+          <TextField {...field} type="datetime-local" variant="filled" size="small" />
+          <FormHelperText>{errors.statusTime?.message}</FormHelperText>
+        </FormControl>
+      )}
+    />
+  );
+};
+
 export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
   const { activity, participant, newStatus } = form.context;
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isInitialized) {
+      setIsInitialized(true);
+
+      // Reset the form as the same useForm object is reused.
+      form.reset();
+
+      const currentTime = new Date();
+      const currentTimeAsString = formatDate(currentTime, TextBoxDateFormat);
+
+      // Set fields with dynamic default values.
+      form.setValue('miles', participant?.miles ?? '');
+      form.setValue('statusTime', currentTimeAsString);
+    }
+  }, [isInitialized, form, participant?.miles]);
 
   return (
     <Stack spacing={2} alignItems="flex-start">
       <DialogContentText id="status-update-dialog-description">Change your status for {activity.title}?</DialogContentText>
+      <StatusTimeInput form={form} />
       {newStatus === ParticipantStatus.SignedOut ? <MileageSection form={form} existingMiles={participant?.miles} /> : undefined}
     </Stack>
   );
