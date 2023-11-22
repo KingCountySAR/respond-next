@@ -71,11 +71,13 @@ const futureStatusOptions: Record<ParticipantStatus, { id: number; newStatus: Pa
   [ParticipantStatus.SignedOut]: [statusTransitions.standBy],
 };
 
-function getStatusOptions(current: ParticipantStatus | undefined, startTime: number) {
+function getStatusOptions(current: ParticipantStatus | undefined, startTime: number, standbyOnly: boolean) {
   const status = current ?? ParticipantStatus.NotResponding;
-  if (isFuture(startTime - earlySigninWindow)) {
+
+  if (standbyOnly || isFuture(startTime - earlySigninWindow)) {
     return futureStatusOptions[status];
   }
+
   return statusOptions[status];
 }
 
@@ -104,7 +106,7 @@ const StatusUpdaterProtected = ({ activity, current, user, thisOrg }: { activity
     setConfirming(true);
   }
 
-  const actions = getStatusOptions(current, activity.startTime);
+  const actions = getStatusOptions(current, activity.startTime, activity.standbyOnly);
   return (
     <>
       <SplitButton
