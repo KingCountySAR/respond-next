@@ -17,8 +17,6 @@ function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible:
   // Most recent first
   const sort = (a: Activity, b: Activity) => (a.startTime > b.startTime ? -1 : 1);
 
-  activities = activities.filter((a) => !isRemoved(a));
-
   const active = activities.filter(isActive).sort(sort);
   const complete = activities
     .filter((a) => isComplete(a) && a.startTime > oldestVisible)

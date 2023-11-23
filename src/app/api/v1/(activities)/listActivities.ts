@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { isRemoved } from '@respond/lib/client/store/activities';
 import { getCookieAuth, userFromAuth } from '@respond/lib/server/auth';
 import { getServices } from '@respond/lib/server/services';
 import { ActivityType } from '@respond/types/activity';
@@ -11,6 +12,7 @@ export async function getActivitiesList(activityType: ActivityType) {
   }
 
   const list = (await (await getServices()).stateManager.getAllActivities()) //
+    .filter((a) => !isRemoved(a))
     .filter((a) => a.isMission === (activityType === 'missions'))
     .sort((a, b) => (a.startTime > b.startTime ? 1 : a.startTime < b.startTime ? -1 : 0));
 

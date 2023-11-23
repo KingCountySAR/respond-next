@@ -39,8 +39,12 @@ const activitiesSlice = createSlice(activitySliceArgs);
 
 export default activitiesSlice.reducer;
 
+function getNonRemovedActivities(state: RootState) {
+  return state.activities.list.filter((a) => !isRemoved(a));
+}
+
 export function buildActivityTypeSelector(missions: boolean) {
-  return (state: RootState) => state.activities.list.filter((f) => f.isMission === missions);
+  return (state: RootState) => getNonRemovedActivities(state).filter((f) => f.isMission === missions);
 }
 
 export function getActiveParticipants(activity: Activity) {
@@ -48,7 +52,7 @@ export function getActiveParticipants(activity: Activity) {
 }
 
 export function buildActivitySelector(id?: string) {
-  return (state: RootState) => (id ? state.activities.list.find((a) => a.id === id) : undefined);
+  return (state: RootState) => (id ? getNonRemovedActivities(state).find((a) => a.id === id) : undefined);
 }
 
 export function buildMyActivitySelector() {
