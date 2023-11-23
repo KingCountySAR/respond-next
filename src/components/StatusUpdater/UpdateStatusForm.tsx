@@ -101,7 +101,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
 }
 type FormLogic = ReturnType<typeof useFormLogic>;
 
-export const TotalMilesInput = ({ control, errors }: { control: Control<FormValues, any>; errors: FieldErrors<FormValues> }) => {
+export const TotalMilesInput = ({ control, errors }: { control: Control<FormValues>; errors: FieldErrors<FormValues> }) => {
   return (
     <Controller
       name="miles"

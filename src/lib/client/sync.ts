@@ -13,6 +13,7 @@ import { Actions as SyncActions } from './store/sync';
 export class ClientSync {
   // This property is set during the build method below, so it's effectively set in the constructor
   // and doesn't need a valid value here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private dispatch: AppDispatch = undefined as any;
   private socket: Socket<ServerToClientEvents, ClientToServerEvents>;
   private key: string = '';
