@@ -78,7 +78,7 @@ export class ClientSync {
     // can use it when we reload.
     this.dispatch(
       addAppListener({
-        matcher: isAnyOf(ActivityActions.reload, ActivityActions.update),
+        matcher: isAnyOf(...Object.values(ActivityActions)),
         effect: (_action, listenerApi) => {
           console.log('SHOULD SAVE TO LOCALSTORAGE', listenerApi.getState().activities);
           localStorage.activities = JSON.stringify(listenerApi.getState().activities);
