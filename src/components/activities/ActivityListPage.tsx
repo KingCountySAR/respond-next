@@ -5,8 +5,12 @@ import * as React from 'react';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { apiFetch } from '@respond/lib/api';
-import { getActivityPath } from '@respond/lib/client/store/activities';
+import { getActivityPath, isRemoved } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType } from '@respond/types/activity';
+
+function sortActivities(a: Activity, b: Activity) {
+  return a.startTime === b.startTime ? (a.title < b.title ? -1 : 1) : a.startTime < b.startTime ? 1 : -1;
+}
 
 function ActivityList({ activities }: { activities: Activity[] }) {
   return (
@@ -43,7 +47,7 @@ export function ActivityListPage({ activityType }: { activityType: ActivityType 
     document.title = pageTitle;
     apiFetch<{ data: Activity[] }>(`/api/v1/${activityType}`).then((api) => {
       setLoading(false);
-      setActivities(api.data.sort((a, b) => (a.startTime === b.startTime ? (a.title < b.title ? -1 : 1) : a.startTime < b.startTime ? 1 : -1)));
+      setActivities(api.data.filter((a) => !isRemoved(a)).sort(sortActivities));
     });
   }, [activityType, pageTitle]);
 

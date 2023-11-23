@@ -14,8 +14,8 @@ const update = createAction('activity/update', (updates: Partial<Activity> & { i
   meta: { sync: true },
 }));
 
-const remove = createAction('activity/remove', (activityId: string) => ({
-  payload: { id: activityId },
+const remove = createAction('activity/remove', (activityId: string, removeTime: number) => ({
+  payload: { id: activityId, removeTime },
   meta: { sync: true },
 }));
 

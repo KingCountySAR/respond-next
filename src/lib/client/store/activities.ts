@@ -105,6 +105,10 @@ export function isComplete(a: Activity) {
   return !!a.endTime;
 }
 
+export function isRemoved(a: Activity) {
+  return !!a.removeTime;
+}
+
 export function getActivityStatus(a: Activity) {
   if (isComplete(a)) {
     return 'Closed';

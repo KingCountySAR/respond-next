@@ -27,7 +27,10 @@ export const BasicReducers: ActivityReducers = {
   },
 
   [ActivityActions.remove.type]: (state, { payload }) => {
-    state.list = state.list.filter((f) => f.id !== payload.id);
+    const activity = state.list.find((f) => f.id === payload.id);
+    if (activity) {
+      activity.removeTime = payload.removeTime;
+    }
   },
 
   [ActivityActions.reactivate.type]: (state, { payload }) => {

@@ -9,13 +9,15 @@ import { ActivityTile } from '@respond/components/activities/ActivityTile';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
-import { buildActivityTypeSelector, buildMyActivitySelector, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
+import { buildActivityTypeSelector, buildMyActivitySelector, getActivityStatus, isActive, isComplete, isFuture, isRemoved } from '@respond/lib/client/store/activities';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
 import { Activity, isActive as isParticipantStatusActive } from '@respond/types/activity';
 
 function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible: number, oldestVisible: number) {
   // Most recent first
   const sort = (a: Activity, b: Activity) => (a.startTime > b.startTime ? -1 : 1);
+
+  activities = activities.filter((a) => !isRemoved(a));
 
   const active = activities.filter(isActive).sort(sort);
   const complete = activities

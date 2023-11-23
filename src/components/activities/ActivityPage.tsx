@@ -57,7 +57,7 @@ export function ActivityGuardPanel({ activity, component: ContentComponent }: { 
             autoFocus
             color="danger"
             onClick={() => {
-              dispatch(ActivityActions.remove(activity.id));
+              dispatch(ActivityActions.remove(activity.id, new Date().getTime()));
               router.replace('/');
             }}
           >

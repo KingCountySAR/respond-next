@@ -123,6 +123,7 @@ export interface Activity {
   asMission: boolean;
   startTime: number;
   endTime?: number;
+  removeTime?: number;
 
   participants: Record<string, Participant>;
   organizations: Record<string, ParticipatingOrg>;
