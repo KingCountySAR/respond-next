@@ -97,28 +97,35 @@ interface IRosterEntry {
 
 class Roster {
   entries: Array<RosterEntry> = [];
+
   constructor(activity: Activity) {
     Object.values(activity.participants ?? {}).forEach((participant: Participant) => {
       this.buildRosterEntries(participant);
     });
   }
+
   buildRosterEntries(participant: Participant) {
     for (let i = participant.timeline.length - 1; i >= 0; i--) {
       const stage: RosterStage = rosterStages[participant.timeline[i].status] ?? undefined;
       if (!stage) continue; // The participant status is not relavent to the roster.
       const rosterEntry = this.getRosterEntry(participant);
+
       if (rosterEntry.timestamps[stage]) continue; // The roster stage was already reached in a prior status update.
+
       rosterEntry.timestamps[stage] = participant.timeline[i].time;
     }
   }
+
   getRosterEntry(participant: Participant): RosterEntry {
     return this.findRosterEntry(participant) ?? this.createRosterEntry(participant);
   }
+
   createRosterEntry(participant: Participant) {
     const newEntry = new RosterEntry(participant);
     this.entries.unshift(newEntry);
     return newEntry;
   }
+
   findRosterEntry(participant: Participant) {
     return this.entries.find((entry) => entry.participantId === participant.id && !entry.isComplete());
   }
@@ -129,6 +136,7 @@ class RosterEntry implements IRosterEntry {
   participantName;
   timestamps;
   miles;
+
   constructor(participant: Participant) {
     this.participantId = participant.id;
     this.participantName = `${participant.firstname} ${participant.lastname}`;
@@ -140,7 +148,17 @@ class RosterEntry implements IRosterEntry {
     };
     this.miles = 0;
   }
+
   isComplete(): boolean {
     return !!this.timestamps[RosterStage.SignOut];
+  }
+
+  getLatestStage(): RosterStage {
+    for (const [key, value] of Object.entries(this.timestamps).reverse()) {
+      if (value) {
+        return RosterStage[key as keyof typeof RosterStage];
+      }
+    }
+    return RosterStage.NA;
   }
 }
