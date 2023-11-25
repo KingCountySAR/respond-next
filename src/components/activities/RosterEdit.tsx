@@ -110,7 +110,17 @@ class Roster {
       if (!stage) continue; // The participant status is not relavent to the roster.
       const rosterEntry = this.getRosterEntry(participant);
 
-      if (rosterEntry.timestamps[stage]) continue; // The roster stage was already reached in a prior status update.
+      // Sign Out can skip the arrive/depart base stages.
+      if (stage === RosterStage.SignOut) {
+        rosterEntry.timestamps[stage] = participant.timeline[i].time;
+        continue;
+      }
+
+      // The roster stage was already reached in a prior status update
+      // OR, the timeline goes backward
+      // OR, arrive base was skipped by a turnaround
+      // This status change is not relevant to the roster
+      if (!rosterEntry.isNext(stage)) continue;
 
       rosterEntry.timestamps[stage] = participant.timeline[i].time;
     }
@@ -156,9 +166,13 @@ class RosterEntry implements IRosterEntry {
   getLatestStage(): RosterStage {
     for (const [key, value] of Object.entries(this.timestamps).reverse()) {
       if (value) {
-        return RosterStage[key as keyof typeof RosterStage];
+        return parseInt(key);
       }
     }
     return RosterStage.NA;
+  }
+
+  isNext(newStage: RosterStage): boolean {
+    return this.getLatestStage() === newStage - 1;
   }
 }
