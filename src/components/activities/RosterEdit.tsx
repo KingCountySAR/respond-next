@@ -1,4 +1,9 @@
-import { Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { Box, Button, Dialog, DialogContent, DialogContentText, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { useState } from 'react';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
@@ -20,10 +25,18 @@ export function RosterEdit({ activityId }: { activityId: string }) {
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700, width: 20 }}>Particpant Name</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 20 }}>Sign In</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 20 }}>Arrive Base</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 20 }}>Depart Base</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 20 }}>Sign Out</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, width: 20 }}>
+                Sign In
+              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, width: 20 }}>
+                Arrive Base
+              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, width: 20 }}>
+                Depart Base
+              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, width: 20 }}>
+                Sign Out
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -41,26 +54,106 @@ function RosterRow({ rosterEntry }: { rosterEntry: RosterEntry }) {
   return (
     <TableRow>
       <TableCell size="small">{rosterEntry.participantName}</TableCell>
-      <TableCell size="small">{<RosterTime time={rosterEntry.timestamps[RosterStage.SignIn]} />}</TableCell>
-      <TableCell size="small">{<RosterTime time={rosterEntry.timestamps[RosterStage.ArriveBase]} />}</TableCell>
-      <TableCell size="small">{<RosterTime time={rosterEntry.timestamps[RosterStage.DepartBase]} />}</TableCell>
-      <TableCell size="small">{<RosterTime time={rosterEntry.timestamps[RosterStage.SignOut]} />}</TableCell>
+      <TableCell align="center" size="small">
+        {<RosterTime time={rosterEntry.timestamps[RosterStage.SignIn]} label="Sign In" name={rosterEntry.participantName} />}
+      </TableCell>
+      <TableCell align="center" size="small">
+        {<RosterTime time={rosterEntry.timestamps[RosterStage.ArriveBase]} label="Arrive Base" name={rosterEntry.participantName} />}
+      </TableCell>
+      <TableCell align="center" size="small">
+        {<RosterTime time={rosterEntry.timestamps[RosterStage.DepartBase]} label="Depart Base" name={rosterEntry.participantName} />}
+      </TableCell>
+      <TableCell align="center" size="small">
+        {<RosterTime time={rosterEntry.timestamps[RosterStage.SignOut]} label="Sign Out" name={rosterEntry.participantName} />}
+      </TableCell>
     </TableRow>
   );
 }
 
-function RosterTime({ time }: { time: number }) {
+function RosterTime({ time, label, name }: { time: number; label: string; name: string }) {
+  const [open, setOpen] = useState(false);
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Stack sx={{ cursor: 'pointer' }} onClick={() => handleOpen()}>
+        {time ? <RosterTimeValue time={time} /> : <RosterTimeAdd />}
+      </Stack>
+      <RosterTimeEditDialog open={open} title={`Edit ${label} Time`} time={time ? time : Date.now()} name={name} onClose={handleClose} />
+    </>
+  );
+}
+
+function RosterTimeValue({ time }: { time: number }) {
   const dateString = new Date(time).toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
   const timeString = new Date(time).toLocaleString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(':', '');
   return (
-    <Stack>
-      {!!time && (
-        <>
-          <Typography variant="h6">{timeString}</Typography>
-          <Typography variant="caption">{dateString}</Typography>
-        </>
-      )}
+    <>
+      <Typography variant="h6">{timeString}</Typography>
+      <Typography variant="caption">{dateString}</Typography>
+    </>
+  );
+}
+
+function RosterTimeAdd() {
+  return (
+    <Stack alignItems={'center'}>
+      <AddIcon color="action" />
     </Stack>
+  );
+}
+
+interface IRosterEditProps {
+  open: boolean;
+  title: string;
+  time: number;
+  name: string;
+  onClose: () => void;
+}
+
+function RosterTimeEditDialog(props: IRosterEditProps) {
+  const { open, title, time, name, onClose } = props;
+  const handleSubmit = () => {
+    // TODO: Update Participant
+    onClose();
+  };
+  const handleCancel = () => {
+    onClose();
+  };
+  return (
+    <Dialog onClose={handleSubmit} open={open}>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2}>
+          <DialogContentText>{name}</DialogContentText>
+          <RosterTimePicker time={time}></RosterTimePicker>
+          <Button variant="contained" onClick={handleSubmit}>
+            Submit
+          </Button>
+          <Button variant="outlined" onClick={handleCancel}>
+            Cancel
+          </Button>
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RosterTimePicker({ time }: { time: number }) {
+  const [value, setValue] = useState<number | null>(time ?? new Date());
+  return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Stack spacing={2}>
+        <DateTimePicker value={value} onChange={setValue} />
+      </Stack>
+    </LocalizationProvider>
   );
 }
 
