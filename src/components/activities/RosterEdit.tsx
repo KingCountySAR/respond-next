@@ -97,6 +97,7 @@ enum RosterStage {
 }
 
 interface IRosterEntry {
+  participant: Participant;
   participantId: string;
   participantName: string;
   timestamps: {
@@ -105,21 +106,28 @@ interface IRosterEntry {
     [RosterStage.DepartBase]: number;
     [RosterStage.SignOut]: number;
   };
+  miles: number;
 }
 
 class RosterEntry implements IRosterEntry {
-  participantId;
-  participantName;
+  participant;
   timestamps;
+  miles;
   constructor(participant: Participant) {
-    this.participantId = participant.id;
-    this.participantName = `${participant.firstname} ${participant.lastname}`;
+    this.participant = participant;
     this.timestamps = {
       [RosterStage.SignIn]: 0,
       [RosterStage.ArriveBase]: 0,
       [RosterStage.DepartBase]: 0,
       [RosterStage.SignOut]: 0,
     };
+    this.miles = 0;
+  }
+  get participantId(): string {
+    return this.participant.id;
+  }
+  get participantName(): string {
+    return `${this.participant.firstname} ${this.participant.lastname}`;
   }
 }
 
