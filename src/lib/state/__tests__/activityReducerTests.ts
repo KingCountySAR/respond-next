@@ -1,5 +1,7 @@
 import produce from 'immer';
 
+import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
+
 import { ActivityState } from '..';
 import { ActivityActions } from '../activityActions';
 import { BasicReducers } from '../activityReducers';
@@ -19,6 +21,7 @@ describe('Activity Reducers', () => {
           location: { title: 'home' },
           mapId: '',
           startTime: 1699765740000,
+          earlySignInWindow: defaultEarlySigninWindow,
           isMission: false,
           asMission: false,
           ownerOrgId: '1',

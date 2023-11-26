@@ -1,5 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
+import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
+
 const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[]) => {
   return <Input extends ObjectType>(object: Input) => {
     const resultObject: ObjectType = {} as unknown as ObjectType;
@@ -123,12 +125,13 @@ export interface Activity {
   asMission: boolean;
   startTime: number;
   endTime?: number;
+  earlySignInWindow?: number;
 
   participants: Record<string, Participant>;
   organizations: Record<string, ParticipatingOrg>;
 }
 
-export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'startTime', 'endTime']);
+export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'startTime', 'endTime', 'earlySignInWindow']);
 
 export type ActivityType = 'missions' | 'events';
 
@@ -145,6 +148,7 @@ export function createNewActivity(): Activity {
     location: { title: '' },
     mapId: '',
     startTime: new Date().getTime(),
+    earlySignInWindow: defaultEarlySigninWindow,
     isMission: false,
     asMission: false,
     ownerOrgId: '',

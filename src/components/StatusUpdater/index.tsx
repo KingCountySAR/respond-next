@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
-import { earlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
+import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
 import { Activity, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
@@ -71,11 +71,17 @@ const futureStatusOptions: Record<ParticipantStatus, { id: number; newStatus: Pa
   [ParticipantStatus.SignedOut]: [statusTransitions.standBy],
 };
 
-function getStatusOptions(current: ParticipantStatus | undefined, startTime: number) {
+function getStatusOptions(current: ParticipantStatus | undefined, startTime: number, earlySigninWindow?: number) {
   const status = current ?? ParticipantStatus.NotResponding;
+
+  if (earlySigninWindow === undefined) {
+    earlySigninWindow = defaultEarlySigninWindow;
+  }
+
   if (isFuture(startTime - earlySigninWindow)) {
     return futureStatusOptions[status];
   }
+
   return statusOptions[status];
 }
 
@@ -104,7 +110,7 @@ const StatusUpdaterProtected = ({ activity, current, user, thisOrg }: { activity
     setConfirming(true);
   }
 
-  const actions = getStatusOptions(current, activity.startTime);
+  const actions = getStatusOptions(current, activity.startTime, activity.earlySignInWindow);
   return (
     <>
       <SplitButton
