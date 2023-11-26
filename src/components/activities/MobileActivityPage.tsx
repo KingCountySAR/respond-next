@@ -10,16 +10,18 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
 import { Activity, Participant, ParticipatingOrg } from '@respond/types/activity';
 
+import { getPreferences, IPreferences } from '../Preferences';
+
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
-enum MobilePageId {
-  Briefing,
-  Roster,
-  Manage,
+export enum MobilePageId {
+  Briefing = 'Briefing',
+  Roster = 'Roster',
+  Manage = 'Manage',
 }
 
 export function MobileActivityPage({ activity }: { activity?: Activity }) {
@@ -111,7 +113,8 @@ function MobileManageScreen({ activity, startRemove, startChangeState }: { activ
 }
 
 function MobileActivityContents({ activity, startRemove, startChangeState }: ActivityContentProps) {
-  const [bottomNav, setBottomNav] = useState<MobilePageId>(MobilePageId.Briefing);
+  const preferences: IPreferences = getPreferences();
+  const [bottomNav, setBottomNav] = useState<MobilePageId>(preferences.defaultMobileView ?? MobilePageId.Briefing);
 
   return (
     <>
