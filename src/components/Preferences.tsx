@@ -34,6 +34,7 @@ export function PreferencesDialog(props: PreferenceDialogProps) {
   const { onClose, open } = props;
 
   const handleClose = (): void => {
+    setPreferences(getPreferences());
     onClose();
   };
 
