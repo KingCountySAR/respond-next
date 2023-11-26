@@ -98,7 +98,7 @@ function MobileManageScreen({ activity, startRemove, startChangeState }: { activ
 }
 
 function MobileActivityContents({ activity, startRemove, startChangeState }: ActivityContentProps) {
-  const [bottomNav, setBottomNav] = useState<MobilePageId>(MobilePageId.Roster);
+  const [bottomNav, setBottomNav] = useState<MobilePageId>(MobilePageId.Briefing);
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
   return (
