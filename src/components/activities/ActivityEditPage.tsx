@@ -7,12 +7,22 @@ import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 're
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector } from '@respond/lib/client/store/activities';
+import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
 import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
-type ActivityFormValues = FormUtils.ReplacedType<Activity, number, { date: string; time: string }, ['startTime']>;
+type FormDateTime = { date: string; time: string };
+type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
+
+function parseFormDateTime(dateTime: FormDateTime) {
+  return parseDate(`${dateTime.date} ${dateTime.time}`, 'yyyy-MM-dd HHmm', new Date());
+}
+
+function isFutureFormDate(dateTime: FormDateTime) {
+  const date = parseFormDateTime(dateTime);
+  return isFuture(date.getTime());
+}
 
 /**
  * Validation resolver
@@ -36,7 +46,7 @@ const resolver: Resolver<ActivityFormValues> = async (values) => {
     };
   }
 
-  const parsed = parseDate(`${values.startTime.date} ${values.startTime.time}`, 'yyyy-MM-dd HHmm', new Date());
+  const parsed = parseFormDateTime(values.startTime);
   if (isNaN(parsed.getTime())) {
     result.errors.startTime = {
       type: 'validate',
@@ -61,11 +71,13 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const dispatch = useAppDispatch();
   const router = useRouter();
   const org = useAppSelector((state) => state.organization.mine);
-  let activity = useAppSelector(buildActivitySelector(activityId));
+  const selectedActivity = useAppSelector(buildActivitySelector(activityId));
 
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
   const ownerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
-  const isNew = !activity;
+  const isNew = !selectedActivity;
+
+  let activity: Activity;
   if (isNew) {
     activity = {
       ...createNewActivity(),
@@ -73,15 +85,26 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       isMission: activityType === 'missions',
       asMission: activityType === 'missions',
     };
+  } else {
+    activity = selectedActivity;
+  }
+
+  const defaultValues = FormUtils.toExpandedDates(activity, 'startTime');
+
+  // Sanitize stored values
+  const initialEarlySignInWindow = defaultValues.earlySignInWindow;
+  if (initialEarlySignInWindow == undefined || initialEarlySignInWindow == null || typeof initialEarlySignInWindow != 'number') {
+    defaultValues.earlySignInWindow = defaultEarlySigninWindow;
   }
 
   const {
     control,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<ActivityFormValues>({
     resolver,
-    defaultValues: activity ? FormUtils.toExpandedDates(activity, 'startTime') : undefined,
+    defaultValues,
   });
 
   const focusRef = useRef<HTMLInputElement>();
@@ -145,48 +168,43 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     <ToolbarPage>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={1}>
-          {/* Mission  */}
           <Grid item xs={12}>
-            <Grid container spacing={1}>
-              <Grid item xs={12}>
-                <Controller
-                  name="title"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.title?.message}>
-                      <TextField {...field} inputRef={focusRef} variant="filled" label="Name" required />
-                      <FormHelperText>{errors.title?.message}</FormHelperText>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
+            <Controller
+              name="title"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.title?.message}>
+                  <TextField {...field} inputRef={focusRef} variant="filled" label="Name" required />
+                  <FormHelperText>{errors.title?.message}</FormHelperText>
+                </FormControl>
+              )}
+            />
+          </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <Controller
-                  name="location.title"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.location?.message}>
-                      <TextField {...field} variant="filled" label="Location" required />
-                      <FormHelperText>{errors.location?.message}</FormHelperText>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
+          <Grid item xs={12}>
+            <Controller
+              name="location.title"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.location?.message}>
+                  <TextField {...field} variant="filled" label="Location" required />
+                  <FormHelperText>{errors.location?.message}</FormHelperText>
+                </FormControl>
+              )}
+            />
+          </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <Controller
-                  name="mapId"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <TextField {...field} variant="filled" label="Map Id" />
-                      <FormHelperText></FormHelperText>
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-            </Grid>
+          <Grid item xs={12} sm={6}>
+            <Controller
+              name="mapId"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth>
+                  <TextField {...field} variant="filled" label="Map Id" />
+                  <FormHelperText></FormHelperText>
+                </FormControl>
+              )}
+            />
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -213,6 +231,25 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                     {ownerOptions.map((p) => (
                       <MenuItem key={p.id} value={p.id}>
                         {p.title}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <Controller
+              name="earlySignInWindow"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth error={!!errors.earlySignInWindow?.message} disabled={!isFutureFormDate(watch('startTime'))}>
+                  <InputLabel variant="filled">Early Sign In Window</InputLabel>
+                  <Select {...field} variant="filled" label="Early Sign In Window">
+                    {earlySignInWindowOptions.map((p) => (
+                      <MenuItem key={p.value} value={p.value}>
+                        {p.label}
                       </MenuItem>
                     ))}
                   </Select>
