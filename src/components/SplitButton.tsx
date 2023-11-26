@@ -12,7 +12,7 @@ export function splitOptionsFromStrings(options: string[]) {
   return options.map((o) => ({ id: o, text: o }));
 }
 
-export function SplitButton<K extends string | number | EnumMember, T extends IdOption<K>>({ options, selected, onClick }: { options: T[]; selected?: K; onClick?: (value: K) => void }) {
+export function SplitButton<K extends string | number | EnumMember, T extends IdOption<K>>({ fullWidth, options, selected, onClick }: { fullWidth?: boolean; options: T[]; selected?: K; onClick?: (value: K) => void }) {
   const [open, setOpen] = useState(false);
   const [buttonId] = useState(Math.random() * 10000);
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -47,10 +47,10 @@ export function SplitButton<K extends string | number | EnumMember, T extends Id
   const menuOptions = options.filter((option) => option.id !== selected);
   return (
     <>
-      <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button">
+      <ButtonGroup fullWidth={fullWidth} variant="contained" ref={anchorRef} aria-label="split button">
         <Button onClick={handleClick}>{options[selectedIndex].text}</Button>
         {!!menuOptions.length && (
-          <Button size="small" aria-controls={open ? 'split-button-menu' + buttonId : undefined} aria-expanded={open ? 'true' : undefined} aria-label="select merge strategy" aria-haspopup="menu" onClick={handleToggle}>
+          <Button fullWidth={fullWidth ? false : undefined} size="small" aria-controls={open ? 'split-button-menu' + buttonId : undefined} aria-expanded={open ? 'true' : undefined} aria-label="select merge strategy" aria-haspopup="menu" onClick={handleToggle}>
             <ArrowDropDownIcon />
           </Button>
         )}
