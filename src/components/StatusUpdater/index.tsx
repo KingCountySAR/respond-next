@@ -79,14 +79,14 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
   return statusOptions[status];
 }
 
-export const StatusUpdater = ({ activity, current, fullWidth }: { activity: Activity; current?: ParticipantStatus; fullWidth: boolean }) => {
+export const StatusUpdater = ({ activity, current, fullWidth }: { activity: Activity; current?: ParticipantStatus; fullWidth?: boolean }) => {
   const user = useAppSelector((state) => state.auth.userInfo);
   const thisOrg = useAppSelector((state) => state.organization.mine);
 
   return user && thisOrg ? <StatusUpdaterProtected activity={activity} current={current} user={user} thisOrg={thisOrg} fullWidth={fullWidth} /> : null;
 };
 
-const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }: { activity: Activity; user: UserInfo; fullWidth: boolean; thisOrg: MyOrganization; current?: ParticipantStatus }) => {
+const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }: { activity: Activity; user: UserInfo; fullWidth?: boolean; thisOrg: MyOrganization; current?: ParticipantStatus }) => {
   const [confirming, setConfirming] = useState<boolean>(false);
   const [confirmTitle, setConfirmTitle] = useState<string>('');
   const [confirmStatus, setConfirmStatus] = useState<ParticipantStatus>(ParticipantStatus.SignedIn);
