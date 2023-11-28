@@ -10,8 +10,6 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
 import { Activity, Participant, ParticipatingOrg } from '@respond/types/activity';
 
-import { getPreferences, IPreferences } from '../Preferences';
-
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
@@ -100,8 +98,8 @@ function MobileManageScreen({ activity, startRemove, startChangeState }: { activ
 }
 
 function MobileActivityContents({ activity, startRemove, startChangeState }: ActivityContentProps) {
-  const preferences: IPreferences = getPreferences();
-  const [bottomNav, setBottomNav] = useState<MobilePageId>(preferences.defaultMobileView ?? MobilePageId.Briefing);
+  const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
+  const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
   return (

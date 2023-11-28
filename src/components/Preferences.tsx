@@ -1,28 +1,10 @@
 import { Button, Dialog, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, Stack } from '@mui/material';
 import { useState } from 'react';
 
+import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
+import { PreferenceActions } from '@respond/lib/client/store/preferences';
+
 import { MobilePageId } from './activities/MobileActivityPage';
-
-export interface IPreferences {
-  defaultMobileView: MobilePageId;
-}
-
-class Preferences implements IPreferences {
-  defaultMobileView;
-  constructor() {
-    this.defaultMobileView = MobilePageId.Briefing;
-  }
-}
-
-const PREFERENCES_KEY = 'preferences';
-
-export const getPreferences = (): IPreferences => {
-  return Object.assign(new Preferences(), JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}'));
-};
-
-const savePreferences = (preferences: IPreferences) => {
-  localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
-};
 
 interface PreferenceDialogProps {
   open: boolean;
@@ -30,16 +12,18 @@ interface PreferenceDialogProps {
 }
 
 export function PreferencesDialog(props: PreferenceDialogProps) {
-  const [preferences, setPreferences] = useState(getPreferences());
   const { onClose, open } = props;
+  const dispatch = useAppDispatch();
+  const initialState = useAppSelector((state) => state.preferences);
+  const [preferences, setPreferences] = useState(initialState);
 
   const handleClose = (): void => {
-    setPreferences(getPreferences());
+    setPreferences(initialState);
     onClose();
   };
 
   const handleSave = (): void => {
-    savePreferences(preferences);
+    dispatch(PreferenceActions.update(preferences));
     onClose();
   };
 
