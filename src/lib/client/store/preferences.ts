@@ -6,23 +6,18 @@ export interface PerferencesState {
   defaultMobileView: MobilePageId;
 }
 
-let initialState: PerferencesState = {
+const initialState: PerferencesState = {
   defaultMobileView: MobilePageId.Briefing,
 };
-
-if (localStorage?.preferences) {
-  try {
-    initialState = Object.assign(initialState, JSON.parse(localStorage.preferences));
-  } catch (error) {
-    console.error('saved preferences could not be parsed', error);
-  }
-}
 
 const preferencesSlice = createSlice({
   name: 'preferences',
   initialState,
   reducers: {
     update: (state: PerferencesState, action: PayloadAction<PerferencesState>) => {
+      return Object.assign(state, action.payload);
+    },
+    reload: (state: PerferencesState, action: PayloadAction<PerferencesState>) => {
       return Object.assign(state, action.payload);
     },
   },

@@ -8,6 +8,7 @@ import { ActivityAction, ActivityActions } from '../state';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
 import { AuthActions } from './store/auth';
+import { PreferenceActions } from './store/preferences';
 import { Actions as SyncActions } from './store/sync';
 
 export class ClientSync {
@@ -88,6 +89,26 @@ export class ClientSync {
 
     if (localStorage.activities) {
       this.dispatch(ActivityActions.reload(JSON.parse(localStorage.activities)));
+    }
+
+    // Listen for preference updates, persist them to local storage.
+    this.dispatch(
+      addAppListener({
+        matcher: isAnyOf(PreferenceActions.update),
+        effect: (action, listenerApi) => {
+          console.log('SHOULD SAVE TO LOCALSTORAGE', listenerApi.getState().preferences);
+          localStorage.preferences = JSON.stringify(listenerApi.getState().preferences);
+        },
+      }),
+    );
+
+    if (localStorage?.preferences) {
+      console.log('LOAD PREFERENCES');
+      try {
+        this.dispatch(PreferenceActions.reload(JSON.parse(localStorage.preferences)));
+      } catch (error) {
+        console.error('saved preferences could not be parsed', error);
+      }
     }
 
     await this.restart();
