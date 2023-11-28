@@ -11,7 +11,11 @@ let initialState: PerferencesState = {
 };
 
 if (localStorage?.preferences) {
-  initialState = Object.assign(initialState, JSON.parse(localStorage.preferences));
+  try {
+    initialState = Object.assign(initialState, JSON.parse(localStorage.preferences));
+  } catch (error) {
+    console.error('saved preferences could not be parsed', error);
+  }
 }
 
 const preferencesSlice = createSlice({
