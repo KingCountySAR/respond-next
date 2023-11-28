@@ -11,6 +11,8 @@ import { ActivityActions, ParticipantUpdateAction } from '../state/activityActio
 
 import { getServices } from './services';
 
+type DatabaseActivity = Activity & { removeTime?: number };
+
 export interface ActionListener {
   broadcastAction(action: ActivityAction, toRooms: string[], reporterId: string): void;
 }
@@ -29,8 +31,9 @@ export class StateManager {
 
   async start() {
     const mongo = await mongoPromise;
+    const allActivities = await mongo.db().collection<DatabaseActivity>('activities').find().toArray();
     this.activityState = {
-      list: await mongo.db().collection<Activity>('activities').find().toArray(),
+      list: allActivities.filter((a) => !a.removeTime),
     };
   }
 
@@ -89,10 +92,21 @@ export class StateManager {
         upsert: true,
       });
     }
+
     for (const removedId of Object.keys(oldActivities).filter((k) => currentActivities[k] == undefined)) {
       console.log('MONGO remove activity', removedId);
       (await this.getOrgsInterestedInAction(true, oldActivities[removedId])).forEach((o) => affectedOrgs.add(o));
-      await mongo.db().collection<Activity>('activities').deleteOne({ id: removedId });
+
+      // Instead of deleting from the database, only stamp the activity as having been removed.
+      // Our in-memory state will no longer have the activity, but the data isn't gone.
+      const activityWithRemoveTime = {
+        ...oldActivities[removedId],
+        removeTime: new Date().getTime(),
+      };
+
+      await mongo.db().collection<DatabaseActivity>('activities').replaceOne({ id: removedId }, activityWithRemoveTime, {
+        upsert: true,
+      });
     }
 
     action.meta.sync = false;
