@@ -103,7 +103,6 @@ export class ClientSync {
     );
 
     if (localStorage?.preferences) {
-      console.log('LOAD PREFERENCES');
       try {
         this.dispatch(PreferenceActions.reload(JSON.parse(localStorage.preferences)));
       } catch (error) {
