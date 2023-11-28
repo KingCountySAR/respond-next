@@ -19,9 +19,7 @@ const preferencesSlice = createSlice({
   initialState,
   reducers: {
     update: (state: PerferencesState, action: PayloadAction<PerferencesState>) => {
-      const newState = Object.assign(state, action.payload);
-      localStorage.preferences = JSON.stringify(newState);
-      return newState;
+      return Object.assign(state, action.payload);
     },
   },
 });

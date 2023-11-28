@@ -23,6 +23,7 @@ export function PreferencesDialog(props: PreferenceDialogProps) {
   };
 
   const handleSave = (): void => {
+    localStorage.preferences = JSON.stringify(preferences);
     dispatch(PreferenceActions.update(preferences));
     onClose();
   };
