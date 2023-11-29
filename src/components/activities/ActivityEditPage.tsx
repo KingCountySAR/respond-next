@@ -286,38 +286,34 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
           </Grid>
 
           <Grid item xs={12} spacing={1} sx={{ mt: 2 }}>
-            <Grid item xs={12} sm={6}>
-              <Stack direction="column" spacing={1}>
-                {activityType === 'missions' ? null : (
-                  <Grid item xs={12}>
-                    <FormGroup>
-                      <Controller name="asMission" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Run as mock mission" />} />
-                    </FormGroup>
-                  </Grid>
-                )}
-
+            <Stack direction="column" spacing={1}>
+              {activityType === 'missions' ? null : (
                 <Grid item xs={12}>
                   <FormGroup>
-                    <Controller name="standbyOnly" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Standby Only" />} />
+                    <Controller name="asMission" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Run as mock mission" />} />
                   </FormGroup>
                 </Grid>
+              )}
 
-                {isNew && (
-                  <Grid item xs={12}>
-                    <Box>{org.title} will start as a participating unit.</Box>
-                  </Grid>
-                )}
-              </Stack>
-            </Grid>
+              <Grid item xs={12}>
+                <FormGroup>
+                  <Controller name="standbyOnly" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Standby Only" />} />
+                </FormGroup>
+              </Grid>
 
-            <Grid item xs={12} sm={6} justifyContent="flex-end">
-              <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1}>
-                <Button onClick={() => router.back()}>Cancel</Button>
-                <Button type="submit" variant="contained">
-                  Save {activityType === 'missions' ? 'Mission' : 'Event'}
-                </Button>
-              </Stack>
-            </Grid>
+              {isNew && (
+                <Grid item xs={12}>
+                  <Box>{org.title} will start as a participating unit.</Box>
+                </Grid>
+              )}
+            </Stack>
+
+            <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1}>
+              <Button onClick={() => router.back()}>Cancel</Button>
+              <Button type="submit" variant="contained">
+                Save {activityType === 'missions' ? 'Mission' : 'Event'}
+              </Button>
+            </Stack>
           </Grid>
         </Grid>
       </form>
