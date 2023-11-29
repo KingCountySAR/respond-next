@@ -285,7 +285,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
             />
           </Grid>
 
-          <Grid container spacing={1} sx={{ mt: 2 }}>
+          <Grid item xs={12} spacing={1} sx={{ mt: 2 }}>
             <Grid item xs={12} sm={6}>
               <Stack direction="column" spacing={1}>
                 {activityType === 'missions' ? null : (
