@@ -2,11 +2,11 @@ import { Box, Breadcrumbs, Typography } from '@mui/material';
 import Link from 'next/link';
 import * as React from 'react';
 
+import { OutputTime } from '@respond/components/OutputForm';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { apiFetch } from '@respond/lib/api';
 import { getActivityPath } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType } from '@respond/types/activity';
-import { OutputTime } from '@respond/components/OutputForm';
 
 function ActivityList({ activities }: { activities: Activity[] }) {
   return (

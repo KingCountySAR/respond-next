@@ -1,9 +1,9 @@
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Grid, Typography } from '@mui/material';
+import { differenceInCalendarDays } from 'date-fns';
 import Link from 'next/link';
 import React, { Children, ReactNode, useEffect, useRef, useState } from 'react';
-import { differenceInCalendarDays } from 'date-fns';
 
 import { RelativeTimeText } from './RelativeTimeText';
 
