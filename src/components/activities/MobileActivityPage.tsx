@@ -16,10 +16,10 @@ import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
-enum MobilePageId {
-  Briefing,
-  Roster,
-  Manage,
+export enum MobilePageId {
+  Briefing = 'Briefing',
+  Roster = 'Roster',
+  Manage = 'Manage',
 }
 
 export function MobileActivityPage({ activity }: { activity?: Activity }) {
@@ -98,7 +98,8 @@ function MobileManageScreen({ activity, startRemove, startChangeState }: { activ
 }
 
 function MobileActivityContents({ activity, startRemove, startChangeState }: ActivityContentProps) {
-  const [bottomNav, setBottomNav] = useState<MobilePageId>(MobilePageId.Briefing);
+  const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
+  const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
   return (
