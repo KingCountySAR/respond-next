@@ -80,8 +80,8 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
 
   // Reasons an activity is treated as standby only:
   // 1. The activity's sign-in window is in the future.
-  // 2. The activity is marked as standby only, and the current responder is not active.
-  //    If the responder is already active, let them update their status as normal.
+  // 2. The activity is marked as standby only, and the current responder is not actively responding.
+  //    If the responder is already responding, let them update their status as normal.
   if (isFuture(startTime - earlySigninWindow) || (forceStandbyOnly && !isResponding(status))) {
     return standbyOnlyStatusOptions[status];
   }
