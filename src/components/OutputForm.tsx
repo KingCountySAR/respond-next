@@ -147,14 +147,10 @@ export const OutputTime = ({ label, time, relative }: { label: string; time?: nu
 
   let useRelative = relative ?? false;
   if (!useRelative && time) {
-    // If the time is within 1 day, use relative time by default.
-    const currentDate = new Date();
-    const dateDiff = differenceInCalendarDays(currentDate, new Date(time));
+    // If the time is within 1 day of today, use relative time.
+    const dateDiff = differenceInCalendarDays(new Date(), new Date(time));
     if (Math.abs(dateDiff) <= 1) useRelative = true;
   }
 
   return <OutputField label={label}>{time && <RelativeTimeText time={time} baseTime={nowTime} relative={useRelative} />}</OutputField>;
 };
-
-// export function FormatRelativeOrAbsoluteDate(time: number, relative: boolean): string {
-// }
