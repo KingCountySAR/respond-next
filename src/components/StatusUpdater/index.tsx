@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { Activity, isActive, ParticipantStatus } from '@respond/types/activity';
+import { Activity, isResponding, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
@@ -82,7 +82,7 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
   // 1. The activity's sign-in window is in the future.
   // 2. The activity is marked as standby only, and the current responder is not active.
   //    If the responder is already active, let them update their status as normal.
-  if (isFuture(startTime - earlySigninWindow) || (forceStandbyOnly && !isActive(status))) {
+  if (isFuture(startTime - earlySigninWindow) || (forceStandbyOnly && !isResponding(status))) {
     return standbyOnlyStatusOptions[status];
   }
 
