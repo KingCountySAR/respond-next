@@ -16,10 +16,10 @@ import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
-enum MobilePageId {
-  Briefing,
-  Roster,
-  Manage,
+export enum MobilePageId {
+  Briefing = 'Briefing',
+  Roster = 'Roster',
+  Manage = 'Manage',
 }
 
 export function MobileActivityPage({ activity }: { activity?: Activity }) {
@@ -37,16 +37,7 @@ export function MobileActivityPage({ activity }: { activity?: Activity }) {
 }
 
 function MobileBriefingScreen({ activity }: { activity: Activity }) {
-  const user = useAppSelector((state) => state.auth.userInfo);
-  const myParticipation = activity?.participants[user?.userId ?? ''];
-  const isActivityActive = isActive(activity);
-
-  return (
-    <>
-      <Box sx={{ my: 2 }}>{isActivityActive && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}</Box>
-      <BriefingPanel activity={activity} />
-    </>
-  );
+  return <BriefingPanel activity={activity} />;
 }
 
 function MobileRosterScreen({ activity }: { activity: Activity }) {
@@ -54,12 +45,8 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
 
-  const user = useAppSelector((state) => state.auth.userInfo);
-  const myParticipation = activity?.participants[user?.userId ?? ''];
-
   return (
     <>
-      <Box sx={{ my: 2 }}>{isActive(activity) && <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />}</Box>
       <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} />
       <Box style={{ overflowY: 'auto', height: 0, paddingBottom: '16px' }} flex="1 1 auto">
         <RosterPanel //
@@ -111,8 +98,10 @@ function MobileManageScreen({ activity, startRemove, startChangeState }: { activ
 }
 
 function MobileActivityContents({ activity, startRemove, startChangeState }: ActivityContentProps) {
-  const [bottomNav, setBottomNav] = useState<MobilePageId>(MobilePageId.Briefing);
-
+  const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
+  const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
+  const user = useAppSelector((state) => state.auth.userInfo);
+  const myParticipation = activity?.participants[user?.userId ?? ''];
   return (
     <>
       <Typography variant="h5">{activity.title}</Typography>
@@ -120,7 +109,12 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
       {bottomNav === MobilePageId.Briefing && <MobileBriefingScreen activity={activity} />}
       {bottomNav === MobilePageId.Manage && <MobileManageScreen activity={activity} startRemove={startRemove} startChangeState={startChangeState} />}
       <Box sx={{ height: 40 }}>{/* filler for bottomnav */}</Box>
-      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} elevation={3}>
+      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
+        {isActive(activity) && (
+          <Box padding={2}>
+            <StatusUpdater fullWidth={true} activity={activity} current={myParticipation?.timeline[0].status} />
+          </Box>
+        )}
         <BottomNavigation
           showLabels
           value={bottomNav}
