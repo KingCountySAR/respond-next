@@ -3,11 +3,11 @@ import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
-import { format as formatDate } from 'date-fns';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
 import { Activity, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
+import { OutputTime } from '@respond/components/OutputForm';
 
 interface RosterPanelProps {
   activity: Activity;
@@ -86,7 +86,9 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
                   <TableRow key={t.time}>
                     <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
                     <TableCell>{getStatusText(t.status)}</TableCell>
-                    <TableCell>{formatDate(t.time, 'EEE yyyy-MM-dd HHmm')}</TableCell>
+                    <TableCell>
+                      <OutputTime label="" time={t.time}></OutputTime>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -28,11 +28,11 @@ export interface RelativeTimeTextProps {
   time: number;
   baseTime: number;
   lowercase?: boolean;
-  defaultToTime?: boolean;
+  relative?: boolean;
 }
 
-export const RelativeTimeText = ({ time, baseTime, defaultToTime, lowercase }: RelativeTimeTextProps) => {
-  const [useRelative, setUseRelative] = React.useState<boolean>(!(defaultToTime ?? false));
+export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: RelativeTimeTextProps) => {
+  const [useRelative, setUseRelative] = React.useState<boolean>(relative ?? false);
   let text;
   if (useRelative) {
     text = formatRelative(time, baseTime, { locale });

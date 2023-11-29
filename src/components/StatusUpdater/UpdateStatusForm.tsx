@@ -45,7 +45,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
     if (lastStatusChangeTime && !isNaN(lastStatusChangeTime) && statusTimeAsDate.getTime() < lastStatusChangeTime) {
       result.errors.statusTime = {
         type: 'min',
-        message: 'Cannot be earlier than previous status change at ' + new Date(lastStatusChangeTime),
+        message: 'Cannot be earlier than previous status change at ' + formatDate(lastStatusChangeTime, 'EEE yyyy-MM-dd HHmm'),
       };
     }
 

@@ -3,6 +3,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Grid, Typography } from '@mui/material';
 import Link from 'next/link';
 import React, { Children, ReactNode, useEffect, useRef, useState } from 'react';
+import { differenceInCalendarDays } from 'date-fns';
 
 import { RelativeTimeText } from './RelativeTimeText';
 
@@ -144,5 +145,16 @@ export const OutputTime = ({ label, time, relative }: { label: string; time?: nu
     };
   });
 
-  return <OutputField label={label}>{time && <RelativeTimeText time={time} baseTime={nowTime} defaultToTime={!relative} />}</OutputField>;
+  let useRelative = relative ?? false;
+  if (!useRelative && time) {
+    // If the time is within 1 day, use relative time by default.
+    const currentDate = new Date();
+    const dateDiff = differenceInCalendarDays(currentDate, new Date(time));
+    if (Math.abs(dateDiff) <= 1) useRelative = true;
+  }
+
+  return <OutputField label={label}>{time && <RelativeTimeText time={time} baseTime={nowTime} relative={useRelative} />}</OutputField>;
 };
+
+// export function FormatRelativeOrAbsoluteDate(time: number, relative: boolean): string {
+// }
