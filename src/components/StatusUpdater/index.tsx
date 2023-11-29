@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
-import { earlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
+import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
 import { Activity, isActive, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
@@ -71,8 +71,12 @@ const standbyOnlyStatusOptions: Record<ParticipantStatus, { id: number; newStatu
   [ParticipantStatus.SignedOut]: [statusTransitions.standBy],
 };
 
-function getStatusOptions(current: ParticipantStatus | undefined, startTime: number, standbyOnly: boolean) {
+function getStatusOptions(current: ParticipantStatus | undefined, startTime: number, standbyOnly: boolean, earlySigninWindow?: number) {
   const status = current ?? ParticipantStatus.NotResponding;
+
+  if (earlySigninWindow === undefined) {
+    earlySigninWindow = defaultEarlySigninWindow;
+  }
 
   // Reasons an activity is treated as standby only:
   // 1. The activity's sign-in window is in the future.
@@ -110,7 +114,8 @@ const StatusUpdaterProtected = ({ activity, current, user, thisOrg }: { activity
     setConfirming(true);
   }
 
-  const actions = getStatusOptions(current, activity.startTime, activity.standbyOnly);
+  const actions = getStatusOptions(current, activity.startTime, activity.standbyOnly, activity.earlySignInWindow);
+
   return (
     <>
       <SplitButton

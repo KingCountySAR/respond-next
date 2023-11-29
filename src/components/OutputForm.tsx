@@ -49,11 +49,11 @@ const OutputShowMore = ({ children, rows }: { children: ReactNode; rows?: number
   const rowLimit = Math.max(rows ?? 0, 0);
   const collapsedHeightPixels = DEFAULT_LINE_HEIGHT_PIXELS * rowLimit;
 
-  const contentElement = useRef<any>(null);
+  const contentElement = useRef<HTMLDivElement>(null);
   const isCollapsible = useRef<boolean>(false);
 
   useEffect(() => {
-    isCollapsible.current = !!collapsedHeightPixels && collapsedHeightPixels < contentElement.current?.offsetHeight;
+    isCollapsible.current = !!collapsedHeightPixels && !!contentElement.current && collapsedHeightPixels < contentElement.current.offsetHeight;
     setCollapse(isCollapsible.current);
   }, [collapsedHeightPixels]);
 

@@ -8,9 +8,9 @@ function replacePropertiesType<T extends object, FROM, TO, K extends [...(keyof 
   let key: keyof typeof obj;
   for (key in obj) {
     if (!keys.includes(key)) {
-      ret[key] = obj[key] as any;
+      ret[key] = obj[key] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     } else {
-      ret[key] = transform(obj[key] as FROM) as any;
+      ret[key] = transform(obj[key] as FROM) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     }
   }
 
@@ -32,5 +32,7 @@ export function fromExpandedDates<T extends object, K extends [...(keyof T)[]]>(
     const parsed = parseDate(`${date} ${time}`, 'yyyy-MM-dd HHmm', new Date());
     return parsed.getTime();
   };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return replacePropertiesType<T, { date: string; time: string }, number, K>(obj as any, transform, ...keys) as T;
 }

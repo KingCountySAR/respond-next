@@ -8,11 +8,10 @@ export interface MemberInfo {
 export interface MemberAuthInfo {
   provider: string;
   email: string;
-  [key: string]: any;
 }
 
 export interface MemberProvider {
-  getMemberInfo(organizationId: string, authPayload: MemberAuthInfo, providerOptions: any): Promise<MemberInfo | undefined>;
+  getMemberInfo<TOptions = undefined>(organizationId: string, authPayload: MemberAuthInfo, providerOptions: TOptions): Promise<MemberInfo | undefined>;
   getMemberInfoById(memberId: string): Promise<MemberInfo | undefined>;
   getMemberPhoto(memberId: string): Promise<ArrayBuffer | undefined>;
   refresh(force?: boolean): Promise<{ ok: boolean; runtime: number; cached?: boolean }>;
