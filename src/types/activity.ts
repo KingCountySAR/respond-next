@@ -123,7 +123,7 @@ export interface Activity {
   ownerOrgId: string;
   isMission: boolean;
   asMission: boolean;
-  standbyOnly: boolean;
+  forceStandbyOnly: boolean;
   startTime: number;
   endTime?: number;
   earlySignInWindow?: number;
@@ -132,7 +132,7 @@ export interface Activity {
   organizations: Record<string, ParticipatingOrg>;
 }
 
-export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'standbyOnly', 'startTime', 'endTime', 'earlySignInWindow']);
+export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'forceStandbyOnly', 'startTime', 'endTime', 'earlySignInWindow']);
 
 export type ActivityType = 'missions' | 'events';
 
@@ -152,7 +152,7 @@ export function createNewActivity(): Activity {
     earlySignInWindow: defaultEarlySigninWindow,
     isMission: false,
     asMission: false,
-    standbyOnly: false,
+    forceStandbyOnly: false,
     ownerOrgId: '',
     participants: {},
     organizations: {},

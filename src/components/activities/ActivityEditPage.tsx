@@ -297,7 +297,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
               <Grid item xs={12}>
                 <FormGroup>
-                  <Controller name="standbyOnly" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Standby Only" />} />
+                  <Controller name="forceStandbyOnly" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Standby Only" />} />
                 </FormGroup>
               </Grid>
 

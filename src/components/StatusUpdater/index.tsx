@@ -71,7 +71,7 @@ const standbyOnlyStatusOptions: Record<ParticipantStatus, { id: number; newStatu
   [ParticipantStatus.SignedOut]: [statusTransitions.standBy],
 };
 
-function getStatusOptions(current: ParticipantStatus | undefined, startTime: number, standbyOnly: boolean, earlySigninWindow?: number) {
+function getStatusOptions(current: ParticipantStatus | undefined, startTime: number, forceStandbyOnly: boolean, earlySigninWindow?: number) {
   const status = current ?? ParticipantStatus.NotResponding;
 
   if (earlySigninWindow === undefined) {
@@ -82,7 +82,7 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
   // 1. The activity's sign-in window is in the future.
   // 2. The activity is marked as standby only, and the current responder is not active.
   //    If the responder is already active, let them update their status as normal.
-  if (isFuture(startTime - earlySigninWindow) || (standbyOnly && !isActive(status))) {
+  if (isFuture(startTime - earlySigninWindow) || (forceStandbyOnly && !isActive(status))) {
     return standbyOnlyStatusOptions[status];
   }
 
@@ -114,7 +114,7 @@ const StatusUpdaterProtected = ({ activity, current, user, thisOrg }: { activity
     setConfirming(true);
   }
 
-  const actions = getStatusOptions(current, activity.startTime, activity.standbyOnly, activity.earlySignInWindow);
+  const actions = getStatusOptions(current, activity.startTime, activity.forceStandbyOnly, activity.earlySignInWindow);
 
   return (
     <>
