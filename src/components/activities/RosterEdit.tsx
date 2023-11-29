@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
-import { Activity, Participant, ParticipantStatus } from '@respond/types/activity';
+import { Activity, Participant, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
 export function RosterEdit({ activityId }: { activityId: string }) {
   const activity = useAppSelector(buildActivitySelector(activityId));
@@ -188,6 +188,31 @@ interface IRosterEntry {
   miles: number;
 }
 
+const scrubTimeline = (timeline: Array<ParticipantUpdate>): Array<ParticipantUpdate> => {
+  const newTimeline = [];
+  let priorStage = 0;
+  for (let i = timeline.length - 1; i >= 0; i--) {
+    const t = timeline[i];
+    const stage: RosterStage = rosterStages[t.status] ?? undefined;
+    if (stage === RosterStage.NA) {
+      if (i === 0) {
+        newTimeline.unshift(t); // Keep if latest status
+        priorStage = stage;
+      }
+      continue;
+    }
+    if (stage === RosterStage.SignOut) {
+      newTimeline.unshift(t);
+      priorStage = RosterStage.NA;
+    }
+    if (stage === priorStage + 1) {
+      newTimeline.unshift(t);
+      priorStage = stage;
+    }
+  }
+  return newTimeline;
+};
+
 class Roster {
   entries: Array<RosterEntry> = [];
 
@@ -198,24 +223,12 @@ class Roster {
   }
 
   buildRosterEntries(participant: Participant) {
-    for (let i = participant.timeline.length - 1; i >= 0; i--) {
-      const stage: RosterStage = rosterStages[participant.timeline[i].status] ?? undefined;
+    const timeline: Array<ParticipantUpdate> = scrubTimeline(participant.timeline);
+    for (let i = timeline.length - 1; i >= 0; i--) {
+      const stage: RosterStage = rosterStages[timeline[i].status] ?? undefined;
       if (!stage) continue; // The participant status is not relavent to the roster.
       const rosterEntry = this.getRosterEntry(participant);
-
-      // Sign Out can skip the arrive/depart base stages.
-      if (stage === RosterStage.SignOut) {
-        rosterEntry.timestamps[stage] = participant.timeline[i].time;
-        continue;
-      }
-
-      // The roster stage was already reached in a prior status update
-      // OR, the timeline goes backward
-      // OR, arrive base was skipped by a turnaround
-      // This status change is not relevant to the roster
-      if (!rosterEntry.isNext(stage)) continue;
-
-      rosterEntry.timestamps[stage] = participant.timeline[i].time;
+      rosterEntry.timestamps[stage] = timeline[i].time;
     }
   }
 
