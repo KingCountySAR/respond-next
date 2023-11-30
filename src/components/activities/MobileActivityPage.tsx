@@ -16,6 +16,8 @@ import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
+const MOBILE_FOOTER_HEIGHT_PIXELS = 124.5;
+
 export enum MobilePageId {
   Briefing = 'Briefing',
   Roster = 'Roster',
@@ -108,7 +110,7 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
       {bottomNav === MobilePageId.Roster && <MobileRosterScreen activity={activity} />}
       {bottomNav === MobilePageId.Briefing && <MobileBriefingScreen activity={activity} />}
       {bottomNav === MobilePageId.Manage && <MobileManageScreen activity={activity} startRemove={startRemove} startChangeState={startChangeState} />}
-      <Box sx={{ height: 40 }}>{/* filler for bottomnav */}</Box>
+      <Box sx={{ height: MOBILE_FOOTER_HEIGHT_PIXELS }}>{/* filler for bottomnav */}</Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
         {isActive(activity) && (
           <Box padding={2}>
