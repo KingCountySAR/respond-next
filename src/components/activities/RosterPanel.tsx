@@ -119,7 +119,7 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
                       <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
                       <TableCell>{getStatusText(t.status)}</TableCell>
                       <TableCell>
-                        <EditTime datetime={t.time} onChange={(time) => updateTimeline({ ...t, time: time }, i)} />
+                        <EditTime datetime={t.time} onChange={(time) => updateTimeline({ ...t, time }, i)} />
                       </TableCell>
                     </TableRow>
                   ))
