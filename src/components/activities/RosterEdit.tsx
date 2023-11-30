@@ -1,7 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Dialog, DialogContent, DialogContentText, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { useState } from 'react';
 
@@ -149,11 +147,9 @@ function RosterTimeEditDialog(props: IRosterEditProps) {
 function RosterTimePicker({ time }: { time: number }) {
   const [value, setValue] = useState<number | null>(time ?? new Date());
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Stack spacing={2}>
-        <DateTimePicker value={value} onChange={setValue} />
-      </Stack>
-    </LocalizationProvider>
+    <Stack spacing={2}>
+      <DateTimePicker value={value} onChange={setValue} />
+    </Stack>
   );
 }
 
