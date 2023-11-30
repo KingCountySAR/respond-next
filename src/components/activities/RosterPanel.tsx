@@ -72,8 +72,11 @@ function EditTime({ datetime, onChange }: { datetime: number; onChange: (time: n
       {edit ? (
         <DateTimePicker value={time} format="MM/dd HH:mm" onAccept={handleAccept} onClose={() => setEdit(false)} />
       ) : (
-        <ButtonBase onClick={() => setEdit(true)}>
-          <Typography>{formatDate(time, 'HHmm')}</Typography>
+        <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
+          <Typography variant="caption">{formatDate(time, 'MM/dd')}</Typography>
+          <Typography sx={{ ml: 2 }} variant="h6">
+            {formatDate(time, 'HHmm')}
+          </Typography>
         </ButtonBase>
       )}
     </>
