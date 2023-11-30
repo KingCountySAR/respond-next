@@ -200,10 +200,12 @@ const scrubTimeline = (timeline: Array<ParticipantUpdate>): Array<ParticipantUpd
     if (stage === RosterStage.SignOut) {
       newTimeline.unshift(t);
       priorStage = RosterStage.NA;
+      continue;
     }
     if (stage === priorStage + 1) {
       newTimeline.unshift(t);
       priorStage = stage;
+      continue;
     }
   }
   return newTimeline;
