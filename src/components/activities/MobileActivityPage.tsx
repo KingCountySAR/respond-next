@@ -17,8 +17,8 @@ import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
 const MOBILE_BOTTOM_NAV_TAB_HEIGHT = 56;
-const MOBILE_STATUS_UPDATER_HEITHT = 68.5;
-const MOBILE_FOOTER_HEIGHT_PIXELS = MOBILE_BOTTOM_NAV_TAB_HEIGHT + MOBILE_STATUS_UPDATER_HEITHT;
+const MOBILE_STATUS_UPDATER_HEIGHT = 68.5;
+const MOBILE_FOOTER_HEIGHT_PIXELS = MOBILE_BOTTOM_NAV_TAB_HEIGHT + MOBILE_STATUS_UPDATER_HEIGHT;
 
 export enum MobilePageId {
   Briefing = 'Briefing',
