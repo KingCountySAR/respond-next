@@ -73,6 +73,10 @@ export function isActive(status: ParticipantStatus) {
   return [ParticipantStatus.Standby, ParticipantStatus.Remote, ParticipantStatus.SignedIn, ParticipantStatus.Available, ParticipantStatus.Assigned, ParticipantStatus.Demobilized].includes(status);
 }
 
+export function isResponding(status: ParticipantStatus) {
+  return isActive(status) && status != ParticipantStatus.Standby;
+}
+
 export function isInTransit(status: ParticipantStatus) {
   return [ParticipantStatus.SignedIn, ParticipantStatus.Demobilized].includes(status);
 }
@@ -123,6 +127,7 @@ export interface Activity {
   ownerOrgId: string;
   isMission: boolean;
   asMission: boolean;
+  forceStandbyOnly: boolean;
   startTime: number;
   endTime?: number;
   earlySignInWindow?: number;
@@ -131,7 +136,7 @@ export interface Activity {
   organizations: Record<string, ParticipatingOrg>;
 }
 
-export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'startTime', 'endTime', 'earlySignInWindow']);
+export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'forceStandbyOnly', 'startTime', 'endTime', 'earlySignInWindow']);
 
 export type ActivityType = 'missions' | 'events';
 
@@ -151,6 +156,7 @@ export function createNewActivity(): Activity {
     earlySignInWindow: defaultEarlySigninWindow,
     isMission: false,
     asMission: false,
+    forceStandbyOnly: false,
     ownerOrgId: '',
     participants: {},
     organizations: {},
