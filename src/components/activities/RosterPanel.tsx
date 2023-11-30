@@ -87,7 +87,7 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
                     <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
                     <TableCell>{getStatusText(t.status)}</TableCell>
                     <TableCell>
-                      <OutputTime label="" time={t.time}></OutputTime>
+                      <OutputTime label="" time={t.time} relative={false}></OutputTime>
                     </TableCell>
                   </TableRow>
                 ))}

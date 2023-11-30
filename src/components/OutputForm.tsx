@@ -146,7 +146,7 @@ export const OutputTime = ({ label, time, relative }: { label: string; time?: nu
   });
 
   let useRelative = relative ?? false;
-  if (!useRelative && time) {
+  if (relative == undefined && time) {
     // If the time is within 1 day of today, use relative time.
     const dateDiff = differenceInCalendarDays(new Date(), new Date(time));
     if (Math.abs(dateDiff) <= 1) useRelative = true;
