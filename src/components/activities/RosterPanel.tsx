@@ -1,8 +1,9 @@
-import { Button, Chip, DialogActions, Divider, Table, TableBody, TableCell, TableFooter, TableRow } from '@mui/material';
+import { Button, ButtonBase, Chip, DialogActions, Divider, Table, TableBody, TableCell, TableFooter, TableRow } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
+import { DateTimePicker } from '@mui/x-date-pickers';
 import { format as formatDate } from 'date-fns';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
@@ -55,6 +56,27 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
   );
 }
 
+function EditTime({ datetime }: { datetime: number }) {
+  const [edit, setEdit] = useState<boolean>(false);
+  const [time, setTime] = useState(datetime);
+  const handleAccept = (newTime: number | null) => {
+    if (newTime) {
+      setTime(newTime);
+    }
+  };
+  return (
+    <>
+      {edit ? (
+        <DateTimePicker value={time} format="MM/dd HH:mm" onAccept={handleAccept} onClose={() => setEdit(false)} />
+      ) : (
+        <ButtonBase onClick={() => setEdit(true)}>
+          <Typography>{formatDate(time, 'HHmm')}</Typography>
+        </ButtonBase>
+      )}
+    </>
+  );
+}
+
 export function ParticipantDialog({ open, participant, activity, onClose }: { open: boolean; onClose: () => void; participant?: Participant; activity: Activity }) {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
 
@@ -86,7 +108,9 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
                   <TableRow key={t.time}>
                     <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
                     <TableCell>{getStatusText(t.status)}</TableCell>
-                    <TableCell>{formatDate(t.time, 'EEE yyyy-MM-dd HHmm')}</TableCell>
+                    <TableCell>
+                      <EditTime datetime={t.time} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
