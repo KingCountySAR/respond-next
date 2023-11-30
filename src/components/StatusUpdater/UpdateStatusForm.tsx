@@ -10,8 +10,7 @@ import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
 import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
-
-const TextBoxDateFormat: string = "yyyy-MM-dd'T'HH:mm";
+import { AbsoluteDateFormat, TextBoxDateFormat } from '../RelativeTimeText';
 
 interface FormValues {
   miles: number | '';
@@ -45,7 +44,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
     if (lastStatusChangeTime && !isNaN(lastStatusChangeTime) && statusTimeAsDate.getTime() < lastStatusChangeTime) {
       result.errors.statusTime = {
         type: 'min',
-        message: 'Cannot be earlier than previous status change at ' + formatDate(lastStatusChangeTime, 'EEE yyyy-MM-dd HHmm'),
+        message: 'Cannot be earlier than previous status change at ' + formatDate(lastStatusChangeTime, AbsoluteDateFormat),
       };
     }
 

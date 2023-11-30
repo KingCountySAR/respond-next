@@ -24,6 +24,9 @@ const locale: Locale = {
   formatRelative: (token) => formatRelativeLocale[token],
 };
 
+export const AbsoluteDateFormat: string = 'EEE yyyy-MM-dd HHmm';
+export const TextBoxDateFormat: string = "yyyy-MM-dd'T'HH:mm";
+
 export interface RelativeTimeTextProps {
   time: number;
   baseTime: number;
@@ -40,7 +43,7 @@ export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: Relati
       text = text[0].toLocaleUpperCase() + text.substring(1);
     }
   } else {
-    text = formatDate(time, 'EEE yyyy-MM-dd HHmm');
+    text = formatDate(time, AbsoluteDateFormat);
   }
 
   return (
