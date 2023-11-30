@@ -126,6 +126,18 @@ export const BasicReducers: ActivityReducers = {
     }
   },
 
+  [ActivityActions.participantTimelineUpdate.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) {
+      return;
+    }
+    const person = activity.participants[payload.participantId];
+    if (!person) {
+      return;
+    }
+    person.timeline[payload.index] = payload.update;
+  },
+
   [ActivityActions.tagParticipant.type]: (state, { payload }) => {
     const activity = state.list.find((f) => f.id === payload.activityId);
     if (activity) {

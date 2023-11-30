@@ -8,6 +8,8 @@ import { format as formatDate } from 'date-fns';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
+import { useAppDispatch } from '@respond/lib/client/store';
+import { ActivityActions } from '@respond/lib/state';
 import { Activity, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
 
 interface RosterPanelProps {
@@ -62,8 +64,8 @@ function EditTime({ datetime, onChange }: { datetime: number; onChange: (time: n
   const handleAccept = (newTime: number | null) => {
     if (newTime) {
       setTime(newTime);
+      onChange(new Date(newTime).getTime());
     }
-    onChange(time);
   };
   return (
     <>
@@ -81,7 +83,13 @@ function EditTime({ datetime, onChange }: { datetime: number; onChange: (time: n
 export function ParticipantDialog({ open, participant, activity, onClose }: { open: boolean; onClose: () => void; participant?: Participant; activity: Activity }) {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
 
+  const dispatch = useAppDispatch();
+
   if (!participant) return <></>;
+
+  const updateTimeline = (update: ParticipantUpdate, index: number) => {
+    dispatch(ActivityActions.participantTimelineUpdate(activity.id, participant.id, update, index));
+  };
 
   const name = `${participant.firstname} ${participant.lastname}`;
   return (
@@ -105,15 +113,17 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
             <Typography>Timeline:</Typography>
             <Table size="small">
               <TableBody>
-                {[...participant.timeline].reverse().map((t) => (
-                  <TableRow key={t.time}>
-                    <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
-                    <TableCell>{getStatusText(t.status)}</TableCell>
-                    <TableCell>
-                      <EditTime datetime={t.time} onChange={(time) => console.log('!!!', time)} />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {[...participant.timeline]
+                  .map((t, i) => (
+                    <TableRow key={t.time}>
+                      <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
+                      <TableCell>{getStatusText(t.status)}</TableCell>
+                      <TableCell>
+                        <EditTime datetime={t.time} onChange={(time) => updateTimeline({ ...t, time: time }, i)} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                  .reverse()}
               </TableBody>
               <TableFooter>
                 <TableRow>
