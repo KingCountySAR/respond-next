@@ -34,8 +34,7 @@ export interface RelativeTimeTextProps {
   relative?: boolean;
 }
 
-export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: RelativeTimeTextProps) => {
-  const [useRelative, setUseRelative] = React.useState<boolean>(relative ?? false);
+export const formatTimeAsString = (time: number, baseTime: number, useRelative: boolean, lowercase?: boolean) => {
   let text;
   if (useRelative) {
     text = formatRelative(time, baseTime, { locale });
@@ -45,6 +44,12 @@ export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: Relati
   } else {
     text = formatDate(time, AbsoluteDateFormat);
   }
+  return text;
+};
+
+export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: RelativeTimeTextProps) => {
+  const [useRelative, setUseRelative] = React.useState<boolean>(relative ?? false);
+  const text = formatTimeAsString(time, baseTime, useRelative, lowercase);
 
   return (
     <span onClick={() => setUseRelative(!useRelative)} style={{ cursor: 'pointer' }}>
