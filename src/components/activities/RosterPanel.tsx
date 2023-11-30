@@ -56,13 +56,14 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
   );
 }
 
-function EditTime({ datetime }: { datetime: number }) {
+function EditTime({ datetime, onChange }: { datetime: number; onChange: (time: number) => void }) {
   const [edit, setEdit] = useState<boolean>(false);
   const [time, setTime] = useState(datetime);
   const handleAccept = (newTime: number | null) => {
     if (newTime) {
       setTime(newTime);
     }
+    onChange(time);
   };
   return (
     <>
@@ -109,7 +110,7 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
                     <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
                     <TableCell>{getStatusText(t.status)}</TableCell>
                     <TableCell>
-                      <EditTime datetime={t.time} />
+                      <EditTime datetime={t.time} onChange={(time) => console.log('!!!', time)} />
                     </TableCell>
                   </TableRow>
                 ))}
