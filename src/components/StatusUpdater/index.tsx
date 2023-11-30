@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { Activity, isResponding, ParticipantStatus } from '@respond/types/activity';
+import { Activity, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
@@ -63,11 +63,11 @@ const statusOptions: Record<ParticipantStatus, { id: number; newStatus: Particip
 const standbyOnlyStatusOptions: Record<ParticipantStatus, { id: number; newStatus: ParticipantStatus; text: string }[]> = {
   [ParticipantStatus.NotResponding]: [statusTransitions.standBy],
   [ParticipantStatus.Standby]: [statusTransitions.standDown],
-  [ParticipantStatus.Remote]: [statusTransitions.resetStatus],
-  [ParticipantStatus.SignedIn]: [statusTransitions.resetStatus],
-  [ParticipantStatus.Available]: [statusTransitions.resetStatus],
-  [ParticipantStatus.Assigned]: [statusTransitions.resetStatus],
-  [ParticipantStatus.Demobilized]: [statusTransitions.resetStatus],
+  [ParticipantStatus.Remote]: [statusTransitions.signOut],
+  [ParticipantStatus.SignedIn]: [statusTransitions.arriveBase, statusTransitions.turnAround, statusTransitions.signOut],
+  [ParticipantStatus.Available]: [statusTransitions.departBase, statusTransitions.assigned],
+  [ParticipantStatus.Assigned]: [statusTransitions.available],
+  [ParticipantStatus.Demobilized]: [statusTransitions.signOut],
   [ParticipantStatus.SignedOut]: [statusTransitions.standBy],
 };
 
@@ -82,7 +82,7 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
   // 1. The activity's sign-in window is in the future.
   // 2. The activity is marked as standby only, and the current responder is not actively responding.
   //    If the responder is already responding, let them update their status as normal.
-  if (isFuture(startTime - earlySigninWindow) || (forceStandbyOnly && !isResponding(status))) {
+  if (isFuture(startTime - earlySigninWindow) || forceStandbyOnly) {
     return standbyOnlyStatusOptions[status];
   }
 

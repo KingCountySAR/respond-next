@@ -73,10 +73,6 @@ export function isActive(status: ParticipantStatus) {
   return [ParticipantStatus.Standby, ParticipantStatus.Remote, ParticipantStatus.SignedIn, ParticipantStatus.Available, ParticipantStatus.Assigned, ParticipantStatus.Demobilized].includes(status);
 }
 
-export function isResponding(status: ParticipantStatus) {
-  return isActive(status) && status != ParticipantStatus.Standby;
-}
-
 export function isInTransit(status: ParticipantStatus) {
   return [ParticipantStatus.SignedIn, ParticipantStatus.Demobilized].includes(status);
 }
