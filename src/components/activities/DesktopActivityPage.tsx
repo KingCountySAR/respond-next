@@ -1,4 +1,4 @@
-import { Divider, Typography } from '@mui/material';
+import { Button, Divider, Typography } from '@mui/material';
 import { ReactNode, useState } from 'react';
 
 import { Box, Stack } from '@respond/components/Material';
@@ -37,7 +37,12 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
       </Stack>
       <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
         <Box display="flex" flex="1 1 auto" flexDirection="column">
-          <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} display="flex" flexDirection="row" />
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} display="flex" flexDirection="row" />
+            <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
+              View Roster
+            </Button>
+          </Stack>
           <RosterPanel //
             activity={activity}
             filter={orgFilter}
