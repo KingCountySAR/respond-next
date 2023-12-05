@@ -104,26 +104,19 @@ interface IRosterEntry {
 
 const scrubTimeline = (timeline: Array<ParticipantUpdate>): Array<ParticipantUpdate> => {
   const newTimeline = [];
-  let priorStage = 0;
+  let priorStage = RosterStage.NA;
   for (let i = timeline.length - 1; i >= 0; i--) {
     const t = timeline[i];
     const stage: RosterStage = rosterStages[t.status] ?? undefined;
-    if (stage === RosterStage.NA) {
-      if (i === 0) {
-        newTimeline.unshift(t); // Keep if latest status
-        priorStage = stage;
-      }
-      continue;
-    }
-    if (stage === RosterStage.SignOut) {
+    if (stage === RosterStage.NA && i === 0) {
+      newTimeline.unshift(t); // Keep if latest status
+      priorStage = stage;
+    } else if (stage === RosterStage.SignOut) {
       newTimeline.unshift(t);
       priorStage = RosterStage.NA;
-      continue;
-    }
-    if (stage === priorStage + 1) {
+    } else if (stage === priorStage + 1) {
       newTimeline.unshift(t);
       priorStage = stage;
-      continue;
     }
   }
   return newTimeline;
