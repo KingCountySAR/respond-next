@@ -24,7 +24,7 @@ export function RosterView({ activityId }: { activityId: string }) {
     for (let i = timeline.length - 1; i >= 0; i--) {
       const stage: RosterStage = rosterStages[timeline[i].status] ?? undefined;
       if (!stage) continue; // The participant status is not relavent to the roster.
-      const rosterEntry = getRosterEntry(participant);
+      const rosterEntry = findRosterEntry(participant) ?? createRosterEntry(participant, timeline[i].organizationId);
       rosterEntry.timestamps[stage] = timeline[i].time;
     }
     const firstEntry = rosterEntries.reverse().find((entry) => entry.participantId === participant.id);
@@ -33,12 +33,8 @@ export function RosterView({ activityId }: { activityId: string }) {
     }
   };
 
-  const getRosterEntry = (participant: Participant): RosterEntry => {
-    return findRosterEntry(participant) ?? createRosterEntry(participant);
-  };
-
-  const createRosterEntry = (participant: Participant) => {
-    const org = activity.organizations[participant.organizationId].rosterName ?? activity.organizations[participant.organizationId].title;
+  const createRosterEntry = (participant: Participant, organizationId: string) => {
+    const org = activity.organizations[organizationId].rosterName ?? activity.organizations[organizationId].title;
     const newEntry = buildRosterEntry(participant, org);
     rosterEntries.unshift(newEntry);
     return newEntry;
