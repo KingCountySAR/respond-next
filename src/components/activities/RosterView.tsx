@@ -24,6 +24,10 @@ export function RosterView({ activityId }: { activityId: string }) {
       const rosterEntry = getRosterEntry(participant);
       rosterEntry.timestamps[stage] = timeline[i].time;
     }
+    const firstEntry = rosterEntries.reverse().find((entry) => entry.participantId === participant.id);
+    if (firstEntry) {
+      firstEntry.miles = participant.miles ?? 0;
+    }
   };
 
   const getRosterEntry = (participant: Participant): RosterEntry => {
@@ -31,7 +35,8 @@ export function RosterView({ activityId }: { activityId: string }) {
   };
 
   const createRosterEntry = (participant: Participant) => {
-    const newEntry = buildRosterEntry(participant);
+    const org = activity.organizations[participant.organizationId].rosterName ?? activity.organizations[participant.organizationId].title;
+    const newEntry = buildRosterEntry(participant, org);
     rosterEntries.unshift(newEntry);
     return newEntry;
   };
@@ -56,18 +61,12 @@ export function RosterView({ activityId }: { activityId: string }) {
           <TableHead>
             <TableRow>
               <TableCell sx={headerCellStyle}>Particpant Name</TableCell>
-              <TableCell align="center" sx={headerCellStyle}>
-                Sign In
-              </TableCell>
-              <TableCell align="center" sx={headerCellStyle}>
-                Arrive Base
-              </TableCell>
-              <TableCell align="center" sx={headerCellStyle}>
-                Depart Base
-              </TableCell>
-              <TableCell align="center" sx={headerCellStyle}>
-                Sign Out
-              </TableCell>
+              <TableCell sx={headerCellStyle}>Organization</TableCell>
+              <TableCell sx={headerCellStyle}>Sign In</TableCell>
+              <TableCell sx={headerCellStyle}>Arrive Base</TableCell>
+              <TableCell sx={headerCellStyle}>Depart Base</TableCell>
+              <TableCell sx={headerCellStyle}>Sign Out</TableCell>
+              <TableCell sx={headerCellStyle}>Miles</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -97,11 +96,15 @@ function RosterRow({ rosterEntry }: { rosterEntry: RosterEntry }) {
   return (
     <TableRow>
       <TableCell size="small">{rosterEntry.participantName}</TableCell>
+      <TableCell size="small">{rosterEntry.organizationName}</TableCell>
       {Object.values(rosterEntry.timestamps).map((time, i) => (
-        <TableCell key={i} align="center" size="small">
+        <TableCell key={i} size="small">
           <Stack>{time ? <RosterTimeValue time={time} /> : undefined}</Stack>
         </TableCell>
       ))}
+      <TableCell size="small">
+        <Typography variant="h6">{rosterEntry.miles}</Typography>
+      </TableCell>
     </TableRow>
   );
 }
@@ -139,6 +142,7 @@ const rosterStages: Record<ParticipantStatus, RosterStage> = {
 interface RosterEntry {
   participantId: string;
   participantName: string;
+  organizationName: string;
   timestamps: {
     [RosterStage.SignIn]: number;
     [RosterStage.ArriveBase]: number;
@@ -168,10 +172,11 @@ const scrubTimeline = (timeline: Array<ParticipantUpdate>): Array<ParticipantUpd
   return newTimeline;
 };
 
-const buildRosterEntry = (participant: Participant): RosterEntry => {
+const buildRosterEntry = (participant: Participant, organizationName: string): RosterEntry => {
   return {
     participantId: participant.id,
     participantName: `${participant.firstname} ${participant.lastname}`,
+    organizationName: organizationName,
     timestamps: {
       [RosterStage.SignIn]: 0,
       [RosterStage.ArriveBase]: 0,
