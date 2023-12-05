@@ -5,6 +5,8 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
 import { Participant, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
+import { OutputForm, OutputTime } from '../OutputForm';
+
 const headerCellStyle = { fontWeight: 700, width: 20 };
 
 export function RosterView({ activityId }: { activityId: string }) {
@@ -56,6 +58,10 @@ export function RosterView({ activityId }: { activityId: string }) {
           <Typography variant="h4">
             {activity?.idNumber} {activity?.title}
           </Typography>
+          <OutputForm columns={2}>
+            <OutputTime time={activity.startTime} label="Start Time"></OutputTime>
+            <OutputTime time={activity.endTime} label="End Time"></OutputTime>
+          </OutputForm>
         </Box>
         <Table>
           <TableHead>

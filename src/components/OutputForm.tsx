@@ -8,18 +8,22 @@ import { RelativeTimeText } from './RelativeTimeText';
 
 const DEFAULT_LINE_HEIGHT_PIXELS = 24;
 
-export const OutputForm = ({ children }: { children: ReactNode }) => {
+export const OutputForm = ({ children, columns }: { children: ReactNode; columns?: number }) => {
   const childrenArray = Children.toArray(children);
 
   const outputFields = childrenArray.map((child, index) => {
     return (
-      <Grid key={index} item xs={12}>
+      <Grid key={index} item xs={12} sm={12 / (columns ?? 1)}>
         {child}
       </Grid>
     );
   });
 
-  return <Grid columnSpacing={{ xs: 0, sm: 2 }}>{outputFields.length && outputFields}</Grid>;
+  return (
+    <Grid container columnSpacing={2}>
+      {outputFields.length && outputFields}
+    </Grid>
+  );
 };
 
 const OutputField = ({ label, multiline, children }: { label: string; multiline?: boolean; children: React.ReactNode }) => {
