@@ -102,9 +102,10 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
   const [confirmStatus, setConfirmStatus] = useState<ParticipantStatus>(ParticipantStatus.SignedIn);
   const [confirmLabel, setConfirmLabel] = useState<string>('');
 
-  current = current ?? activity.participants[user.participantId]?.timeline[0]?.status;
+  const participant = activity.participants[user.participantId];
+  current = current ?? participant?.timeline[0]?.status;
 
-  const formLogic = useFormLogic(activity, user, thisOrg, activity.participants[user.participantId], current, confirmStatus, () => setConfirming(false));
+  const formLogic = useFormLogic(activity, user, thisOrg, participant, current, confirmStatus, () => setConfirming(false));
 
   function confirmPrompt(title: string, optionId: number) {
     const option = Object.values(statusTransitions).find((f) => f.id === optionId);
@@ -114,7 +115,15 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
     setConfirming(true);
   }
 
-  const actions = getStatusOptions(current, activity.startTime, activity.forceStandbyOnly, activity.earlySignInWindow);
+  const lastOrgId = participant?.timeline[0].organizationId;
+  const currentOrgId = participant?.organizationId;
+  let actions;
+  if (currentOrgId !== lastOrgId) {
+    const lastOrgName = activity.organizations[lastOrgId].rosterName ?? activity.organizations[lastOrgId].title;
+    actions = [{ id: 7, newStatus: ParticipantStatus.SignedOut, text: `Sign Out from ${lastOrgName}` }];
+  } else {
+    actions = getStatusOptions(current, activity.startTime, activity.forceStandbyOnly, activity.earlySignInWindow);
+  }
 
   return (
     <>
