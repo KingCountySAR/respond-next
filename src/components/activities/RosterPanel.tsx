@@ -1,12 +1,15 @@
-import { Button, Chip, DialogActions, Divider, Table, TableBody, TableCell, TableFooter, TableRow } from '@mui/material';
+import { Button, ButtonBase, Chip, DialogActions, Divider, Table, TableBody, TableCell, TableFooter, TableRow } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
+import { DateTimePicker } from '@mui/x-date-pickers';
 import { format as formatDate } from 'date-fns';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
+import { useAppDispatch } from '@respond/lib/client/store';
+import { ActivityActions } from '@respond/lib/state';
 import { Activity, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
 
 interface RosterPanelProps {
@@ -55,10 +58,41 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
   );
 }
 
+function EditTime({ datetime, onChange }: { datetime: number; onChange: (time: number) => void }) {
+  const [edit, setEdit] = useState<boolean>(false);
+  const [time, setTime] = useState(datetime);
+  const handleAccept = (newTime: number | null) => {
+    if (newTime) {
+      setTime(newTime);
+      onChange(new Date(newTime).getTime());
+    }
+  };
+  return (
+    <>
+      {edit ? (
+        <DateTimePicker value={time} format="MM/dd HH:mm" onAccept={handleAccept} onClose={() => setEdit(false)} />
+      ) : (
+        <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
+          <Typography variant="caption">{formatDate(time, 'MM/dd')}</Typography>
+          <Typography sx={{ ml: 2 }} variant="h6">
+            {formatDate(time, 'HHmm')}
+          </Typography>
+        </ButtonBase>
+      )}
+    </>
+  );
+}
+
 export function ParticipantDialog({ open, participant, activity, onClose }: { open: boolean; onClose: () => void; participant?: Participant; activity: Activity }) {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
 
+  const dispatch = useAppDispatch();
+
   if (!participant) return <></>;
+
+  const updateTimeline = (update: ParticipantUpdate, index: number) => {
+    dispatch(ActivityActions.participantTimelineUpdate(activity.id, participant.id, update, index));
+  };
 
   const name = `${participant.firstname} ${participant.lastname}`;
   return (
@@ -82,13 +116,17 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
             <Typography>Timeline:</Typography>
             <Table size="small">
               <TableBody>
-                {[...participant.timeline].reverse().map((t) => (
-                  <TableRow key={t.time}>
-                    <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
-                    <TableCell>{getStatusText(t.status)}</TableCell>
-                    <TableCell>{formatDate(t.time, 'EEE yyyy-MM-dd HHmm')}</TableCell>
-                  </TableRow>
-                ))}
+                {[...participant.timeline]
+                  .map((t, i) => (
+                    <TableRow key={t.time}>
+                      <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
+                      <TableCell>{getStatusText(t.status)}</TableCell>
+                      <TableCell>
+                        <EditTime datetime={t.time} onChange={(time) => updateTimeline({ ...t, time }, i)} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                  .reverse()}
               </TableBody>
               <TableFooter>
                 <TableRow>
