@@ -1,4 +1,5 @@
 import { Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { differenceInCalendarDays } from 'date-fns';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
@@ -77,7 +78,7 @@ export function RosterView({ activityId }: { activityId: string }) {
           </TableHead>
           <TableBody>
             {rosterEntries.map((entry, i) => (
-              <RosterRow key={i} rosterEntry={entry} />
+              <RosterRow key={i} rosterEntry={entry} activityStartTime={activity.startTime} />
             ))}
           </TableBody>
         </Table>
@@ -98,14 +99,14 @@ function ActivityNotFound() {
   );
 }
 
-function RosterRow({ rosterEntry }: { rosterEntry: RosterEntry }) {
+function RosterRow({ activityStartTime, rosterEntry }: { activityStartTime: number; rosterEntry: RosterEntry }) {
   return (
     <TableRow>
       <TableCell size="small">{rosterEntry.participantName}</TableCell>
       <TableCell size="small">{rosterEntry.organizationName}</TableCell>
       {Object.values(rosterEntry.timestamps).map((time, i) => (
         <TableCell key={i} size="small">
-          <Stack>{time ? <RosterTimeValue time={time} /> : undefined}</Stack>
+          <Stack>{time ? <RosterTimeValue time={time} startTime={activityStartTime} /> : undefined}</Stack>
         </TableCell>
       ))}
       <TableCell size="small">
@@ -115,13 +116,15 @@ function RosterRow({ rosterEntry }: { rosterEntry: RosterEntry }) {
   );
 }
 
-function RosterTimeValue({ time }: { time: number }) {
+function RosterTimeValue({ startTime, time }: { startTime: number; time: number }) {
+  const dateDiff = Math.abs(differenceInCalendarDays(new Date(startTime), new Date(time)));
+
   const dateString = new Date(time).toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
   const timeString = new Date(time).toLocaleString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(':', '');
   return (
     <>
       <Typography variant="h6">{timeString}</Typography>
-      <Typography variant="caption">{dateString}</Typography>
+      {dateDiff ? <Typography variant="caption">{dateString}</Typography> : <></>}
     </>
   );
 }
