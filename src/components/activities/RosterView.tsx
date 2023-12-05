@@ -3,13 +3,47 @@ import { Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Ty
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
-import { Activity, Participant, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
+import { Participant, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
 const headerCellStyle = { fontWeight: 700, width: 20 };
 
 export function RosterView({ activityId }: { activityId: string }) {
   const activity = useAppSelector(buildActivitySelector(activityId));
-  const roster = new Roster(activity!);
+
+  if (!activity) {
+    return <ActivityNotFound />;
+  }
+
+  const rosterEntries: Array<RosterEntry> = [];
+
+  const buildRosterEntries = (participant: Participant) => {
+    const timeline: Array<ParticipantUpdate> = scrubTimeline(participant.timeline);
+    for (let i = timeline.length - 1; i >= 0; i--) {
+      const stage: RosterStage = rosterStages[timeline[i].status] ?? undefined;
+      if (!stage) continue; // The participant status is not relavent to the roster.
+      const rosterEntry = getRosterEntry(participant);
+      rosterEntry.timestamps[stage] = timeline[i].time;
+    }
+  };
+
+  const getRosterEntry = (participant: Participant): RosterEntry => {
+    return findRosterEntry(participant) ?? createRosterEntry(participant);
+  };
+
+  const createRosterEntry = (participant: Participant) => {
+    const newEntry = buildRosterEntry(participant);
+    rosterEntries.unshift(newEntry);
+    return newEntry;
+  };
+
+  const findRosterEntry = (participant: Participant) => {
+    return rosterEntries.find((entry) => entry.participantId === participant.id && !isComplete(entry));
+  };
+
+  Object.values(activity.participants ?? {}).forEach((participant: Participant) => {
+    buildRosterEntries(participant);
+  });
+
   return (
     <ToolbarPage maxWidth="lg">
       <Paper>
@@ -37,11 +71,23 @@ export function RosterView({ activityId }: { activityId: string }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {roster.entries.map((entry, i) => (
+            {rosterEntries.map((entry, i) => (
               <RosterRow key={i} rosterEntry={entry} />
             ))}
           </TableBody>
         </Table>
+      </Paper>
+    </ToolbarPage>
+  );
+}
+
+function ActivityNotFound() {
+  return (
+    <ToolbarPage maxWidth="lg">
+      <Paper>
+        <Box padding={2}>
+          <Typography>Activity Not Found</Typography>
+        </Box>
       </Paper>
     </ToolbarPage>
   );
@@ -90,7 +136,7 @@ const rosterStages: Record<ParticipantStatus, RosterStage> = {
   [ParticipantStatus.SignedOut]: RosterStage.SignOut,
 };
 
-interface IRosterEntry {
+interface RosterEntry {
   participantId: string;
   participantName: string;
   timestamps: {
@@ -122,72 +168,20 @@ const scrubTimeline = (timeline: Array<ParticipantUpdate>): Array<ParticipantUpd
   return newTimeline;
 };
 
-class Roster {
-  entries: Array<RosterEntry> = [];
-
-  constructor(activity: Activity) {
-    Object.values(activity.participants ?? {}).forEach((participant: Participant) => {
-      this.buildRosterEntries(participant);
-    });
-  }
-
-  buildRosterEntries(participant: Participant) {
-    const timeline: Array<ParticipantUpdate> = scrubTimeline(participant.timeline);
-    for (let i = timeline.length - 1; i >= 0; i--) {
-      const stage: RosterStage = rosterStages[timeline[i].status] ?? undefined;
-      if (!stage) continue; // The participant status is not relavent to the roster.
-      const rosterEntry = this.getRosterEntry(participant);
-      rosterEntry.timestamps[stage] = timeline[i].time;
-    }
-  }
-
-  getRosterEntry(participant: Participant): RosterEntry {
-    return this.findRosterEntry(participant) ?? this.createRosterEntry(participant);
-  }
-
-  createRosterEntry(participant: Participant) {
-    const newEntry = new RosterEntry(participant);
-    this.entries.unshift(newEntry);
-    return newEntry;
-  }
-
-  findRosterEntry(participant: Participant) {
-    return this.entries.find((entry) => entry.participantId === participant.id && !entry.isComplete());
-  }
-}
-
-class RosterEntry implements IRosterEntry {
-  participantId;
-  participantName;
-  timestamps;
-  miles;
-
-  constructor(participant: Participant) {
-    this.participantId = participant.id;
-    this.participantName = `${participant.firstname} ${participant.lastname}`;
-    this.timestamps = {
+const buildRosterEntry = (participant: Participant): RosterEntry => {
+  return {
+    participantId: participant.id,
+    participantName: `${participant.firstname} ${participant.lastname}`,
+    timestamps: {
       [RosterStage.SignIn]: 0,
       [RosterStage.ArriveBase]: 0,
       [RosterStage.DepartBase]: 0,
       [RosterStage.SignOut]: 0,
-    };
-    this.miles = 0;
-  }
+    },
+    miles: 0,
+  };
+};
 
-  isComplete(): boolean {
-    return !!this.timestamps[RosterStage.SignOut];
-  }
-
-  getLatestStage(): RosterStage {
-    for (const [key, value] of Object.entries(this.timestamps).reverse()) {
-      if (value) {
-        return parseInt(key);
-      }
-    }
-    return RosterStage.NA;
-  }
-
-  isNext(newStage: RosterStage): boolean {
-    return this.getLatestStage() === newStage - 1;
-  }
-}
+const isComplete = (entry: RosterEntry): boolean => {
+  return !!entry.timestamps[RosterStage.SignOut];
+};
