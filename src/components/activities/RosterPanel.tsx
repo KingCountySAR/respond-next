@@ -67,7 +67,6 @@ function EditTime({ datetime, onChange }: { datetime: number; onChange: (time: n
       onChange(new Date(newTime).getTime());
     }
   };
-
   return (
     <>
       {edit ? (

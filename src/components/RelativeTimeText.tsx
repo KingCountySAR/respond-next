@@ -55,7 +55,7 @@ export const formatTimeAsString = (time: number, baseTime: number, useRelative: 
 };
 
 export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: RelativeTimeTextProps) => {
-  let useRelativeDefault = false;
+  let useRelativeDefault = relative == RelativeStyle.Relative;
   if (relative == RelativeStyle.Auto && time) {
     // If the time is within 1 day of today, use relative time.
     const dateDiff = differenceInCalendarDays(new Date(), new Date(time));
