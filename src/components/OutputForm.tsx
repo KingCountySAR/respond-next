@@ -1,11 +1,10 @@
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Grid, Typography } from '@mui/material';
-import { differenceInCalendarDays } from 'date-fns';
 import Link from 'next/link';
 import React, { Children, ReactNode, useEffect, useRef, useState } from 'react';
 
-import { RelativeTimeText } from './RelativeTimeText';
+import { RelativeStyle, RelativeTimeText } from './RelativeTimeText';
 
 const DEFAULT_LINE_HEIGHT_PIXELS = 24;
 
@@ -135,7 +134,7 @@ export const OutputLink = ({ label, value, href, target }: { label: string; valu
   );
 };
 
-export const OutputTime = ({ label, time, relative }: { label: string; time?: number; relative?: boolean }) => {
+export const OutputTime = ({ label, time, relative = RelativeStyle.Auto }: { label: string; time?: number; relative?: RelativeStyle }) => {
   const [nowTime, setNowTime] = useState<number>(new Date().getTime());
 
   useEffect(() => {
@@ -145,12 +144,5 @@ export const OutputTime = ({ label, time, relative }: { label: string; time?: nu
     };
   });
 
-  let useRelative = relative ?? false;
-  if (relative == undefined && time) {
-    // If the time is within 1 day of today, use relative time.
-    const dateDiff = differenceInCalendarDays(new Date(), new Date(time));
-    if (Math.abs(dateDiff) <= 1) useRelative = true;
-  }
-
-  return <OutputField label={label}>{time && <RelativeTimeText time={time} baseTime={nowTime} relative={useRelative} />}</OutputField>;
+  return <OutputField label={label}>{time && <RelativeTimeText time={time} baseTime={nowTime} relative={relative} />}</OutputField>;
 };

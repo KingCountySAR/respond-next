@@ -6,7 +6,7 @@ import { useTheme } from '@mui/material/styles';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
-import { OutputTime } from '@respond/components/OutputForm';
+import { RelativeStyle, RelativeTimeText } from '@respond/components/RelativeTimeText';
 import { Activity, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
 
 interface RosterPanelProps {
@@ -87,7 +87,7 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
                     <TableCell>{activity.organizations[t.organizationId].rosterName ?? activity.organizations[t.organizationId].title}</TableCell>
                     <TableCell>{getStatusText(t.status)}</TableCell>
                     <TableCell>
-                      <OutputTime label="" time={t.time} relative={false}></OutputTime>
+                      <RelativeTimeText time={t.time} baseTime={new Date().getTime()} relative={RelativeStyle.Absolute}></RelativeTimeText>
                     </TableCell>
                   </TableRow>
                 ))}

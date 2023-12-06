@@ -1,4 +1,5 @@
 import { format as formatDate, formatRelative, Locale } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import * as React from 'react';
 
@@ -27,11 +28,17 @@ const locale: Locale = {
 export const AbsoluteDateFormat: string = 'EEE yyyy-MM-dd HHmm';
 export const TextBoxDateFormat: string = "yyyy-MM-dd'T'HH:mm";
 
+export enum RelativeStyle {
+  Relative,
+  Auto,
+  Absolute,
+}
+
 export interface RelativeTimeTextProps {
   time: number;
   baseTime: number;
   lowercase?: boolean;
-  relative?: boolean;
+  relative: RelativeStyle;
 }
 
 export const formatTimeAsString = (time: number, baseTime: number, useRelative: boolean, lowercase?: boolean) => {
@@ -48,7 +55,14 @@ export const formatTimeAsString = (time: number, baseTime: number, useRelative: 
 };
 
 export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: RelativeTimeTextProps) => {
-  const [useRelative, setUseRelative] = React.useState<boolean>(relative ?? false);
+  let useRelativeDefault = false;
+  if (relative == RelativeStyle.Auto && time) {
+    // If the time is within 1 day of today, use relative time.
+    const dateDiff = differenceInCalendarDays(new Date(), new Date(time));
+    if (Math.abs(dateDiff) <= 1) useRelativeDefault = true;
+  }
+
+  const [useRelative, setUseRelative] = React.useState<boolean>(useRelativeDefault);
   const text = formatTimeAsString(time, baseTime, useRelative, lowercase);
 
   return (
