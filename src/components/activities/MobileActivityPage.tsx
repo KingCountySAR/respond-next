@@ -16,6 +16,10 @@ import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
+const MOBILE_BOTTOM_NAV_TAB_HEIGHT = 56;
+const MOBILE_STATUS_UPDATER_HEIGHT = 68.5;
+const ROSTER_PANEL_PADDING = 16;
+
 export enum MobilePageId {
   Briefing = 'Briefing',
   Roster = 'Roster',
@@ -48,7 +52,7 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
   return (
     <>
       <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} />
-      <Box style={{ overflowY: 'auto', height: 0, paddingBottom: '16px' }} flex="1 1 auto">
+      <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} flex="1 1 auto">
         <RosterPanel //
           activity={activity}
           filter={orgFilter}
@@ -102,15 +106,17 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
   const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.userId ?? ''];
+  const showStatusUpdater = isActive(activity);
+  const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showStatusUpdater ? MOBILE_STATUS_UPDATER_HEIGHT : 0) - ROSTER_PANEL_PADDING;
   return (
     <>
       <Typography variant="h5">{activity.title}</Typography>
       {bottomNav === MobilePageId.Roster && <MobileRosterScreen activity={activity} />}
       {bottomNav === MobilePageId.Briefing && <MobileBriefingScreen activity={activity} />}
       {bottomNav === MobilePageId.Manage && <MobileManageScreen activity={activity} startRemove={startRemove} startChangeState={startChangeState} />}
-      <Box sx={{ height: 40 }}>{/* filler for bottomnav */}</Box>
+      <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
-        {isActive(activity) && (
+        {showStatusUpdater && (
           <Box padding={2}>
             <StatusUpdater fullWidth={true} activity={activity} current={myParticipation?.timeline[0].status} />
           </Box>

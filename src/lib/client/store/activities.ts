@@ -31,6 +31,7 @@ const activitySliceArgs = {
       .addCase(ActivityActions.reactivate, BasicReducers[ActivityActions.reactivate.type])
       .addCase(ActivityActions.complete, BasicReducers[ActivityActions.complete.type])
       .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type])
+      .addCase(ActivityActions.participantTimelineUpdate, BasicReducers[ActivityActions.participantTimelineUpdate.type])
       .addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type])
       .addCase(ActivityActions.tagParticipant, BasicReducers[ActivityActions.tagParticipant.type]);
   },
