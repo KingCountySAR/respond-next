@@ -50,22 +50,20 @@ function ParticipantUpdateTile({ record, onChange }: { record: EnrichedParticipa
           </IconButton>
         </Stack>
       ) : (
-        <>
-          <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
-            <Stack flexGrow={1} direction="row" justifyContent="space-between">
-              <Stack alignItems="flex-start">
-                <Typography variant="h6">{record.statusText}</Typography>
-                <Typography variant="caption">{record.organizationName}</Typography>
-              </Stack>
-              <Stack alignItems="flex-end">
-                <Typography sx={{ ml: 2 }} variant="h6">
-                  {formatDate(time, 'HHmm')}
-                </Typography>
-                <Typography variant="caption">{formatDate(time, 'MM/dd')}</Typography>
-              </Stack>
+        <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
+          <Stack flexGrow={1} direction="row" justifyContent="space-between">
+            <Stack alignItems="flex-start">
+              <Typography variant="h6">{record.statusText}</Typography>
+              <Typography variant="caption">{record.organizationName}</Typography>
             </Stack>
-          </ButtonBase>
-        </>
+            <Stack alignItems="flex-end">
+              <Typography sx={{ ml: 2 }} variant="h6">
+                {formatDate(time, 'HHmm')}
+              </Typography>
+              <Typography variant="caption">{formatDate(time, 'MM/dd')}</Typography>
+            </Stack>
+          </Stack>
+        </ButtonBase>
       )}
     </Box>
   );
