@@ -10,7 +10,7 @@ import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
 import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
-import { formatTimeAsString, TextBoxDateFormat } from '../RelativeTimeText';
+import { formatTime, TextBoxDateFormat } from '../RelativeTimeText';
 
 interface FormValues {
   miles: number | '';
