@@ -2,7 +2,7 @@ import { Box, Breadcrumbs, Typography } from '@mui/material';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { OutputTime } from '@respond/components/OutputForm';
+import { RelativeTimeText } from '@respond/components/RelativeTimeText';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { apiFetch } from '@respond/lib/api';
 import { getActivityPath } from '@respond/lib/client/store/activities';
@@ -26,7 +26,7 @@ function ActivityList({ activities }: { activities: Activity[] }) {
               <Link href={getActivityPath(a)}>{a.title}</Link>
             </td>
             <td>
-              <OutputTime label="" time={a.startTime}></OutputTime>
+              <RelativeTimeText time={a.startTime}></RelativeTimeText>
             </td>
           </tr>
         ))}

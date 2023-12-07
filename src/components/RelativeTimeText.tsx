@@ -36,12 +36,12 @@ export enum RelativeStyle {
 
 export interface RelativeTimeTextProps {
   time: number;
-  baseTime: number;
+  baseTime?: number;
   lowercase?: boolean;
-  relative: RelativeStyle;
+  relative?: RelativeStyle;
 }
 
-export const formatTimeAsString = (time: number, baseTime: number, useRelative: boolean, lowercase?: boolean) => {
+export const formatTime = (time: number, baseTime: number = new Date().getTime(), useRelative?: boolean, lowercase?: boolean) => {
   let text;
   if (useRelative) {
     text = formatRelative(time, baseTime, { locale });
@@ -54,7 +54,7 @@ export const formatTimeAsString = (time: number, baseTime: number, useRelative: 
   return text;
 };
 
-export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: RelativeTimeTextProps) => {
+export const RelativeTimeText = ({ time, baseTime = new Date().getTime(), relative = RelativeStyle.Absolute, lowercase }: RelativeTimeTextProps) => {
   let useRelativeDefault = relative == RelativeStyle.Relative;
   if (relative == RelativeStyle.Auto && time) {
     // If the time is within 1 day of today, use relative time.
@@ -63,7 +63,7 @@ export const RelativeTimeText = ({ time, baseTime, relative, lowercase }: Relati
   }
 
   const [useRelative, setUseRelative] = React.useState<boolean>(useRelativeDefault);
-  const text = formatTimeAsString(time, baseTime, useRelative, lowercase);
+  const text = formatTime(time, baseTime, useRelative, lowercase);
 
   return (
     <span onClick={() => setUseRelative(!useRelative)} style={{ cursor: 'pointer' }}>

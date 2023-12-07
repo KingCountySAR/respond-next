@@ -6,6 +6,8 @@ import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputFo
 import { getActiveParticipants, getActivityStatus, isFuture } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType, ParticipantStatus } from '@respond/types/activity';
 
+import { RelativeStyle } from '../RelativeTimeText';
+
 interface ActivityStackProps {
   type: ActivityType;
   activities: Activity[];
@@ -25,7 +27,7 @@ export function ActivityStack({ type, activities, showOrgs, statusMap }: Activit
             </Box>
             <Box>
               <OutputText label={a.isMission ? 'Mission Status' : 'Status'} value={getActivityStatus(a)} />
-              {isFuture(a.startTime) && <OutputTime label="Start Time" time={a.startTime}></OutputTime>}
+              {isFuture(a.startTime) && <OutputTime label="Start Time" time={a.startTime} relative={RelativeStyle.Auto}></OutputTime>}
               <OutputText label="Active Responders" value={getActiveParticipants(a).length.toString()} />
             </Box>
           </OutputForm>

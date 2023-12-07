@@ -5,6 +5,8 @@ import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputFo
 import { getActivityStatus } from '@respond/lib/client/store/activities';
 import { Activity, isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus } from '@respond/types/activity';
 
+import { RelativeStyle } from '../RelativeTimeText';
+
 export function ManagerPanel({ activity, sx }: { activity: Activity; sx?: SxProps }) {
   const reduceActive = (count: number, participant: Participant) => {
     return count + (isParticpantActive(participant?.timeline[0].status) ? 1 : 0);
@@ -32,7 +34,7 @@ export function ManagerPanel({ activity, sx }: { activity: Activity; sx?: SxProp
         <OutputText label="Standby" value={Object.values(activity.participants).reduce(reduceStandby, 0).toString()}></OutputText>
         <OutputText label="Responding" value={Object.values(activity.participants).reduce(reduceSignedIn, 0).toString()}></OutputText>
         <OutputText label="Checked-In" value={Object.values(activity.participants).reduce(reduceCheckedIn, 0).toString()}></OutputText>
-        <OutputTime label="Start Time" time={activity.startTime}></OutputTime>
+        <OutputTime label="Start Time" time={activity.startTime} relative={RelativeStyle.Auto}></OutputTime>
         <OutputTime label="End Time" time={activity.endTime}></OutputTime>
       </OutputForm>
     </Paper>

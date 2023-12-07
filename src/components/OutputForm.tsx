@@ -138,7 +138,7 @@ export const OutputLink = ({ label, value, href, target }: { label: string; valu
   );
 };
 
-export const OutputTime = ({ label, time, relative = RelativeStyle.Auto }: { label: string; time?: number; relative?: RelativeStyle }) => {
+export const OutputTime = ({ label, time, relative = RelativeStyle.Absolute }: { label: string; time?: number; relative?: RelativeStyle }) => {
   const [nowTime, setNowTime] = useState<number>(new Date().getTime());
 
   useEffect(() => {
