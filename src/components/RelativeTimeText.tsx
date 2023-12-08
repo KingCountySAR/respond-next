@@ -1,4 +1,5 @@
 import { format as formatDate, formatRelative, Locale } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import * as React from 'react';
 
@@ -24,27 +25,48 @@ const locale: Locale = {
   formatRelative: (token) => formatRelativeLocale[token],
 };
 
-export interface RelativeTimeTextProps {
-  time: number;
-  baseTime: number;
-  lowercase?: boolean;
-  defaultToTime?: boolean;
+export const AbsoluteDateFormat: string = 'EEE yyyy-MM-dd HHmm';
+export const TextBoxDateFormat: string = "yyyy-MM-dd'T'HH:mm";
+
+export enum RelativeStyle {
+  Relative,
+  Auto,
+  Absolute,
 }
 
-export const RelativeTimeText = ({ time, baseTime, defaultToTime, lowercase }: RelativeTimeTextProps) => {
-  const [useRelative, setUseRelative] = React.useState<boolean>(!(defaultToTime ?? false));
+export interface RelativeTimeTextProps {
+  time: number;
+  baseTime?: number;
+  lowercase?: boolean;
+  relative?: RelativeStyle;
+}
+
+export const formatTime = (time: number, baseTime: number = new Date().getTime(), isRelative?: boolean, lowercase?: boolean) => {
   let text;
-  if (useRelative) {
+  if (isRelative) {
     text = formatRelative(time, baseTime, { locale });
     if (!lowercase) {
       text = text[0].toLocaleUpperCase() + text.substring(1);
     }
   } else {
-    text = formatDate(time, 'EEE yyyy-MM-dd HHmm');
+    text = formatDate(time, AbsoluteDateFormat);
+  }
+  return text;
+};
+
+export const RelativeTimeText = ({ time, baseTime = new Date().getTime(), relative = RelativeStyle.Absolute, lowercase }: RelativeTimeTextProps) => {
+  let isRelativeDefault = relative == RelativeStyle.Relative;
+  if (relative == RelativeStyle.Auto && time) {
+    // If the time is within 1 day of today, use relative time.
+    const dateDiff = differenceInCalendarDays(new Date(), new Date(time));
+    if (Math.abs(dateDiff) <= 1) isRelativeDefault = true;
   }
 
+  const [isRelative, setIsRelative] = React.useState<boolean>(isRelativeDefault);
+  const text = formatTime(time, baseTime, isRelative, lowercase);
+
   return (
-    <span onClick={() => setUseRelative(!useRelative)} style={{ cursor: 'pointer' }}>
+    <span onClick={() => setIsRelative(!isRelative)} style={{ cursor: 'pointer' }}>
       {text}
     </span>
   );

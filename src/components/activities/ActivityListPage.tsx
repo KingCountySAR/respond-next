@@ -1,8 +1,8 @@
 import { Box, Breadcrumbs, Typography } from '@mui/material';
-import { format as formatDate } from 'date-fns';
 import Link from 'next/link';
 import * as React from 'react';
 
+import { RelativeTimeText } from '@respond/components/RelativeTimeText';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { apiFetch } from '@respond/lib/api';
 import { getActivityPath } from '@respond/lib/client/store/activities';
@@ -25,7 +25,9 @@ function ActivityList({ activities }: { activities: Activity[] }) {
             <td style={{ paddingRight: '1em' }}>
               <Link href={getActivityPath(a)}>{a.title}</Link>
             </td>
-            <td>{formatDate(a.startTime, 'yyyy-MM-dd EEE HHmm')}</td>
+            <td>
+              <RelativeTimeText time={a.startTime}></RelativeTimeText>
+            </td>
           </tr>
         ))}
       </tbody>

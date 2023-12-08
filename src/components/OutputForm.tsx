@@ -4,7 +4,7 @@ import { Box, Grid, Typography } from '@mui/material';
 import Link from 'next/link';
 import React, { Children, ReactNode, useEffect, useRef, useState } from 'react';
 
-import { RelativeTimeText } from './RelativeTimeText';
+import { RelativeStyle, RelativeTimeText } from './RelativeTimeText';
 
 const DEFAULT_LINE_HEIGHT_PIXELS = 24;
 
@@ -138,7 +138,7 @@ export const OutputLink = ({ label, value, href, target }: { label: string; valu
   );
 };
 
-export const OutputTime = ({ label, time, relative }: { label: string; time?: number; relative?: boolean }) => {
+export const OutputTime = ({ label, time, relative = RelativeStyle.Absolute }: { label: string; time?: number; relative?: RelativeStyle }) => {
   const [nowTime, setNowTime] = useState<number>(new Date().getTime());
 
   useEffect(() => {
@@ -148,5 +148,5 @@ export const OutputTime = ({ label, time, relative }: { label: string; time?: nu
     };
   });
 
-  return <OutputField label={label}>{time && <RelativeTimeText time={time} baseTime={nowTime} defaultToTime={!relative} />}</OutputField>;
+  return <OutputField label={label}>{time && <RelativeTimeText time={time} baseTime={nowTime} relative={relative} />}</OutputField>;
 };
