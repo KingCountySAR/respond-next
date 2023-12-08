@@ -41,9 +41,9 @@ export interface RelativeTimeTextProps {
   relative?: RelativeStyle;
 }
 
-export const formatTime = (time: number, baseTime: number = new Date().getTime(), useRelative?: boolean, lowercase?: boolean) => {
+export const formatTime = (time: number, baseTime: number = new Date().getTime(), isRelative?: boolean, lowercase?: boolean) => {
   let text;
-  if (useRelative) {
+  if (isRelative) {
     text = formatRelative(time, baseTime, { locale });
     if (!lowercase) {
       text = text[0].toLocaleUpperCase() + text.substring(1);
@@ -55,18 +55,18 @@ export const formatTime = (time: number, baseTime: number = new Date().getTime()
 };
 
 export const RelativeTimeText = ({ time, baseTime = new Date().getTime(), relative = RelativeStyle.Absolute, lowercase }: RelativeTimeTextProps) => {
-  let useRelativeDefault = relative == RelativeStyle.Relative;
+  let isRelativeDefault = relative == RelativeStyle.Relative;
   if (relative == RelativeStyle.Auto && time) {
     // If the time is within 1 day of today, use relative time.
     const dateDiff = differenceInCalendarDays(new Date(), new Date(time));
-    if (Math.abs(dateDiff) <= 1) useRelativeDefault = true;
+    if (Math.abs(dateDiff) <= 1) isRelativeDefault = true;
   }
 
-  const [useRelative, setUseRelative] = React.useState<boolean>(useRelativeDefault);
-  const text = formatTime(time, baseTime, useRelative, lowercase);
+  const [isRelative, setIsRelative] = React.useState<boolean>(isRelativeDefault);
+  const text = formatTime(time, baseTime, isRelative, lowercase);
 
   return (
-    <span onClick={() => setUseRelative(!useRelative)} style={{ cursor: 'pointer' }}>
+    <span onClick={() => setIsRelative(!isRelative)} style={{ cursor: 'pointer' }}>
       {text}
     </span>
   );
