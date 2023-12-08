@@ -17,7 +17,7 @@ interface Group {
   title: string;
 }
 
-interface D4HMemberResponse {
+export interface D4HMemberResponse {
   id: number;
   ref?: string;
   name: string;
@@ -75,6 +75,21 @@ export default class D4HMembersProvider implements MemberProvider {
         },
       });
       return await response.arrayBuffer();
+    }
+  }
+
+  async findMembersByName(query: string) {
+    console.log('!!! find members by', query);
+    await this.initialize();
+    for (const token in this.tokenFetchInfo) {
+      const response = await (
+        await fetch(`https://api.d4h.org/v2/team/members?status=Operational&name=${query}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      ).json();
+      return response?.data;
     }
   }
 

@@ -1,5 +1,7 @@
 import { MemberProviderType } from '@respond/types/data/MemberProviderType';
 
+import { D4HMemberResponse } from './d4hMembersProvider';
+
 export interface MemberInfo {
   id: string;
   groups: string[];
@@ -14,6 +16,7 @@ export interface MemberProvider {
   getMemberInfo<TOptions = undefined>(organizationId: string, authPayload: MemberAuthInfo, providerOptions: TOptions): Promise<MemberInfo | undefined>;
   getMemberInfoById(memberId: string): Promise<MemberInfo | undefined>;
   getMemberPhoto(memberId: string): Promise<ArrayBuffer | undefined>;
+  findMembersByName(query: string): Promise<Array<D4HMemberResponse> | undefined>;
   refresh(force?: boolean): Promise<{ ok: boolean; runtime: number; cached?: boolean }>;
 }
 
