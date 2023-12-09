@@ -11,7 +11,9 @@ export interface AsyncAutocompleteOption {
   value: any;
 }
 
-export default function AsyncAutocomplete({ label, onInputChange, onChange }: { label: string; onInputChange: (value: string) => Promise<AsyncAutocompleteOption[]>; onChange: (value: AsyncAutocompleteOption) => void }) {
+type TextFieldVariant = 'filled' | 'outlined' | 'standard';
+
+export default function AsyncAutocomplete({ label, variant, onInputChange, onChange }: { label: string; variant: TextFieldVariant; onInputChange: (value: string) => Promise<AsyncAutocompleteOption[]>; onChange: (value: AsyncAutocompleteOption) => void }) {
   const [open, setOpen] = React.useState(false);
   const [options, setOptions] = React.useState<readonly AsyncAutocompleteOption[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -46,6 +48,7 @@ export default function AsyncAutocomplete({ label, onInputChange, onChange }: { 
           onChange(value);
         }
       }}
+      freeSolo={true}
       isOptionEqualToValue={(option, value) => option.label === value.label}
       getOptionLabel={(option) => option.label}
       renderOption={(props, option) => {
@@ -61,6 +64,7 @@ export default function AsyncAutocomplete({ label, onInputChange, onChange }: { 
         <TextField
           {...params}
           label={label}
+          variant={variant ?? 'outlined'}
           InputProps={{
             ...params.InputProps,
             endAdornment: (
