@@ -27,5 +27,6 @@ export async function GET(_request: NextRequest, { params }: { params: { query: 
   if (!list) {
     return NextResponse.json({ status: 'not found' }, { status: 404 });
   }
-  return list;
+
+  return NextResponse.json({ list });
 }

@@ -1,16 +1,20 @@
 'use client';
 
-import { Button, Stack, TextField } from '@mui/material';
+import { Box, Button, Stack, TextField } from '@mui/material';
 import { useState } from 'react';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 
 export default function ViewRoster() {
   const [query, setQuery] = useState('');
+  const [list, setList] = useState<any[]>([]);
+
   const handleFindMembers = async () => {
-    fetch(`/api/v1/members/find/${query}`)
-      .then((res) => console.log('!!!', res))
-      .catch((err) => console.error('!!!', err));
+    const response = await fetch(`/api/v1/members/find/${query}`);
+    const json: { list: any[] } = await response.json();
+    setList(json.list);
+    // .then((res) => console.log('!!!', res))
+    // .catch((err) => console.error('!!!', err));
   };
   return (
     <ToolbarPage>
@@ -20,6 +24,9 @@ export default function ViewRoster() {
           Find Members
         </Button>
       </Stack>
+      {list.map((l) => (
+        <Box key={l.id}>{l.name}</Box>
+      ))}
     </ToolbarPage>
   );
 }
