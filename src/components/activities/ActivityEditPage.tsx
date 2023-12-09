@@ -12,6 +12,8 @@ import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
+import LocationInput from '../LocationInput';
+
 type FormDateTime = { date: string; time: string };
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
 
@@ -168,6 +170,10 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     <ToolbarPage>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={1}>
+          <Grid item xs={12}>
+            <LocationInput />
+          </Grid>
+
           <Grid item xs={12}>
             <Controller
               name="title"

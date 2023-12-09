@@ -1,6 +1,7 @@
 // SEE https://github.com/vercel/next.js/tree/canary/examples/with-mongodb
 import { MongoClient } from 'mongodb';
 
+import { LOCATION_COLLECTION, LocationDoc } from '@respond/types/data/locationDoc';
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
 
 if (!process.env.MONGODB_URI) {
@@ -57,4 +58,13 @@ export async function getRelatedOrgIds(orgId: string): Promise<string[]> {
 
   const myOrgIds = [userOrg.id, ...(userOrg.partners?.map((p) => p.id) ?? [])];
   return myOrgIds;
+}
+
+export async function getLocationsByName(query: string) {
+  const mongo = await clientPromise;
+  const locations = mongo
+    .db()
+    .collection<LocationDoc>(LOCATION_COLLECTION)
+    .find({ name: { $regex: `${query}` } });
+  return locations.toArray();
 }

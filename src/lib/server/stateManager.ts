@@ -1,6 +1,6 @@
 import produce from 'immer';
 
-import mongoPromise, { getRelatedOrgIds } from '@respond/lib/server/mongodb';
+import mongoPromise, { getLocationsByName, getRelatedOrgIds } from '@respond/lib/server/mongodb';
 import type { ActivityAction, ActivityState } from '@respond/lib/state';
 import { BasicReducers } from '@respond/lib/state';
 import type { Activity } from '@respond/types/activity';
@@ -49,6 +49,10 @@ export class StateManager {
 
   async getAllActivities() {
     return this.activityState.list;
+  }
+
+  async findLocations(query: string) {
+    return await getLocationsByName(query);
   }
 
   async handleIncomingAction(action: ActivityAction, reporterId: string, auth: { userId: string; email: string }) {
