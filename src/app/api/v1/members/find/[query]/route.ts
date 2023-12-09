@@ -5,7 +5,6 @@ import * as Mongo from '@respond/lib/server/mongodb';
 import { getServices } from '@respond/lib/server/services';
 
 export async function GET(_request: NextRequest, { params }: { params: { query: string } }) {
-  console.log('!!! test');
   const user = userFromAuth(await getCookieAuth());
   if (user == null) {
     return NextResponse.json({ status: 'not authenticated' }, { status: 401 });
@@ -27,5 +26,5 @@ export async function GET(_request: NextRequest, { params }: { params: { query: 
   if (!list) {
     return NextResponse.json({ status: 'not found' }, { status: 404 });
   }
-  return list;
+  return NextResponse.json({ status: 'ok', data: list });
 }

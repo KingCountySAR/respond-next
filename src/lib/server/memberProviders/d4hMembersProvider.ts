@@ -79,17 +79,17 @@ export default class D4HMembersProvider implements MemberProvider {
   }
 
   async findMembersByName(query: string) {
-    console.log('!!! find members by', query);
     await this.initialize();
     for (const token in this.tokenFetchInfo) {
-      const response = await (
-        await fetch(`https://api.d4h.org/v2/team/members?status=Operational&name=${query}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-      ).json();
-      return response?.data;
+      return (
+        await (
+          await fetch(`https://api.d4h.org/v2/team/members?status=Operational&name=${query}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        ).json()
+      )?.data as D4HMemberResponse[];
     }
   }
 
