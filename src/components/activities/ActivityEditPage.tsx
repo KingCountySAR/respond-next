@@ -1,18 +1,23 @@
 'use client';
-import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
+import { Autocomplete, Box, Button, CircularProgress, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
 import { parse as parseDate } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
+import { apiFetch } from '@respond/lib/api';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
 import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
+import { LocationDoc } from '@respond/types/data/locationDoc';
+import { createNewLocation } from '@respond/types/location';
 
-import LocationInput from '../LocationInput';
+const getLocations = async () => {
+  return (await apiFetch<{ data: LocationDoc[] }>(`/api/v1/locations`)).data;
+};
 
 type FormDateTime = { date: string; time: string };
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
@@ -78,6 +83,19 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
   const ownerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
   const isNew = !selectedActivity;
+
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationOptions, setLocationOptions] = useState<LocationDoc[]>([]);
+  const loadingLocations = locationOpen && locationOptions.length === 0;
+
+  useEffect(() => {
+    if (!loadingLocations) {
+      return undefined;
+    }
+    getLocations().then((options) => {
+      setLocationOptions(options);
+    });
+  }, [loadingLocations]);
 
   let activity: Activity;
   if (isNew) {
@@ -166,14 +184,15 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     router.push(`/${activityType === 'missions' ? 'mission' : 'event'}/${updated.id}`);
   };
 
+  // TODO: Attempt to Parse Lat/Lon and/or Addresses
+  const parseLocation = (value: string) => {
+    return createNewLocation(value);
+  };
+
   return (
     <ToolbarPage>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={1}>
-          <Grid item xs={12}>
-            <LocationInput />
-          </Grid>
-
           <Grid item xs={12}>
             <Controller
               name="title"
@@ -189,11 +208,49 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
           <Grid item xs={12}>
             <Controller
-              name="location.title"
+              name="location"
               control={control}
-              render={({ field }) => (
+              render={({ field: { onChange } }) => (
                 <FormControl fullWidth error={!!errors.location?.message}>
-                  <TextField {...field} variant="filled" label="Location" required />
+                  <Autocomplete
+                    open={locationOpen}
+                    onOpen={() => setLocationOpen(true)}
+                    onClose={() => setLocationOpen(false)}
+                    disablePortal
+                    freeSolo={true}
+                    options={locationOptions}
+                    onChange={(event, value) => onChange(typeof value === 'string' ? { title: value } : value)}
+                    onInputChange={(event, value) => onChange(parseLocation(value))}
+                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.title)}
+                    value={activity.location}
+                    renderOption={(props, option) => {
+                      return (
+                        <li {...props} key={option.title}>
+                          {option.title}
+                        </li>
+                      );
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        variant="filled"
+                        label="Location"
+                        required
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {loadingLocations ? <CircularProgress color="inherit" size={20} /> : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+
+                  {/*<LocationInput {...field} onChange={field.onChange} variant="filled" label="Location" required />*/}
+                  {/*<TextField {...field} variant="filled" label="Location" required />*/}
                   <FormHelperText>{errors.location?.message}</FormHelperText>
                 </FormControl>
               )}

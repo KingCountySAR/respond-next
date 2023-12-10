@@ -2,6 +2,8 @@ import { v4 as uuid } from 'uuid';
 
 import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
 
+import { Location } from './location';
+
 const pickSafely = <ObjectType>(keys: readonly `${string & keyof ObjectType}`[]) => {
   return <Input extends ObjectType>(object: Input) => {
     const resultObject: ObjectType = {} as unknown as ObjectType;
@@ -122,7 +124,7 @@ export interface Activity {
   idNumber: string;
   title: string;
   description: string;
-  location: { title: string };
+  location: Location;
   mapId: string;
   ownerOrgId: string;
   isMission: boolean;

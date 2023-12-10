@@ -60,11 +60,8 @@ export async function getRelatedOrgIds(orgId: string): Promise<string[]> {
   return myOrgIds;
 }
 
-export async function getLocationsByName(query: string) {
+export async function getLocations() {
   const mongo = await clientPromise;
-  const locations = mongo
-    .db()
-    .collection<LocationDoc>(LOCATION_COLLECTION)
-    .find({ name: { $regex: `${query}` } });
+  const locations = mongo.db().collection<LocationDoc>(LOCATION_COLLECTION).find();
   return locations.toArray();
 }

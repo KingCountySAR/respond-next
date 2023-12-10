@@ -1,7 +1,20 @@
+import { v4 as uuid } from 'uuid';
+
 export interface Location {
-  id: string;
-  name: string;
+  id?: string;
+  title: string;
   lat?: string;
   lon?: string;
   address?: string;
 }
+
+export const createNewLocation = (title: string, lat?: string, lon?: string, address?: string) => {
+  return {
+    _id: '',
+    id: uuid(),
+    title: title,
+    lat: lat ?? '',
+    lon: lon ?? '',
+    address: address ?? '',
+  };
+};
