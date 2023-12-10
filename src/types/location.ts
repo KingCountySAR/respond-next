@@ -1,7 +1,5 @@
 import { v4 as uuid } from 'uuid';
 
-export const LOCATION_COLLECTION = 'locations';
-
 export interface Location {
   id?: string;
   title: string;

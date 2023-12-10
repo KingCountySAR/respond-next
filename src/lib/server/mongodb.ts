@@ -2,7 +2,9 @@
 import { MongoClient } from 'mongodb';
 
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
-import { Location, LOCATION_COLLECTION } from '@respond/types/location';
+import { Location } from '@respond/types/location';
+
+export const LOCATION_COLLECTION = 'locations';
 
 if (!process.env.MONGODB_URI) {
   throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
@@ -64,4 +66,10 @@ export async function getLocations() {
   const mongo = await clientPromise;
   const locations = mongo.db().collection<Location>(LOCATION_COLLECTION).find();
   return locations.toArray();
+}
+
+export async function createLocation(location: Location) {
+  const mongo = await clientPromise;
+  const result = await mongo.db().collection(LOCATION_COLLECTION).insertOne(location);
+  return result;
 }
