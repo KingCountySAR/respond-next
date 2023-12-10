@@ -1,5 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
+export const LOCATION_COLLECTION = 'locations';
+
 export interface Location {
   id?: string;
   title: string;
@@ -10,7 +12,6 @@ export interface Location {
 
 export const createNewLocation = (title: string, lat?: string, lon?: string, address?: string) => {
   return {
-    _id: '',
     id: uuid(),
     title: title,
     lat: lat ?? '',

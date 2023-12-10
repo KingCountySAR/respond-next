@@ -12,11 +12,10 @@ import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptio
 import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
-import { LocationDoc } from '@respond/types/data/locationDoc';
-import { createNewLocation } from '@respond/types/location';
+import { createNewLocation, Location } from '@respond/types/location';
 
 const getLocations = async () => {
-  return (await apiFetch<{ data: LocationDoc[] }>(`/api/v1/locations`)).data;
+  return (await apiFetch<{ data: Location[] }>(`/api/v1/locations`)).data;
 };
 
 type FormDateTime = { date: string; time: string };
@@ -85,7 +84,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const isNew = !selectedActivity;
 
   const [locationOpen, setLocationOpen] = useState(false);
-  const [locationOptions, setLocationOptions] = useState<LocationDoc[]>([]);
+  const [locationOptions, setLocationOptions] = useState<Location[]>([]);
   const loadingLocations = locationOpen && locationOptions.length === 0;
 
   useEffect(() => {

@@ -1,8 +1,8 @@
 // SEE https://github.com/vercel/next.js/tree/canary/examples/with-mongodb
 import { MongoClient } from 'mongodb';
 
-import { LOCATION_COLLECTION, LocationDoc } from '@respond/types/data/locationDoc';
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
+import { Location, LOCATION_COLLECTION } from '@respond/types/location';
 
 if (!process.env.MONGODB_URI) {
   throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
@@ -62,6 +62,6 @@ export async function getRelatedOrgIds(orgId: string): Promise<string[]> {
 
 export async function getLocations() {
   const mongo = await clientPromise;
-  const locations = mongo.db().collection<LocationDoc>(LOCATION_COLLECTION).find();
+  const locations = mongo.db().collection<Location>(LOCATION_COLLECTION).find();
   return locations.toArray();
 }
