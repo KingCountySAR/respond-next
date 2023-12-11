@@ -199,9 +199,9 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
             <Controller
               name="location"
               control={control}
-              render={({ field: { onChange } }) => (
+              render={({ field: { value, onChange } }) => (
                 <FormControl fullWidth error={!!errors.location?.message}>
-                  <LocationAutocomplete value={activity.location} onChange={onChange} />
+                  <LocationAutocomplete value={value} onChange={onChange} />
                   <FormHelperText>{errors.location?.message}</FormHelperText>
                 </FormControl>
               )}
@@ -341,10 +341,10 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       <EditLocationDialog
         open={showCreateLocation}
         onSubmit={(location) => {
-          console.log(location); // TODO: update the form.
-          setValue('location', location, { shouldTouch: true });
+          setValue('location', location, { shouldDirty: true, shouldTouch: true }); // TODO: This updates the value in the controller but does not re-render
           setShowCreateLocation(false);
           setToastSuccess('Location Created');
+          setShowSuccess(true);
         }}
         onClose={() => setShowCreateLocation(false)}
       />
