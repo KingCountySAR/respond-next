@@ -124,12 +124,7 @@ export function EditLocationDialog({ open, onClose }: { open: boolean; onClose: 
     formState: { errors },
   } = useForm<Location>({
     resolver: editLocationResolver,
-    defaultValues: {
-      title: '',
-      address: '',
-      lat: '',
-      lon: '',
-    },
+    defaultValues: createNewLocation(''),
   });
 
   const onSubmit: SubmitHandler<Location> = (data) => {
@@ -137,12 +132,7 @@ export function EditLocationDialog({ open, onClose }: { open: boolean; onClose: 
   };
 
   return (
-    <form
-      onSubmit={() => {
-        console.log('submit');
-        handleSubmit(onSubmit);
-      }}
-    >
+    <form onSubmit={handleSubmit(onSubmit)}>
       <Dialog open={open} onClose={onClose}>
         <DialogTitle style={{ borderBottom: 'solid 4px ' }} alignItems="center" justifyContent="space-between" display="flex">
           <Box>Create Location</Box>
@@ -203,7 +193,7 @@ export function EditLocationDialog({ open, onClose }: { open: boolean; onClose: 
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="contained" type="submit">
+          <Button type="submit" variant="contained">
             Save
           </Button>
         </DialogActions>
