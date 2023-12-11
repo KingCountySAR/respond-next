@@ -1,22 +1,18 @@
 'use client';
-import { Autocomplete, Box, Button, CircularProgress, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
+import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
 import { parse as parseDate } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { apiFetch } from '@respond/lib/api';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
 import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
-import { createNewLocation, Location } from '@respond/types/location';
 
-const getLocations = async () => {
-  return (await apiFetch<{ data: Location[] }>(`/api/v1/locations`)).data;
-};
+import { EditLocationDialog, LocationAutocomplete } from '../Location';
 
 type FormDateTime = { date: string; time: string };
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
@@ -79,22 +75,11 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const org = useAppSelector((state) => state.organization.mine);
   const selectedActivity = useAppSelector(buildActivitySelector(activityId));
 
+  const [showCreateLocation, setShowCreateLocation] = useState(false);
+
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
   const ownerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
   const isNew = !selectedActivity;
-
-  const [locationOpen, setLocationOpen] = useState(false);
-  const [locationOptions, setLocationOptions] = useState<Location[]>([]);
-  const loadingLocations = locationOpen && locationOptions.length === 0;
-
-  useEffect(() => {
-    if (!loadingLocations) {
-      return undefined;
-    }
-    getLocations().then((options) => {
-      setLocationOptions(options);
-    });
-  }, [loadingLocations]);
 
   let activity: Activity;
   if (isNew) {
@@ -183,15 +168,10 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     router.push(`/${activityType === 'missions' ? 'mission' : 'event'}/${updated.id}`);
   };
 
-  // TODO: Attempt to Parse Lat/Lon and/or Addresses
-  const parseLocation = (value: string) => {
-    return createNewLocation(value);
-  };
-
   return (
     <ToolbarPage>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Grid container spacing={1}>
+        <Grid container spacing={1} alignItems="center">
           <Grid item xs={12}>
             <Controller
               name="title"
@@ -205,55 +185,22 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
             />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={8}>
             <Controller
               name="location"
               control={control}
               render={({ field: { onChange } }) => (
                 <FormControl fullWidth error={!!errors.location?.message}>
-                  <Autocomplete
-                    open={locationOpen}
-                    onOpen={() => setLocationOpen(true)}
-                    onClose={() => setLocationOpen(false)}
-                    disablePortal
-                    freeSolo={true}
-                    options={locationOptions}
-                    onChange={(event, value) => onChange(typeof value === 'string' ? { title: value } : value)}
-                    onInputChange={(event, value) => onChange(parseLocation(value))}
-                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.title)}
-                    value={activity.location}
-                    renderOption={(props, option) => {
-                      return (
-                        <li {...props} key={option.title}>
-                          {option.title}
-                        </li>
-                      );
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        variant="filled"
-                        label="Location"
-                        required
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {loadingLocations ? <CircularProgress color="inherit" size={20} /> : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-
-                  {/*<LocationInput {...field} onChange={field.onChange} variant="filled" label="Location" required />*/}
-                  {/*<TextField {...field} variant="filled" label="Location" required />*/}
+                  <LocationAutocomplete value={activity.location} onChange={onChange} />
                   <FormHelperText>{errors.location?.message}</FormHelperText>
                 </FormControl>
               )}
             />
+          </Grid>
+          <Grid item xs={12} sm={4} textAlign="center">
+            <Button fullWidth variant="outlined" onClick={() => setShowCreateLocation(true)}>
+              New Location
+            </Button>
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -381,6 +328,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
           </Grid>
         </Grid>
       </form>
+      <EditLocationDialog open={showCreateLocation} onClose={() => setShowCreateLocation(false)} />
     </ToolbarPage>
   );
 };
