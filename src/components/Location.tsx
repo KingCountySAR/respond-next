@@ -1,14 +1,17 @@
 import { Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
-import { apiFetch } from '@respond/lib/api';
+import { apiFetch, apiPostBody } from '@respond/lib/api';
 import { createNewLocation, Location } from '@respond/types/location';
 
 import { FormControl, FormHelperText } from './Material';
 
 const getLocations = async () => {
   return (await apiFetch<{ data: Location[] }>(`/api/v1/locations`)).data;
+};
+
+const createLocation = async (location: Location) => {
+  return await apiPostBody<Location, Response>(`/api/v1/locations/create`, location);
 };
 
 export function LocationAutocomplete({ value, onChange }: { value?: Location; onChange: (location: Location | null) => void }) {
@@ -79,60 +82,77 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
   );
 }
 
-/**
- * Validation resolver
- * @param values
- * @returns
- */
-const editLocationResolver: Resolver<Location> = async (values) => {
-  console.log('resolving');
-
-  const result: ResolverResult<Location> = {
-    values: values.id ? values : {},
-    errors: {},
-  };
-
-  if (!values.title) {
-    result.errors.title = { type: 'required', message: 'Name is required' };
-  }
-
-  if (values.lat) {
-    if (/[-]?\d{1,2}\.\d+/.test(values.lat)) {
-      result.errors.lat = {
-        type: 'validate',
-        message: 'Latitude must be decimal degrees',
-      };
-    }
-  }
-
-  if (values.lon) {
-    if (/[-]?\d{1,3}\.\d+/.test(values.lon)) {
-      result.errors.lon = {
-        type: 'validate',
-        message: 'Longitude must be decimal degrees',
-      };
-    }
-  }
-
-  return result;
-};
-
-export function EditLocationDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<Location>({
-    resolver: editLocationResolver,
-    defaultValues: createNewLocation(''),
+export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean; onSubmit: (location: Location) => void; onClose: () => void }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    address: '',
+    lat: '',
+    lon: '',
   });
 
-  const onSubmit: SubmitHandler<Location> = (data) => {
-    console.log('huzzah!', data);
+  const [errors, setErrors] = useState({
+    title: '',
+    address: '',
+    lat: '',
+    lon: '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = () => {
+    if (validate()) {
+      return;
+    }
+    const location = { ...createNewLocation(formData.title), ...formData };
+    console.log('send it', location);
+    createLocation(location)
+      .then(() => {
+        onSubmit(location);
+      })
+      .catch((error) => console.error(error))
+      .finally(() => {
+        onClose();
+      });
+  };
+
+  const validate = () => {
+    const newErrors = {
+      title: '',
+      address: '',
+      lat: '',
+      lon: '',
+    };
+
+    if (!formData.title) {
+      newErrors.title = 'Name is required';
+    }
+
+    if (formData.lat) {
+      if (!/[-]?\d{1,2}\.\d+/.test(formData.lat)) {
+        newErrors.lat = 'Latitude must be decimal degrees';
+      } else if (!formData.lon) {
+        newErrors.lon = 'Longitude is required';
+      }
+    }
+
+    if (formData.lon) {
+      if (!/[-]?\d{1,3}\.\d+/.test(formData.lon)) {
+        newErrors.lon = 'Longitude must be decimal degrees';
+      } else if (!formData.lat) {
+        newErrors.lat = 'Longitude is required';
+      }
+    }
+
+    const hasError = Object.values(newErrors).some((error) => !!error);
+    setErrors(newErrors);
+    return hasError;
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <>
       <Dialog open={open} onClose={onClose}>
         <DialogTitle style={{ borderBottom: 'solid 4px ' }} alignItems="center" justifyContent="space-between" display="flex">
           <Box>Create Location</Box>
@@ -141,63 +161,45 @@ export function EditLocationDialog({ open, onClose }: { open: boolean; onClose: 
           <Box padding={2}>
             <Grid container spacing={2} justifyItems="center">
               <Grid item xs={12}>
-                <Controller
-                  name="title"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.title?.message}>
-                      <TextField autoFocus {...field} fullWidth label="Location Name" required></TextField>
-                      <FormHelperText>{errors.title?.message}</FormHelperText>
-                    </FormControl>
-                  )}
-                />
+                <FormControl fullWidth error={!!errors.title}>
+                  <TextField name="title" autoFocus fullWidth label="Location Name" required onChange={handleChange}></TextField>
+                  <FormHelperText>{errors.title}</FormHelperText>
+                </FormControl>
               </Grid>
               <Grid item xs={12}>
-                <Controller
-                  name="address"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.address?.message}>
-                      <TextField {...field} fullWidth label="Address"></TextField>
-                      <FormHelperText>{errors.address?.message}</FormHelperText>
-                    </FormControl>
-                  )}
-                />
+                <FormControl fullWidth error={!!errors.address}>
+                  <TextField name="address" fullWidth label="Address" onChange={handleChange}></TextField>
+                  <FormHelperText>{errors.address}</FormHelperText>
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Controller
-                  name="lat"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.lat?.message}>
-                      <TextField {...field} fullWidth label="Lat (Decimal Degrees)"></TextField>
-                      <FormHelperText>{errors.lat?.message}</FormHelperText>
-                    </FormControl>
-                  )}
-                />
+                <FormControl fullWidth error={!!errors.lat}>
+                  <TextField name="lat" fullWidth label="Lat (Decimal Degrees)" onChange={handleChange}></TextField>
+                  <FormHelperText>{errors.lat}</FormHelperText>
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Controller
-                  name="lon"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.lon?.message}>
-                      <TextField {...field} fullWidth label="Lon (Decimal Degrees)"></TextField>
-                      <FormHelperText>{errors.lon?.message}</FormHelperText>
-                    </FormControl>
-                  )}
-                />
+                <FormControl fullWidth error={!!errors.lon}>
+                  <TextField name="lon" fullWidth label="Lon (Decimal Degrees)" onChange={handleChange}></TextField>
+                  <FormHelperText>{errors.lon}</FormHelperText>
+                </FormControl>
               </Grid>
             </Grid>
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained">
+          <Button
+            onClick={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
+            variant="contained"
+          >
             Save
           </Button>
         </DialogActions>
       </Dialog>
-    </form>
+    </>
   );
 }

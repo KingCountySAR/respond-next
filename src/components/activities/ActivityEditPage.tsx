@@ -1,5 +1,6 @@
 'use client';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
+import Snackbar from '@mui/material/Snackbar';
 import { parse as parseDate } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -13,6 +14,7 @@ import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
 import { EditLocationDialog, LocationAutocomplete } from '../Location';
+import { Alert } from '../Material';
 
 type FormDateTime = { date: string; time: string };
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
@@ -75,6 +77,13 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const org = useAppSelector((state) => state.organization.mine);
   const selectedActivity = useAppSelector(buildActivitySelector(activityId));
 
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [toastSuccess, setToastSuccess] = useState<string>();
+
+  useEffect(() => {
+    setShowSuccess(true);
+  }, [toastSuccess]);
+
   const [showCreateLocation, setShowCreateLocation] = useState(false);
 
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
@@ -104,6 +113,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
     watch,
   } = useForm<ActivityFormValues>({
@@ -328,7 +338,22 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
           </Grid>
         </Grid>
       </form>
-      <EditLocationDialog open={showCreateLocation} onClose={() => setShowCreateLocation(false)} />
+      <EditLocationDialog
+        open={showCreateLocation}
+        onSubmit={(location) => {
+          console.log(location); // TODO: update the form.
+          setValue('location', location, { shouldTouch: true });
+          setShowCreateLocation(false);
+          setToastSuccess('Location Created');
+        }}
+        onClose={() => setShowCreateLocation(false)}
+      />
+
+      <Snackbar open={showSuccess} autoHideDuration={3000} onClose={() => setShowSuccess(false)}>
+        <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
+          {toastSuccess}
+        </Alert>
+      </Snackbar>
     </ToolbarPage>
   );
 };
