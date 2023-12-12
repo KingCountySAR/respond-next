@@ -2,13 +2,17 @@ import { Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions, Dia
 import { useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { LocationActions } from '@respond/lib/client/store/locations';
+import { buildLocationsSelector, LocationActions } from '@respond/lib/client/store/locations';
 import { createNewLocation, Location } from '@respond/types/location';
 
 import { FormControl, FormHelperText } from './Material';
 
 export function LocationAutocomplete({ value, onChange }: { value?: Location; onChange: (location: Location | null) => void }) {
-  const locations = useAppSelector((state) => state.locations.list);
+  const locations = useAppSelector(buildLocationsSelector());
+
+  useEffect(() => {
+    console.log('!!!', locations);
+  }, [locations]);
 
   const [currentValue, setCurrentValue] = useState(value);
   const [locationOpen, setLocationOpen] = useState(false);

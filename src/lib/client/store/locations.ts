@@ -2,6 +2,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { createNewLocation, Location } from '@respond/types/location';
 
+import { RootState } from '.';
+
 export interface LocationsState {
   list: Location[];
 }
@@ -56,3 +58,11 @@ type AllLocationActions = {
   [K in keyof LocationActionsType]: ReturnType<LocationActionsType[K]>;
 };
 export type LocationAction = AllLocationActions[keyof AllLocationActions];
+
+export function buildLocationSelector(id?: string) {
+  return (state: RootState) => (id ? state.locations.list.find((a) => a.id === id) : undefined);
+}
+
+export function buildLocationsSelector() {
+  return (state: RootState) => state.locations.list;
+}

@@ -7,6 +7,7 @@ import type { SocketAuthDoc } from '@respond/types/data/socketAuthDoc';
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@respond/types/syncSocket';
 import type UserAuth from '@respond/types/userAuth';
 
+import { LocationActions } from '../client/store/locations';
 import { ActivityActions } from '../state';
 
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
@@ -83,6 +84,7 @@ export default class SocketManager {
         }
         socket.emit('welcome', socket.id);
         socket.emit('broadcastAction', ActivityActions.reload(await stateManager.getStateForUser(socketAuth.user)), '');
+        socket.emit('broadcastLocationAction', LocationActions.reload(stateManager.getLocationState()), '');
       }
     });
 
@@ -99,7 +101,7 @@ export default class SocketManager {
         // TODO, let user know they aren't authenticated
         return;
       }
-      (await getServices()).stateManager.handleIncomingLoctionAction(action, reporterId, socket.auth);
+      (await getServices()).stateManager.handleIncomingLocationAction(action, reporterId, socket.auth);
     });
   }
 

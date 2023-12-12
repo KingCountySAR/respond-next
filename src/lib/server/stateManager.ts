@@ -20,9 +20,14 @@ export interface ActionListener {
   broadcastAction(action: ActivityAction, toRooms: string[], reporterId: string): void;
 }
 
+export interface LocationActionListener {
+  broadcastAction(action: LocationAction, toRooms: string[], reporterId: string): void;
+}
+
 export class StateManager {
   private listeners: ActionListener[] = [];
   private activityState: ActivityState = { list: [] };
+  private locationListeners: LocationActionListener[] = [];
   private locationsState: LocationsState = { list: [] };
 
   addClient(listener: ActionListener) {
@@ -55,11 +60,15 @@ export class StateManager {
     };
   }
 
+  getLocationState() {
+    return this.locationsState;
+  }
+
   async getAllActivities() {
     return this.activityState.list;
   }
 
-  async handleIncomingLoctionAction(action: LocationAction, reporterId: string, auth: { userId: string; email: string }) {
+  async handleIncomingLocationAction(action: LocationAction, reporterId: string, auth: { userId: string; email: string; organizationId: string }) {
     console.log('stateManager reportAction', action);
 
     const oldLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
@@ -86,6 +95,11 @@ export class StateManager {
       await mongo.db().collection<Location>(LOCATION_COLLECTION).replaceOne({ id: updatedId }, currentLocations[updatedId], {
         upsert: true,
       });
+    }
+
+    const toRooms = [auth.organizationId];
+    for (const listener of this.locationListeners) {
+      listener.broadcastAction(action, toRooms, reporterId);
     }
   }
 

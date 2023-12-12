@@ -35,6 +35,7 @@ export class ClientSync {
 
     this.socket.on('welcome', (id) => this.authenticated(id));
     this.socket.on('broadcastAction', (action, reporterId) => this.handleServerAction(action, reporterId));
+    this.socket.on('broadcastLocationAction', (action, reporterId) => this.handleLocationServerAction(action, reporterId));
     this.dispatch = store.dispatch;
   }
 
@@ -138,6 +139,13 @@ export class ClientSync {
   }
 
   handleServerAction(action: ActivityAction, reporterId: string) {
+    console.log('handleServerAction', reporterId, this.socket.id);
+    if (reporterId === this.socket.id) return;
+    console.log('YAY handleServerAction', action);
+    this.dispatch(action);
+  }
+
+  handleLocationServerAction(action: LocationAction, reporterId: string) {
     console.log('handleServerAction', reporterId, this.socket.id);
     if (reporterId === this.socket.id) return;
     console.log('YAY handleServerAction', action);
