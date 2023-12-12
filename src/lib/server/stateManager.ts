@@ -1,12 +1,13 @@
 import produce from 'immer';
 
-import mongoPromise, { getLocations, getRelatedOrgIds, LOCATION_COLLECTION } from '@respond/lib/server/mongodb';
+import mongoPromise, { getRelatedOrgIds, LOCATION_COLLECTION } from '@respond/lib/server/mongodb';
 import type { ActivityAction, ActivityState } from '@respond/lib/state';
 import { BasicReducers } from '@respond/lib/state';
 import type { Activity } from '@respond/types/activity';
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
 import type UserAuth from '@respond/types/userAuth';
 
+import { Location } from '../../types/location';
 import { LocationAction, LocationsState } from '../client/store/locations';
 import locationsReducer from '../client/store/locations';
 import { ActivityActions, ParticipantUpdateAction } from '../state/activityActions';
@@ -38,8 +39,9 @@ export class StateManager {
     this.activityState = {
       list: allActivities.filter((a) => !a.removeTime),
     };
+    const allLocations = await mongo.db().collection<Location>('locations').find().toArray();
     this.locationsState = {
-      list: await getLocations(),
+      list: allLocations,
     };
   }
 
@@ -55,10 +57,6 @@ export class StateManager {
 
   async getAllActivities() {
     return this.activityState.list;
-  }
-
-  async getAllLocations() {
-    return this.locationsState.list;
   }
 
   async handleIncomingLoctionAction(action: LocationAction, reporterId: string, auth: { userId: string; email: string }) {

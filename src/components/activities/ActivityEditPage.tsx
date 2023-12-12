@@ -338,6 +338,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
           </Grid>
         </Grid>
       </form>
+
       <EditLocationDialog
         open={showCreateLocation}
         onSubmit={(location) => {

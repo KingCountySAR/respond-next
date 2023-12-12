@@ -72,6 +72,7 @@ export class ClientSync {
         effect: (action, _listenerApi) => {
           console.log('ACTING ON SYNC');
           this.handleLocalAction(action as ActivityAction);
+          this.handleLocalLocationAction(action as LocationAction);
         },
       }),
     );

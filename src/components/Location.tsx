@@ -1,33 +1,18 @@
 import { Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 
-import { apiFetch, apiPostBody } from '@respond/lib/api';
+import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
+import { LocationActions } from '@respond/lib/client/store/locations';
 import { createNewLocation, Location } from '@respond/types/location';
 
 import { FormControl, FormHelperText } from './Material';
 
-const getLocations = async () => {
-  return (await apiFetch<{ data: Location[] }>(`/api/v1/locations`)).data;
-};
-
-const createLocation = async (location: Location) => {
-  return await apiPostBody<Location, Response>(`/api/v1/locations/create`, location);
-};
-
 export function LocationAutocomplete({ value, onChange }: { value?: Location; onChange: (location: Location | null) => void }) {
+  const locations = useAppSelector((state) => state.locations.list);
+
   const [currentValue, setCurrentValue] = useState(value);
   const [locationOpen, setLocationOpen] = useState(false);
-  const [locationOptions, setLocationOptions] = useState<Location[]>([]);
-  const loadingLocations = locationOpen && locationOptions.length === 0;
-
-  useEffect(() => {
-    if (!loadingLocations) {
-      return undefined;
-    }
-    getLocations().then((options) => {
-      setLocationOptions(options);
-    });
-  }, [loadingLocations]);
+  const loadingLocations = locationOpen && locations.length === 0;
 
   useEffect(() => {
     if (!currentValue) return;
@@ -46,7 +31,7 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
       onClose={() => setLocationOpen(false)}
       disablePortal
       freeSolo={true}
-      options={locationOptions}
+      options={locations}
       onChange={(event, value) => {
         if (!value) return;
         setCurrentValue(typeof value === 'string' ? parseLocation(value) : value);
@@ -83,6 +68,8 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
 }
 
 export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean; onSubmit: (location: Location) => void; onClose: () => void }) {
+  const dispatch = useAppDispatch();
+
   const [formData, setFormData] = useState({
     title: '',
     address: '',
@@ -108,14 +95,9 @@ export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean;
     }
     const location = { ...createNewLocation(formData.title), ...formData };
     console.log('send it', location);
-    createLocation(location)
-      .then(() => {
-        onSubmit(location);
-      })
-      .catch((error) => console.error(error))
-      .finally(() => {
-        onClose();
-      });
+    dispatch(LocationActions.update(location));
+    onSubmit(location);
+    onClose();
   };
 
   const validate = () => {
