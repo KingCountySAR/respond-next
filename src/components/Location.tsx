@@ -11,12 +11,13 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
   const locations = useAppSelector(buildLocationsSelector());
 
   useEffect(() => {
-    console.log('!!!', locations);
+    setOptions([...locations].sort((a, b) => (a.title >= b.title ? 1 : -1)));
   }, [locations]);
 
+  const [options, setOptions] = useState<Location[]>([]);
   const [currentValue, setCurrentValue] = useState(value);
   const [locationOpen, setLocationOpen] = useState(false);
-  const loadingLocations = locationOpen && locations.length === 0;
+  const loadingLocations = locationOpen && options.length === 0;
 
   useEffect(() => {
     if (!currentValue) return;
@@ -35,7 +36,7 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
       onClose={() => setLocationOpen(false)}
       disablePortal
       freeSolo={true}
-      options={locations}
+      options={options}
       onChange={(event, value) => {
         if (!value) return;
         setCurrentValue(typeof value === 'string' ? parseLocation(value) : value);
