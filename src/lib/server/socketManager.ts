@@ -93,6 +93,14 @@ export default class SocketManager {
       }
       (await getServices()).stateManager.handleIncomingAction(action, reporterId, socket.auth);
     });
+
+    socket.on('reportLocationAction', async (action, reporterId) => {
+      if (!socket.auth) {
+        // TODO, let user know they aren't authenticated
+        return;
+      }
+      (await getServices()).stateManager.handleIncomingLoctionAction(action, reporterId, socket.auth);
+    });
   }
 
   async getSocketKey(user: UserAuth, previousKey?: string) {

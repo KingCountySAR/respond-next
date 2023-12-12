@@ -8,6 +8,7 @@ import { ActivityAction, ActivityActions } from '../state';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
 import { AuthActions } from './store/auth';
+import { LocationAction } from './store/locations';
 import { PreferenceActions } from './store/preferences';
 import { Actions as SyncActions } from './store/sync';
 
@@ -129,6 +130,10 @@ export class ClientSync {
 
   handleLocalAction(action: ActivityAction) {
     this.socket.emit('reportAction', action, this.socket.id);
+  }
+
+  handleLocalLocationAction(action: LocationAction) {
+    this.socket.emit('reportLocationAction', action, this.socket.id);
   }
 
   handleServerAction(action: ActivityAction, reporterId: string) {

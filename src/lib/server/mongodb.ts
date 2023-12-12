@@ -70,6 +70,8 @@ export async function getLocations() {
 
 export async function createLocation(location: Location) {
   const mongo = await clientPromise;
-  const result = await mongo.db().collection(LOCATION_COLLECTION).insertOne(location);
+  const result = await mongo.db().collection(LOCATION_COLLECTION).replaceOne({ id: location.id }, location, {
+    upsert: true,
+  });
   return result;
 }

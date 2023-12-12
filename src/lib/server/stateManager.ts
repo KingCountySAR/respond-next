@@ -1,12 +1,14 @@
 import produce from 'immer';
 
-import mongoPromise, { getRelatedOrgIds } from '@respond/lib/server/mongodb';
+import mongoPromise, { getLocations, getRelatedOrgIds, LOCATION_COLLECTION } from '@respond/lib/server/mongodb';
 import type { ActivityAction, ActivityState } from '@respond/lib/state';
 import { BasicReducers } from '@respond/lib/state';
 import type { Activity } from '@respond/types/activity';
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
 import type UserAuth from '@respond/types/userAuth';
 
+import { LocationAction, LocationsState } from '../client/store/locations';
+import locationsReducer from '../client/store/locations';
 import { ActivityActions, ParticipantUpdateAction } from '../state/activityActions';
 
 import { getServices } from './services';
@@ -20,6 +22,7 @@ export interface ActionListener {
 export class StateManager {
   private listeners: ActionListener[] = [];
   private activityState: ActivityState = { list: [] };
+  private locationsState: LocationsState = { list: [] };
 
   addClient(listener: ActionListener) {
     this.listeners = [...this.listeners, listener];
@@ -35,6 +38,9 @@ export class StateManager {
     this.activityState = {
       list: allActivities.filter((a) => !a.removeTime),
     };
+    this.locationsState = {
+      list: await getLocations(),
+    };
   }
 
   async getStateForUser(user: UserAuth) {
@@ -49,6 +55,40 @@ export class StateManager {
 
   async getAllActivities() {
     return this.activityState.list;
+  }
+
+  async getAllLocations() {
+    return this.locationsState.list;
+  }
+
+  async handleIncomingLoctionAction(action: LocationAction, reporterId: string, auth: { userId: string; email: string }) {
+    console.log('stateManager reportAction', action);
+
+    const oldLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
+
+    const nextState = produce(this.locationsState, (draft) => {
+      console.log('reducing ', action.type, action.payload);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      locationsReducer(draft, action as any);
+    });
+    this.locationsState = nextState;
+
+    const mongo = await mongoPromise;
+
+    await mongo.db().collection('history').insertOne({
+      action: action,
+      time: new Date(),
+      userId: auth.userId,
+      email: auth.email,
+    });
+
+    const currentLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
+    for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
+      console.log('MONGO update activity', updatedId);
+      await mongo.db().collection<Location>(LOCATION_COLLECTION).replaceOne({ id: updatedId }, currentLocations[updatedId], {
+        upsert: true,
+      });
+    }
   }
 
   async handleIncomingAction(action: ActivityAction, reporterId: string, auth: { userId: string; email: string }) {

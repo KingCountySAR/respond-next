@@ -152,7 +152,7 @@ export function createNewActivity(): Activity {
     idNumber: '',
     title: '',
     description: '',
-    location: { title: '' },
+    location: { id: '', title: '' },
     mapId: '',
     startTime: new Date().getTime(),
     earlySignInWindow: defaultEarlySigninWindow,

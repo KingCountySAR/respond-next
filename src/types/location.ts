@@ -1,7 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
 export interface Location {
-  id?: string;
+  id: string;
   title: string;
   lat?: string;
   lon?: string;
