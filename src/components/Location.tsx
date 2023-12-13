@@ -184,7 +184,7 @@ export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean;
             }}
             variant="contained"
           >
-            Save
+            Submit
           </Button>
         </DialogActions>
       </Dialog>
