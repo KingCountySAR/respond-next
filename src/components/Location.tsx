@@ -28,10 +28,7 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
       onChange={(event, value) => {
         onChange(value);
       }}
-      isOptionEqualToValue={(option, value) => {
-        if (option.title === value.title) console.log(option.id, value.id);
-        return option.id === value?.id;
-      }}
+      isOptionEqualToValue={(option, value) => option.id === value?.id}
       getOptionLabel={(option) => option.title}
       value={value}
       renderOption={(props, option) => {
