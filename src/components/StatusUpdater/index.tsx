@@ -120,7 +120,7 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
   let actions;
   if (isActive(current) && currentOrgId !== lastOrgId) {
     const lastOrgName = getOrganizationName(activity, lastOrgId);
-    actions = [{ id: 7, newStatus: ParticipantStatus.SignedOut, text: `Sign Out from ${lastOrgName}` }];
+    actions = [{ ...statusTransitions.signIn, text: `Switch from ${lastOrgName}` }];
   } else {
     actions = getStatusOptions(current, activity.startTime, activity.forceStandbyOnly, activity.earlySignInWindow);
   }
