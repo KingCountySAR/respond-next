@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { Activity, isActive, isResponding, ParticipantStatus } from '@respond/types/activity';
+import { Activity, getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
@@ -119,7 +119,7 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
   const currentOrgId = participant?.organizationId;
   let actions;
   if (isActive(current) && currentOrgId !== lastOrgId) {
-    const lastOrgName = activity.organizations[lastOrgId].rosterName ?? activity.organizations[lastOrgId].title;
+    const lastOrgName = getOrganizationName(activity, lastOrgId);
     actions = [{ id: 7, newStatus: ParticipantStatus.SignedOut, text: `Sign Out from ${lastOrgName}` }];
   } else {
     actions = getStatusOptions(current, activity.startTime, activity.forceStandbyOnly, activity.earlySignInWindow);
