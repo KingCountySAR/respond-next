@@ -1,15 +1,14 @@
 import produce from 'immer';
 
-import mongoPromise, { getRelatedOrgIds, LOCATION_COLLECTION } from '@respond/lib/server/mongodb';
+import mongoPromise, { getRelatedOrgIds } from '@respond/lib/server/mongodb';
 import type { ActivityAction, ActivityState } from '@respond/lib/state';
 import { BasicReducers } from '@respond/lib/state';
 import type { Activity } from '@respond/types/activity';
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
+import { Location } from '@respond/types/location';
 import type UserAuth from '@respond/types/userAuth';
 
-import { Location } from '../../types/location';
-import { LocationAction, LocationsState } from '../client/store/locations';
-import locationsReducer from '../client/store/locations';
+import locationsReducer, { LocationAction, LocationsState } from '../client/store/locations';
 import { ActivityActions, ParticipantUpdateAction } from '../state/activityActions';
 
 import { getServices } from './services';
@@ -23,6 +22,8 @@ export interface ActionListener {
 export interface LocationActionListener {
   broadcastAction(action: LocationAction, toRooms: string[] | undefined, reporterId: string): void;
 }
+
+const LOCATION_COLLECTION_NAME = 'locations';
 
 export class StateManager {
   private listeners: ActionListener[] = [];
@@ -44,7 +45,7 @@ export class StateManager {
     this.activityState = {
       list: allActivities.filter((a) => !a.removeTime),
     };
-    const allLocations = await mongo.db().collection<Location>('locations').find().toArray();
+    const allLocations = await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).find().toArray();
     this.locationsState = {
       list: allLocations,
     };
@@ -92,12 +93,12 @@ export class StateManager {
     for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
       console.log('MONGO update activity', updatedId);
       if (!currentLocations[updatedId].active) continue;
-      await mongo.db().collection<Location>(LOCATION_COLLECTION).replaceOne({ id: updatedId }, currentLocations[updatedId], {
+      await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).replaceOne({ id: updatedId }, currentLocations[updatedId], {
         upsert: true,
       });
     }
 
-    const toRooms = undefined; // undefined sends it to ALL listeners.
+    const toRooms = undefined; // undefined sends it to ALL rooms since all orgs need the update location state.
     for (const listener of this.locationListeners) {
       listener.broadcastAction(action, toRooms, reporterId);
     }

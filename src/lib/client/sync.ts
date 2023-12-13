@@ -73,7 +73,7 @@ export class ClientSync {
         effect: (action, _listenerApi) => {
           console.log('ACTING ON SYNC');
           this.handleLocalAction(action as ActivityAction);
-          this.handleLocalLocationAction(action as LocationAction);
+          this.handleLocationLocalAction(action as LocationAction);
         },
       }),
     );
@@ -134,7 +134,7 @@ export class ClientSync {
     this.socket.emit('reportAction', action, this.socket.id);
   }
 
-  handleLocalLocationAction(action: LocationAction) {
+  handleLocationLocalAction(action: LocationAction) {
     this.socket.emit('reportLocationAction', action, this.socket.id);
   }
 
