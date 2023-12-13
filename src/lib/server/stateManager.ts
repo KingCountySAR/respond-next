@@ -21,7 +21,7 @@ export interface ActionListener {
 }
 
 export interface LocationActionListener {
-  broadcastAction(action: LocationAction, toRooms: string[], reporterId: string): void;
+  broadcastAction(action: LocationAction, toRooms: string[] | undefined, reporterId: string): void;
 }
 
 export class StateManager {
@@ -97,7 +97,7 @@ export class StateManager {
       });
     }
 
-    const toRooms = [auth.organizationId];
+    const toRooms = undefined; // undefined sends it to ALL listeners.
     for (const listener of this.locationListeners) {
       listener.broadcastAction(action, toRooms, reporterId);
     }
