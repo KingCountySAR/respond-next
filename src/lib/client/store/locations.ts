@@ -20,7 +20,8 @@ const locationsSlice = createSlice({
       reducer: (state: LocationsState, action: PayloadAction<Location>) => {
         const target = state.list.find((f) => f.id && f.id === action.payload.id);
         if (!target) {
-          return Object.assign(state, { list: [...state.list, createNewLocation(action.payload.title)] });
+          const newLocation = Object.assign(createNewLocation(action.payload.title), action.payload);
+          return Object.assign(state, { list: [...state.list, newLocation] });
         }
         return Object.assign(state, { list: Object.assign(target, action.payload) });
       },

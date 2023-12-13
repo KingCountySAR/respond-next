@@ -342,7 +342,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       <EditLocationDialog
         open={showCreateLocation}
         onSubmit={(location) => {
-          setValue('location', location, { shouldDirty: true, shouldTouch: true }); // TODO: This updates the value in the controller but the Autocomplete does not re-render
+          setValue('location', location);
           setShowCreateLocation(false);
           setToastSuccess('Location Created');
           setShowSuccess(true);

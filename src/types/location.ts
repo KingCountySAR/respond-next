@@ -6,6 +6,7 @@ export interface Location {
   lat?: string;
   lon?: string;
   address?: string;
+  active?: boolean;
 }
 
 export const createNewLocation = (title: string, lat?: string, lon?: string, address?: string) => {
@@ -15,5 +16,6 @@ export const createNewLocation = (title: string, lat?: string, lon?: string, add
     lat: lat ?? '',
     lon: lon ?? '',
     address: address ?? '',
+    active: true,
   };
 };

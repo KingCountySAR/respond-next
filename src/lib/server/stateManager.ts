@@ -74,7 +74,6 @@ export class StateManager {
     const oldLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
 
     const nextState = produce(this.locationsState, (draft) => {
-      console.log('reducing ', action.type, action.payload);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       locationsReducer(draft, action as any);
     });
@@ -92,6 +91,7 @@ export class StateManager {
     const currentLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
     for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
       console.log('MONGO update activity', updatedId);
+      if (!currentLocations[updatedId].active) continue;
       await mongo.db().collection<Location>(LOCATION_COLLECTION).replaceOne({ id: updatedId }, currentLocations[updatedId], {
         upsert: true,
       });

@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
+import { Autocomplete, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Grid, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
@@ -15,35 +15,25 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
   }, [locations]);
 
   const [options, setOptions] = useState<Location[]>([]);
-  const [currentValue, setCurrentValue] = useState(value);
-  const [locationOpen, setLocationOpen] = useState(false);
-  const loadingLocations = locationOpen && options.length === 0;
-
-  useEffect(() => {
-    if (!currentValue) return;
-    onChange(currentValue);
-  }, [currentValue, onChange]);
-
-  // TODO: Attempt to Parse Lat/Lon and/or Addresses
-  const parseLocation = (value: string) => {
-    return createNewLocation(value);
-  };
+  const [isOpen, setIsOpen] = useState(false);
+  const loadingLocations = isOpen && options.length === 0;
 
   return (
     <Autocomplete
-      open={locationOpen}
-      onOpen={() => setLocationOpen(true)}
-      onClose={() => setLocationOpen(false)}
+      open={isOpen}
+      onOpen={() => setIsOpen(true)}
+      onClose={() => setIsOpen(false)}
       disablePortal
-      freeSolo={true}
       options={options}
       onChange={(event, value) => {
-        if (!value) return;
-        setCurrentValue(typeof value === 'string' ? parseLocation(value) : value);
+        onChange(value);
       }}
-      onInputChange={(event, value) => onChange(parseLocation(value))}
-      getOptionLabel={(option) => (typeof option === 'string' ? option : option.title)}
-      value={currentValue}
+      isOptionEqualToValue={(option, value) => {
+        if (option.title === value.title) console.log(option.id, value.id);
+        return option.id === value?.id;
+      }}
+      getOptionLabel={(option) => option.title}
+      value={value}
       renderOption={(props, option) => {
         return (
           <li {...props} key={option.title}>
@@ -75,23 +65,34 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
 export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean; onSubmit: (location: Location) => void; onClose: () => void }) {
   const dispatch = useAppDispatch();
 
+  const buildErrorState = () => {
+    return {
+      title: '',
+      address: '',
+      lat: '',
+      lon: '',
+      active: '',
+    };
+  };
+
   const [formData, setFormData] = useState({
     title: '',
     address: '',
     lat: '',
     lon: '',
+    active: true,
   });
 
-  const [errors, setErrors] = useState({
-    title: '',
-    address: '',
-    lat: '',
-    lon: '',
-  });
+  const [errors, setErrors] = useState(buildErrorState());
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData({ ...formData, [name]: checked });
   };
 
   const handleSubmit = () => {
@@ -99,19 +100,13 @@ export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean;
       return;
     }
     const location = { ...createNewLocation(formData.title), ...formData };
-    console.log('send it', location);
     dispatch(LocationActions.update(location));
     onSubmit(location);
     onClose();
   };
 
   const validate = () => {
-    const newErrors = {
-      title: '',
-      address: '',
-      lat: '',
-      lon: '',
-    };
+    const newErrors = buildErrorState();
 
     if (!formData.title) {
       newErrors.title = 'Name is required';
@@ -169,6 +164,12 @@ export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean;
                 <FormControl fullWidth error={!!errors.lon}>
                   <TextField name="lon" fullWidth label="Lon (Decimal Degrees)" onChange={handleChange}></TextField>
                   <FormHelperText>{errors.lon}</FormHelperText>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth error={!!errors.active}>
+                  <FormControlLabel name="active" control={<Checkbox defaultChecked onChange={handleCheckboxChange} />} label="Save For Later" />
+                  <FormHelperText>{errors.active}</FormHelperText>
                 </FormControl>
               </Grid>
             </Grid>
