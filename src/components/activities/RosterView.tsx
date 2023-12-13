@@ -4,7 +4,7 @@ import { differenceInCalendarDays } from 'date-fns';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
-import { Participant, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
+import { getOrganizationName, Participant, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
 import { OutputForm, OutputTime } from '../OutputForm';
 
@@ -34,7 +34,7 @@ export function RosterView({ activityId }: { activityId: string }) {
   };
 
   const createRosterEntry = (participant: Participant, organizationId: string) => {
-    const org = activity.organizations[organizationId].rosterName ?? activity.organizations[organizationId].title;
+    const org = getOrganizationName(activity, organizationId);
     const newEntry = buildRosterEntry(participant, org);
     rosterEntries.unshift(newEntry);
     return newEntry;

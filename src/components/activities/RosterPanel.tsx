@@ -6,7 +6,7 @@ import { useTheme } from '@mui/material/styles';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
-import { Activity, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
+import { Activity, getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
 
 import ParticipantTimeline from './ParticipantTimeline';
 
@@ -76,7 +76,7 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
               alt={`Photo of ${name}`}
               style={{ width: '8rem', minHeight: '10rem', border: 'solid 1px #777', borderRadius: '4px' }}
             />
-            <Typography fontWeight={600}>{activity.organizations[participant.organizationId].rosterName ?? activity.organizations[participant.organizationId].title}</Typography>
+            <Typography fontWeight={600}>{getOrganizationName(activity, participant.organizationId)}</Typography>
             <Box>{participant.tags?.map((t) => <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />)}</Box>
           </Box>
           <Box>
