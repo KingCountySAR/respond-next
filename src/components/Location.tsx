@@ -140,7 +140,7 @@ export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean;
           <Box>Create Location</Box>
         </DialogTitle>
         <DialogContent>
-          <Box padding={2}>
+          <Box paddingTop={2}>
             <Grid container spacing={2} justifyItems="center">
               <Grid item xs={12}>
                 <FormControl fullWidth error={!!errors.title}>
