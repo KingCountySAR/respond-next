@@ -111,7 +111,6 @@ export class StateManager {
     const oldActivities: Record<string, Activity> = this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
 
     const nextState = produce(this.activityState, (draft) => {
-      console.log('reducing ', action.type, action.payload);
       BasicReducers[action.type](draft, action as any);
     });
 
