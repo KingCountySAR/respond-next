@@ -13,7 +13,7 @@ import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
-import { EditLocationDialog, LocationAutocomplete } from '../Location';
+import { LocationAutocomplete, NewLocationDialog } from '../Location';
 import { Alert } from '../Material';
 
 type FormDateTime = { date: string; time: string };
@@ -339,7 +339,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
         </Grid>
       </form>
 
-      <EditLocationDialog
+      <NewLocationDialog
         open={showCreateLocation}
         onSubmit={(location) => {
           setValue('location', location);

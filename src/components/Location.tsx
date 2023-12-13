@@ -59,7 +59,7 @@ export function LocationAutocomplete({ value, onChange }: { value?: Location; on
   );
 }
 
-export function EditLocationDialog({ open, onSubmit, onClose }: { open: boolean; onSubmit: (location: Location) => void; onClose: () => void }) {
+export function NewLocationDialog({ open, onSubmit, onClose }: { open: boolean; onSubmit: (location: Location) => void; onClose: () => void }) {
   const dispatch = useAppDispatch();
 
   const buildErrorState = () => {
