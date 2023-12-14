@@ -116,11 +116,24 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
   }
 
   const lastOrgId = participant?.timeline[0].organizationId;
-  const currentOrgId = participant?.organizationId;
+  const currentOrgId = thisOrg.id;
   let actions;
   if (isActive(current) && currentOrgId !== lastOrgId) {
-    const lastOrgName = getOrganizationName(activity, lastOrgId);
-    actions = [{ ...statusTransitions.signIn, text: `Switch from ${lastOrgName}` }];
+    let transition;
+    switch (current) {
+      case ParticipantStatus.Remote:
+        transition = statusTransitions.inTown;
+        break;
+      case ParticipantStatus.Standby:
+        transition = statusTransitions.standBy;
+        break;
+      default:
+        transition = statusTransitions.signIn;
+    }
+    actions = [
+      { ...transition, text: `Switch from ${getOrganizationName(activity, lastOrgId)}` },
+      { ...statusTransitions.signOut, text: `Sign Out from ${getOrganizationName(activity, lastOrgId)}` },
+    ];
   } else {
     actions = getStatusOptions(current, activity.startTime, activity.forceStandbyOnly, activity.earlySignInWindow);
   }

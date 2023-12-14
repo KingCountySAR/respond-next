@@ -80,14 +80,20 @@ export const BasicReducers: ActivityReducers = {
       if (person) {
         const lastUpdate = person.timeline[0];
         if (lastUpdate.organizationId !== payload.participant.organizationId) {
-          if (lastUpdate.status !== ParticipantStatus.SignedOut && lastUpdate.status !== ParticipantStatus.NotResponding) {
-            person.timeline.unshift({
-              organizationId: lastUpdate.organizationId,
-              time: payload.update.time,
-              status: ParticipantStatus.SignedOut,
-            });
-          }
           person.tags = undefined;
+          const signoutFromPreviousOrg = {
+            organizationId: lastUpdate.organizationId,
+            time: payload.update.time,
+            status: ParticipantStatus.SignedOut,
+          };
+          if (payload.update.status === ParticipantStatus.SignedOut) {
+            // If they are logging out, log them out of the previous org, then exit.
+            person.timeline.unshift(signoutFromPreviousOrg);
+            return;
+          } else if (lastUpdate.status !== ParticipantStatus.SignedOut && lastUpdate.status !== ParticipantStatus.NotResponding) {
+            // If they are remaining active, log them out of the previous org, then continue.
+            person.timeline.unshift(signoutFromPreviousOrg);
+          }
         } else if (lastUpdate.status === payload.update.status) {
           // Don't record updates if there's no change in status.
           return;
