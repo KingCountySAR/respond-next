@@ -27,7 +27,7 @@ export function RosterView({ activityId }: { activityId: string }) {
       let rosterEntry = findRosterEntry(participant);
       if (rosterEntry === undefined) {
         if (stage !== RosterStage.SignIn) {
-          continue; // Skip signouts and unreportable transitions.
+          continue; // Skip orphaned status transitions by requiring a sign in status first.
         } else {
           rosterEntry = createRosterEntry(participant, timeline[i].organizationId);
         }
