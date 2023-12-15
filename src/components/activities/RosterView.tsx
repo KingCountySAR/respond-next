@@ -24,9 +24,18 @@ export function RosterView({ activityId }: { activityId: string }) {
     for (let i = timeline.length - 1; i >= 0; i--) {
       const stage: RosterStage = rosterStages[timeline[i].status] ?? undefined;
       if (!stage) continue; // The participant status is not relavent to the roster.
-      const rosterEntry = findRosterEntry(participant) ?? createRosterEntry(participant, timeline[i].organizationId);
+      let rosterEntry = findRosterEntry(participant);
+      if (rosterEntry === undefined) {
+        if (stage !== RosterStage.SignIn) {
+          continue; // Skip orphaned status transitions by requiring a sign in status first.
+        } else {
+          rosterEntry = createRosterEntry(participant, timeline[i].organizationId);
+        }
+      }
       rosterEntry.timestamps[stage] = timeline[i].time;
     }
+    // Miles are currently only tracked in aggregate at the participant level. For now, we only
+    // want to append them to the first roster entry for this participant.
     const firstEntry = rosterEntries.reverse().find((entry) => entry.participantId === participant.id);
     if (firstEntry) {
       firstEntry.miles = participant.miles ?? 0;
