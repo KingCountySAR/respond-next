@@ -6,7 +6,7 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
 import { Participant, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
-import { OutputForm, OutputTime } from '../OutputForm';
+import { OutputForm, OutputText, OutputTime } from '../OutputForm';
 
 const headerCellStyle = { fontWeight: 700, width: 20 };
 
@@ -60,17 +60,22 @@ export function RosterView({ activityId }: { activityId: string }) {
   return (
     <ToolbarPage maxWidth="lg">
       <Paper>
-        <Box padding={2}>
-          <Typography variant="h4">
-            {activity?.idNumber} {activity?.title}
-          </Typography>
-          <OutputForm columns={2}>
-            <OutputTime time={activity.startTime} label="Start Time"></OutputTime>
-            <OutputTime time={activity.endTime} label="End Time"></OutputTime>
-          </OutputForm>
-        </Box>
-        <Table>
+        <Table size="small">
           <TableHead>
+            <TableRow>
+              <TableCell colSpan={7}>
+                <OutputForm columns={2}>
+                  <Stack>
+                    <OutputText label="Name" value={activity?.title}></OutputText>
+                    <OutputText label="State #" value={activity?.idNumber}></OutputText>
+                  </Stack>
+                  <Stack>
+                    <OutputTime time={activity.startTime} label="Start Time"></OutputTime>
+                    <OutputTime time={activity.endTime} label="End Time"></OutputTime>
+                  </Stack>
+                </OutputForm>
+              </TableCell>
+            </TableRow>
             <TableRow>
               <TableCell sx={headerCellStyle}>Particpant Name</TableCell>
               <TableCell sx={headerCellStyle}>Organization</TableCell>
@@ -107,14 +112,14 @@ function ActivityNotFound() {
 function RosterRow({ activityStartTime, rosterEntry }: { activityStartTime: number; rosterEntry: RosterEntry }) {
   return (
     <TableRow>
-      <TableCell size="small">{rosterEntry.participantName}</TableCell>
-      <TableCell size="small">{rosterEntry.organizationName}</TableCell>
+      <TableCell>{rosterEntry.participantName}</TableCell>
+      <TableCell>{rosterEntry.organizationName}</TableCell>
       {Object.values(rosterEntry.timestamps).map((time, i) => (
-        <TableCell key={i} size="small">
+        <TableCell key={i}>
           <Stack>{time ? <RosterTimeValue time={time} startTime={activityStartTime} /> : undefined}</Stack>
         </TableCell>
       ))}
-      <TableCell size="small">
+      <TableCell>
         <Typography variant="h6">{rosterEntry.miles}</Typography>
       </TableCell>
     </TableRow>
