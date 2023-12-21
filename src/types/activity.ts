@@ -71,6 +71,10 @@ export function getStatusText(status: ParticipantStatus) {
   return STATUS_TEXT[status];
 }
 
+export function getOrganizationName(activity: Activity, organizationId: string) {
+  return activity.organizations[organizationId].rosterName ?? activity.organizations[organizationId].title;
+}
+
 export function isActive(status: ParticipantStatus) {
   return [ParticipantStatus.Standby, ParticipantStatus.Remote, ParticipantStatus.SignedIn, ParticipantStatus.Available, ParticipantStatus.Assigned, ParticipantStatus.Demobilized].includes(status);
 }
