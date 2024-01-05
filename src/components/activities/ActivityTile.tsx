@@ -8,8 +8,6 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { getActivityPath, isActive } from '@respond/lib/client/store/activities';
 import { Activity, getNavigationLink, ParticipantStatus } from '@respond/types/activity';
 
-import { Button } from '../Material';
-
 export const ActivityTile = ({ activity, status, children }: { activity: Activity; status?: ParticipantStatus; children?: ReactNode }) => {
   const navigationUrl = getNavigationLink(activity);
   return (
@@ -37,11 +35,7 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
                   <Image src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
                 </IconButton>
               )}
-              {navigationUrl && (
-                <Button aria-label="Navigate" color="info" href={navigationUrl} target="_blank">
-                  <NearMe /> Navigate
-                </Button>
-              )}
+              {navigationUrl && <NavigationButton url={navigationUrl} />}
             </Grid>
             <Grid item>
               <StatusUpdater activity={activity} />
@@ -50,5 +44,13 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
         </CardActions>
       )}
     </Card>
+  );
+};
+
+const NavigationButton = ({ url }: { url: string }) => {
+  return (
+    <IconButton aria-label="Navigate" color="info" href={url} target="_blank">
+      <NearMe />
+    </IconButton>
   );
 };
