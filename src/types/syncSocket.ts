@@ -1,10 +1,8 @@
-import { LocationAction } from '@respond/lib/client/store/locations';
-import { ActivityAction } from '@respond/lib/state/activityActions';
+import { Action } from '@reduxjs/toolkit';
 
 export interface ServerToClientEvents {
   welcome: (id: string) => void;
-  broadcastAction: (action: ActivityAction, reporterId: string) => void;
-  broadcastLocationAction: (action: LocationAction, reporterId: string) => void;
+  broadcastAction: (action: Action, reporterId: string) => void;
   noArg: () => void;
   basicEmit: (a: number, b: string, c: Buffer) => void;
   withAck: (d: string, callback: (e: number) => void) => void;
@@ -12,8 +10,7 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   hello: (key: string) => void;
-  reportLocationAction: (action: LocationAction, reporterId: string) => void;
-  reportAction: (action: ActivityAction, reporterId: string) => void;
+  reportAction: (action: Action, reporterId: string) => void;
   logout: () => void;
 }
 

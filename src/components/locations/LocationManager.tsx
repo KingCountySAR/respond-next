@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import { useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
-import { LocationActions } from '@respond/lib/client/store/locations';
+import { LocationActions } from '@respond/lib/state';
 import { createNewLocation, Location } from '@respond/types/location';
 
 import { Button, Paper, Stack, Typography } from '../Material';

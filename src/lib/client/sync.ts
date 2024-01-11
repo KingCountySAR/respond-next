@@ -1,14 +1,13 @@
-import { isAnyOf } from '@reduxjs/toolkit';
+import { Action, isAnyOf } from '@reduxjs/toolkit';
 import io, { Socket } from 'socket.io-client';
 
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/types/syncSocket';
 
 import { apiFetch } from '../api';
-import { ActivityAction, ActivityActions } from '../state';
+import { ActivityActions } from '../state';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
 import { AuthActions } from './store/auth';
-import { LocationAction } from './store/locations';
 import { PreferenceActions } from './store/preferences';
 import { Actions as SyncActions } from './store/sync';
 
@@ -35,7 +34,6 @@ export class ClientSync {
 
     this.socket.on('welcome', (id) => this.authenticated(id));
     this.socket.on('broadcastAction', (action, reporterId) => this.handleServerAction(action, reporterId));
-    this.socket.on('broadcastLocationAction', (action, reporterId) => this.handleLocationServerAction(action, reporterId));
     this.dispatch = store.dispatch;
   }
 
@@ -72,8 +70,7 @@ export class ClientSync {
         },
         effect: (action, _listenerApi) => {
           console.log('ACTING ON SYNC');
-          this.handleLocalAction(action as ActivityAction);
-          this.handleLocationLocalAction(action as LocationAction);
+          this.handleLocalAction(action);
         },
       }),
     );
@@ -130,22 +127,11 @@ export class ClientSync {
     }
   }
 
-  handleLocalAction(action: ActivityAction) {
+  handleLocalAction(action: Action) {
     this.socket.emit('reportAction', action, this.socket.id);
   }
 
-  handleLocationLocalAction(action: LocationAction) {
-    this.socket.emit('reportLocationAction', action, this.socket.id);
-  }
-
-  handleServerAction(action: ActivityAction, reporterId: string) {
-    console.log('handleServerAction', reporterId, this.socket.id);
-    if (reporterId === this.socket.id) return;
-    console.log('YAY handleServerAction', action);
-    this.dispatch(action);
-  }
-
-  handleLocationServerAction(action: LocationAction, reporterId: string) {
+  handleServerAction(action: Action, reporterId: string) {
     console.log('handleServerAction', reporterId, this.socket.id);
     if (reporterId === this.socket.id) return;
     console.log('YAY handleServerAction', action);

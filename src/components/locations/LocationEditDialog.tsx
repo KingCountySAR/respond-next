@@ -1,7 +1,7 @@
 import { Box, Dialog, DialogContent, DialogTitle } from '@mui/material';
 
 import { useAppDispatch } from '@respond/lib/client/store';
-import { LocationActions } from '@respond/lib/client/store/locations';
+import { LocationActions } from '@respond/lib/state';
 import { createNewTemporaryLocation, Location } from '@respond/types/location';
 
 import { LocationEditForm } from './LocationEditForm';

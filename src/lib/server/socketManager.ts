@@ -1,14 +1,13 @@
 import type { Server as HTTPServer } from 'http';
 
 import { ObjectId } from 'mongodb';
-import { BroadcastOperator, Server as IOServer, Socket } from 'socket.io';
+import { Server as IOServer, Socket } from 'socket.io';
 
 import type { SocketAuthDoc } from '@respond/types/data/socketAuthDoc';
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@respond/types/syncSocket';
 import type UserAuth from '@respond/types/userAuth';
 
-import { LocationActions } from '../client/store/locations';
-import { ActivityActions } from '../state';
+import { ActivityActions, LocationActions } from '../state';
 
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import { getServices } from './services';
@@ -39,11 +38,9 @@ export default class SocketManager {
           if (!manager.io) {
             return;
           }
-          let emitter: BroadcastOperator<ServerToClientEvents, SocketData> | undefined;
-          for (const room of toRooms) {
-            emitter = emitter ? emitter.to(room) : manager.io.to(room);
-          }
-          emitter?.emit('broadcastAction', action, reporterId);
+
+          const emitter = toRooms ? manager.io.to(toRooms) : manager.io;
+          emitter.emit('broadcastAction', action, reporterId);
         },
       });
     }
@@ -84,7 +81,7 @@ export default class SocketManager {
         }
         socket.emit('welcome', socket.id);
         socket.emit('broadcastAction', ActivityActions.reload(await stateManager.getStateForUser(socketAuth.user)), '');
-        socket.emit('broadcastLocationAction', LocationActions.reload(stateManager.getLocationState()), '');
+        socket.emit('broadcastAction', LocationActions.reload(stateManager.getLocationState()), '');
       }
     });
 
@@ -94,14 +91,6 @@ export default class SocketManager {
         return;
       }
       (await getServices()).stateManager.handleIncomingAction(action, reporterId, socket.auth);
-    });
-
-    socket.on('reportLocationAction', async (action, reporterId) => {
-      if (!socket.auth) {
-        // TODO, let user know they aren't authenticated
-        return;
-      }
-      (await getServices()).stateManager.handleIncomingLocationAction(action, reporterId, socket.auth);
     });
   }
 
