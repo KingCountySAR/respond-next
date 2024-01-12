@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import merge from 'lodash.merge';
 
-import { createNewLocation, Location } from '@respond/types/location';
+import { createNewLocation, Location, pickLocationProperties } from '@respond/types/location';
 
 import { RootState } from '.';
 
@@ -18,12 +19,13 @@ const locationsSlice = createSlice({
   reducers: {
     update: {
       reducer: (state: LocationsState, action: PayloadAction<Location>) => {
-        const target = state.list.find((f) => f.id && f.id === action.payload.id);
+        let target = state.list.find((f) => f.id && f.id === action.payload.id);
         if (!target) {
-          const newLocation = Object.assign(createNewLocation(action.payload.title), action.payload);
-          return Object.assign(state, { list: [...state.list, newLocation] });
+          target = createNewLocation();
+          state.list.push(target);
         }
-        return Object.assign(state, { list: Object.assign(target, action.payload) });
+        const props = pickLocationProperties(action.payload);
+        merge(target, props);
       },
       prepare(payload: Location) {
         return { payload, meta: { sync: true } };
@@ -31,7 +33,7 @@ const locationsSlice = createSlice({
     },
     reload: {
       reducer: (state: LocationsState, action: PayloadAction<LocationsState>) => {
-        return Object.assign(state, action.payload);
+        state.list = action.payload.list;
       },
       prepare(payload: LocationsState) {
         return { payload, meta: { sync: true } };
@@ -39,7 +41,7 @@ const locationsSlice = createSlice({
     },
     remove: {
       reducer: (state: LocationsState, action: PayloadAction<Location & { id: string }>) => {
-        return Object.assign(state, { list: state.list.filter((f) => f.id !== action.payload.id) });
+        state.list = state.list.filter((f) => f.id !== action.payload.id);
       },
       prepare(payload: Location) {
         return { payload, meta: { sync: true } };

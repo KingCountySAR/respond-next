@@ -1,5 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
+import { pickSafely } from '@respond/lib/pickSafely';
+
 export interface Location {
   id: string;
   title: string;
@@ -11,15 +13,20 @@ export interface Location {
   active?: boolean;
 }
 
-export const createNewLocation = (title: string, lat?: string, lon?: string, address?: string) => {
+export const createNewLocation = (): Location => {
   return {
     id: uuid(),
-    title: title,
-    lat: lat ?? '',
-    lon: lon ?? '',
-    address: address ?? '',
-    directions: '',
-    description: '',
+    title: '',
     active: true,
   };
 };
+
+export const createNewTemporaryLocation = (): Location => {
+  return {
+    id: uuid(),
+    title: '',
+    active: false,
+  };
+};
+
+export const pickLocationProperties = pickSafely<Partial<Location>>(['id', 'title', 'lat', 'lon', 'address', 'description', 'directions', 'active']);

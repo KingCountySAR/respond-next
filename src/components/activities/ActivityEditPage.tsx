@@ -13,7 +13,8 @@ import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
-import { LocationAutocomplete, NewLocationDialog } from '../Location';
+import { LocationAutocomplete } from '../locations/LocationAutocomplete';
+import { LocationEditDialog } from '../locations/LocationEditDialog';
 import { Alert } from '../Material';
 
 type FormDateTime = { date: string; time: string };
@@ -201,7 +202,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               control={control}
               render={({ field: { value, onChange } }) => (
                 <FormControl fullWidth error={!!errors.location?.message}>
-                  <LocationAutocomplete value={value} onChange={onChange} />
+                  <LocationAutocomplete value={value} onChange={onChange} required />
                   <FormHelperText>{errors.location?.message}</FormHelperText>
                 </FormControl>
               )}
@@ -339,7 +340,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
         </Grid>
       </form>
 
-      <NewLocationDialog
+      <LocationEditDialog
         open={showCreateLocation}
         onSubmit={(location) => {
           setValue('location', location);
