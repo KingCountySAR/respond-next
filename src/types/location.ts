@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { pickSafely } from '@respond/lib/pickSafely';
 
 export interface Location {
+  _id?: string;
   id: string;
   title: string;
   lat?: string;

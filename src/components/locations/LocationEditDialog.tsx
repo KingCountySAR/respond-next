@@ -22,7 +22,7 @@ export function LocationEditDialog({ location = createNewTemporaryLocation(), op
       </DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
-          <LocationEditForm enableTemporary={!location.active} variant="outlined" location={location} onClose={onClose} onSubmit={handleSubmit} />
+          <LocationEditForm enableTemporary variant="outlined" location={{ ...location, active: false }} onClose={onClose} onSubmit={handleSubmit} />
         </Box>
       </DialogContent>
     </Dialog>

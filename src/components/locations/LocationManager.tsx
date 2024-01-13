@@ -20,7 +20,11 @@ export const LocationManager = () => {
   };
 
   const handleFormSubmit = (location: Location) => {
-    dispatch(LocationActions.update(location));
+    if (location.active) {
+      dispatch(LocationActions.update(location));
+    } else {
+      dispatch(LocationActions.remove(location));
+    }
   };
 
   const handleFormClose = () => {

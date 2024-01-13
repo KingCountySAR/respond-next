@@ -45,7 +45,7 @@ const resolver: Resolver<Location> = async (values) => {
 };
 
 export function LocationEditForm({ location, enableTemporary, variant = 'filled', onSubmit, onClose }: { location: Location; enableTemporary?: boolean; variant?: InputVariant; onSubmit: (location: Location) => void; onClose?: () => void }) {
-  const defaultValues = location;
+  const defaultValues = { ...location };
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const {
@@ -57,6 +57,9 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
     defaultValues,
   });
 
+  const isSavedLocation = !!location._id;
+  // Delete should only be available in contexts where temporary is not an option; i.e. we are not editing an activity location.
+  const enableDelete = isSavedLocation && !enableTemporary;
   const submissionType = location.title ? 'Update' : 'Create';
 
   const handleFormSubmit = (location: Location) => {
@@ -82,7 +85,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               control={control}
               render={({ field }) => (
                 <FormControl fullWidth error={!!errors.title?.message}>
-                  <TextField {...field} variant={variant} label="Location Name" required />
+                  <TextField {...field} variant={variant} disabled={enableTemporary && isSavedLocation} label="Location Name" required />
                   <FormHelperText>{errors.title?.message}</FormHelperText>
                 </FormControl>
               )}
@@ -94,7 +97,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               control={control}
               render={({ field }) => (
                 <FormControl fullWidth error={!!errors.address?.message}>
-                  <TextField {...field} variant={variant} label="Address" />
+                  <TextField multiline {...field} variant={variant} label="Address" />
                   <FormHelperText>{errors.address?.message}</FormHelperText>
                 </FormControl>
               )}
@@ -150,12 +153,21 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
           </Grid>
           {enableTemporary && (
             <Grid item xs={12}>
-              <Controller name="active" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Save For Later" />} />
+              <Controller
+                name="active"
+                control={control}
+                render={({ field }) => (
+                  <>
+                    <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label={isSavedLocation ? 'Update Saved Location' : 'Create Saved Location'} />
+                    <FormHelperText>{`By default, the location will only be ${submissionType.toLocaleLowerCase()}d for this activity.`}</FormHelperText>
+                  </>
+                )}
+              />
             </Grid>
           )}
           <Grid item xs={12}>
-            <Stack direction="row" alignItems={'center'} justifyContent={location.title ? 'space-between' : 'flex-end'}>
-              {location.title && (
+            <Stack direction="row" alignItems={'center'} justifyContent={enableDelete ? 'space-between' : 'flex-end'}>
+              {enableDelete && (
                 <IconButton color="danger" onClick={handleFormDelete}>
                   <DeleteIcon />
                 </IconButton>

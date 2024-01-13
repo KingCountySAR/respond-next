@@ -1,5 +1,7 @@
 'use client';
-import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
+import AddLocation from '@mui/icons-material/AddLocation';
+import Edit from '@mui/icons-material/Edit';
+import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
 import Snackbar from '@mui/material/Snackbar';
 import { parse as parseDate } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -123,6 +125,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   });
 
   const focusRef = useRef<HTMLInputElement>();
+  const watchLocation = watch('location');
 
   useEffect(() => {
     focusRef.current?.focus();
@@ -196,22 +199,24 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
             />
           </Grid>
 
-          <Grid item xs={12} sm={8}>
-            <Controller
-              name="location"
-              control={control}
-              render={({ field: { value, onChange } }) => (
-                <FormControl fullWidth error={!!errors.location?.message}>
-                  <LocationAutocomplete value={value} onChange={onChange} required />
-                  <FormHelperText>{errors.location?.message}</FormHelperText>
-                </FormControl>
-              )}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4} textAlign="center">
-            <Button fullWidth variant="outlined" onClick={() => setShowCreateLocation(true)}>
-              New Location
-            </Button>
+          <Grid item xs={12}>
+            <Stack direction={'row'} spacing={2} alignItems={'center'}>
+              <Controller
+                name="location"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <FormControl fullWidth error={!!errors.location?.message}>
+                    <LocationAutocomplete value={value} onChange={onChange} required />
+                    <FormHelperText>{errors.location?.message}</FormHelperText>
+                  </FormControl>
+                )}
+              />
+              <Box paddingRight={2}>
+                <IconButton color="default" onClick={() => setShowCreateLocation(true)}>
+                  {watchLocation ? <Edit /> : <AddLocation />}
+                </IconButton>
+              </Box>
+            </Stack>
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -341,6 +346,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       </form>
 
       <LocationEditDialog
+        location={watchLocation ?? undefined}
         open={showCreateLocation}
         onSubmit={(location) => {
           setValue('location', location);
