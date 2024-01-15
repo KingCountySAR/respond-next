@@ -213,7 +213,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
               <Box paddingRight={2}>
                 <IconButton color="default" onClick={() => setShowCreateLocation(true)}>
-                  {watchLocation ? <Edit /> : <AddLocation />}
+                  {watchLocation?.title ? <Edit /> : <AddLocation />}
                 </IconButton>
               </Box>
             </Stack>

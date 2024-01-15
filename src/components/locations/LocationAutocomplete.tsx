@@ -10,11 +10,14 @@ type TextFieldVariant = 'filled' | 'outlined' | 'standard';
 export function LocationAutocomplete({ required, value, variant = 'filled', onChange }: { required?: boolean; value?: Location; variant?: TextFieldVariant; onChange: (location: Location | null) => void }) {
   const locations = useAppSelector(buildLocationsSelector());
 
+  const [selected, setSelected] = useState<Location | null>(null);
+
   useEffect(() => {
     const locationOptions = [...locations];
     if (value && !locations.some((l) => l.id === value.id)) {
       locationOptions.push(value);
     }
+    setSelected(value?.title ? value : null);
     setOptions(locationOptions.sort((a, b) => (a.title >= b.title ? 1 : -1)));
   }, [locations, value]);
 
@@ -34,7 +37,7 @@ export function LocationAutocomplete({ required, value, variant = 'filled', onCh
       }}
       isOptionEqualToValue={(option, value) => option.id === value?.id}
       getOptionLabel={(option) => option.title}
-      value={value}
+      value={selected}
       renderOption={(props, option) => {
         return (
           <li {...props} key={option.title}>
