@@ -165,11 +165,16 @@ export class StateManager {
 
     const currentLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
     for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
-      console.log('MONGO update activity', updatedId);
+      console.log('MONGO update location', updatedId);
       if (!currentLocations[updatedId].active) continue;
       await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).replaceOne({ id: updatedId }, currentLocations[updatedId], {
         upsert: true,
       });
+    }
+
+    for (const removedId of Object.keys(oldLocations).filter((k) => currentLocations[k] == undefined)) {
+      console.log('MONGO remove location', removedId);
+      await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).deleteOne({ id: removedId });
     }
 
     return [ALL_ROOMS_TAG];

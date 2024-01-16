@@ -1,6 +1,6 @@
 import { createAction } from '@reduxjs/toolkit';
 
-import { Location } from '@respond/types/location';
+import { Location, pickLocationProperties } from '@respond/types/location';
 
 import { LocationState } from '.';
 
@@ -9,14 +9,14 @@ const reload = createAction('locations/load', (payload: LocationState) => ({
   meta: { sync: false },
 }));
 
-const update = createAction('locations/update', (payload: Location) => ({
-  payload,
-  meta: { sync: false },
+const update = createAction('locations/update', (payload: Partial<Location>) => ({
+  payload: pickLocationProperties(payload),
+  meta: { sync: true },
 }));
 
 const remove = createAction('locations/remove', (payload: Location) => ({
   payload,
-  meta: { sync: false },
+  meta: { sync: true },
 }));
 
 export const LocationActions = {
