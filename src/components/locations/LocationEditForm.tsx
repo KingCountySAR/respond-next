@@ -61,7 +61,6 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
 
   // Delete should only be available in contexts where temporary is not an option; i.e. we are not editing an activity location.
   const enableDelete = location.isSaved && !enableTemporary;
-  const submissionType = location.isSaved ? 'Update' : 'Create';
 
   const handleFormSubmit = (location: Location) => {
     if (location.toSaved) location.isSaved = true;
@@ -161,7 +160,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
                 render={({ field }) => (
                   <>
                     <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label={location.isSaved ? 'Update Saved Location' : 'Create Saved Location'} />
-                    <FormHelperText>{`By default, the location will only be ${submissionType.toLocaleLowerCase()}d for this activity.`}</FormHelperText>
+                    <FormHelperText>{`By default, the location will only be ${location.isSaved ? 'updated' : 'created'} for this activity.`}</FormHelperText>
                   </>
                 )}
               />
@@ -177,7 +176,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               <Stack direction="row" spacing={1}>
                 <Button onClick={handleFormClose}>Cancel</Button>
                 <Button disabled={!isDirty} type="submit" variant="contained">
-                  {submissionType}
+                  {location.title ? 'Update' : 'Create'}
                 </Button>
               </Stack>
             </Stack>
