@@ -3,7 +3,7 @@ import { Button, FormControl, FormHelperText, Grid, IconButton, Stack, Switch, T
 import { useState } from 'react';
 import { Controller, Resolver, ResolverResult, useForm } from 'react-hook-form';
 
-import { Location } from '@respond/types/location';
+import { createNewLocation, Location } from '@respond/types/location';
 
 import ConfirmDialog from '../ConfirmDialog';
 import { FormControlLabel } from '../Material';
@@ -45,7 +45,9 @@ const resolver: Resolver<Location> = async (values) => {
 };
 
 export function LocationEditForm({ location, enableTemporary, variant = 'filled', onSubmit, onClose }: { location: Location; enableTemporary?: boolean; variant?: InputVariant; onSubmit: (location: Location) => void; onClose?: () => void }) {
-  const defaultValues = { ...location };
+  // Legacy activity.location records will only have title. We need to initialize
+  // them onto the new Location object to ensures backward compatibility.
+  const defaultValues = { ...createNewLocation(), ...location, toSaved: false };
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const {
@@ -57,12 +59,12 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
     defaultValues,
   });
 
-  const isSavedLocation = !!location._id;
   // Delete should only be available in contexts where temporary is not an option; i.e. we are not editing an activity location.
-  const enableDelete = isSavedLocation && !enableTemporary;
-  const submissionType = location.title ? 'Update' : 'Create';
+  const enableDelete = location.isSaved && !enableTemporary;
+  const submissionType = location.isSaved ? 'Update' : 'Create';
 
   const handleFormSubmit = (location: Location) => {
+    if (location.toSaved) location.isSaved = true;
     onSubmit(location);
     onClose?.();
   };
@@ -85,7 +87,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               control={control}
               render={({ field }) => (
                 <FormControl fullWidth error={!!errors.title?.message}>
-                  <TextField {...field} variant={variant} disabled={enableTemporary && isSavedLocation} label="Location Name" required />
+                  <TextField {...field} variant={variant} disabled={enableTemporary && location.isSaved} label="Location Name" required />
                   <FormHelperText>{errors.title?.message}</FormHelperText>
                 </FormControl>
               )}
@@ -154,11 +156,11 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
           {enableTemporary && (
             <Grid item xs={12}>
               <Controller
-                name="active"
+                name="toSaved"
                 control={control}
                 render={({ field }) => (
                   <>
-                    <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label={isSavedLocation ? 'Update Saved Location' : 'Create Saved Location'} />
+                    <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label={location.isSaved ? 'Update Saved Location' : 'Create Saved Location'} />
                     <FormHelperText>{`By default, the location will only be ${submissionType.toLocaleLowerCase()}d for this activity.`}</FormHelperText>
                   </>
                 )}
@@ -182,7 +184,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
           </Grid>
         </Grid>
       </form>
-      <ConfirmDialog open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={() => handleFormSubmit({ ...location, active: false })} prompt={`Delete ${location.title}?`} />
+      <ConfirmDialog open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={() => handleFormSubmit({ ...location, isSaved: false })} prompt={`Delete ${location.title}?`} />
     </>
   );
 }

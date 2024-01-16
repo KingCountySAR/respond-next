@@ -2,7 +2,6 @@
 import AddLocation from '@mui/icons-material/AddLocation';
 import Edit from '@mui/icons-material/Edit';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
-import Snackbar from '@mui/material/Snackbar';
 import { parse as parseDate } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -17,7 +16,6 @@ import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@
 
 import { LocationAutocomplete } from '../locations/LocationAutocomplete';
 import { LocationEditDialog } from '../locations/LocationEditDialog';
-import { Alert } from '../Material';
 
 type FormDateTime = { date: string; time: string };
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
@@ -80,14 +78,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const org = useAppSelector((state) => state.organization.mine);
   const selectedActivity = useAppSelector(buildActivitySelector(activityId));
 
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [toastSuccess, setToastSuccess] = useState<string>();
-
-  useEffect(() => {
-    setShowSuccess(true);
-  }, [toastSuccess]);
-
-  const [showCreateLocation, setShowCreateLocation] = useState(false);
+  const [showLocationEditDialog, setShowLocationEditDialog] = useState(false);
 
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
   const ownerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
@@ -212,7 +203,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                 )}
               />
               <Box paddingRight={2}>
-                <IconButton color="default" onClick={() => setShowCreateLocation(true)}>
+                <IconButton color="default" onClick={() => setShowLocationEditDialog(true)}>
                   {watchLocation?.title ? <Edit /> : <AddLocation />}
                 </IconButton>
               </Box>
@@ -347,21 +338,12 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
       <LocationEditDialog
         location={watchLocation ?? undefined}
-        open={showCreateLocation}
+        open={showLocationEditDialog}
         onSubmit={(location) => {
           setValue('location', location);
-          setShowCreateLocation(false);
-          setToastSuccess('Location Created');
-          setShowSuccess(true);
         }}
-        onClose={() => setShowCreateLocation(false)}
+        onClose={() => setShowLocationEditDialog(false)}
       />
-
-      <Snackbar open={showSuccess} autoHideDuration={3000} onClose={() => setShowSuccess(false)}>
-        <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
-          {toastSuccess}
-        </Alert>
-      </Snackbar>
     </ToolbarPage>
   );
 };

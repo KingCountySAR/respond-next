@@ -3,31 +3,30 @@ import { v4 as uuid } from 'uuid';
 import { pickSafely } from '@respond/lib/pickSafely';
 
 export interface Location {
-  _id?: string;
   id: string;
   title: string;
-  lat?: string;
-  lon?: string;
-  address?: string;
-  directions?: string;
-  description?: string;
-  active?: boolean;
+  lat: string;
+  lon: string;
+  address: string;
+  directions: string;
+  description: string;
+  toSaved?: boolean;
+  isSaved: boolean;
 }
 
-export const createNewLocation = (): Location => {
-  return {
+export const createNewLocation = (toSaved?: boolean): Location => {
+  const newLocation: Location = {
     id: uuid(),
     title: '',
-    active: true,
+    lat: '',
+    lon: '',
+    address: '',
+    directions: '',
+    description: '',
+    isSaved: false,
   };
+  if (toSaved) newLocation.toSaved = true;
+  return newLocation;
 };
 
-export const createNewTemporaryLocation = (): Location => {
-  return {
-    id: uuid(),
-    title: '',
-    active: false,
-  };
-};
-
-export const pickLocationProperties = pickSafely<Partial<Location>>(['id', 'title', 'lat', 'lon', 'address', 'description', 'directions', 'active']);
+export const pickLocationProperties = pickSafely<Partial<Location>>(['id', 'title', 'lat', 'lon', 'address', 'description', 'directions', 'isSaved']);

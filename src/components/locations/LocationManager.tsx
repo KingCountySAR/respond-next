@@ -20,7 +20,7 @@ export const LocationManager = () => {
   };
 
   const handleFormSubmit = (location: Location) => {
-    if (location.active) {
+    if (location.isSaved) {
       dispatch(LocationActions.update(location));
     } else {
       dispatch(LocationActions.remove(location));
@@ -37,7 +37,7 @@ export const LocationManager = () => {
         <Stack sx={{ mb: 2 }} direction="row" spacing={2} alignItems={'center'} justifyContent={'space-between'}>
           <Typography variant="h4">Locations</Typography>
           <Box>
-            <Button disabled={!!selected} variant="outlined" onClick={() => setSelected(createNewLocation())}>
+            <Button disabled={!!selected} variant="outlined" onClick={() => setSelected(createNewLocation(true))}>
               New
             </Button>
           </Box>

@@ -166,7 +166,7 @@ export class StateManager {
     const currentLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
     for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
       console.log('MONGO update location', updatedId);
-      if (!currentLocations[updatedId].active) continue;
+      //if (!currentLocations[updatedId].isSaved) continue;
       await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).replaceOne({ id: updatedId }, currentLocations[updatedId], {
         upsert: true,
       });
