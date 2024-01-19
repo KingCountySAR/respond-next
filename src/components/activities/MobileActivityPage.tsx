@@ -10,6 +10,8 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
 import { Activity, Participant, ParticipatingOrg } from '@respond/types/activity';
 
+import { DrivingDirectionsPanel } from '../locations/LocationDirections';
+
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
@@ -41,7 +43,12 @@ export function MobileActivityPage({ activity }: { activity?: Activity }) {
 }
 
 function MobileBriefingScreen({ activity }: { activity: Activity }) {
-  return <BriefingPanel activity={activity} />;
+  return (
+    <Stack spacing={2} paddingBottom={2}>
+      <BriefingPanel activity={activity} />
+      {activity.location.directions && <DrivingDirectionsPanel directions={activity.location.directions} />}
+    </Stack>
+  );
 }
 
 function MobileRosterScreen({ activity }: { activity: Activity }) {
