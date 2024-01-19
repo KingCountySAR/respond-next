@@ -5,8 +5,6 @@ import { ReactNode, useState } from 'react';
 const tokenRegex = /turn left|turn right|continue|arrive|(?<= )th(?= )|trailhead|parking|(hwy\s|i-)\d+/gi;
 const ICON_VIEW_BOX_WIDTH = '24px';
 
-//const testdirections = 'East on I-90 to exit 34;Turn left on 468th Ave SE for 0.4 miles;turn right on Middle Fork Rd;continue for 12.5 miles to the junction with the Taylor River Road;Turn right to continue east for 5 miles to gated TH';
-
 const getIcon = (type: string | undefined) => {
   const token = type?.toLowerCase();
 
