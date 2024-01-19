@@ -80,6 +80,11 @@ export function isCheckedIn(status: ParticipantStatus) {
   return [ParticipantStatus.Available, ParticipantStatus.Assigned].includes(status);
 }
 
+export function getNavigationLink(activity: Activity) {
+  if (!activity.location.lat || !activity.location.lon) return;
+  return `https://www.google.com/maps/place/${activity.location.lat},${activity.location.lon}`;
+}
+
 export enum OrganizationStatus {
   Unknown = 0,
   Invited = 1,
