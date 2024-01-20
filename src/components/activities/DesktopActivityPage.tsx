@@ -8,8 +8,6 @@ import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
 import { Activity, Participant, ParticipatingOrg } from '@respond/types/activity';
 
-import { DrivingDirectionsPanel } from '../locations/LocationDirections';
-
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
@@ -56,7 +54,7 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
             }}
           />
         </Box>
-        <Stack alignItems="stretch" sx={{ width: 400 }} spacing={2}>
+        <Stack alignItems="stretch" sx={{ width: 400 }}>
           <BriefingPanel activity={activity} sx={{ px: 3 }} />
           {isActivityActive && (
             <Box sx={{ my: 2 }} display="flex" justifyContent="end">
@@ -64,7 +62,6 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
             </Box>
           )}
           <ManagerPanel activity={activity} sx={{ px: 3 }} />
-          {activity.location.directions && <DrivingDirectionsPanel directions={activity.location.directions} />}
         </Stack>
       </Stack>
       <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />

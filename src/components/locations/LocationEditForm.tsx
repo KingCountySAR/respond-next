@@ -1,14 +1,12 @@
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Button, FormControl, FormHelperText, Grid, IconButton, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Button, FormControl, FormHelperText, Grid, IconButton, Stack, Switch, TextField } from '@mui/material';
 import { useState } from 'react';
-import { Controller, Resolver, ResolverResult, useForm, useWatch } from 'react-hook-form';
+import { Controller, Resolver, ResolverResult, useForm } from 'react-hook-form';
 
 import { createNewLocation, Location } from '@respond/types/location';
 
 import ConfirmDialog from '../ConfirmDialog';
 import { FormControlLabel } from '../Material';
-
-import { DrivingDirectionsPanel } from './LocationDirections';
 
 type InputVariant = 'filled' | 'outlined' | 'standard';
 
@@ -60,9 +58,6 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
     resolver,
     defaultValues,
   });
-
-  //const watchDirections = useWatch('directions');
-  const watchDirections = useWatch({ control: control, name: 'directions' });
 
   // Delete should only be available in contexts where temporary is not an option; i.e. we are not editing an activity location.
   const enableDelete = location.isSaved && !enableTemporary;
@@ -145,7 +140,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={7}>
+          <Grid item xs={12}>
             <Controller
               name="directions"
               control={control}
@@ -156,9 +151,6 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
                 </FormControl>
               )}
             />
-          </Grid>
-          <Grid item xs={12} sm={5}>
-            {watchDirections ? <DrivingDirectionsPanel directions={watchDirections} /> : <Typography variant="caption">Type some directions to preview.</Typography>}
           </Grid>
           {enableTemporary && (
             <Grid item xs={12}>
