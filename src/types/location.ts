@@ -8,7 +8,6 @@ export interface Location {
   lat: string;
   lon: string;
   address: string;
-  directions: string;
   description: string;
   toSaved?: boolean;
   isSaved: boolean;
@@ -21,7 +20,6 @@ export const createNewLocation = (toSaved?: boolean): Location => {
     lat: '',
     lon: '',
     address: '',
-    directions: '',
     description: '',
     isSaved: false,
   };
@@ -29,4 +27,4 @@ export const createNewLocation = (toSaved?: boolean): Location => {
   return newLocation;
 };
 
-export const pickLocationProperties = pickSafely<Partial<Location>>(['id', 'title', 'lat', 'lon', 'address', 'description', 'directions', 'isSaved']);
+export const pickLocationProperties = pickSafely<Partial<Location>>(['id', 'title', 'lat', 'lon', 'address', 'description', 'isSaved']);

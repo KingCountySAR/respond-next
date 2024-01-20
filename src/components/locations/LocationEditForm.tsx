@@ -140,18 +140,6 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               )}
             />
           </Grid>
-          <Grid item xs={12}>
-            <Controller
-              name="directions"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.directions?.message}>
-                  <TextField multiline {...field} rows={3} variant={variant} label="Driving Directions" />
-                  <FormHelperText>{errors.directions?.message}</FormHelperText>
-                </FormControl>
-              )}
-            />
-          </Grid>
           {enableTemporary && (
             <Grid item xs={12}>
               <Controller
