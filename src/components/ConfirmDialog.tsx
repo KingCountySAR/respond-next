@@ -11,7 +11,7 @@ export default function ConfirmDialog({ open, prompt, onConfirm, onClose }: { op
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleConfirm}>
-          confirm
+          OK
         </Button>
       </DialogActions>
     </Dialog>
