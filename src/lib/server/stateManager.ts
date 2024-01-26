@@ -1,25 +1,32 @@
+import { Action } from '@reduxjs/toolkit';
 import produce from 'immer';
 
 import mongoPromise, { getRelatedOrgIds } from '@respond/lib/server/mongodb';
-import type { ActivityAction, ActivityState } from '@respond/lib/state';
-import { BasicReducers } from '@respond/lib/state';
+import type { ActivityState, LocationState } from '@respond/lib/state';
+import { BasicActivityReducers, BasicLocationReducers } from '@respond/lib/state';
 import type { Activity } from '@respond/types/activity';
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
+import { Location } from '@respond/types/location';
 import type UserAuth from '@respond/types/userAuth';
 
-import { ActivityActions, ParticipantUpdateAction } from '../state/activityActions';
+import { ActivityAction, ActivityActions, isActivityAction, ParticipantUpdateAction } from '../state/activityActions';
+import { isLocationAction, LocationAction } from '../state/locationActions';
 
 import { getServices } from './services';
 
 type DatabaseActivity = Activity & { removeTime?: number };
 
 export interface ActionListener {
-  broadcastAction(action: ActivityAction, toRooms: string[], reporterId: string): void;
+  broadcastAction(action: Action, toRooms: string[] | undefined, reporterId: string): void;
 }
+
+const LOCATION_COLLECTION_NAME = 'locations';
+const ALL_ROOMS_TAG = '3496260fa6f74124a7b7abae014a4f67';
 
 export class StateManager {
   private listeners: ActionListener[] = [];
   private activityState: ActivityState = { list: [] };
+  private locationsState: LocationState = { list: [] };
 
   addClient(listener: ActionListener) {
     this.listeners = [...this.listeners, listener];
@@ -35,6 +42,10 @@ export class StateManager {
     this.activityState = {
       list: allActivities.filter((a) => !a.removeTime),
     };
+    const allLocations = await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).find().toArray();
+    this.locationsState = {
+      list: allLocations,
+    };
   }
 
   async getStateForUser(user: UserAuth) {
@@ -47,20 +58,38 @@ export class StateManager {
     };
   }
 
+  getLocationState() {
+    return this.locationsState;
+  }
+
   async getAllActivities() {
     return this.activityState.list;
   }
 
-  async handleIncomingAction(action: ActivityAction, reporterId: string, auth: { userId: string; email: string }) {
-    console.log('stateManager reportAction', action);
+  async handleIncomingAction(action: Action, reporterId: string, auth: { userId: string; email: string }) {
+    const toRooms: Record<string, boolean> = {};
 
+    console.log('handleIncomingAction', reporterId, JSON.stringify(auth));
+    if (isActivityAction(action)) {
+      (await this.handleActivityAction(action, auth)).reduce((accum, cur) => ({ ...accum, [cur]: true }), toRooms);
+    }
+
+    if (isLocationAction(action)) {
+      (await this.handleLocationAction(action, auth)).reduce((accum, cur) => ({ ...accum, [cur]: true }), toRooms);
+    }
+
+    for (const listener of this.listeners) {
+      listener.broadcastAction(action, toRooms[ALL_ROOMS_TAG] ? undefined : Object.keys(toRooms), reporterId);
+    }
+  }
+
+  private async handleActivityAction(action: ActivityAction, auth: { userId: string; email: string }) {
     // If everything checks out, play the action into our store.
 
     const oldActivities: Record<string, Activity> = this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
 
     const nextState = produce(this.activityState, (draft) => {
-      console.log('reducing ', action.type, action.payload);
-      BasicReducers[action.type](draft, action as any);
+      BasicActivityReducers[action.type](draft, action as never);
     });
 
     // TODO: Validate nextState
@@ -112,9 +141,43 @@ export class StateManager {
     action.meta.sync = false;
 
     const toRooms = Array.from(affectedOrgs).map((o) => `org:${o}`);
-    for (const listener of this.listeners) {
-      listener.broadcastAction(action, toRooms, reporterId);
+    return toRooms;
+  }
+
+  private async handleLocationAction(action: LocationAction, auth: { userId: string; email: string }) {
+    console.log('stateManager reportAction', action);
+
+    const oldLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
+
+    const nextState = produce(this.locationsState, (draft) => {
+      BasicLocationReducers[action.type](draft, action as never);
+    });
+    this.locationsState = nextState;
+
+    const mongo = await mongoPromise;
+
+    await mongo.db().collection('history').insertOne({
+      action: action,
+      time: new Date(),
+      userId: auth.userId,
+      email: auth.email,
+    });
+
+    const currentLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
+    for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
+      console.log('MONGO update location', updatedId);
+      //if (!currentLocations[updatedId].isSaved) continue;
+      await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).replaceOne({ id: updatedId }, currentLocations[updatedId], {
+        upsert: true,
+      });
     }
+
+    for (const removedId of Object.keys(oldLocations).filter((k) => currentLocations[k] == undefined)) {
+      console.log('MONGO remove location', removedId);
+      await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).deleteOne({ id: removedId });
+    }
+
+    return [ALL_ROOMS_TAG];
   }
 
   private async loadTagsIfNewParticipant(action: ParticipantUpdateAction) {

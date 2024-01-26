@@ -88,4 +88,9 @@ type AllActivityActions = {
   [K in keyof ActivityActionsType]: ReturnType<ActivityActionsType[K]>;
 };
 export type ActivityAction = AllActivityActions[keyof AllActivityActions];
+
+export function isActivityAction(object: { type: string }): object is ActivityAction {
+  return Object.values(ActivityActions).some((a) => a.type === object.type);
+}
+
 export type ParticipantUpdateAction = AllActivityActions['participantUpdate'];

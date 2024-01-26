@@ -1,15 +1,12 @@
-import { CaseReducer, createSlice } from '@reduxjs/toolkit';
-import { TypedActionCreator } from '@reduxjs/toolkit/dist/mapBuilders';
+import { createSlice } from '@reduxjs/toolkit';
 import { hoursToMilliseconds } from 'date-fns';
 
-import { ActivityActions, ActivityState, BasicReducers } from '@respond/lib/state';
+import { ActivityActions, ActivityState, BasicActivityReducers } from '@respond/lib/state';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
-import { RootState } from '.';
+import { ReducerBuilderStub } from '../types';
 
-export interface ReducerBuilderStub {
-  addCase<ActionCreator extends TypedActionCreator<string>>(actionCreator: ActionCreator, reducer: CaseReducer<ActivityState, ReturnType<ActionCreator>>): ReducerBuilderStub;
-}
+import { RootState } from '.';
 
 let initialState: ActivityState = {
   list: [],
@@ -23,17 +20,17 @@ const activitySliceArgs = {
   name: 'activities',
   initialState,
   reducers: {},
-  extraReducers: (builder: ReducerBuilderStub) => {
+  extraReducers: (builder: ReducerBuilderStub<ActivityState>) => {
     builder //
-      .addCase(ActivityActions.reload, BasicReducers[ActivityActions.reload.type])
-      .addCase(ActivityActions.update, BasicReducers[ActivityActions.update.type])
-      .addCase(ActivityActions.remove, BasicReducers[ActivityActions.remove.type])
-      .addCase(ActivityActions.reactivate, BasicReducers[ActivityActions.reactivate.type])
-      .addCase(ActivityActions.complete, BasicReducers[ActivityActions.complete.type])
-      .addCase(ActivityActions.appendOrganizationTimeline, BasicReducers[ActivityActions.appendOrganizationTimeline.type])
-      .addCase(ActivityActions.participantTimelineUpdate, BasicReducers[ActivityActions.participantTimelineUpdate.type])
-      .addCase(ActivityActions.participantUpdate, BasicReducers[ActivityActions.participantUpdate.type])
-      .addCase(ActivityActions.tagParticipant, BasicReducers[ActivityActions.tagParticipant.type]);
+      .addCase(ActivityActions.reload, BasicActivityReducers[ActivityActions.reload.type])
+      .addCase(ActivityActions.update, BasicActivityReducers[ActivityActions.update.type])
+      .addCase(ActivityActions.remove, BasicActivityReducers[ActivityActions.remove.type])
+      .addCase(ActivityActions.reactivate, BasicActivityReducers[ActivityActions.reactivate.type])
+      .addCase(ActivityActions.complete, BasicActivityReducers[ActivityActions.complete.type])
+      .addCase(ActivityActions.appendOrganizationTimeline, BasicActivityReducers[ActivityActions.appendOrganizationTimeline.type])
+      .addCase(ActivityActions.participantTimelineUpdate, BasicActivityReducers[ActivityActions.participantTimelineUpdate.type])
+      .addCase(ActivityActions.participantUpdate, BasicActivityReducers[ActivityActions.participantUpdate.type])
+      .addCase(ActivityActions.tagParticipant, BasicActivityReducers[ActivityActions.tagParticipant.type]);
   },
 };
 

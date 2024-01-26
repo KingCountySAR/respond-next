@@ -1,13 +1,13 @@
 import type { Server as HTTPServer } from 'http';
 
 import { ObjectId } from 'mongodb';
-import { BroadcastOperator, Server as IOServer, Socket } from 'socket.io';
+import { Server as IOServer, Socket } from 'socket.io';
 
 import type { SocketAuthDoc } from '@respond/types/data/socketAuthDoc';
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@respond/types/syncSocket';
 import type UserAuth from '@respond/types/userAuth';
 
-import { ActivityActions } from '../state';
+import { ActivityActions, LocationActions } from '../state';
 
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import { getServices } from './services';
@@ -38,11 +38,9 @@ export default class SocketManager {
           if (!manager.io) {
             return;
           }
-          let emitter: BroadcastOperator<ServerToClientEvents, SocketData> | undefined;
-          for (const room of toRooms) {
-            emitter = emitter ? emitter.to(room) : manager.io.to(room);
-          }
-          emitter?.emit('broadcastAction', action, reporterId);
+
+          const emitter = toRooms ? manager.io.to(toRooms) : manager.io;
+          emitter.emit('broadcastAction', action, reporterId);
         },
       });
     }
@@ -83,6 +81,7 @@ export default class SocketManager {
         }
         socket.emit('welcome', socket.id);
         socket.emit('broadcastAction', ActivityActions.reload(await stateManager.getStateForUser(socketAuth.user)), '');
+        socket.emit('broadcastAction', LocationActions.reload(stateManager.getLocationState()), '');
       }
     });
 

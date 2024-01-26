@@ -1,8 +1,10 @@
 'use client';
-import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
+import AddLocation from '@mui/icons-material/AddLocation';
+import Edit from '@mui/icons-material/Edit';
+import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
 import { parse as parseDate } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
@@ -11,6 +13,9 @@ import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptio
 import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
+
+import { LocationAutocomplete } from '../locations/LocationAutocomplete';
+import { LocationEditDialog } from '../locations/LocationEditDialog';
 
 type FormDateTime = { date: string; time: string };
 type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
@@ -73,6 +78,8 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const org = useAppSelector((state) => state.organization.mine);
   const selectedActivity = useAppSelector(buildActivitySelector(activityId));
 
+  const [showLocationEditDialog, setShowLocationEditDialog] = useState(false);
+
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
   const ownerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
   const isNew = !selectedActivity;
@@ -100,6 +107,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
     watch,
   } = useForm<ActivityFormValues>({
@@ -108,6 +116,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   });
 
   const focusRef = useRef<HTMLInputElement>();
+  const watchLocation = watch('location');
 
   useEffect(() => {
     focusRef.current?.focus();
@@ -167,7 +176,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   return (
     <ToolbarPage>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Grid container spacing={1}>
+        <Grid container spacing={1} alignItems="center">
           <Grid item xs={12}>
             <Controller
               name="title"
@@ -182,16 +191,23 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
           </Grid>
 
           <Grid item xs={12}>
-            <Controller
-              name="location.title"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.location?.message}>
-                  <TextField {...field} variant="filled" label="Location" required />
-                  <FormHelperText>{errors.location?.message}</FormHelperText>
-                </FormControl>
-              )}
-            />
+            <Stack direction={'row'} spacing={2} alignItems={'center'}>
+              <Controller
+                name="location"
+                control={control}
+                render={({ field: { value, onChange } }) => (
+                  <FormControl fullWidth error={!!errors.location?.message}>
+                    <LocationAutocomplete value={value} onChange={onChange} required />
+                    <FormHelperText>{errors.location?.message}</FormHelperText>
+                  </FormControl>
+                )}
+              />
+              <Box paddingRight={2}>
+                <IconButton color="default" onClick={() => setShowLocationEditDialog(true)}>
+                  {watchLocation?.title ? <Edit /> : <AddLocation />}
+                </IconButton>
+              </Box>
+            </Stack>
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -319,6 +335,15 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
           </Grid>
         </Grid>
       </form>
+
+      <LocationEditDialog
+        location={watchLocation ?? undefined}
+        open={showLocationEditDialog}
+        onSubmit={(location) => {
+          setValue('location', location);
+        }}
+        onClose={() => setShowLocationEditDialog(false)}
+      />
     </ToolbarPage>
   );
 };

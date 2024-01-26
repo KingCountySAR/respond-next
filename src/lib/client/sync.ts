@@ -1,10 +1,10 @@
-import { isAnyOf } from '@reduxjs/toolkit';
+import { Action, isAnyOf } from '@reduxjs/toolkit';
 import io, { Socket } from 'socket.io-client';
 
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/types/syncSocket';
 
 import { apiFetch } from '../api';
-import { ActivityAction, ActivityActions } from '../state';
+import { ActivityActions } from '../state';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
 import { AuthActions } from './store/auth';
@@ -70,7 +70,7 @@ export class ClientSync {
         },
         effect: (action, _listenerApi) => {
           console.log('ACTING ON SYNC');
-          this.handleLocalAction(action as ActivityAction);
+          this.handleLocalAction(action);
         },
       }),
     );
@@ -127,11 +127,11 @@ export class ClientSync {
     }
   }
 
-  handleLocalAction(action: ActivityAction) {
+  handleLocalAction(action: Action) {
     this.socket.emit('reportAction', action, this.socket.id);
   }
 
-  handleServerAction(action: ActivityAction, reporterId: string) {
+  handleServerAction(action: Action, reporterId: string) {
     console.log('handleServerAction', reporterId, this.socket.id);
     if (reporterId === this.socket.id) return;
     console.log('YAY handleServerAction', action);

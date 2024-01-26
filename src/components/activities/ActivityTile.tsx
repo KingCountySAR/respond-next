@@ -1,3 +1,4 @@
+import { NearMe } from '@mui/icons-material';
 import { Box, Card, CardActions, Grid, IconButton, Link, Typography } from '@mui/material';
 import Image from 'next/image';
 import { ReactNode } from 'react';
@@ -5,9 +6,10 @@ import { ReactNode } from 'react';
 import { StatusChip } from '@respond/components/StatusChip';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { getActivityPath, isActive } from '@respond/lib/client/store/activities';
-import { Activity, ParticipantStatus } from '@respond/types/activity';
+import { Activity, getNavigationLink, ParticipantStatus } from '@respond/types/activity';
 
 export const ActivityTile = ({ activity, status, children }: { activity: Activity; status?: ParticipantStatus; children?: ReactNode }) => {
+  const navigationUrl = getNavigationLink(activity);
   return (
     <Card>
       <Box padding={1}>
@@ -33,11 +35,7 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
                   <Image src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
                 </IconButton>
               )}
-              {/* TODO: When we have necessary attribute to implement nav button, do it here.
-                <Button aria-label="Navigate" color="info">
-                  <NearMe /> Navigate
-                </Button>
-                */}
+              {navigationUrl && <NavigationButton url={navigationUrl} />}
             </Grid>
             <Grid item>
               <StatusUpdater activity={activity} />
@@ -46,5 +44,13 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
         </CardActions>
       )}
     </Card>
+  );
+};
+
+const NavigationButton = ({ url }: { url: string }) => {
+  return (
+    <IconButton aria-label="Navigate" color="info" href={url} target="_blank">
+      <NearMe />
+    </IconButton>
   );
 };
