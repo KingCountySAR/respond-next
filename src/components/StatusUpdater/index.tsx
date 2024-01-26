@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { Activity, isResponding, ParticipantStatus } from '@respond/types/activity';
+import { Activity, getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
@@ -102,9 +102,10 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
   const [confirmStatus, setConfirmStatus] = useState<ParticipantStatus>(ParticipantStatus.SignedIn);
   const [confirmLabel, setConfirmLabel] = useState<string>('');
 
-  current = current ?? activity.participants[user.participantId]?.timeline[0]?.status;
+  const participant = activity.participants[user.participantId];
+  current = current ?? participant?.timeline[0]?.status;
 
-  const formLogic = useFormLogic(activity, user, thisOrg, activity.participants[user.participantId], current, confirmStatus, () => setConfirming(false));
+  const formLogic = useFormLogic(activity, user, thisOrg, participant, current, confirmStatus, () => setConfirming(false));
 
   function confirmPrompt(title: string, optionId: number) {
     const option = Object.values(statusTransitions).find((f) => f.id === optionId);
@@ -114,7 +115,28 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
     setConfirming(true);
   }
 
-  const actions = getStatusOptions(current, activity.startTime, activity.forceStandbyOnly, activity.earlySignInWindow);
+  const lastOrgId = participant?.timeline[0].organizationId;
+  const currentOrgId = thisOrg.id;
+  let actions;
+  if (isActive(current) && currentOrgId !== lastOrgId) {
+    let transition;
+    switch (current) {
+      case ParticipantStatus.Remote:
+        transition = statusTransitions.inTown;
+        break;
+      case ParticipantStatus.Standby:
+        transition = statusTransitions.standBy;
+        break;
+      default:
+        transition = statusTransitions.signIn;
+    }
+    actions = [
+      { ...transition, text: `Switch from ${getOrganizationName(activity, lastOrgId)}` },
+      { ...statusTransitions.signOut, text: `Sign Out from ${getOrganizationName(activity, lastOrgId)}` },
+    ];
+  } else {
+    actions = getStatusOptions(current, activity.startTime, activity.forceStandbyOnly, activity.earlySignInWindow);
+  }
 
   return (
     <>
