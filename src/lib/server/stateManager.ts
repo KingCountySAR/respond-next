@@ -78,6 +78,10 @@ export class StateManager {
       (await this.handleLocationAction(action, auth)).reduce((accum, cur) => ({ ...accum, [cur]: true }), toRooms);
     }
 
+    if (isSyncAction(action)) {
+      action.meta.sync = false;
+    }
+
     for (const listener of this.listeners) {
       listener.broadcastAction(action, toRooms[ALL_ROOMS_TAG] ? undefined : Object.keys(toRooms), reporterId);
     }
@@ -137,8 +141,6 @@ export class StateManager {
         upsert: true,
       });
     }
-
-    action.meta.sync = false;
 
     const toRooms = Array.from(affectedOrgs).map((o) => `org:${o}`);
     return toRooms;
@@ -222,4 +224,13 @@ export class StateManager {
     const interestedIds = Array.from(new Set([/*...partnerOrgs,*/ ...participatingOrgs]));
     return interestedIds;
   }
+}
+
+function isSyncAction(object: object): object is { meta: { sync: boolean } } {
+  if ('meta' in object) {
+    if ('sync' in (object as { meta: object }).meta) {
+      return true;
+    }
+  }
+  return false;
 }
