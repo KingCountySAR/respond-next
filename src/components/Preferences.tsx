@@ -2,7 +2,7 @@ import { Button, Dialog, DialogContent, DialogTitle, FormControl, InputLabel, Me
 import { useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { PreferenceActions } from '@respond/lib/client/store/preferences';
+import { NavigationApp, PreferenceActions } from '@respond/lib/client/store/preferences';
 
 import { MobilePageId } from './activities/MobileActivityPage';
 
@@ -31,6 +31,10 @@ export function PreferencesDialog(props: PreferenceDialogProps) {
     setPreferences({ ...preferences, defaultMobileView: event.target.value as MobilePageId });
   };
 
+  const handleNavigationAppChange = (event: SelectChangeEvent): void => {
+    setPreferences({ ...preferences, navigationApp: event.target.value as NavigationApp });
+  };
+
   return (
     <Dialog fullWidth={true} onClose={handleClose} open={open}>
       <DialogTitle>Preferences</DialogTitle>
@@ -42,6 +46,14 @@ export function PreferencesDialog(props: PreferenceDialogProps) {
               <MenuItem value={MobilePageId.Manage}>{MobilePageId.Manage}</MenuItem>
               <MenuItem value={MobilePageId.Roster}>{MobilePageId.Roster}</MenuItem>
               <MenuItem value={MobilePageId.Briefing}>{MobilePageId.Briefing}</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel id="nav-app-select-label">Navigation App</InputLabel>
+            <Select labelId="nav-app-select-label" id="nav-app-select" value={preferences.navigationApp} label="Navigation App" onChange={handleNavigationAppChange}>
+              <MenuItem value={NavigationApp.Apple}>{NavigationApp.Apple}</MenuItem>
+              <MenuItem value={NavigationApp.Google}>{NavigationApp.Google}</MenuItem>
+              <MenuItem value={NavigationApp.Waze}>{NavigationApp.Waze}</MenuItem>
             </Select>
           </FormControl>
           <Button variant="contained" onClick={handleSave}>
