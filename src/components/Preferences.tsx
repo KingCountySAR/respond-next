@@ -2,7 +2,7 @@ import { Button, Dialog, DialogContent, DialogTitle, FormControl, FormHelperText
 import { Controller, useForm } from 'react-hook-form';
 
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { PerferencesState, PreferenceActions } from '@respond/lib/client/store/preferences';
+import { NavigationApp, PerferencesState, PreferenceActions } from '@respond/lib/client/store/preferences';
 
 import { MobilePageId } from './activities/MobileActivityPage';
 
@@ -52,6 +52,21 @@ function PreferencesForm({ onCancel, onSubmit }: { onCancel: () => void; onSubmi
                 <MenuItem value={MobilePageId.Briefing}>{MobilePageId.Briefing}</MenuItem>
               </Select>
               <FormHelperText>{errors.defaultMobileView?.message}</FormHelperText>
+            </FormControl>
+          )}
+        />
+        <Controller
+          name="navigationApp"
+          control={control}
+          render={({ field }) => (
+            <FormControl fullWidth error={!!errors.navigationApp?.message}>
+              <InputLabel variant="outlined">Navigation App</InputLabel>
+              <Select {...field} variant="outlined" label="Navigation App">
+                <MenuItem value={NavigationApp.Apple}>{NavigationApp.Apple}</MenuItem>
+                <MenuItem value={NavigationApp.Google}>{NavigationApp.Google}</MenuItem>
+                <MenuItem value={NavigationApp.Waze}>{NavigationApp.Waze}</MenuItem>
+              </Select>
+              <FormHelperText>{errors.navigationApp?.message}</FormHelperText>
             </FormControl>
           )}
         />
