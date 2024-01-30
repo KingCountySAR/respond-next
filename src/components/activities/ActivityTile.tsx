@@ -53,7 +53,7 @@ const NavigationButton = ({ lat, lon }: { lat?: string; lon?: string }) => {
   const mapUrl = {
     [NavigationApp.Apple]: 'http://maps.apple.com/?daddr=',
     [NavigationApp.Google]: 'https://www.google.com/maps/place/',
-    [NavigationApp.Waze]: 'https://waze.com/ul?ll=',
+    [NavigationApp.Waze]: 'https://waze.com/ul?navigate=yes&ll=',
   };
   const url = lat && lon ? `${mapUrl[navApp]}${lat},${lon}` : undefined;
   return (
