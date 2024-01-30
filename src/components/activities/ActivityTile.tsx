@@ -51,7 +51,7 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
 const NavigationButton = ({ lat, lon }: { lat?: string; lon?: string }) => {
   const navApp: NavigationApp = useAppSelector((state) => state.preferences.navigationApp);
   const mapUrl = {
-    [NavigationApp.Apple]: 'https://maps.apple.com/?ll=',
+    [NavigationApp.Apple]: 'http://maps.apple.com/?daddr=',
     [NavigationApp.Google]: 'https://www.google.com/maps/place/',
     [NavigationApp.Waze]: 'https://waze.com/ul?ll=',
   };
