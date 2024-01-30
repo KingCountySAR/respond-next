@@ -68,7 +68,7 @@ export function AppMenu() {
           </MenuItem>
         </Menu>
       </div>
-      {openPreferences && <PreferencesDialog open={openPreferences} onClose={handleClosePreferences} />}
+      <PreferencesDialog open={openPreferences} onClose={handleClosePreferences} />
     </>
   );
 }
