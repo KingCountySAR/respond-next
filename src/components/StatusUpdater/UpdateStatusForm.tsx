@@ -39,6 +39,14 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
         message: 'Must be a positive number',
       };
     }
+
+    if (!values.statusTime) {
+      result.errors.statusTime = {
+        type: 'required',
+        message: 'Status time is required',
+      };
+    }
+
     const statusTimeAsDate = parseDate(values.statusTime, TextBoxDateFormat, new Date());
     const lastStatusChangeTime = participant?.timeline[0].time;
     if (lastStatusChangeTime && !isNaN(lastStatusChangeTime) && statusTimeAsDate.getTime() < lastStatusChangeTime) {

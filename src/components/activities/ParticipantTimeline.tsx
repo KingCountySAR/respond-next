@@ -29,8 +29,10 @@ export default function ParticipantTimeline({ participant, activity }: { partici
 }
 
 function ParticipantUpdateTile({ record, onChange }: { record: EnrichedParticipantUpdate; onChange: (time: number) => void }) {
+  const initialTime = record.time ?? new Date().getTime(); // Backward Compatability; timelines might have null time values. This ensures a value is present so it can be edited.
+
   const [edit, setEdit] = useState(false);
-  const [time, setTime] = useState(record.time);
+  const [time, setTime] = useState(initialTime);
   const handleAccept = (newTime: number | null) => {
     if (newTime) {
       setTime(newTime);
@@ -44,7 +46,7 @@ function ParticipantUpdateTile({ record, onChange }: { record: EnrichedParticipa
     <Box>
       {edit ? (
         <Stack flexGrow={1} direction="row" justifyContent="space-between">
-          <DateTimePicker value={record.time} label={`${record.organizationName} - ${record.statusText}`} format="MM/dd HH:mm" onAccept={handleAccept} onClose={handleClose} />
+          <DateTimePicker value={initialTime} label={`${record.organizationName} - ${record.statusText}`} format="MM/dd HH:mm" onAccept={handleAccept} onClose={handleClose} />
           <IconButton disableRipple onClick={handleClose}>
             <Close />
           </IconButton>
