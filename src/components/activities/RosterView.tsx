@@ -24,7 +24,7 @@ export function RosterReview({ activityId }: { activityId: string }) {
         .map((v) => `"${v}"`) // quote it
         .join(','); // comma-separated;
     });
-    data.unshift(`"id","participant_name","organization_name","sign_in","arrive_base","depart_base","sign_out","miles"`);
+    data.unshift(`"participant_id","participant_name","organization_name","sign_in","arrive_base","depart_base","sign_out","miles"`);
     const blob = new Blob([data.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
