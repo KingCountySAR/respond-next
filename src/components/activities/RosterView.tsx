@@ -1,6 +1,7 @@
 import { Box, Button, Divider, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { differenceInCalendarDays, format as formatDate } from 'date-fns';
-import { useRouter } from 'next/navigation';
+import { forwardRef, useRef } from 'react';
+import { useReactToPrint } from 'react-to-print';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
@@ -12,7 +13,6 @@ import { OutputForm, OutputText, OutputTime } from '../OutputForm';
 const headerCellStyle = { fontWeight: 700, width: 20 };
 
 export function RosterReview({ activityId }: { activityId: string }) {
-  const router = useRouter();
   const activity = useAppSelector(buildActivitySelector(activityId));
   const rosterEntries = getRosterEntries(activity);
 
@@ -36,17 +36,22 @@ export function RosterReview({ activityId }: { activityId: string }) {
     anchor.remove();
   };
 
+  const printable = useRef(null);
+  const handlePrint = useReactToPrint({
+    content: () => printable.current,
+  });
+
   return (
     <ToolbarPage maxWidth="lg">
       <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
         <Box display="flex" flex="1 1 auto" flexDirection="column">
-          <Paper>{activity ? <Roster activity={activity} rosterEntries={rosterEntries} /> : <ActivityNotFound />}</Paper>
+          <Paper>{activity ? <Roster ref={printable} activity={activity} rosterEntries={rosterEntries} /> : <ActivityNotFound />}</Paper>
         </Box>
         <Stack alignItems="stretch" spacing={2}>
           <Button variant="outlined" onClick={download}>
             Download (csv)
           </Button>
-          <Button variant="outlined" onClick={() => router.push(`/roster/${activityId}/print`)}>
+          <Button variant="outlined" onClick={handlePrint}>
             Print
           </Button>
         </Stack>
@@ -55,21 +60,11 @@ export function RosterReview({ activityId }: { activityId: string }) {
   );
 }
 
-export function RosterPrint({ activityId }: { activityId: string }) {
-  const router = useRouter();
-  const activity = useAppSelector(buildActivitySelector(activityId));
-  const rosterEntries = getRosterEntries(activity);
-  window.onafterprint = () => router.back();
-  setTimeout(() => {
-    window.print();
-  }, 1000);
-  return <>{activity ? <Roster activity={activity} rosterEntries={rosterEntries} /> : <ActivityNotFound />}</>;
-}
-
-function Roster({ activity, rosterEntries }: { activity: Activity; rosterEntries: Array<RosterEntry> }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Roster = forwardRef(function Roster({ activity, rosterEntries }: { activity: Activity; rosterEntries: Array<RosterEntry> }, ref: any) {
   if (!rosterEntries.length) return <ActivityNotFound />;
   return (
-    <Table size="small">
+    <Table ref={ref} size="small">
       <TableHead>
         <TableRow>
           <TableCell colSpan={7}>
@@ -102,7 +97,7 @@ function Roster({ activity, rosterEntries }: { activity: Activity; rosterEntries
       </TableBody>
     </Table>
   );
-}
+});
 
 function ActivityNotFound() {
   return (
