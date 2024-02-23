@@ -1,8 +1,8 @@
 'use client';
 import AddLocation from '@mui/icons-material/AddLocation';
 import Edit from '@mui/icons-material/Edit';
-import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, Stack, Switch, TextField } from '@mui/material';
-import { parse as parseDate } from 'date-fns';
+import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
+import { DateTimePicker } from '@mui/x-date-pickers';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
@@ -10,32 +10,19 @@ import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 're
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
-import * as FormUtils from '@respond/lib/formUtils';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/types/activity';
 
 import { LocationAutocomplete } from '../locations/LocationAutocomplete';
 import { LocationEditDialog } from '../locations/LocationEditDialog';
 
-type FormDateTime = { date: string; time: string };
-type ActivityFormValues = FormUtils.ReplacedType<Activity, number, FormDateTime, ['startTime']>;
-
-function parseFormDateTime(dateTime: FormDateTime) {
-  return parseDate(`${dateTime.date} ${dateTime.time}`, 'yyyy-MM-dd HHmm', new Date());
-}
-
-function isFutureFormDate(dateTime: FormDateTime) {
-  const date = parseFormDateTime(dateTime);
-  return isFuture(date.getTime());
-}
-
 /**
  * Validation resolver
  * @param values
  * @returns
  */
-const resolver: Resolver<ActivityFormValues> = async (values) => {
-  const result: ResolverResult<ActivityFormValues> = {
+const resolver: Resolver<Activity> = async (values) => {
+  const result: ResolverResult<Activity> = {
     values: values.id ? values : {},
     errors: {},
   };
@@ -51,8 +38,7 @@ const resolver: Resolver<ActivityFormValues> = async (values) => {
     };
   }
 
-  const parsed = parseFormDateTime(values.startTime);
-  if (isNaN(parsed.getTime())) {
+  if (isNaN(values.startTime)) {
     result.errors.startTime = {
       type: 'validate',
       message: 'Invalid start time',
@@ -96,7 +82,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     activity = selectedActivity;
   }
 
-  const defaultValues = FormUtils.toExpandedDates(activity, 'startTime');
+  const defaultValues = { ...activity };
 
   // Sanitize stored values
   const initialEarlySignInWindow = defaultValues.earlySignInWindow;
@@ -110,7 +96,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     setValue,
     formState: { errors },
     watch,
-  } = useForm<ActivityFormValues>({
+  } = useForm<Activity>({
     resolver,
     defaultValues,
   });
@@ -126,9 +112,9 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     return <Box>Waiting for org...</Box>;
   }
 
-  const onSubmit: SubmitHandler<ActivityFormValues> = (data) => {
+  const onSubmit: SubmitHandler<Activity> = (data) => {
     const time = new Date().getTime();
-    const updated = FormUtils.fromExpandedDates(data, 'startTime');
+    const updated = { ...data, startTime: new Date(data.startTime).getTime() };
 
     dispatch(ActivityActions.update(updated));
 
@@ -175,175 +161,184 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
   return (
     <ToolbarPage>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Grid container spacing={1} alignItems="center">
-          <Grid item xs={12}>
-            <Controller
-              name="title"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.title?.message}>
-                  <TextField {...field} inputRef={focusRef} variant="filled" label="Name" required />
-                  <FormHelperText>{errors.title?.message}</FormHelperText>
-                </FormControl>
-              )}
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <Stack direction={'row'} spacing={2} alignItems={'center'}>
+      <Paper>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Grid container padding={2} spacing={2} alignItems="center">
+            <Grid item xs={12}>
               <Controller
-                name="location"
+                name="title"
                 control={control}
-                render={({ field: { value, onChange } }) => (
-                  <FormControl fullWidth error={!!errors.location?.message}>
-                    <LocationAutocomplete value={value} onChange={onChange} required />
-                    <FormHelperText>{errors.location?.message}</FormHelperText>
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.title?.message}>
+                    <TextField {...field} inputRef={focusRef} variant="outlined" label="Name" required />
+                    <FormHelperText>{errors.title?.message}</FormHelperText>
                   </FormControl>
                 )}
               />
-              <Box paddingRight={2}>
-                <IconButton color="default" onClick={() => setShowLocationEditDialog(true)}>
-                  {watchLocation?.title ? <Edit /> : <AddLocation />}
-                </IconButton>
-              </Box>
-            </Stack>
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="mapId"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth>
-                  <TextField {...field} variant="filled" label="Map Id" />
-                  <FormHelperText></FormHelperText>
-                </FormControl>
-              )}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="idNumber"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.idNumber?.message}>
-                  <TextField {...field} variant="filled" label="State Number" />
-                  <FormHelperText>{errors.idNumber?.message}</FormHelperText>
-                </FormControl>
-              )}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="ownerOrgId"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.ownerOrgId?.message}>
-                  <InputLabel variant="filled">Responsible Agency</InputLabel>
-                  <Select {...field} variant="filled" label="Responsible Agency">
-                    {ownerOptions.map((p) => (
-                      <MenuItem key={p.id} value={p.id}>
-                        {p.title}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="earlySignInWindow"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.earlySignInWindow?.message} disabled={!isFutureFormDate(watch('startTime'))}>
-                  <InputLabel variant="filled">Early Sign In Window</InputLabel>
-                  <Select {...field} variant="filled" label="Early Sign In Window">
-                    {earlySignInWindowOptions.map((p) => (
-                      <MenuItem key={p.value} value={p.value}>
-                        {p.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <FormControl fullWidth error={!!errors.startTime?.message || !!errors.startTime?.date?.message || !!errors.startTime?.time?.message}>
-              <Grid container spacing={1}>
-                <Grid item xs={12} sm={6}>
-                  <Controller name="startTime.date" control={control} render={({ field }) => <TextField {...field} fullWidth variant="filled" label="Start Date" required />} />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Controller name="startTime.time" control={control} render={({ field }) => <TextField {...field} fullWidth variant="filled" label="Start Time" required />} />
-                </Grid>
-              </Grid>
-              <FormHelperText>{errors.startTime?.message}</FormHelperText>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Controller
-              name="description"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.title?.message}>
-                  <TextField {...field} multiline variant="filled" label="Description" />
-                  <FormHelperText>{errors.title?.message}</FormHelperText>
-                </FormControl>
-              )}
-            />
-          </Grid>
-
-          <Grid container item xs={12} spacing={1} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              {activityType === 'missions' ? null : (
-                <Grid item xs={12}>
-                  <FormGroup>
-                    <Controller name="asMission" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Run as mock mission" />} />
-                  </FormGroup>
-                </Grid>
-              )}
-
-              <Grid item xs={12}>
-                <FormGroup>
-                  <Controller name="forceStandbyOnly" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Standby Only" />} />
-                </FormGroup>
-              </Grid>
-
-              {isNew && (
-                <Grid item xs={12} sx={{ my: 1 }}>
-                  <Box>{org.title} will start as a participating unit.</Box>
-                </Grid>
-              )}
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Stack direction="row" justifyContent="flex-end" spacing={1}>
-                <Button onClick={() => router.back()}>Cancel</Button>
-                <Button type="submit" variant="contained">
-                  Save {activityType === 'missions' ? 'Mission' : 'Event'}
-                </Button>
+            <Grid item xs={12}>
+              <Stack direction={'row'} spacing={2} alignItems={'center'}>
+                <Controller
+                  name="location"
+                  control={control}
+                  render={({ field: { value, onChange } }) => (
+                    <FormControl fullWidth error={!!errors.location?.message}>
+                      <LocationAutocomplete value={value} onChange={onChange} variant="outlined" required />
+                      <FormHelperText>{errors.location?.message}</FormHelperText>
+                    </FormControl>
+                  )}
+                />
+                <Box paddingRight={2}>
+                  <IconButton color="default" onClick={() => setShowLocationEditDialog(true)}>
+                    {watchLocation?.title ? <Edit /> : <AddLocation />}
+                  </IconButton>
+                </Box>
               </Stack>
             </Grid>
-          </Grid>
-        </Grid>
-      </form>
 
-      <LocationEditDialog
-        location={watchLocation ?? undefined}
-        open={showLocationEditDialog}
-        onSubmit={(location) => {
-          setValue('location', location);
-        }}
-        onClose={() => setShowLocationEditDialog(false)}
-      />
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="mapId"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <TextField {...field} variant="outlined" label="Map Id" />
+                    <FormHelperText></FormHelperText>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="idNumber"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.idNumber?.message}>
+                    <TextField {...field} variant="outlined" label="State Number" />
+                    <FormHelperText>{errors.idNumber?.message}</FormHelperText>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="ownerOrgId"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.ownerOrgId?.message}>
+                    <InputLabel variant="outlined">Responsible Agency</InputLabel>
+                    <Select {...field} variant="outlined" label="Responsible Agency">
+                      {ownerOptions.map((p) => (
+                        <MenuItem key={p.id} value={p.id}>
+                          {p.title}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="earlySignInWindow"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.earlySignInWindow?.message} disabled={!isFuture(watch('startTime'))}>
+                    <InputLabel variant="outlined">Early Sign In Window</InputLabel>
+                    <Select {...field} variant="outlined" label="Early Sign In Window">
+                      {earlySignInWindowOptions.map((p) => (
+                        <MenuItem key={p.value} value={p.value}>
+                          {p.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="startTime"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.startTime?.message}>
+                    <DateTimePicker
+                      label="Start Time"
+                      value={field.value}
+                      inputRef={field.ref}
+                      onAccept={(date) => {
+                        field.onChange(date);
+                      }}
+                      format="MM/dd/yy HH:mm"
+                    />
+                    <FormHelperText>{errors.startTime?.message}</FormHelperText>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.title?.message}>
+                    <TextField {...field} multiline variant="outlined" label="Description" />
+                    <FormHelperText>{errors.title?.message}</FormHelperText>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid container item xs={12} spacing={1} sx={{ mt: 1 }}>
+              <Grid item xs={12} sm={6}>
+                {activityType === 'missions' ? null : (
+                  <Grid item xs={12}>
+                    <FormGroup>
+                      <Controller name="asMission" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Run as mock mission" />} />
+                    </FormGroup>
+                  </Grid>
+                )}
+
+                <Grid item xs={12}>
+                  <FormGroup>
+                    <Controller name="forceStandbyOnly" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Standby Only" />} />
+                  </FormGroup>
+                </Grid>
+
+                {isNew && (
+                  <Grid item xs={12} sx={{ my: 1 }}>
+                    <Box>{org.title} will start as a participating unit.</Box>
+                  </Grid>
+                )}
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                  <Button onClick={() => router.back()}>Cancel</Button>
+                  <Button type="submit" variant="contained">
+                    Save {activityType === 'missions' ? 'Mission' : 'Event'}
+                  </Button>
+                </Stack>
+              </Grid>
+            </Grid>
+          </Grid>
+        </form>
+
+        <LocationEditDialog
+          location={watchLocation ?? undefined}
+          open={showLocationEditDialog}
+          onSubmit={(location) => {
+            setValue('location', location);
+          }}
+          onClose={() => setShowLocationEditDialog(false)}
+        />
+      </Paper>
     </ToolbarPage>
   );
 };
