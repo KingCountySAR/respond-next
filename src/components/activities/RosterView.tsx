@@ -132,7 +132,7 @@ function RosterTimeValue({ startTime, time }: { startTime: number; time: number 
   const dateDiff = Math.abs(differenceInCalendarDays(new Date(startTime), new Date(time)));
 
   const dateString = new Date(time).toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
-  const timeString = new Date(time).toLocaleString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(':', '');
+  const timeString = new Date(time).toLocaleString('en-US', { hourCycle: 'h23', hour: '2-digit', minute: '2-digit' }).replace(':', '');
   return (
     <>
       <Typography variant="h6">{timeString}</Typography>
