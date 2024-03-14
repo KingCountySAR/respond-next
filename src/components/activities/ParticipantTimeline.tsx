@@ -46,7 +46,7 @@ function ParticipantUpdateTile({ record, onChange }: { record: EnrichedParticipa
     <Box>
       {edit ? (
         <Stack flexGrow={1} direction="row" justifyContent="space-between">
-          <DateTimePicker value={initialTime} label={`${record.organizationName} - ${record.statusText}`} format="MM/dd HH:mm" onAccept={handleAccept} onClose={handleClose} />
+          <DateTimePicker value={initialTime} label={`${record.organizationName} - ${record.statusText}`} format="MM/dd HH:mm" onChange={handleAccept} onAccept={handleAccept} onClose={handleClose} />
           <IconButton disableRipple onClick={handleClose}>
             <Close />
           </IconButton>

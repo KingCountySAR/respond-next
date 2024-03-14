@@ -193,6 +193,9 @@ export const StatusTimeInput = ({ form: { control, errors } }: { form: FormLogic
             label="Status Time"
             value={field.value}
             inputRef={field.ref}
+            onChange={(date) => {
+              field.onChange(date);
+            }}
             onAccept={(date) => {
               field.onChange(date);
             }}

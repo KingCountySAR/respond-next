@@ -271,6 +271,9 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                       label="Start Time"
                       value={field.value}
                       inputRef={field.ref}
+                      onChange={(date) => {
+                        field.onChange(date);
+                      }}
                       onAccept={(date) => {
                         field.onChange(date);
                       }}
