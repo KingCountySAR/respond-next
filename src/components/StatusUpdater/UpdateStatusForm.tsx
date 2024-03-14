@@ -1,5 +1,5 @@
 import { FormControlLabel } from '@mui/material';
-import { format as formatDate, parse as parseDate } from 'date-fns';
+import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useState } from 'react';
 import { Control, Controller, FieldErrors, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
@@ -9,13 +9,13 @@ import { Activity, OrganizationStatus, Participant, ParticipantStatus } from '@r
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
-import { Box, DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
-import { formatTime, TextBoxDateFormat } from '../RelativeTimeText';
+import { DialogContentText, FormControl, FormHelperText, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
+import { formatTime } from '../RelativeTimeText';
 
 interface FormValues {
   miles: number | '';
   addMiles: number | '';
-  statusTime: string;
+  statusTime: number;
 }
 
 export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: MyOrganization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
@@ -47,9 +47,8 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
       };
     }
 
-    const statusTimeAsDate = parseDate(values.statusTime, TextBoxDateFormat, new Date());
     const lastStatusChangeTime = participant?.timeline[0].time;
-    if (lastStatusChangeTime && !isNaN(lastStatusChangeTime) && statusTimeAsDate.getTime() < lastStatusChangeTime) {
+    if (lastStatusChangeTime && !isNaN(lastStatusChangeTime) && values.statusTime < lastStatusChangeTime) {
       result.errors.statusTime = {
         type: 'min',
         message: 'Cannot be earlier than previous status change at ' + formatTime(lastStatusChangeTime),
@@ -61,7 +60,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
 
   const form = useForm<FormValues>({
     resolver,
-    defaultValues: { miles: participant?.miles ?? '', addMiles: '', statusTime: '' },
+    defaultValues: { miles: participant?.miles ?? '', addMiles: '', statusTime: new Date().getTime() },
   });
   if (form.getValues().miles !== (participant?.miles ?? '')) {
     form.reset({ miles: participant?.miles ?? '', addMiles: '' });
@@ -72,8 +71,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
       data.miles = Number(data.miles ?? 0) + Number(data.addMiles);
     }
 
-    const statusTimeAsDate = parseDate(data.statusTime, TextBoxDateFormat, new Date());
-    const time = statusTimeAsDate.getTime();
+    const time = new Date(data.statusTime).getTime();
 
     if (!activity.organizations[respondingOrg.id]) {
       dispatch(
@@ -115,7 +113,7 @@ export const TotalMilesInput = ({ control, errors }: { control: Control<FormValu
       control={control}
       render={({ field }) => (
         <FormControl error={!!errors.miles?.message}>
-          <TextField {...field} type="number" variant="filled" size="small" label="Round-trip Miles" />
+          <TextField {...field} type="number" variant="outlined" label="Round-trip Miles" />
           <FormHelperText>{errors.miles?.message}</FormHelperText>
         </FormControl>
       )}
@@ -155,7 +153,7 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
   return existingMiles == null ? (
     <TotalMilesInput control={control} errors={errors} />
   ) : (
-    <Box>
+    <Stack>
       <Typography>You currently have {existingMiles} round-trip miles.</Typography>
       <FormControl>
         <RadioGroup row value={isTotalMiles} onChange={handleMilesType}>
@@ -164,27 +162,23 @@ const MileageSection = ({ existingMiles, form: { control, errors, getValues, set
         </RadioGroup>
       </FormControl>
       {isTotalMiles ? (
-        <Box>
-          <TotalMilesInput control={control} errors={errors} />
-        </Box>
+        <TotalMilesInput control={control} errors={errors} />
       ) : (
         <>
-          <Box>
-            <Controller
-              name="addMiles"
-              control={control}
-              render={({ field }) => (
-                <FormControl error={!!errors.miles?.message}>
-                  <TextField {...field} onChange={handleAddMiles} type="number" variant="filled" size="small" label="Leg Miles" />
-                  <FormHelperText>{errors.miles?.message}</FormHelperText>
-                </FormControl>
-              )}
-            />
-          </Box>
+          <Controller
+            name="addMiles"
+            control={control}
+            render={({ field }) => (
+              <FormControl error={!!errors.miles?.message}>
+                <TextField {...field} onChange={handleAddMiles} type="number" variant="outlined" label="Leg Miles" />
+                <FormHelperText>{errors.miles?.message}</FormHelperText>
+              </FormControl>
+            )}
+          />
           <Typography>New Total Miles: {formatMilesSum(getValues().miles, addMilesPreview)}</Typography>
         </>
       )}
-    </Box>
+    </Stack>
   );
 };
 
@@ -195,7 +189,18 @@ export const StatusTimeInput = ({ form: { control, errors } }: { form: FormLogic
       control={control}
       render={({ field }) => (
         <FormControl error={!!errors.statusTime?.message}>
-          <TextField {...field} type="datetime-local" variant="filled" size="small" />
+          <DateTimePicker
+            label="Status Time"
+            value={field.value}
+            inputRef={field.ref}
+            onChange={(date) => {
+              field.onChange(date);
+            }}
+            onAccept={(date) => {
+              field.onChange(date);
+            }}
+            format="MM/dd HH:mm"
+          />
           <FormHelperText>{errors.statusTime?.message}</FormHelperText>
         </FormControl>
       )}
@@ -214,17 +219,13 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
       // Reset the form as the same useForm object is reused.
       form.reset();
 
-      const currentTime = new Date();
-      const currentTimeAsString = formatDate(currentTime, TextBoxDateFormat);
-
       // Set fields with dynamic default values.
       form.setValue('miles', participant?.miles ?? '');
-      form.setValue('statusTime', currentTimeAsString);
     }
   }, [isInitialized, form, participant?.miles]);
 
   return (
-    <Stack spacing={2} alignItems="flex-start">
+    <Stack flexGrow={1} spacing={2} justifyContent="space-between">
       <DialogContentText id="status-update-dialog-description">Change your status for {activity.title}?</DialogContentText>
       <StatusTimeInput form={form} />
       {newStatus === ParticipantStatus.SignedOut ? <MileageSection form={form} existingMiles={participant?.miles} /> : undefined}
