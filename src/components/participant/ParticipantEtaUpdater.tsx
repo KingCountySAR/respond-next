@@ -1,14 +1,13 @@
-import { Close } from '@mui/icons-material';
 import AccessTime from '@mui/icons-material/AccessTime';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-import { DateTimePicker } from '@mui/x-date-pickers';
 import { format as formatDate } from 'date-fns';
 import { useEffect, useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 
+import { InlineTimeEdit } from '../InlineTimeEdit';
 import { Button, IconButton, Stack, Typography } from '../Material';
 
 const ONE_MINUTE_MILLISECONDS = 60 * 1000;
@@ -44,6 +43,9 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
     <Stack direction={'row'} spacing={2} alignItems={'center'} justifyContent={'space-between'}>
       {editing && (
         <InlineTimeEdit
+          label="ETA"
+          format="MM/dd HH:mm"
+          openTo="hours"
           onChange={(time) => {
             if (time) setEta(new Date(time).getTime());
             setEditing(false);
@@ -77,17 +79,6 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
           </Stack>
         </>
       )}
-    </Stack>
-  );
-}
-
-export function InlineTimeEdit({ onChange, onClose }: { onChange: (time: number | null) => void; onClose: () => void }) {
-  return (
-    <Stack flexGrow={1} direction="row" justifyContent="space-between">
-      <DateTimePicker value={new Date().getTime()} label="ETA" format="MM/dd HH:mm" onAccept={onChange} onClose={onClose} openTo={'hours'} />
-      <IconButton disableRipple onClick={onClose}>
-        <Close />
-      </IconButton>
     </Stack>
   );
 }
