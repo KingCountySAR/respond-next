@@ -46,7 +46,15 @@ export function ParticipantMileageInput({ currentMiles, onChange }: { currentMil
           <FormControlLabel value="false" control={<Radio size="small" />} label="Add leg" />
         </RadioGroup>
       </FormControl>
-      <TextField inputMode="numeric" onChange={(event) => setValue(event.target.value !== undefined ? parseInt(event.target.value) : 0)} type="number" variant="outlined" label={isTotalMiles ? 'Round-Trip Miles' : 'Leg Miles'} />
+      <TextField
+        inputMode="numeric"
+        onChange={(event) => {
+          setValue(event.target.value !== undefined ? parseInt(event.target.value) : 0);
+        }}
+        type="number"
+        variant="outlined"
+        label={isTotalMiles ? 'Round-Trip Miles' : 'Leg Miles'}
+      />
       <Typography>New round-trip miles: {state.miles}</Typography>
     </Stack>
   );
