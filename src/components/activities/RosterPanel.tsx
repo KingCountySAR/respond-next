@@ -6,11 +6,9 @@ import { useTheme } from '@mui/material/styles';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/lib/state';
 import { Activity, getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
 
-import { ParticipantMileageInput } from '../participant/ParticipantMilesInput';
+import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
 import ParticipantTimeline from './ParticipantTimeline';
 
@@ -147,7 +145,6 @@ function ParticipantHoursText({ participant }: { participant: Participant }) {
 }
 
 function ParticipantMiles({ activityId, participant }: { activityId: string; participant: Participant }) {
-  const dispatch = useAppDispatch();
   const [miles, setMiles] = useState(participant.miles ?? 0);
   const [edit, setEdit] = useState(false);
   return (
@@ -165,15 +162,14 @@ function ParticipantMiles({ activityId, participant }: { activityId: string; par
       {edit && (
         <>
           <Typography variant="h6">Updating Miles</Typography>
-          <ParticipantMileageInput
-            currentMiles={participant.miles ?? 0}
+          <ParticipantMilesUpdater
+            activityId={activityId}
+            participant={participant}
             onCancel={() => setEdit(false)}
             onSubmit={(newMiles) => {
               setMiles(newMiles);
-              dispatch(ActivityActions.participantMilesUpdate(activityId, participant.id, newMiles));
               setEdit(false);
             }}
-            submittable
           />
         </>
       )}

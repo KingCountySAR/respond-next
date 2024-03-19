@@ -1,6 +1,6 @@
 import { Reducer, useEffect, useReducer, useState } from 'react';
 
-import { Button, FormControl, FormControlLabel, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
+import { FormControl, FormControlLabel, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
 
 type ParticipantMilesState = {
   initialMiles: number;
@@ -24,7 +24,7 @@ const reducer: Reducer<ParticipantMilesState, MilesAction> = (state: Participant
   }
 };
 
-export function ParticipantMileageInput({ currentMiles, submittable, onChange, onSubmit, onCancel }: { currentMiles: number; submittable?: boolean; onChange?: (miles: number) => void; onCancel?: () => void; onSubmit?: (miles: number) => void }) {
+export function ParticipantMilesInput({ currentMiles, onChange }: { currentMiles: number; onChange?: (miles: number) => void }) {
   const [state, dispatch] = useReducer<Reducer<ParticipantMilesState, MilesAction>>(reducer, { initialMiles: currentMiles, miles: 0 });
   const [value, setValue] = useState(0);
   const [isTotalMiles, setIsTotalMiles] = useState<boolean>(true);
@@ -36,14 +36,6 @@ export function ParticipantMileageInput({ currentMiles, submittable, onChange, o
   useEffect(() => {
     if (onChange) onChange(state.miles);
   }, [state, onChange]);
-
-  const handleSubmit = () => {
-    if (onSubmit) onSubmit(state.miles);
-  };
-
-  const handleCancel = () => {
-    if (onCancel) onCancel();
-  };
 
   return (
     <Stack spacing={1}>
@@ -64,18 +56,6 @@ export function ParticipantMileageInput({ currentMiles, submittable, onChange, o
         label={isTotalMiles ? 'Round-Trip Miles' : 'Leg Miles'}
       />
       <Typography>New round-trip miles: {state.miles}</Typography>
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={'right'} spacing={2}>
-        {submittable && (
-          <>
-            <Button variant={'outlined'} onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button variant={'contained'} onClick={handleSubmit}>
-              Update
-            </Button>
-          </>
-        )}
-      </Stack>
     </Stack>
   );
 }

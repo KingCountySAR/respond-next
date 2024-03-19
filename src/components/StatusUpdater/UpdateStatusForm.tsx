@@ -9,7 +9,7 @@ import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
 import { DialogContentText, FormControl, FormHelperText, Stack } from '../Material';
-import { ParticipantMileageInput } from '../participant/ParticipantMilesInput';
+import { ParticipantMilesInput } from '../participant/ParticipantMilesInput';
 import { formatTime } from '../RelativeTimeText';
 
 interface FormValues {
@@ -144,7 +144,7 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
           control={form.control}
           render={() => (
             <FormControl error={!!form.errors.miles?.message}>
-              <ParticipantMileageInput currentMiles={participant?.miles ?? 0} onChange={(miles) => form.setValue('miles', miles)} />
+              <ParticipantMilesInput currentMiles={participant?.miles ?? 0} onChange={(miles) => form.setValue('miles', miles)} />
               <FormHelperText>{form.errors.miles?.message}</FormHelperText>
             </FormControl>
           )}
