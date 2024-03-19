@@ -9,7 +9,7 @@ import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
 import { DialogContentText, FormControl, FormHelperText, Stack } from '../Material';
-import { ParticipantMileageInput } from '../ParticipantMilesInput';
+import { ParticipantMileageInput } from '../participant/ParticipantMilesInput';
 import { formatTime } from '../RelativeTimeText';
 
 interface FormValues {
