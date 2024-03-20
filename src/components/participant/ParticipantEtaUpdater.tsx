@@ -4,6 +4,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import { format as formatDate } from 'date-fns';
 import { useEffect, useState } from 'react';
 
+import { useDebounce } from '@respond/hooks/useDebounce';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 
@@ -14,19 +15,6 @@ const ONE_MINUTE_MILLISECONDS = 60 * 1000;
 const FIFTEEN_MINUTES_MILLISECONDS = 15 * 60 * 1000;
 const THIRTY_MINUTES_MILLISECONDS = 30 * 60 * 1000;
 const SIXTY_MINUTES_MILLISECONDS = 60 * 60 * 1000;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const useDebounce = (value: any, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
 
 export function ParticipantEtaUpdater({ activityId, participantId, participantEta }: { activityId: string; participantId: string; participantEta?: number }) {
   const dispatch = useAppDispatch();
