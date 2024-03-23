@@ -6,6 +6,8 @@ import { useTheme } from '@mui/material/styles';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
+import { apiFetch } from '@respond/lib/api';
+import { MemberInfo } from '@respond/lib/server/memberProviders/memberProvider';
 import { Activity, getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
 
 import ParticipantTimeline from './ParticipantTimeline';
@@ -17,6 +19,20 @@ interface RosterPanelProps {
   participantRowComponent: FunctionComponent<{ orgs: Record<string, ParticipatingOrg>; participant: Participant; onClick?: () => void }>;
   onClick?: (participant: Participant) => void;
 }
+
+const findMember = async (orgId: string, memberId: string) => {
+  return (await apiFetch<{ data: MemberInfo }>(`/api/v1/organizations/${orgId}/members/${memberId}`)).data;
+};
+
+const formatPhoneNumber = (phoneNumberString: string, trimIntlCode?: boolean) => {
+  const cleaned = ('' + phoneNumberString).replace(/\D/g, '');
+  const match = cleaned.match(/^(1|)?(\d{3})(\d{3})(\d{4})$/);
+  if (match) {
+    const intlCode = match[1] ? '+1 ' : '';
+    return [trimIntlCode ? '' : intlCode, '(', match[2], ') ', match[3], '-', match[4]].join('');
+  }
+  return null;
+};
 
 export function RosterPanel({ activity, filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
   let participants = Object.values(activity.participants);
@@ -58,6 +74,17 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
 
 export function ParticipantDialog({ open, participant, activity, onClose }: { open: boolean; onClose: () => void; participant?: Participant; activity: Activity }) {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
+  const [memberInfo, setMemberInfo] = useState<MemberInfo | undefined>();
+
+  useEffect(() => {
+    if (participant) getMemberInfo(participant);
+  }, [participant]);
+
+  const getMemberInfo = async (participant: Participant) => {
+    const member = await findMember(participant.organizationId, participant.id);
+    setMemberInfo(member);
+    console.log('dialog', member);
+  };
 
   if (!participant) return <></>;
 
@@ -78,6 +105,8 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
             />
             <Typography fontWeight={600}>{getOrganizationName(activity, participant.organizationId)}</Typography>
             <Box>{participant.tags?.map((t) => <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />)}</Box>
+            {memberInfo?.mobilephone && <Typography>{formatPhoneNumber(memberInfo.mobilephone, true)}</Typography>}
+            {memberInfo?.email && <Typography>{memberInfo.email}</Typography>}
           </Box>
           <Box>
             <ParticipantTimeline participant={participant} activity={activity} />

@@ -3,6 +3,8 @@ import { MemberProviderType } from '@respond/types/data/MemberProviderType';
 export interface MemberInfo {
   id: string;
   groups: string[];
+  email?: string;
+  mobilephone?: string;
 }
 
 export interface MemberAuthInfo {
@@ -14,6 +16,7 @@ export interface MemberProvider {
   getMemberInfo<TOptions = undefined>(organizationId: string, authPayload: MemberAuthInfo, providerOptions: TOptions): Promise<MemberInfo | undefined>;
   getMemberInfoById(memberId: string): Promise<MemberInfo | undefined>;
   getMemberPhoto(memberId: string): Promise<ArrayBuffer | undefined>;
+  findMember(query: string): Promise<MemberInfo | undefined>;
   refresh(force?: boolean): Promise<{ ok: boolean; runtime: number; cached?: boolean }>;
 }
 
