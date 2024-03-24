@@ -16,7 +16,7 @@ export interface MemberProvider {
   getMemberInfo<TOptions = undefined>(organizationId: string, authPayload: MemberAuthInfo, providerOptions: TOptions): Promise<MemberInfo | undefined>;
   getMemberInfoById(memberId: string): Promise<MemberInfo | undefined>;
   getMemberPhoto(memberId: string): Promise<ArrayBuffer | undefined>;
-  findMember(query: string): Promise<MemberInfo | undefined>;
+  getParticipantInfo(query: string): Promise<MemberInfo | undefined>;
   refresh(force?: boolean): Promise<{ ok: boolean; runtime: number; cached?: boolean }>;
 }
 

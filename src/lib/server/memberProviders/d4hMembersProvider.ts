@@ -78,24 +78,15 @@ export default class D4HMembersProvider implements MemberProvider {
     }
   }
 
-  async findMember(memberId: string) {
+  async getParticipantInfo(memberId: string) {
     await this.initialize();
     for (const token in this.tokenFetchInfo) {
-      const member = (
-        await (
-          await fetch(`https://api.d4h.org/v2/team/members/${memberId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-        ).json()
-      )?.data;
+      const member = this.tokenFetchInfo[token].lookup[memberId].response;
+      if (!member) continue;
       return {
-        id: member.id + '',
-        groups: member.groups ?? [],
         email: member.email,
         mobilephone: member.mobilephone,
-      };
+      } as MemberInfo;
     }
   }
 
