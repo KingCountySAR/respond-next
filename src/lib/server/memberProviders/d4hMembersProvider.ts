@@ -78,6 +78,18 @@ export default class D4HMembersProvider implements MemberProvider {
     }
   }
 
+  async getParticipantInfo(memberId: string) {
+    await this.initialize();
+    for (const token in this.tokenFetchInfo) {
+      const member = this.tokenFetchInfo[token].lookup[memberId].response;
+      if (!member) continue;
+      return {
+        email: member.email,
+        mobilephone: member.mobilephone,
+      } as MemberInfo;
+    }
+  }
+
   async getMemberInfo(organizationId: string, auth: MemberAuthInfo): Promise<MemberInfo | undefined> {
     await this.initialize();
 
