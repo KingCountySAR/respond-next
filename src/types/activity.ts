@@ -64,6 +64,10 @@ export function getOrganizationName(activity: Activity, organizationId: string) 
   return activity.organizations[organizationId].rosterName ?? activity.organizations[organizationId].title;
 }
 
+export function isEnrouteOrStandby(status?: ParticipantStatus) {
+  return status && [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(status);
+}
+
 export function isActive(status: ParticipantStatus) {
   return [ParticipantStatus.Standby, ParticipantStatus.Remote, ParticipantStatus.SignedIn, ParticipantStatus.Available, ParticipantStatus.Assigned, ParticipantStatus.Demobilized].includes(status);
 }
@@ -103,6 +107,7 @@ export interface Participant {
   timeline: ParticipantUpdate[];
   tags?: string[];
   miles?: number;
+  eta?: number;
 }
 
 export interface ParticipatingOrg {

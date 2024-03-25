@@ -2,13 +2,16 @@ import AnnouncementIcon from '@mui/icons-material/Announcement';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
+import { format as formatDate } from 'date-fns';
 import { ReactNode, useState } from 'react';
 
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
-import { Activity, Participant, ParticipatingOrg } from '@respond/types/activity';
+import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
+
+import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
 import { BriefingPanel } from './BriefingPanel';
@@ -18,6 +21,7 @@ import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
 const MOBILE_BOTTOM_NAV_TAB_HEIGHT = 56;
 const MOBILE_STATUS_UPDATER_HEIGHT = 68.5;
+const MOBILE_ETA_INPUT_HEIGHT = 59.5;
 const ROSTER_PANEL_PADDING = 16;
 
 export enum MobilePageId {
@@ -72,18 +76,21 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
 function RosterRow({ participant, orgs, onClick }: { participant: Participant; orgs: Record<string, ParticipatingOrg>; onClick?: () => void }) {
   return (
     <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
-      <Box sx={{ m: '5px', ml: '8px' }} display="flex" flexDirection="column" flex="1 1 auto">
-        <Stack direction="row" flexGrow={1} justifyContent="space-between" flex="1 1 auto">
+      <Stack direction="row" sx={{ m: '5px', ml: '8px' }} justifyContent="space-between" flexGrow={1}>
+        <Stack>
           <Typography variant="body1" fontWeight={600}>
             {participant.firstname} {participant.lastname}
           </Typography>
-        </Stack>
-        <Stack direction="row" flexGrow={1} justifyContent="space-between" flex="1 1 auto">
           <Typography variant="body2">
             {orgs[participant.organizationId]?.rosterName ?? orgs[participant.organizationId]?.title} {participant.tags?.join(', ')}
           </Typography>
         </Stack>
-      </Box>
+        <Stack>
+          <Typography variant="body1">
+            {getStatusText(participant.timeline[0].status)} {isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>({formatDate(participant.eta, 'HHmm')})</> : <></>}
+          </Typography>
+        </Stack>
+      </Stack>
     </RosterRowCard>
   );
 }
@@ -105,9 +112,10 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
   const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
   const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
   const user = useAppSelector((state) => state.auth.userInfo);
-  const myParticipation = activity?.participants[user?.userId ?? ''];
+  const myParticipation = activity?.participants[user?.participantId ?? ''];
   const showStatusUpdater = isActive(activity);
-  const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showStatusUpdater ? MOBILE_STATUS_UPDATER_HEIGHT : 0) - ROSTER_PANEL_PADDING;
+  const showEta = myParticipation?.timeline[0] && [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(myParticipation.timeline[0].status);
+  const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showStatusUpdater ? MOBILE_STATUS_UPDATER_HEIGHT : 0) + (showEta ? MOBILE_ETA_INPUT_HEIGHT : 0) - ROSTER_PANEL_PADDING;
   return (
     <>
       <Typography variant="h5">{activity.title}</Typography>
@@ -116,11 +124,14 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
       {bottomNav === MobilePageId.Manage && <MobileManageScreen activity={activity} startRemove={startRemove} startChangeState={startChangeState} />}
       <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
-        {showStatusUpdater && (
-          <Box padding={2}>
-            <StatusUpdater fullWidth={true} activity={activity} current={myParticipation?.timeline[0].status} />
-          </Box>
-        )}
+        <Stack spacing={2} p={2}>
+          {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
+          {showStatusUpdater && (
+            <Box>
+              <StatusUpdater fullWidth={true} activity={activity} />
+            </Box>
+          )}
+        </Stack>
         <BottomNavigation
           showLabels
           value={bottomNav}

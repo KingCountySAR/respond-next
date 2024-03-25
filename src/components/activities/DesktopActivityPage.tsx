@@ -1,12 +1,15 @@
 import { Button, Divider, Typography } from '@mui/material';
+import { format as formatDate } from 'date-fns';
 import { ReactNode, useState } from 'react';
 
-import { Box, Stack } from '@respond/components/Material';
+import { Box, Paper, Stack } from '@respond/components/Material';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
-import { Activity, Participant, ParticipatingOrg } from '@respond/types/activity';
+import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/types/activity';
+
+import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
 import { BriefingPanel } from './BriefingPanel';
@@ -20,12 +23,14 @@ export function DesktopActivityPage({ activity }: { activity?: Activity }) {
 
 function DesktopActivityContents({ activity, startChangeState, startRemove }: ActivityContentProps) {
   const user = useAppSelector((state) => state.auth.userInfo);
-  const myParticipation = activity?.participants[user?.userId ?? ''];
+  const myParticipation = activity?.participants[user?.participantId ?? ''];
   const isActivityActive = isActive(activity);
 
   const [orgFilter, setOrgFilter] = useState<string>('');
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
+
+  const showEta = isEnrouteOrStandby(myParticipation?.timeline[0]?.status);
 
   return (
     <ToolbarPage maxWidth="lg">
@@ -56,6 +61,11 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
         </Box>
         <Stack alignItems="stretch" sx={{ width: 400 }}>
           <BriefingPanel activity={activity} sx={{ px: 3 }} />
+          {showEta && (
+            <Paper sx={{ mt: 2, p: 2 }}>
+              <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />
+            </Paper>
+          )}
           {isActivityActive && (
             <Box sx={{ my: 2 }} display="flex" justifyContent="end">
               <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
@@ -73,13 +83,20 @@ function RosterRow({ participant, orgs, onClick }: { participant: Participant; o
   return (
     <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
       <Stack direction="column" sx={{ m: '5px', ml: '8px' }} flexGrow={1}>
-        <Stack>
-          <Typography variant="body1" fontWeight={600}>
-            {participant.firstname} {participant.lastname}
-          </Typography>
-          <Typography variant="body2">
-            {orgs[participant.organizationId]?.rosterName ?? orgs[participant.organizationId]?.title} {participant.tags?.join(', ')}
-          </Typography>
+        <Stack direction="row" spacing={2} justifyContent={'space-between'}>
+          <Stack>
+            <Typography variant="body1" fontWeight={600}>
+              {participant.firstname} {participant.lastname}
+            </Typography>
+            <Typography variant="body2">
+              {orgs[participant.organizationId]?.rosterName ?? orgs[participant.organizationId]?.title} {participant.tags?.join(', ')}
+            </Typography>
+          </Stack>
+          <Stack>
+            <Typography variant="body1">
+              {getStatusText(participant.timeline[0].status)} {isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>(ETA {formatDate(participant.eta, 'HHmm')})</> : <></>}
+            </Typography>
+          </Stack>
         </Stack>
       </Stack>
     </RosterRowCard>
