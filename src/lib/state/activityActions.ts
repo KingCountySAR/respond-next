@@ -62,7 +62,7 @@ const participantTimelineUpdate = createAction('participant/timeline', (activity
   meta: { sync: true },
 }));
 
-const participantMilesUpdate = createAction('participant/etaUpdate', (activityId: string, participantId: string, miles: number) => ({
+const participantMilesUpdate = createAction('participant/milesUpdate', (activityId: string, participantId: string, miles: number) => ({
   payload: {
     activityId,
     participantId,
