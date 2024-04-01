@@ -83,10 +83,11 @@ export default class D4HMembersProvider implements MemberProvider {
     for (const token in this.tokenFetchInfo) {
       const member = this.tokenFetchInfo[token].lookup[memberId].response;
       if (!member) continue;
-      return {
+      const result: ParticipantInfo {
         email: member.email,
         mobilephone: member.mobilephone,
-      } as MemberInfo;
+      };
+      return result;
     }
   }
 
