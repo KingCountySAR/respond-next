@@ -1,5 +1,6 @@
 import mongoPromise from '@respond/lib/server/mongodb';
 import { MemberProviderConfig, OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
+import { ParticipantInfo } from '@respond/types/participant';
 
 import { MemberAuthInfo, MemberInfo, MemberProvider } from './memberProvider';
 
@@ -83,7 +84,7 @@ export default class D4HMembersProvider implements MemberProvider {
     for (const token in this.tokenFetchInfo) {
       const member = this.tokenFetchInfo[token].lookup[memberId].response;
       if (!member) continue;
-      const result: ParticipantInfo {
+      const result: ParticipantInfo = {
         email: member.email,
         mobilephone: member.mobilephone,
       };
