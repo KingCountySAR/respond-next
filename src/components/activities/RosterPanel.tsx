@@ -164,7 +164,7 @@ function ParticipantMiles({ activityId, participant }: { activityId: string; par
           <Typography variant="h6">Updating Miles</Typography>
           <ParticipantMilesUpdater
             activityId={activityId}
-            participant={participant}
+            participant={{ ...participant, miles: miles }}
             onCancel={() => setEdit(false)}
             onSubmit={(newMiles) => {
               setMiles(newMiles);
