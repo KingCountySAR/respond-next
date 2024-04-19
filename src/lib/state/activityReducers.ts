@@ -155,7 +155,7 @@ export const BasicReducers: ActivityReducers = {
     }
     person.miles = payload.miles;
   },
-    
+
   [ActivityActions.participantEtaUpdate.type]: (state, { payload }) => {
     const activity = state.list.find((f) => f.id === payload.activityId);
     if (!activity) {
@@ -165,7 +165,7 @@ export const BasicReducers: ActivityReducers = {
     if (!person) {
       return;
     }
-    
+
     person.eta = payload.eta;
   },
 
