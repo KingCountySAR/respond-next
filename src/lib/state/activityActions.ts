@@ -67,10 +67,10 @@ const participantMilesUpdate = createAction('participant/milesUpdate', (activity
     activityId,
     participantId,
     miles,
-  }
+  },
   meta: { sync: true },
 }));
-    
+
 const participantEtaUpdate = createAction('participant/etaUpdate', (activityId: string, participantId: string, eta: number) => ({
   payload: {
     activityId,
