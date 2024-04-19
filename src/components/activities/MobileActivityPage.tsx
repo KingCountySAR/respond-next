@@ -85,10 +85,9 @@ function RosterRow({ participant, orgs, onClick }: { participant: Participant; o
             {orgs[participant.organizationId]?.rosterName ?? orgs[participant.organizationId]?.title} {participant.tags?.join(', ')}
           </Typography>
         </Stack>
-        <Stack>
-          <Typography variant="body1">
-            {getStatusText(participant.timeline[0].status)} {isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>({formatDate(participant.eta, 'HHmm')})</> : <></>}
-          </Typography>
+        <Stack textAlign={'right'} justifyContent={'space-between'}>
+          <Typography variant="body2">{getStatusText(participant.timeline[0].status)}</Typography>
+          <Typography variant="body2">{isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
         </Stack>
       </Stack>
     </RosterRowCard>
