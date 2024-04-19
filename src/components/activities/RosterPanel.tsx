@@ -3,10 +3,13 @@ import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
+import Switch from '@mui/material/Switch';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
+import { apiFetch } from '@respond/lib/api';
 import { Activity, getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
+import { ParticipantInfo } from '@respond/types/participant';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
@@ -20,9 +23,36 @@ interface RosterPanelProps {
   onClick?: (participant: Participant) => void;
 }
 
+const etaStatus = (status: ParticipantStatus) => {
+  return [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(status) ? 1 : 0;
+};
+const sortArrivingNext = (a: Participant, b: Participant) => etaStatus(b.timeline[0].status) - etaStatus(a.timeline[0].status) || (a.eta ?? Infinity) - (b.eta ?? Infinity);
+const sortAlphabetical = (a: Participant, b: Participant) => a.firstname.localeCompare(b.firstname);
+
+const findMember = async (orgId: string, memberId: string) => {
+  return (await apiFetch<{ data: ParticipantInfo }>(`/api/v1/organizations/${orgId}/members/${memberId}`)).data;
+};
+
+const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean = false) => {
+  const cleaned = ('' + phoneNumberString).replace(/\D/g, '');
+  const match = cleaned.match(/^(1|)?(\d{3})(\d{3})(\d{4})$/);
+  if (match) {
+    const intlCode = match[1] ? '+1 ' : '';
+    return [includeIntlCode ? intlCode : '', '(', match[2], ') ', match[3], '-', match[4]].join('');
+  }
+  return null;
+};
+
 export function RosterPanel({ activity, filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
-  let participants = Object.values(activity.participants);
-  if (filter) participants = participants.filter((p) => p.organizationId === filter);
+  const [sortEta, setSortEta] = useState(false);
+  const [participants, setParticipants] = useState<Array<Participant>>(Object.values(activity.participants));
+
+  useEffect(() => {
+    let list = Object.values(activity.participants);
+    if (filter) list = list.filter((p) => p.organizationId === filter);
+    list.sort(sortEta ? sortArrivingNext : sortAlphabetical);
+    setParticipants(list);
+  }, [activity, filter, sortEta]);
 
   let cards: ReactNode = participants.map((p) => <Participant key={p.id} orgs={activity.organizations} participant={p} onClick={() => onClick?.(p)} />);
   if (participants.length == 0) {
@@ -35,6 +65,11 @@ export function RosterPanel({ activity, filter, participantContainerComponent: P
 
   return (
     <Box flex="1 1 auto">
+      <Stack direction="row" spacing={1} alignItems="center" justifyContent={'right'}>
+        <Typography>Sort By: Name</Typography>
+        <Switch value={sortEta} onChange={(event) => setSortEta(event.target.checked)} color="primary" />
+        <Typography>ETA</Typography>
+      </Stack>
       <Participants>{cards}</Participants>
     </Box>
   );
@@ -60,6 +95,16 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
 
 export function ParticipantDialog({ open, participant, activity, onClose }: { open: boolean; onClose: () => void; participant?: Participant; activity: Activity }) {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
+  const [memberInfo, setMemberInfo] = useState<ParticipantInfo | undefined>();
+
+  useEffect(() => {
+    if (participant) getMemberInfo(participant);
+  }, [participant]);
+
+  const getMemberInfo = async (participant: Participant) => {
+    const member = await findMember(participant.organizationId, participant.id);
+    setMemberInfo(member);
+  };
 
   if (!participant) return <></>;
 
@@ -80,6 +125,12 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
             />
             <Typography fontWeight={600}>{getOrganizationName(activity, participant.organizationId)}</Typography>
             <Box>{participant.tags?.map((t) => <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />)}</Box>
+            {memberInfo?.mobilephone && <Typography>{formatPhoneNumber(memberInfo.mobilephone)}</Typography>}
+            {memberInfo?.email && (
+              <Typography>
+                <a href={`mailto:${memberInfo.email}`}>{memberInfo.email}</a>
+              </Typography>
+            )}
           </Box>
           <Stack spacing={2} flexGrow={1}>
             <ParticipantHoursText participant={participant} />

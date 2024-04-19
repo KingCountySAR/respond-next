@@ -30,6 +30,7 @@ const activitySliceArgs = {
       .addCase(ActivityActions.appendOrganizationTimeline, BasicActivityReducers[ActivityActions.appendOrganizationTimeline.type])
       .addCase(ActivityActions.participantTimelineUpdate, BasicActivityReducers[ActivityActions.participantTimelineUpdate.type])
       .addCase(ActivityActions.participantMilesUpdate, BasicActivityReducers[ActivityActions.participantMilesUpdate.type])
+      .addCase(ActivityActions.participantEtaUpdate, BasicActivityReducers[ActivityActions.participantEtaUpdate.type])
       .addCase(ActivityActions.participantUpdate, BasicActivityReducers[ActivityActions.participantUpdate.type])
       .addCase(ActivityActions.tagParticipant, BasicActivityReducers[ActivityActions.tagParticipant.type]);
   },

@@ -155,6 +155,19 @@ export const BasicReducers: ActivityReducers = {
     }
     person.miles = payload.miles;
   },
+    
+  [ActivityActions.participantEtaUpdate.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) {
+      return;
+    }
+    const person = activity.participants[payload.participantId];
+    if (!person) {
+      return;
+    }
+    
+    person.eta = payload.eta;
+  },
 
   [ActivityActions.tagParticipant.type]: (state, { payload }) => {
     const activity = state.list.find((f) => f.id === payload.activityId);
