@@ -144,6 +144,18 @@ export const BasicReducers: ActivityReducers = {
     person.timeline[payload.index] = payload.update;
   },
 
+  [ActivityActions.participantMilesUpdate.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) {
+      return;
+    }
+    const person = activity.participants[payload.participantId];
+    if (!person) {
+      return;
+    }
+    person.miles = payload.miles;
+  },
+
   [ActivityActions.participantEtaUpdate.type]: (state, { payload }) => {
     const activity = state.list.find((f) => f.id === payload.activityId);
     if (!activity) {
@@ -153,6 +165,7 @@ export const BasicReducers: ActivityReducers = {
     if (!person) {
       return;
     }
+
     person.eta = payload.eta;
   },
 

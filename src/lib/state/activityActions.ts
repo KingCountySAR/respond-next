@@ -62,6 +62,15 @@ const participantTimelineUpdate = createAction('participant/timeline', (activity
   meta: { sync: true },
 }));
 
+const participantMilesUpdate = createAction('participant/milesUpdate', (activityId: string, participantId: string, miles: number) => ({
+  payload: {
+    activityId,
+    participantId,
+    miles,
+  },
+  meta: { sync: true },
+}));
+
 const participantEtaUpdate = createAction('participant/etaUpdate', (activityId: string, participantId: string, eta: number) => ({
   payload: {
     activityId,
@@ -89,6 +98,7 @@ export const ActivityActions = {
   appendOrganizationTimeline,
   participantUpdate,
   participantTimelineUpdate,
+  participantMilesUpdate,
   participantEtaUpdate,
   tagParticipant,
 };

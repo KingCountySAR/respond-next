@@ -1,4 +1,4 @@
-import { Button, Chip, DialogActions, Divider } from '@mui/material';
+import { Button, ButtonBase, Chip, DialogActions, Divider } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
@@ -10,6 +10,8 @@ import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useM
 import { apiFetch } from '@respond/lib/api';
 import { Activity, getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
 import { ParticipantInfo } from '@respond/types/participant';
+
+import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
 import ParticipantTimeline from './ParticipantTimeline';
 
@@ -130,15 +132,14 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
               </Typography>
             )}
           </Box>
-          <Box>
-            <ParticipantTimeline participant={participant} activity={activity} />
-          </Box>
-          <Box>
-            <Typography>
-              Total Hours: <ParticipantHoursText participant={participant} />
+          <Stack spacing={2} flexGrow={1}>
+            <ParticipantHoursText participant={participant} />
+            <ParticipantMiles activityId={activity.id} participant={participant} />
+            <Typography borderBottom={1} variant="h6">
+              Timeline
             </Typography>
-            {participant.miles !== undefined && <Typography>Total Miles: {participant.miles}</Typography>}
-          </Box>
+            <ParticipantTimeline participant={participant} activity={activity} />
+          </Stack>
         </Stack>
         {/* <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText> */}
       </DialogContent>
@@ -184,5 +185,45 @@ function ParticipantHoursText({ participant }: { participant: Participant }) {
   }
 
   // Round to the nearest quarter hour.
-  return <>{Math.round(timeOnClock / 1000 / 60 / 15) / 4}</>;
+  return (
+    <Stack direction={'row'} spacing={2} justifyContent={'space-between'}>
+      <Typography variant="h6">Total Hours:</Typography>
+      <Typography variant="h6" flexGrow={1} align={'right'}>
+        {Math.round(timeOnClock / 1000 / 60 / 15) / 4}
+      </Typography>
+    </Stack>
+  );
+}
+
+function ParticipantMiles({ activityId, participant }: { activityId: string; participant: Participant }) {
+  const [miles, setMiles] = useState(participant.miles ?? 0);
+  const [edit, setEdit] = useState(false);
+  return (
+    <>
+      {!edit && (
+        <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
+          <Stack sx={{ width: '100%' }} direction={'row'} spacing={2} justifyContent={'space-between'}>
+            <Typography variant="h6">Total Miles:</Typography>
+            <Typography variant="h6" flexGrow={1} align={'right'}>
+              {miles}
+            </Typography>
+          </Stack>
+        </ButtonBase>
+      )}
+      {edit && (
+        <>
+          <Typography variant="h6">Updating Miles</Typography>
+          <ParticipantMilesUpdater
+            activityId={activityId}
+            participant={{ ...participant, miles: miles }}
+            onCancel={() => setEdit(false)}
+            onSubmit={(newMiles) => {
+              setMiles(newMiles);
+              setEdit(false);
+            }}
+          />
+        </>
+      )}
+    </>
+  );
 }
