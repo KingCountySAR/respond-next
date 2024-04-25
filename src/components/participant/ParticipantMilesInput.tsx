@@ -1,61 +1,81 @@
-import { Reducer, useEffect, useReducer, useState } from 'react';
+import { Reducer, useEffect, useReducer } from 'react';
 
 import { FormControl, FormControlLabel, Radio, RadioGroup, Stack, TextField, Typography } from '../Material';
 
-type ParticipantMilesState = {
-  initialMiles: number;
-  miles: number;
+enum MilesMode {
+  SetTotal = 'set_total',
+  AddMiles = 'add_miles',
+}
+
+type MilesState = {
+  currentMiles: number;
+  newMiles: number | string;
+  mode: MilesMode;
 };
 
 type MilesAction = {
-  type: 'set_total' | 'add_miles';
-  miles: number;
+  type: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload: any;
 };
 
-const reducer: Reducer<ParticipantMilesState, MilesAction> = (state: ParticipantMilesState, action: MilesAction) => {
-  const hasMiles = action.miles > 0;
+const createAction = (type: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const action = (payload: any) => ({
+    type,
+    payload,
+  });
+  action.type = type;
+  return action;
+};
+
+const updateMiles = createAction('updateMiles');
+const updateMode = createAction('updateMode');
+
+const reducer: Reducer<MilesState, MilesAction> = (state: MilesState, action: MilesAction) => {
   switch (action.type) {
-    case 'set_total': {
-      return { ...state, miles: hasMiles ? action.miles : state.initialMiles };
-    }
-    case 'add_miles': {
-      return { ...state, miles: state.initialMiles + (hasMiles ? action.miles : 0) };
-    }
+    case updateMiles.type:
+      return { ...state, newMiles: action.payload };
+    case updateMode.type:
+      return { ...state, mode: action.payload };
+    default:
+      return { ...state };
   }
 };
 
-export function ParticipantMilesInput({ currentMiles, onChange }: { currentMiles: number; onChange?: (miles: number) => void }) {
-  const [state, dispatch] = useReducer<Reducer<ParticipantMilesState, MilesAction>>(reducer, { initialMiles: currentMiles, miles: 0 });
-  const [value, setValue] = useState(0);
-  const [isTotalMiles, setIsTotalMiles] = useState<boolean>(true);
+export function ParticipantMilesInput({ value, currentMiles, onChange }: { value: number | string; currentMiles: number; onChange?: (n: number | string) => void }) {
+  const [state, dispatch] = useReducer<Reducer<MilesState, MilesAction>>(reducer, { currentMiles, mode: MilesMode.SetTotal, newMiles: '' });
 
   useEffect(() => {
-    dispatch({ type: isTotalMiles ? 'set_total' : 'add_miles', miles: value });
-  }, [value, isTotalMiles]);
-
-  useEffect(() => {
-    if (onChange) onChange(state.miles);
+    let totalMiles = Number(state.currentMiles);
+    if (state.newMiles !== '') {
+      totalMiles = state.mode === MilesMode.SetTotal ? Number(state.newMiles) : totalMiles + Number(state.newMiles);
+    }
+    onChange?.(totalMiles);
   }, [state, onChange]);
 
   return (
     <Stack spacing={1}>
-      <Typography>You currently have {currentMiles} round-trip miles.</Typography>
+      <Typography>You currently have {state.currentMiles} round-trip miles.</Typography>
       <FormControl>
-        <RadioGroup row value={isTotalMiles} onChange={(event) => setIsTotalMiles(event.target.value === 'true')}>
+        <RadioGroup row value={state.mode == MilesMode.SetTotal} onChange={(event) => dispatch(updateMode(event.target.value === 'true' ? MilesMode.SetTotal : MilesMode.AddMiles))}>
           <FormControlLabel value="true" control={<Radio size="small" />} label="Change total" />
           <FormControlLabel value="false" control={<Radio size="small" />} label="Add leg" />
         </RadioGroup>
       </FormControl>
       <TextField
-        inputMode="numeric"
-        onChange={(event) => {
-          setValue(event.target.value !== undefined ? parseInt(event.target.value) : 0);
+        label={state.mode === MilesMode.SetTotal ? 'Round-Trip Miles' : 'Leg Miles'}
+        value={state.newMiles}
+        type={'number'}
+        onChange={(e) => {
+          const value = e.target.value;
+          dispatch(updateMiles(value === '' ? value : Math.max(0, Number(value))));
         }}
-        type="number"
-        variant="outlined"
-        label={isTotalMiles ? 'Round-Trip Miles' : 'Leg Miles'}
+        onKeyDown={(event) => {
+          if (event.key.match('-')) event.preventDefault();
+        }}
       />
-      <Typography>New round-trip miles: {state.miles}</Typography>
+      <Typography>New round-trip miles: {value}</Typography>
     </Stack>
   );
 }

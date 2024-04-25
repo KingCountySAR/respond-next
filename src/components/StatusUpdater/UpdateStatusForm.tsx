@@ -142,9 +142,15 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
         <Controller
           name="miles"
           control={form.control}
-          render={() => (
+          render={({ field }) => (
             <FormControl error={!!form.errors.miles?.message}>
-              <ParticipantMilesInput currentMiles={participant?.miles ?? 0} onChange={(miles) => form.setValue('miles', miles)} />
+              <ParticipantMilesInput
+                value={field.value}
+                currentMiles={participant?.miles ?? 0}
+                onChange={(miles) => {
+                  field.onChange(miles);
+                }}
+              />
               <FormHelperText>{form.errors.miles?.message}</FormHelperText>
             </FormControl>
           )}

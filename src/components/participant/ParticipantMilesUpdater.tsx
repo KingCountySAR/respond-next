@@ -13,8 +13,8 @@ export function ParticipantMilesUpdater({ activityId, participant, onCancel, onS
 
   const [miles, setMiles] = useState(participant.miles ?? 0);
 
-  const handleChange = (miles: number) => {
-    setMiles(miles);
+  const handleChange = (miles: number | string) => {
+    setMiles(Number(miles));
   };
 
   const handleSubmit = () => {
@@ -24,7 +24,7 @@ export function ParticipantMilesUpdater({ activityId, participant, onCancel, onS
 
   return (
     <Stack spacing={1}>
-      <ParticipantMilesInput currentMiles={participant.miles ?? 0} onChange={handleChange} />
+      <ParticipantMilesInput currentMiles={participant.miles ?? 0} value={miles} onChange={handleChange} />
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={'right'} spacing={2}>
         <Button variant={'outlined'} onClick={onCancel}>
           Cancel
