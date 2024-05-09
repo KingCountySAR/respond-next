@@ -131,6 +131,7 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
 
       // Set fields with dynamic default values.
       form.setValue('miles', participant?.miles ?? '');
+      form.setValue('statusTime', new Date().getTime());
     }
   }, [isInitialized, form, participant?.miles]);
 
