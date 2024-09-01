@@ -6,10 +6,9 @@ import { useEffect } from 'react';
 
 import { ActivityStack } from '@respond/components/activities/ActivityStack';
 import { ActivityTile } from '@respond/components/activities/ActivityTile';
-import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
-import { buildActivityTypeSelector, buildMyActivitySelector, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
+import { buildActivityTypeSelector, buildMyActivitySelector, isActive, isComplete } from '@respond/lib/client/store/activities';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
 import { Activity, isActive as isParticipantStatusActive } from '@respond/types/activity';
 
@@ -59,15 +58,9 @@ export default function Home() {
             <Stack spacing={1}>
               {myCurrentActivities.map((up) => (
                 <ActivityTile key={up.activity.id} activity={up.activity} status={up.status.status}>
-                  <OutputForm>
-                    <Box>
-                      <OutputText label="Location" value={up.activity.location.title} />
-                    </Box>
-                    <Box>
-                      <OutputText label="Mission Status" value={getActivityStatus(up.activity)} />
-                      {isFuture(up.activity.startTime) && <OutputTime label="Start Time" time={up.activity.startTime}></OutputTime>}
-                    </Box>
-                  </OutputForm>
+                  <ActivityTile.Status />
+                  <ActivityTile.StartTime />
+                  <ActivityTile.Location />
                 </ActivityTile>
               ))}
             </Stack>
@@ -89,7 +82,7 @@ export default function Home() {
               </Button>
             )}
           </Box>
-          <ActivityStack type="missions" activities={missions} statusMap={statusMap} showOrgs />
+          <ActivityStack type="missions" activities={missions} statusMap={statusMap} />
         </Box>
         <Box sx={{ pb: 4 }}>
           <Box
