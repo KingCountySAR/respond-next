@@ -300,13 +300,13 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
             <Grid container item xs={12} spacing={1} sx={{ mt: 1 }}>
               <Grid item xs={12} sm={6}>
-                {activityType === 'missions' ? null : (
+                {/* {activityType === 'missions' ? null : (
                   <Grid item xs={12}>
                     <FormGroup>
                       <Controller name="asMission" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Run as mock mission" />} />
                     </FormGroup>
                   </Grid>
-                )}
+                )} */}
 
                 <Grid item xs={12}>
                   <FormGroup>
