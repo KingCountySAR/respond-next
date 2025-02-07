@@ -2,7 +2,7 @@
 
 import CloudIcon from '@mui/icons-material/Cloud';
 import NoCloudIcon from '@mui/icons-material/CloudOff';
-import { Breakpoint, Container } from '@mui/material';
+import { Breakpoint, Container, Stack } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -18,7 +18,7 @@ import { useAppSelector } from '@respond/lib/client/store';
 export function ToolbarPage({ children, maxWidth }: { children: React.ReactNode; maxWidth?: false | Breakpoint }) {
   const { shortTitle } = useAppSelector((state) => state.config.organization);
   const { userInfo } = useAppSelector((state) => state.auth);
-  const { connected, id } = useAppSelector((state) => state.sync);
+  const { connected } = useAppSelector((state) => state.sync);
   if (!userInfo) {
     children = <LoginPanel />;
   }
@@ -34,7 +34,16 @@ export function ToolbarPage({ children, maxWidth }: { children: React.ReactNode;
             </Link>
           </Typography>
           <Typography variant="h6" noWrap component="div">
-            {id?.substring(0, 4)} {connected ? <CloudIcon fontSize="medium" /> : <NoCloudIcon fontSize="medium" />}
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+              }}
+            >
+              {connected ? <CloudIcon fontSize="medium" /> : <NoCloudIcon fontSize="medium" />}
+            </Stack>
           </Typography>
           <AppMenu />
         </Toolbar>
