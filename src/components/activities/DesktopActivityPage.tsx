@@ -46,7 +46,7 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
             <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} display="flex" flexDirection="row" />
             <Stack direction={'row'} spacing={1}>
               <Button href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/kiosk`} variant="outlined" size="small">
-                Base Kiosk
+                Base Mode
               </Button>
               <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
                 View Roster
