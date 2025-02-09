@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAppSelector } from '@respond/lib/client/store';
 import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
 import { Activity, getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/types/activity';
+import { OrganizationDoc } from '@respond/types/data/organizationDoc';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
@@ -93,6 +94,20 @@ export const StatusUpdater = ({ activity, current, fullWidth }: { activity: Acti
   const user = useAppSelector((state) => state.auth.userInfo);
   const thisOrg = useAppSelector((state) => state.organization.mine);
 
+  return user && thisOrg ? <StatusUpdaterProtected activity={activity} current={current} user={user} thisOrg={thisOrg} fullWidth={fullWidth} /> : null;
+};
+
+export const AdminStatusUpdater = ({ activity, current, fullWidth, user, org }: { activity: Activity; current?: ParticipantStatus; fullWidth?: boolean; user: UserInfo; org: OrganizationDoc }) => {
+  const thisOrg = {
+    id: org.id,
+    title: org.title,
+    rosterName: org.rosterName,
+    canCreateMissions: org.canCreateMissions,
+    canCreateEvents: org.canCreateEvents,
+    partners: org.partners,
+    memberProvider: org.memberProvider.provider,
+    supportEmail: org.supportEmail,
+  };
   return user && thisOrg ? <StatusUpdaterProtected activity={activity} current={current} user={user} thisOrg={thisOrg} fullWidth={fullWidth} /> : null;
 };
 
