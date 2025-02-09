@@ -3,9 +3,6 @@
 const { determineBuildId } = require('./buildId')
 
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   generateBuildId: async () => {
     const buildId = await determineBuildId()
     console.log(`> Build ID: ${buildId}`)

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCookieAuth, userFromAuth } from '@respond/lib/server/auth';
+import { auth } from '@respond/auth';
 import * as Mongo from '@respond/lib/server/mongodb';
 import { getServices } from '@respond/lib/server/services';
 
 export async function GET(_request: NextRequest, { params }: { params: { orgId: string; memberId: string } }) {
-  const user = userFromAuth(await getCookieAuth());
-  if (user == null) {
+  const session = await auth();
+  if (!session?.user) {
     return NextResponse.json({ status: 'not authenticated' }, { status: 401 });
   }
 

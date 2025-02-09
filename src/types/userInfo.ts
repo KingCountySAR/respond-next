@@ -1,5 +1,7 @@
+import { DefaultSession } from 'next-auth';
+
 /** User information exposed to clients */
-export interface UserInfo {
+export type UserInfo = {
   email: string;
   userId: string;
   organizationId: string;
@@ -9,4 +11,4 @@ export interface UserInfo {
   given_name?: string;
   family_name?: string;
   picture?: string;
-}
+} & DefaultSession['user'];

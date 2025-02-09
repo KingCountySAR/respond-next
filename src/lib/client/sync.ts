@@ -3,7 +3,7 @@ import io, { Socket } from 'socket.io-client';
 
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/types/syncSocket';
 
-import { apiFetch } from '../api';
+//import { apiFetch } from '../api';
 import { ActivityActions } from '../state';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
@@ -120,7 +120,7 @@ export class ClientSync {
     }
 
     // make sure the socket is listening, and we have an auth token for it...
-    this.key = (await apiFetch<{ key: string }>('/api/socket-keepalive')).key;
+    this.key = 'key'; // (await apiFetch<{ key: string }>('/api/socket-keepalive')).key;
     if (this.key) {
       // and then connect to it.
       this.socket.connect();

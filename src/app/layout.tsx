@@ -1,6 +1,6 @@
+import { auth } from '@respond/auth';
 import ClientOnly from '@respond/components/ClientOnly';
 import ClientProviders, { SiteConfig } from '@respond/components/ClientProviders';
-import { getCookieAuth, userFromAuth } from '@respond/lib/server/auth';
 import { getOrganizationForRequest } from '@respond/lib/server/request';
 import { MyOrganization } from '@respond/types/organization';
 
@@ -29,7 +29,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     },
   };
 
-  const user = userFromAuth(await getCookieAuth());
+  const user = (await auth())?.user;
+
   const myOrg: MyOrganization | undefined =
     user && org
       ? {

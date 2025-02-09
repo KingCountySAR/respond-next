@@ -1,11 +1,14 @@
-import { withIronSessionApiRoute } from 'iron-session/next';
-import { NextApiRequest, NextApiResponse } from 'next';
+// import { withIronSessionApiRoute } from 'iron-session/next';
+// import { NextApiRequest, NextApiResponse } from 'next';
 
-import { sessionOptions } from '@respond/lib/session';
+// import { sessionOptions } from '@respond/lib/session';
 
-async function apiLogout(req: NextApiRequest, res: NextApiResponse) {
-  req.session.destroy();
-  res.json({ status: 'ok' });
-}
+// async function apiLogout(req: NextApiRequest, res: NextApiResponse) {
+//   req.session.destroy();
+//   res.json({ status: 'ok' });
+// }
 
-export default withIronSessionApiRoute(apiLogout, sessionOptions);
+// export default withIronSessionApiRoute(apiLogout, sessionOptions);
+const something = 'hi';
+
+export { something };
