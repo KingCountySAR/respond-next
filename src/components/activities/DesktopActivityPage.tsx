@@ -1,6 +1,6 @@
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 import { Box, Paper, Stack } from '@respond/components/Material';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
@@ -30,6 +30,11 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
 
+  useEffect(() => {
+    if (!selectedParticipant) return;
+    setSelectedParticipant(activity.participants[selectedParticipant.id]);
+  }, [activity, selectedParticipant]);
+
   const showEta = isEnrouteOrStandby(myParticipation?.timeline[0]?.status);
 
   return (
@@ -44,12 +49,16 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
         <Box display="flex" flex="1 1 auto" flexDirection="column">
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} display="flex" flexDirection="row" />
-            <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
-              View Roster
-            </Button>
+            <Stack direction={'row'} spacing={1}>
+              <Button href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/kiosk`} variant="outlined" size="small">
+                Base Mode
+              </Button>
+              <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
+                View Roster
+              </Button>
+            </Stack>
           </Stack>
           <RosterPanel //
-            activity={activity}
             filter={orgFilter}
             participantContainerComponent={RosterContainer}
             participantRowComponent={RosterRow}
@@ -68,13 +77,13 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
           )}
           {isActivityActive && (
             <Box sx={{ my: 2 }} display="flex" justifyContent="end">
-              <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
+              <StatusUpdater />
             </Box>
           )}
           <ManagerPanel activity={activity} sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </ToolbarPage>
   );
 }

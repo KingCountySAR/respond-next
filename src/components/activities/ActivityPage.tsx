@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { FunctionComponent, useEffect, useState } from 'react';
 
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Stack } from '@respond/components/Material';
+import { ActivityContext } from '@respond/hooks/useActivityContext';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
@@ -44,7 +45,7 @@ export function ActivityGuardPanel({ activity, component: ContentComponent }: { 
 
   const isActivityActive = isActive(activity);
   return (
-    <>
+    <ActivityContext.Provider value={activity}>
       <ContentComponent activity={activity} startRemove={() => setPromptingRemove(true)} startChangeState={() => setPromptingActivityState(true)} />
       <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
         <DialogTitle>Remove Activity?</DialogTitle>
@@ -84,7 +85,7 @@ export function ActivityGuardPanel({ activity, component: ContentComponent }: { 
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </ActivityContext.Provider>
   );
 }
 

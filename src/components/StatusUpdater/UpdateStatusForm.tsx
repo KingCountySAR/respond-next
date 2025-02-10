@@ -5,8 +5,8 @@ import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 're
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, OrganizationStatus, Participant, ParticipantStatus } from '@respond/types/activity';
-import { MyOrganization } from '@respond/types/organization';
-import { UserInfo } from '@respond/types/userInfo';
+import { Member } from '@respond/types/member';
+import { BaseOrganization } from '@respond/types/organization';
 
 import { DialogContentText, FormControl, FormHelperText, Stack } from '../Material';
 import { ParticipantMilesInput } from '../participant/ParticipantMilesInput';
@@ -17,7 +17,7 @@ interface FormValues {
   statusTime: number;
 }
 
-export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: MyOrganization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
+export function useFormLogic(activity: Activity, member: Member, org: BaseOrganization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
   const dispatch = useAppDispatch();
 
   const resolver: Resolver<FormValues> = async (values) => {
@@ -59,14 +59,14 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
     const time = new Date(data.statusTime).getTime();
 
-    if (!activity.organizations[respondingOrg.id]) {
+    if (!activity.organizations[org.id]) {
       dispatch(
         ActivityActions.appendOrganizationTimeline(
           activity.id,
           {
-            id: respondingOrg.id,
-            title: respondingOrg.title,
-            rosterName: respondingOrg.rosterName,
+            id: org.id,
+            title: org.title,
+            rosterName: org.rosterName,
           },
           {
             status: newStatus === ParticipantStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding,
@@ -75,7 +75,8 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
         ),
       );
     }
-    dispatch(ActivityActions.participantUpdate(activity.id, user.participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles));
+    const [given_name, family_name] = member.name.split(' ').map((v) => v.trim());
+    dispatch(ActivityActions.participantUpdate(activity.id, member.id, given_name ?? '', family_name ?? '', org.id, time, newStatus, data.miles === '' ? undefined : data.miles));
     onFinish();
   };
 

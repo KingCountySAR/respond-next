@@ -3,7 +3,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
@@ -53,12 +53,16 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
 
+  useEffect(() => {
+    if (!selectedParticipant) return;
+    setSelectedParticipant(activity.participants[selectedParticipant.id]);
+  }, [activity, selectedParticipant]);
+
   return (
     <>
       <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} />
       <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} flex="1 1 auto">
         <RosterPanel //
-          activity={activity}
           filter={orgFilter}
           participantContainerComponent={RosterContainer}
           participantRowComponent={RosterRow}
@@ -68,7 +72,7 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
           }}
         />
       </Box>
-      <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </>
   );
 }
@@ -127,7 +131,7 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
           {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
           {showStatusUpdater && (
             <Box>
-              <StatusUpdater fullWidth={true} activity={activity} />
+              <StatusUpdater fullWidth={true} />
             </Box>
           )}
         </Stack>

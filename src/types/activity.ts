@@ -4,6 +4,7 @@ import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
 import { pickSafely } from '@respond/lib/pickSafely';
 
 import { createNewLocation, Location } from './location';
+import { BaseOrganization } from './organization';
 
 export enum ParticipantStatus {
   NotResponding = 0,
@@ -58,6 +59,17 @@ const STATUS_TEXT: Record<ParticipantStatus, string> = {
 
 export function getStatusText(status: ParticipantStatus) {
   return STATUS_TEXT[status];
+}
+
+export function buildBaseOrganization(activity: Activity, organizationId: string) {
+  const org = activity.organizations[organizationId];
+  return {
+    id: org.id,
+    title: org.title,
+    rosterName: org.rosterName,
+    canCreateMissions: false,
+    canCreateEvents: false,
+  } as BaseOrganization;
 }
 
 export function getOrganizationName(activity: Activity, organizationId: string) {

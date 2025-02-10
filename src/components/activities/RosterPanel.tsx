@@ -1,4 +1,4 @@
-import { Button, ButtonBase, Chip, DialogActions, Divider } from '@mui/material';
+import { Button, DialogActions, Divider } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
@@ -7,16 +7,23 @@ import Switch from '@mui/material/Switch';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
-import { apiFetch } from '@respond/lib/api';
-import { Activity, getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
-import { ParticipantInfo } from '@respond/types/participant';
+import { MemberContext } from '@respond/hooks/useMemberContext';
+import { ParticipantContext } from '@respond/hooks/useParticipantContext';
+import { buildBaseOrganization, getStatusCssColor, getStatusText, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
+import { buildMemberFromParticipant } from '@respond/types/member';
 
-import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
+import { useActivityContext } from '../../hooks/useActivityContext';
+import { MemberInfo } from '../member/MemberInfo';
+import { MemberPhoto } from '../member/MemberPhoto';
+import { ParticipantHours } from '../participant/ParticipantHours';
+import { ParticipantMiles } from '../participant/ParticipantMiles';
+import { ParticipantOrgName } from '../participant/ParticipantOrgName';
+import { ParticipantTags } from '../participant/ParticipantTags';
+import { StatusUpdater } from '../StatusUpdater';
 
 import ParticipantTimeline from './ParticipantTimeline';
 
 interface RosterPanelProps {
-  activity: Activity;
   filter?: string;
   participantContainerComponent: FunctionComponent<{ children: ReactNode }>;
   participantRowComponent: FunctionComponent<{ orgs: Record<string, ParticipatingOrg>; participant: Participant; onClick?: () => void }>;
@@ -29,21 +36,8 @@ const etaStatus = (status: ParticipantStatus) => {
 const sortArrivingNext = (a: Participant, b: Participant) => etaStatus(b.timeline[0].status) - etaStatus(a.timeline[0].status) || (a.eta ?? Infinity) - (b.eta ?? Infinity);
 const sortAlphabetical = (a: Participant, b: Participant) => a.firstname.localeCompare(b.firstname);
 
-const findMember = async (orgId: string, memberId: string) => {
-  return (await apiFetch<{ data: ParticipantInfo }>(`/api/v1/organizations/${orgId}/members/${memberId}`)).data;
-};
-
-const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean = false) => {
-  const cleaned = ('' + phoneNumberString).replace(/\D/g, '');
-  const match = cleaned.match(/^(1|)?(\d{3})(\d{3})(\d{4})$/);
-  if (match) {
-    const intlCode = match[1] ? '+1 ' : '';
-    return [includeIntlCode ? intlCode : '', '(', match[2], ') ', match[3], '-', match[4]].join('');
-  }
-  return null;
-};
-
-export function RosterPanel({ activity, filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
+export function RosterPanel({ filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
+  const activity = useActivityContext();
   const [sortEta, setSortEta] = useState(false);
   const [participants, setParticipants] = useState<Array<Participant>>(Object.values(activity.participants));
 
@@ -54,7 +48,7 @@ export function RosterPanel({ activity, filter, participantContainerComponent: P
     setParticipants(list);
   }, [activity, filter, sortEta]);
 
-  let cards: ReactNode = participants.map((p) => <Participant key={p.id} orgs={activity.organizations} participant={p} onClick={() => onClick?.(p)} />);
+  let cards: ReactNode = participants.map((p) => <Participant key={p.id} orgs={activity.organizations} participant={p} onClick={() => onClick?.(activity.participants[p.id])} />);
   if (participants.length == 0) {
     cards = (
       <RosterRowCard status={ParticipantStatus.NotResponding}>
@@ -93,137 +87,50 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
   );
 }
 
-export function ParticipantDialog({ open, participant, activity, onClose }: { open: boolean; onClose: () => void; participant?: Participant; activity: Activity }) {
+export function ParticipantDialog({ open, participant, onClose }: { open: boolean; onClose: () => void; participant?: Participant }) {
+  const activity = useActivityContext();
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
-  const [memberInfo, setMemberInfo] = useState<ParticipantInfo | undefined>();
-
-  useEffect(() => {
-    if (participant) getMemberInfo(participant);
-  }, [participant]);
-
-  const getMemberInfo = async (participant: Participant) => {
-    const member = await findMember(participant.organizationId, participant.id);
-    setMemberInfo(member);
-  };
 
   if (!participant) return <></>;
 
-  const name = `${participant.firstname} ${participant.lastname}`;
+  const member = buildMemberFromParticipant(participant);
+  const org = buildBaseOrganization(activity, member.orgId);
+
   return (
-    <Dialog fullWidth open={open} onClose={onClose}>
-      <DialogTitle style={{ borderBottom: 'solid 4px ' + getStatusCssColor(participant.timeline[0].status) }} alignItems="center" justifyContent="space-between" display="flex">
-        <Box>{name}</Box>
-        <Typography style={{ color: getStatusCssColor(participant.timeline[0].status) }}>{getStatusText(participant.timeline[0].status)}</Typography>
-      </DialogTitle>
-      <DialogContent>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ pt: 2 }} divider={<Divider orientation={isMobile ? 'horizontal' : 'vertical'} flexItem />}>
-          <Box>
-            <img //
-              src={`/api/v1/organizations/${participant.organizationId}/members/${participant.id}/photo`}
-              alt={`Photo of ${name}`}
-              style={{ width: '8rem', minHeight: '10rem', border: 'solid 1px #777', borderRadius: '4px' }}
-            />
-            <Typography fontWeight={600}>{getOrganizationName(activity, participant.organizationId)}</Typography>
-            <Box>{participant.tags?.map((t) => <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />)}</Box>
-            {memberInfo?.mobilephone && <Typography>{formatPhoneNumber(memberInfo.mobilephone)}</Typography>}
-            {memberInfo?.email && (
-              <Typography>
-                <a href={`mailto:${memberInfo.email}`}>{memberInfo.email}</a>
-              </Typography>
-            )}
-          </Box>
-          <Stack spacing={2} flexGrow={1}>
-            <ParticipantHoursText participant={participant} />
-            <ParticipantMiles activityId={activity.id} participant={participant} />
-            <Typography borderBottom={1} variant="h6">
-              Timeline
-            </Typography>
-            <ParticipantTimeline participant={participant} activity={activity} />
+    <ParticipantContext.Provider value={participant}>
+      <Dialog fullWidth open={open} onClose={onClose}>
+        <DialogTitle style={{ borderBottom: 'solid 4px ' + getStatusCssColor(participant.timeline[0].status) }} alignItems="center" justifyContent="space-between" display="flex">
+          <Box>{member.name}</Box>
+          <Typography style={{ color: getStatusCssColor(participant.timeline[0].status) }}>{getStatusText(participant.timeline[0].status)}</Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ pt: 2 }} divider={<Divider orientation={isMobile ? 'horizontal' : 'vertical'} flexItem />}>
+            <Box>
+              <MemberContext.Provider value={member}>
+                <MemberPhoto />
+                <Typography fontWeight={600}>
+                  <ParticipantOrgName />
+                </Typography>
+                <ParticipantTags />
+                <MemberInfo phone email />
+              </MemberContext.Provider>
+            </Box>
+            <Stack spacing={2} flexGrow={1}>
+              <ParticipantHours />
+              <ParticipantMiles />
+              <Box sx={{ my: 2 }} display="flex" justifyContent="end">
+                <StatusUpdater member={member} org={org} />
+              </Box>
+              <ParticipantTimeline />
+            </Stack>
           </Stack>
-        </Stack>
-        {/* <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText> */}
-      </DialogContent>
-      <DialogActions>
-        <Button autoFocus onClick={onClose}>
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-function isOnClock(status: ParticipantStatus) {
-  if (status === ParticipantStatus.Standby) return false;
-  return isActive(status);
-}
-
-function getLastTimeout(lastUpdate: ParticipantUpdate) {
-  if (!isOnClock(lastUpdate.status)) return lastUpdate.time;
-  return new Date().getTime();
-}
-
-function ParticipantHoursText({ participant }: { participant: Participant }) {
-  const lastTimeline = participant.timeline[0];
-  const [latestTimeout, setLatestTimeout] = useState<number>(getLastTimeout(lastTimeline));
-
-  // Keep the timeline up to date while the dialog is open
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLatestTimeout(getLastTimeout(lastTimeline));
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [lastTimeline, latestTimeout, participant.firstname]);
-
-  let timeOnClock = 0;
-  let lastTime: number = latestTimeout;
-  for (const t of participant.timeline) {
-    if (isOnClock(t.status)) {
-      timeOnClock += lastTime - t.time;
-    }
-
-    lastTime = t.time;
-  }
-
-  // Round to the nearest quarter hour.
-  return (
-    <Stack direction={'row'} spacing={2} justifyContent={'space-between'}>
-      <Typography variant="h6">Total Hours:</Typography>
-      <Typography variant="h6" flexGrow={1} align={'right'}>
-        {Math.round(timeOnClock / 1000 / 60 / 15) / 4}
-      </Typography>
-    </Stack>
-  );
-}
-
-function ParticipantMiles({ activityId, participant }: { activityId: string; participant: Participant }) {
-  const [miles, setMiles] = useState(participant.miles ?? 0);
-  const [edit, setEdit] = useState(false);
-  return (
-    <>
-      {!edit && (
-        <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
-          <Stack sx={{ width: '100%' }} direction={'row'} spacing={2} justifyContent={'space-between'}>
-            <Typography variant="h6">Total Miles:</Typography>
-            <Typography variant="h6" flexGrow={1} align={'right'}>
-              {miles}
-            </Typography>
-          </Stack>
-        </ButtonBase>
-      )}
-      {edit && (
-        <>
-          <Typography variant="h6">Updating Miles</Typography>
-          <ParticipantMilesUpdater
-            activityId={activityId}
-            participant={{ ...participant, miles: miles }}
-            onCancel={() => setEdit(false)}
-            onSubmit={(newMiles) => {
-              setMiles(newMiles);
-              setEdit(false);
-            }}
-          />
-        </>
-      )}
-    </>
+        </DialogContent>
+        <DialogActions>
+          <Button autoFocus onClick={onClose}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </ParticipantContext.Provider>
   );
 }
