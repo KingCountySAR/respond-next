@@ -38,7 +38,6 @@ export default function ActivityKiosk({ activityId }: { activityId: string }) {
 
   useEffect(() => {
     findOrganizations().then((organizations) => {
-      organizations.forEach((o, i) => console.log(`org ${i}`, JSON.stringify(o)));
       setOrganizations(organizations.filter((f) => !!f.memberProvider));
     });
   }, []);
