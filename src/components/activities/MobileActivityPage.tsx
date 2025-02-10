@@ -3,7 +3,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
@@ -52,6 +52,11 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
   const [orgFilter, setOrgFilter] = useState<string>('');
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
+
+  useEffect(() => {
+    if (!selectedParticipant) return;
+    setSelectedParticipant(activity.participants[selectedParticipant.id]);
+  }, [activity, selectedParticipant]);
 
   return (
     <>

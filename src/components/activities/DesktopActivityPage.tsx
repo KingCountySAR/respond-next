@@ -1,6 +1,6 @@
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 import { Box, Paper, Stack } from '@respond/components/Material';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
@@ -29,6 +29,11 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
   const [orgFilter, setOrgFilter] = useState<string>('');
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
+
+  useEffect(() => {
+    if (!selectedParticipant) return;
+    setSelectedParticipant(activity.participants[selectedParticipant.id]);
+  }, [activity, selectedParticipant]);
 
   const showEta = isEnrouteOrStandby(myParticipation?.timeline[0]?.status);
 
