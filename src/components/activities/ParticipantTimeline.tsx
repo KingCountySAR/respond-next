@@ -4,24 +4,25 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
 
-import { ActivityContext, useActivityContext } from '@respond/hooks/useActivity';
+import { useActivityContext } from '@respond/hooks/useActivityContext';
+import { useParticipantContext } from '@respond/hooks/useParticipantContext';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { Activity, getOrganizationName, getStatusText, Participant, ParticipantUpdate } from '@respond/types/activity';
+import { getOrganizationName, getStatusText, ParticipantUpdate } from '@respond/types/activity';
 
-export default function ParticipantTimeline({ participant, activity }: { participant: Participant; activity: Activity }) {
+export default function ParticipantTimeline() {
+  const activity = useActivityContext();
+  const participant = useParticipantContext();
   const dispatch = useAppDispatch();
   const updateTimeline = (update: ParticipantUpdate, index: number) => {
     dispatch(ActivityActions.participantTimelineUpdate(activity.id, participant.id, update, index));
   };
   return (
-    <ActivityContext.Provider value={activity}>
-      <Stack spacing={2}>
-        {[...participant.timeline].reverse().map((update, i) => (
-          <ParticipantUpdateTile key={i} record={update} onChange={(time) => updateTimeline({ ...update, time }, i)} />
-        ))}
-      </Stack>
-    </ActivityContext.Provider>
+    <Stack spacing={2}>
+      {[...participant.timeline].reverse().map((update, i) => (
+        <ParticipantUpdateTile key={i} record={update} onChange={(time) => updateTimeline({ ...update, time }, i)} />
+      ))}
+    </Stack>
   );
 }
 

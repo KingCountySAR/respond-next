@@ -54,7 +54,6 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
             </Stack>
           </Stack>
           <RosterPanel //
-            activity={activity}
             filter={orgFilter}
             participantContainerComponent={RosterContainer}
             participantRowComponent={RosterRow}
@@ -73,13 +72,13 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
           )}
           {isActivityActive && (
             <Box sx={{ my: 2 }} display="flex" justifyContent="end">
-              <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
+              <StatusUpdater />
             </Box>
           )}
           <ManagerPanel activity={activity} sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </ToolbarPage>
   );
 }

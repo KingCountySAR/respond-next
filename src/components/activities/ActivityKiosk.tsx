@@ -1,21 +1,26 @@
-import { Box, FormControl, InputLabel, MenuItem, Paper, Select } from '@mui/material';
+import { Alert, Box, FormControl, InputLabel, MenuItem, Paper, Select } from '@mui/material';
 import { Card, CardContent, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import ParticipantTimeline from '@respond/components/activities/ParticipantTimeline';
 import AsyncSearch, { AsyncSearchResult } from '@respond/components/AsyncSearch';
-import { AdminStatusUpdater } from '@respond/components/StatusUpdater';
+import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { apiFetch } from '@respond/lib/api';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
-import { D4HMemberResponse } from '@respond/lib/server/memberProviders/d4hMembersProvider';
 import { Participant } from '@respond/types/activity';
 import { OrganizationDoc } from '@respond/types/data/organizationDoc';
-import { UserInfo } from '@respond/types/userInfo';
+import { Member } from '@respond/types/member';
+
+import { ActivityContext } from '../../hooks/useActivityContext';
+import { MemberContext } from '../../hooks/useMemberContext';
+import { ParticipantContext } from '../../hooks/useParticipantContext';
+import { MemberInfo } from '../member/MemberInfo';
+import { MemberPhoto } from '../member/MemberPhoto';
 
 const findMembers = async (orgId: string, query: string) => {
-  return (await apiFetch<{ data: D4HMemberResponse[] }>(`/api/v1/organizations/${orgId}/members/find/${query}`)).data;
+  return (await apiFetch<{ data: Member[] }>(`/api/v1/organizations/${orgId}/members/find/${query}`)).data;
 };
 
 const findOrganizations = async () => {
@@ -28,9 +33,8 @@ export default function ActivityKiosk({ activityId }: { activityId: string }) {
   const [organizations, setOrganizations] = useState<OrganizationDoc[]>();
   const [org, setOrg] = useState<OrganizationDoc>();
   const [orgId, setOrgId] = useState<string>('');
-  const [member, setMember] = useState<D4HMemberResponse>();
+  const [member, setMember] = useState<Member>();
   const [participant, setParticipant] = useState<Participant>();
-  const [userInfo, setUserInfo] = useState<UserInfo>();
 
   useEffect(() => {
     findOrganizations().then((organizations) => {
@@ -42,21 +46,9 @@ export default function ActivityKiosk({ activityId }: { activityId: string }) {
   useEffect(() => {
     if (!activity || !member) {
       setParticipant(undefined);
-      setUserInfo(undefined);
       return;
     }
     setParticipant(activity.participants[member.id]);
-    setUserInfo({
-      email: member.email ?? '',
-      userId: member.id.toString(),
-      organizationId: orgId,
-      participantId: member.id.toString(),
-      domain: org?.domain ?? '',
-      name: member.name,
-      given_name: member.name.split(',')[1].trim(),
-      family_name: member.name.split(',')[0].trim(),
-      picture: member.urls.image,
-    });
     setOrg(organizations?.find((f) => f?.id === orgId));
   }, [activity, member, organizations, orgId, org]);
 
@@ -64,7 +56,7 @@ export default function ActivityKiosk({ activityId }: { activityId: string }) {
     if (!orgId) return Promise.reject(new Error('no organization selected'));
     return findMembers(orgId, value).then((list) =>
       list.map((member) => {
-        const label = `${member.name} (${member.ref})`;
+        const label = member.name;
         return { label: label, value: { ...member, label: label } };
       }),
     );
@@ -78,56 +70,58 @@ export default function ActivityKiosk({ activityId }: { activityId: string }) {
     setMember(undefined);
   };
 
+  if (!activity) return <Alert severity="error">Activity not found</Alert>;
+
   return (
-    <ToolbarPage maxWidth="lg">
-      <Typography variant="h4" paddingBottom={2}>
-        {activity?.idNumber} {activity?.title}
-      </Typography>
-      <Paper sx={{ p: 2 }}>
-        <Stack spacing={2}>
-          {organizations && (
-            <FormControl fullWidth>
-              <InputLabel id="org-select">Organization</InputLabel>
-              <Select labelId="org-select" label="Organization" disabled={!organizations} value={orgId} onChange={(event) => setOrgId(event.target.value)}>
-                {organizations.map((o) => (
-                  <MenuItem key={o.id} value={o.id}>
-                    {o.title}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-          {orgId && <AsyncSearch label="Search Members" onInputChange={handleMemberQuery} onChange={handleMemberSelect} onClear={handleClear} variant="outlined"></AsyncSearch>}
-          {member && <MemberInfo orgId={orgId} member={member} />}
-          {activity && userInfo && org && (
-            <Box sx={{ my: 2 }} display="flex" justifyContent="end">
-              <AdminStatusUpdater activity={activity} current={participant?.timeline[0].status} user={userInfo} org={org} />
-            </Box>
-          )}
-          {participant && activity && <ParticipantTimeline participant={participant} activity={activity} />}
-        </Stack>
-      </Paper>
-    </ToolbarPage>
+    <ActivityContext.Provider value={activity}>
+      <ToolbarPage maxWidth="lg">
+        <Typography variant="h4" paddingBottom={2}>
+          {activity?.idNumber} {activity?.title}
+        </Typography>
+        <Paper sx={{ p: 2 }}>
+          <Stack spacing={2}>
+            {organizations && (
+              <FormControl fullWidth>
+                <InputLabel id="org-select">Organization</InputLabel>
+                <Select labelId="org-select" label="Organization" disabled={!organizations} value={orgId} onChange={(event) => setOrgId(event.target.value)}>
+                  {organizations.map((o) => (
+                    <MenuItem key={o.id} value={o.id}>
+                      {o.title}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+            {orgId && <AsyncSearch label="Search Members" onInputChange={handleMemberQuery} onChange={handleMemberSelect} onClear={handleClear} variant="outlined"></AsyncSearch>}
+            {member && (
+              <MemberContext.Provider value={member}>
+                <MemberInfoCard />
+              </MemberContext.Provider>
+            )}
+            {member && org && (
+              <Box sx={{ my: 2 }} display="flex" justifyContent="end">
+                <StatusUpdater member={member} org={org} />
+              </Box>
+            )}
+            {participant && (
+              <ParticipantContext.Provider value={participant}>
+                <ParticipantTimeline />
+              </ParticipantContext.Provider>
+            )}
+          </Stack>
+        </Paper>
+      </ToolbarPage>
+    </ActivityContext.Provider>
   );
 }
 
-function MemberInfo({ orgId, member }: { orgId: string; member: D4HMemberResponse }) {
+function MemberInfoCard() {
   return (
     <Card>
       <CardContent>
         <Stack direction={{ sm: 'row' }} spacing={2}>
-          <img //
-            src={`/api/v1/organizations/${orgId}/members/${member.id}/photo`}
-            alt={`Photo of ${member.name}`}
-            style={{ width: '8rem', minHeight: '10rem', border: 'solid 1px #777', borderRadius: '4px' }}
-          />
-          <Stack>
-            <Typography>
-              Name: {member.name} ({member.ref})
-            </Typography>
-            <Typography>Phone: {member.mobilephone}</Typography>
-            <Typography>Email: {member.email}</Typography>
-          </Stack>
+          <MemberPhoto />
+          <MemberInfo name phone email />
         </Stack>
       </CardContent>
     </Card>

@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest, { params }: { params: { orgId: 
     return NextResponse.json({ status: 'unknown member provider' }, { status: 500 });
   }
 
-  const list = await memberProvider.findMembersByName(params.query);
+  const list = await memberProvider.findMembersByName(params.orgId, params.query);
 
   if (!list) {
     return NextResponse.json({ status: 'not found' }, { status: 404 });
