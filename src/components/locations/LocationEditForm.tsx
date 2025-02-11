@@ -81,6 +81,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
 
   const lat = watch('lat');
   const lon = watch('lon');
+  const address = watch('address');
 
   return (
     <>
@@ -176,7 +177,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
             </Stack>
           </Grid>
           <Grid item xs={12}>
-            <GoogleMapEmbed lat={lat} lon={lon} />
+            <GoogleMapEmbed lat={lat} lon={lon} address={address} />
           </Grid>
         </Grid>
       </form>
