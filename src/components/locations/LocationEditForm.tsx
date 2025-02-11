@@ -6,9 +6,8 @@ import { Controller, Resolver, ResolverResult, useForm } from 'react-hook-form';
 import { createNewLocation, Location } from '@respond/types/location';
 
 import ConfirmDialog from '../ConfirmDialog';
+import { GoogleMapEmbed } from '../GoogleMapEmbed';
 import { FormControlLabel } from '../Material';
-
-import { GoogleMapEmbed } from './GoogleMapEmbed';
 
 type InputVariant = 'filled' | 'outlined' | 'standard';
 
