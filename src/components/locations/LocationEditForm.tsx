@@ -8,6 +8,8 @@ import { createNewLocation, Location } from '@respond/types/location';
 import ConfirmDialog from '../ConfirmDialog';
 import { FormControlLabel } from '../Material';
 
+import { GoogleMapEmbed } from './GoogleMapEmbed';
+
 type InputVariant = 'filled' | 'outlined' | 'standard';
 
 /**
@@ -54,6 +56,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
     control,
     handleSubmit,
     formState: { isDirty, errors },
+    watch,
   } = useForm<Location>({
     resolver,
     defaultValues,
@@ -75,6 +78,9 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
   const handleFormClose = () => {
     onClose?.();
   };
+
+  const lat = watch('lat');
+  const lon = watch('lon');
 
   return (
     <>
@@ -168,6 +174,9 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
                 </Button>
               </Stack>
             </Stack>
+          </Grid>
+          <Grid item xs={12}>
+            <GoogleMapEmbed lat={lat} lon={lon} />
           </Grid>
         </Grid>
       </form>
