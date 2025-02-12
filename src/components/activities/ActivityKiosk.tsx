@@ -14,7 +14,6 @@ import { OrganizationDoc } from '@respond/types/data/organizationDoc';
 import { Member } from '@respond/types/member';
 
 import { MemberInfo } from '../member/MemberInfo';
-import { MemberPhoto } from '../member/MemberPhoto';
 import { MemberProvider } from '../member/MemberProvider';
 import { ParticipantProvider } from '../participant/ParticipantProvider';
 
@@ -120,8 +119,10 @@ function MemberInfoCard() {
     <Card>
       <CardContent>
         <Stack direction={{ sm: 'row' }} spacing={2}>
-          <MemberPhoto />
-          <MemberInfo name phone email />
+          <MemberInfo.Photo />
+          <MemberInfo.Name />
+          <MemberInfo.Phone />
+          <MemberInfo.Email />
         </Stack>
       </CardContent>
     </Card>

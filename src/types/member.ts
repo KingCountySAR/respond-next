@@ -7,6 +7,7 @@ export interface Member {
   name: string;
   email?: string;
   domain?: string;
+  phone?: string;
 }
 
 export const buildMemberFromParticipant = (participant: Participant) => {

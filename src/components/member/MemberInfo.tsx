@@ -1,46 +1,38 @@
-import { Stack, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Typography, TypographyTypeMap } from '@mui/material';
+import { DefaultComponentProps } from '@mui/material/OverridableComponent';
+import { DetailedHTMLProps, ImgHTMLAttributes } from 'react';
 
 import { useMemberContext } from '@respond/components/member/MemberProvider';
-import { apiFetch } from '@respond/lib/api';
-import { Member } from '@respond/types/member';
-import { ParticipantInfo } from '@respond/types/participant';
 
-const findMember = async (orgId: string, memberId: string) => {
-  return (await apiFetch<{ data: ParticipantInfo }>(`/api/v1/organizations/${orgId}/members/${memberId}`)).data;
-};
-
-const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean = false) => {
-  const cleaned = ('' + phoneNumberString).replace(/\D/g, '');
-  const match = cleaned.match(/^(1|)?(\d{3})(\d{3})(\d{4})$/);
-  if (match) {
-    const intlCode = match[1] ? '+1 ' : '';
-    return [includeIntlCode ? intlCode : '', '(', match[2], ') ', match[3], '-', match[4]].join('');
-  }
-  return null;
-};
-
-export function MemberInfo({ name, phone, email }: { name?: boolean; phone?: boolean; email?: boolean }) {
+function Name({ props }: { props?: DefaultComponentProps<TypographyTypeMap<object, 'span'>> }) {
   const member = useMemberContext();
-  const [memberInfo, setMemberInfo] = useState<ParticipantInfo | undefined>();
+  return <Typography {...props}>{member.name}</Typography>;
+}
 
-  useEffect(() => {
-    if (member) getMemberInfo(member);
-  }, [member]);
+function Phone({ props }: { props?: DefaultComponentProps<TypographyTypeMap<object, 'span'>> }) {
+  const member = useMemberContext();
+  return <Typography {...props}>{member.phone}</Typography>;
+}
 
-  const getMemberInfo = async (member: Member) => {
-    setMemberInfo(await findMember(member.orgId, member.id));
-  };
-
+function Email({ props }: { props?: DefaultComponentProps<TypographyTypeMap<object, 'span'>> }) {
+  const member = useMemberContext();
   return (
-    <Stack>
-      {name && <Typography>{member.name}</Typography>}
-      {phone && memberInfo?.mobilephone && <Typography>{formatPhoneNumber(memberInfo.mobilephone)}</Typography>}
-      {email && memberInfo?.email && (
-        <Typography>
-          <a href={`mailto:${memberInfo.email}`}>{memberInfo.email}</a>
-        </Typography>
-      )}
-    </Stack>
+    <Typography {...props}>
+      <a href={`mailto:${member.email}`}>{member.email}</a>
+    </Typography>
   );
 }
+
+function Photo({ props }: { props?: DetailedHTMLProps<ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement> }) {
+  const member = useMemberContext();
+  return (
+    <img //
+      src={`/api/v1/organizations/${member.orgId}/members/${member.id}/photo`}
+      alt={`Photo of ${member.name}`}
+      style={{ width: '8rem', minHeight: '10rem', border: 'solid 1px #777', borderRadius: '4px' }}
+      {...props}
+    />
+  );
+}
+
+export const MemberInfo = { Name, Phone, Email, Photo };

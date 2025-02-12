@@ -9,7 +9,6 @@ import { buildMemberFromParticipant } from '@respond/types/member';
 import { useActivityContext } from '../activities/ActivityProvider';
 import ParticipantTimeline from '../activities/ParticipantTimeline';
 import { MemberInfo } from '../member/MemberInfo';
-import { MemberPhoto } from '../member/MemberPhoto';
 import { StatusUpdater } from '../StatusUpdater';
 
 import { ParticipantHours } from './ParticipantHours';
@@ -37,10 +36,11 @@ export function ParticipantDialog({ open = true, onClose }: { open?: boolean; on
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ pt: 2 }} divider={<Divider orientation={isMobile ? 'horizontal' : 'vertical'} flexItem />}>
           <Box>
             <MemberProvider member={member}>
-              <MemberPhoto />
+              <MemberInfo.Photo />
               <ParticipantOrgName fontWeight={600} />
               <ParticipantTags />
-              <MemberInfo phone email />
+              <MemberInfo.Phone />
+              <MemberInfo.Email />
             </MemberProvider>
           </Box>
           <Stack spacing={2} flexGrow={1}>
