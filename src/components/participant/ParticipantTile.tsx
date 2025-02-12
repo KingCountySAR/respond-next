@@ -19,7 +19,7 @@ export function ParticipantTile({ participant, children, ...props }: PaperProps 
           </Stack>
         </CardActionArea>
       </Card>
-      <ParticipantDialog open={showDialog} onClose={() => setShowDialog(false)} />
+      {showDialog && <ParticipantDialog onClose={() => setShowDialog(false)} />}
     </ParticipantProvider>
   );
 }

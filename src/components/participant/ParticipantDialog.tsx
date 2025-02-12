@@ -17,7 +17,7 @@ import { ParticipantMiles } from './ParticipantMiles';
 import { ParticipantOrgName } from './ParticipantOrgName';
 import { ParticipantTags } from './ParticipantTags';
 
-export function ParticipantDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ParticipantDialog({ open = true, onClose }: { open?: boolean; onClose: () => void }) {
   const activity = useActivityContext();
   const participant = useParticipantContext();
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
