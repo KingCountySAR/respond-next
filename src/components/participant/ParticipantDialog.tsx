@@ -38,9 +38,7 @@ export function ParticipantDialog({ open = true, onClose }: { open?: boolean; on
           <Box>
             <MemberProvider member={member}>
               <MemberPhoto />
-              <Typography fontWeight={600}>
-                <ParticipantOrgName />
-              </Typography>
+              <ParticipantOrgName fontWeight={600} />
               <ParticipantTags />
               <MemberInfo phone email />
             </MemberProvider>
