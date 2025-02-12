@@ -1,10 +1,10 @@
 import { ButtonBase, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 
-import { useActivityContext } from '../../hooks/useActivityContext';
-import { useParticipantContext } from '../../hooks/useParticipantContext';
+import { useActivityContext } from '../activities/ActivityProvider';
 
 import { ParticipantMilesUpdater } from './ParticipantMilesUpdater';
+import { useParticipantContext } from './ParticipantProvider';
 
 export function ParticipantMiles() {
   const activity = useActivityContext();

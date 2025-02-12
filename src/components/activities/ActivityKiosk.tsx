@@ -13,11 +13,12 @@ import { Participant } from '@respond/types/activity';
 import { OrganizationDoc } from '@respond/types/data/organizationDoc';
 import { Member } from '@respond/types/member';
 
-import { ActivityContext } from '../../hooks/useActivityContext';
-import { MemberContext } from '../../hooks/useMemberContext';
-import { ParticipantContext } from '../../hooks/useParticipantContext';
 import { MemberInfo } from '../member/MemberInfo';
 import { MemberPhoto } from '../member/MemberPhoto';
+import { MemberProvider } from '../member/MemberProvider';
+import { ParticipantProvider } from '../participant/ParticipantProvider';
+
+import { ActivityProvider } from './ActivityProvider';
 
 const findMembers = async (orgId: string, query: string) => {
   return (await apiFetch<{ data: Member[] }>(`/api/v1/organizations/${orgId}/members/find/${query}`)).data;
@@ -72,7 +73,7 @@ export default function ActivityKiosk({ activityId }: { activityId: string }) {
   if (!activity) return <Alert severity="error">Activity not found</Alert>;
 
   return (
-    <ActivityContext.Provider value={activity}>
+    <ActivityProvider activity={activity}>
       <ToolbarPage maxWidth="lg">
         <Typography variant="h4" paddingBottom={2}>
           {activity?.idNumber} {activity?.title}
@@ -93,9 +94,9 @@ export default function ActivityKiosk({ activityId }: { activityId: string }) {
             )}
             {orgId && <AsyncSearch label="Search Members" onInputChange={handleMemberQuery} onChange={handleMemberSelect} onClear={handleClear} variant="outlined"></AsyncSearch>}
             {member && (
-              <MemberContext.Provider value={member}>
+              <MemberProvider member={member}>
                 <MemberInfoCard />
-              </MemberContext.Provider>
+              </MemberProvider>
             )}
             {member && org && (
               <Box sx={{ my: 2 }} display="flex" justifyContent="end">
@@ -103,14 +104,14 @@ export default function ActivityKiosk({ activityId }: { activityId: string }) {
               </Box>
             )}
             {participant && (
-              <ParticipantContext.Provider value={participant}>
+              <ParticipantProvider participant={participant}>
                 <ParticipantTimeline />
-              </ParticipantContext.Provider>
+              </ParticipantProvider>
             )}
           </Stack>
         </Paper>
       </ToolbarPage>
-    </ActivityContext.Provider>
+    </ActivityProvider>
   );
 }
 

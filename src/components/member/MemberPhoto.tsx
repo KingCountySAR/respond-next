@@ -1,4 +1,4 @@
-import { useMemberContext } from '@respond/hooks/useMemberContext';
+import { useMemberContext } from '@respond/components/member/MemberProvider';
 
 export function MemberPhoto() {
   const member = useMemberContext();

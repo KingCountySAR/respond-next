@@ -10,11 +10,11 @@ import { getActivityPath, isActive } from '@respond/lib/client/store/activities'
 import { NavigationApp } from '@respond/lib/client/store/preferences';
 import { Activity, ParticipantStatus } from '@respond/types/activity';
 
-import { ActivityContext } from '../../hooks/useActivityContext';
+import { ActivityProvider } from './ActivityProvider';
 
 export const ActivityTile = ({ activity, status, children }: { activity: Activity; status?: ParticipantStatus; children?: ReactNode }) => {
   return (
-    <ActivityContext.Provider value={activity}>
+    <ActivityProvider activity={activity}>
       <Card>
         <Box padding={1}>
           <Box sx={{ pb: 2, display: 'flex', flexDirection: 'row' }} alignItems="center">
@@ -48,7 +48,7 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
           </CardActions>
         )}
       </Card>
-    </ActivityContext.Provider>
+    </ActivityProvider>
   );
 };
 

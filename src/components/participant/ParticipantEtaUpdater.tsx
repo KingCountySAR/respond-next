@@ -4,6 +4,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import { format as formatDate } from 'date-fns';
 import { useEffect, useState } from 'react';
 
+import { useActivityContext } from '@respond/components/activities/ActivityProvider';
 import { useDebounce } from '@respond/hooks/useDebounce';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
@@ -11,21 +12,25 @@ import { ActivityActions } from '@respond/lib/state';
 import { InlineTimeEdit } from '../InlineTimeEdit';
 import { Button, IconButton, Stack, Typography } from '../Material';
 
+import { useParticipantContext } from './ParticipantProvider';
+
 const ONE_MINUTE_MILLISECONDS = 60 * 1000;
 const FIFTEEN_MINUTES_MILLISECONDS = 15 * 60 * 1000;
 const THIRTY_MINUTES_MILLISECONDS = 30 * 60 * 1000;
 const SIXTY_MINUTES_MILLISECONDS = 60 * 60 * 1000;
 
-export function ParticipantEtaUpdater({ activityId, participantId, participantEta }: { activityId: string; participantId: string; participantEta?: number }) {
+export function ParticipantEtaUpdater() {
+  const activity = useActivityContext();
+  const participant = useParticipantContext();
   const dispatch = useAppDispatch();
 
-  const [eta, setEta] = useState<number | undefined | null>(participantEta);
+  const [eta, setEta] = useState<number | undefined | null>(participant.eta);
   const [editing, setEditing] = useState(false);
   const debouncedEta = useDebounce(eta, 1000);
 
   useEffect(() => {
-    dispatch(ActivityActions.participantEtaUpdate(activityId, participantId, debouncedEta));
-  }, [debouncedEta, activityId, participantId, dispatch]);
+    dispatch(ActivityActions.participantEtaUpdate(activity.id, participant.id, debouncedEta));
+  }, [debouncedEta, activity, participant, dispatch]);
 
   return (
     <Stack direction={'row'} spacing={2} alignItems={'center'} justifyContent={'space-between'}>

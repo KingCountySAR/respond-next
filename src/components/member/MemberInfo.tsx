@@ -1,7 +1,7 @@
 import { Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
-import { useMemberContext } from '@respond/hooks/useMemberContext';
+import { useMemberContext } from '@respond/components/member/MemberProvider';
 import { apiFetch } from '@respond/lib/api';
 import { Member } from '@respond/types/member';
 import { ParticipantInfo } from '@respond/types/participant';

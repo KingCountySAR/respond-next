@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import { FunctionComponent, useEffect, useState } from 'react';
 
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Stack } from '@respond/components/Material';
-import { ActivityContext } from '@respond/hooks/useActivityContext';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity } from '@respond/types/activity';
 
+import { ParticipantProvider } from '../participant/ParticipantProvider';
+
+import { ActivityProvider } from './ActivityProvider';
 import { DesktopActivityPage } from './DesktopActivityPage';
 import { MobileActivityPage } from './MobileActivityPage';
 
@@ -36,6 +38,7 @@ export function ActivityGuardPanel({ activity, component: ContentComponent }: { 
   const dispatch = useAppDispatch();
   const router = useRouter();
   const org = useAppSelector((state) => state.organization.mine);
+  const user = useAppSelector((state) => state.auth.userInfo);
 
   const [promptingRemove, setPromptingRemove] = useState<boolean>(false);
   const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
@@ -43,49 +46,53 @@ export function ActivityGuardPanel({ activity, component: ContentComponent }: { 
   if (!org) return <div>Loading org...</div>;
   if (!activity) return <Alert severity="error">Activity not found</Alert>;
 
+  const myParticipation = activity.participants[user?.participantId ?? ''];
+
   const isActivityActive = isActive(activity);
   return (
-    <ActivityContext.Provider value={activity}>
-      <ContentComponent activity={activity} startRemove={() => setPromptingRemove(true)} startChangeState={() => setPromptingActivityState(true)} />
-      <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
-        <DialogTitle>Remove Activity?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPromptingRemove(false)}>Cancel</Button>
-          <Button
-            autoFocus
-            color="danger"
-            onClick={() => {
-              dispatch(ActivityActions.remove(activity.id));
-              router.replace('/');
-            }}
-          >
-            Remove
-          </Button>
-        </DialogActions>
-      </Dialog>
+    <ActivityProvider activity={activity}>
+      <ParticipantProvider participant={myParticipation}>
+        <ContentComponent activity={activity} startRemove={() => setPromptingRemove(true)} startChangeState={() => setPromptingActivityState(true)} />
+        <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
+          <DialogTitle>Remove Activity?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPromptingRemove(false)}>Cancel</Button>
+            <Button
+              autoFocus
+              color="danger"
+              onClick={() => {
+                dispatch(ActivityActions.remove(activity.id));
+                router.replace('/');
+              }}
+            >
+              Remove
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      <Dialog open={promptingActivityState} onClose={() => setPromptingActivityState(false)}>
-        <DialogTitle>{isActivityActive ? 'Complete' : 'Reactivate'} event?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPromptingActivityState(false)}>Cancel</Button>
-          <Button
-            autoFocus
-            onClick={() => {
-              dispatch(isActivityActive ? ActivityActions.complete(activity.id, new Date().getTime()) : ActivityActions.reactivate(activity.id));
-              setPromptingActivityState(false);
-            }}
-          >
-            {isActivityActive ? 'Complete' : 'Reactivate'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </ActivityContext.Provider>
+        <Dialog open={promptingActivityState} onClose={() => setPromptingActivityState(false)}>
+          <DialogTitle>{isActivityActive ? 'Complete' : 'Reactivate'} event?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPromptingActivityState(false)}>Cancel</Button>
+            <Button
+              autoFocus
+              onClick={() => {
+                dispatch(isActivityActive ? ActivityActions.complete(activity.id, new Date().getTime()) : ActivityActions.reactivate(activity.id));
+                setPromptingActivityState(false);
+              }}
+            >
+              {isActivityActive ? 'Complete' : 'Reactivate'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </ParticipantProvider>
+    </ActivityProvider>
   );
 }
 

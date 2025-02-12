@@ -3,7 +3,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
@@ -12,12 +12,13 @@ import { isActive } from '@respond/lib/client/store/activities';
 import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
+import { ParticipantTile } from '../participant/ParticipantTile';
 
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
-import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
+import { RosterPanel } from './RosterPanel';
 
 const MOBILE_BOTTOM_NAV_TAB_HEIGHT = 56;
 const MOBILE_STATUS_UPDATER_HEIGHT = 68.5;
@@ -50,13 +51,6 @@ function MobileBriefingScreen({ activity }: { activity: Activity }) {
 
 function MobileRosterScreen({ activity }: { activity: Activity }) {
   const [orgFilter, setOrgFilter] = useState<string>('');
-  const [participantOpen, setParticipantOpen] = useState<boolean>(false);
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
-
-  useEffect(() => {
-    if (!selectedParticipant) return;
-    setSelectedParticipant(activity.participants[selectedParticipant.id]);
-  }, [activity, selectedParticipant]);
 
   return (
     <>
@@ -66,20 +60,15 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
           filter={orgFilter}
           participantContainerComponent={RosterContainer}
           participantRowComponent={RosterRow}
-          onClick={(p) => {
-            setSelectedParticipant(p);
-            setParticipantOpen(true);
-          }}
         />
       </Box>
-      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </>
   );
 }
 
-function RosterRow({ participant, orgs, onClick }: { participant: Participant; orgs: Record<string, ParticipatingOrg>; onClick?: () => void }) {
+function RosterRow({ participant, orgs }: { participant: Participant; orgs: Record<string, ParticipatingOrg> }) {
   return (
-    <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
+    <ParticipantTile participant={participant}>
       <Stack direction="row" sx={{ m: '5px', ml: '8px' }} justifyContent="space-between" flexGrow={1}>
         <Stack>
           <Typography variant="body1" fontWeight={600}>
@@ -94,7 +83,7 @@ function RosterRow({ participant, orgs, onClick }: { participant: Participant; o
           <Typography variant="body2">{isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
         </Stack>
       </Stack>
-    </RosterRowCard>
+    </ParticipantTile>
   );
 }
 
@@ -128,7 +117,7 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
       <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
         <Stack spacing={2} p={2}>
-          {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
+          {showEta && <ParticipantEtaUpdater />}
           {showStatusUpdater && (
             <Box>
               <StatusUpdater fullWidth={true} />

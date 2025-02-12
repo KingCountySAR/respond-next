@@ -1,6 +1,6 @@
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 
 import { Box, Paper, Stack } from '@respond/components/Material';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
@@ -10,12 +10,13 @@ import { isActive } from '@respond/lib/client/store/activities';
 import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
+import { ParticipantTile } from '../participant/ParticipantTile';
 
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
-import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
+import { RosterPanel } from './RosterPanel';
 
 export function DesktopActivityPage({ activity }: { activity?: Activity }) {
   return <ActivityGuardPanel activity={activity} component={DesktopActivityContents} />;
@@ -27,13 +28,6 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
   const isActivityActive = isActive(activity);
 
   const [orgFilter, setOrgFilter] = useState<string>('');
-  const [participantOpen, setParticipantOpen] = useState<boolean>(false);
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
-
-  useEffect(() => {
-    if (!selectedParticipant) return;
-    setSelectedParticipant(activity.participants[selectedParticipant.id]);
-  }, [activity, selectedParticipant]);
 
   const showEta = isEnrouteOrStandby(myParticipation?.timeline[0]?.status);
 
@@ -62,17 +56,13 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
             filter={orgFilter}
             participantContainerComponent={RosterContainer}
             participantRowComponent={RosterRow}
-            onClick={(p) => {
-              setSelectedParticipant(p);
-              setParticipantOpen(true);
-            }}
           />
         </Box>
         <Stack alignItems="stretch" sx={{ width: 400 }}>
           <BriefingPanel activity={activity} sx={{ px: 3 }} />
           {showEta && (
             <Paper sx={{ mt: 2, p: 2 }}>
-              <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />
+              <ParticipantEtaUpdater />
             </Paper>
           )}
           {isActivityActive && (
@@ -83,14 +73,13 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
           <ManagerPanel activity={activity} sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </ToolbarPage>
   );
 }
 
-function RosterRow({ participant, orgs, onClick }: { participant: Participant; orgs: Record<string, ParticipatingOrg>; onClick?: () => void }) {
+function RosterRow({ participant, orgs }: { participant: Participant; orgs: Record<string, ParticipatingOrg> }) {
   return (
-    <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
+    <ParticipantTile participant={participant}>
       <Stack direction="column" sx={{ m: '5px', ml: '8px' }} flexGrow={1}>
         <Stack direction="row" spacing={2} justifyContent={'space-between'}>
           <Stack>
@@ -107,7 +96,7 @@ function RosterRow({ participant, orgs, onClick }: { participant: Participant; o
           </Stack>
         </Stack>
       </Stack>
-    </RosterRowCard>
+    </ParticipantTile>
   );
 }
 

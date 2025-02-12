@@ -6,7 +6,7 @@ import { getOrganizationName, isActive, isResponding, ParticipantStatus } from '
 import { buildMemberFromUserInfo, Member } from '@respond/types/member';
 import { BaseOrganization } from '@respond/types/organization';
 
-import { useActivityContext } from '../../hooks/useActivityContext';
+import { useActivityContext } from '../activities/ActivityProvider';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '../Material';
 import { SplitButton } from '../SplitButton';
 

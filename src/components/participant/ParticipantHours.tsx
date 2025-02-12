@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { isActive, ParticipantStatus, ParticipantUpdate } from '@respond/types/activity';
 
-import { useParticipantContext } from '../../hooks/useParticipantContext';
+import { useParticipantContext } from './ParticipantProvider';
 
 function isOnClock(status: ParticipantStatus) {
   if (status === ParticipantStatus.Standby) return false;

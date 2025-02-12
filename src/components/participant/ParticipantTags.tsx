@@ -1,6 +1,6 @@
 import { Chip } from '@mui/material';
 
-import { useParticipantContext } from '../../hooks/useParticipantContext';
+import { useParticipantContext } from './ParticipantProvider';
 
 export function ParticipantTags() {
   const participant = useParticipantContext();

@@ -1,7 +1,8 @@
 import { getOrganizationName } from '@respond/types/activity';
 
-import { useActivityContext } from '../../hooks/useActivityContext';
-import { useParticipantContext } from '../../hooks/useParticipantContext';
+import { useActivityContext } from '../activities/ActivityProvider';
+
+import { useParticipantContext } from './ParticipantProvider';
 
 export function ParticipantOrgName() {
   const activity = useActivityContext();

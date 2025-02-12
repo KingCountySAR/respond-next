@@ -4,11 +4,12 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
 
-import { useActivityContext } from '@respond/hooks/useActivityContext';
-import { useParticipantContext } from '@respond/hooks/useParticipantContext';
+import { useParticipantContext } from '@respond/components/participant/ParticipantProvider';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { getOrganizationName, getStatusText, ParticipantUpdate } from '@respond/types/activity';
+
+import { useActivityContext } from './ActivityProvider';
 
 export default function ParticipantTimeline() {
   const activity = useActivityContext();
