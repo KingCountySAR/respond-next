@@ -1,36 +1,33 @@
-import { Typography, TypographyTypeMap } from '@mui/material';
-import { DefaultComponentProps } from '@mui/material/OverridableComponent';
-import { DetailedHTMLProps, ImgHTMLAttributes } from 'react';
+import { Typography } from '@mui/material';
 
 import { useMemberContext } from '@respond/components/member/MemberProvider';
 
-function Name({ props }: { props?: DefaultComponentProps<TypographyTypeMap<object, 'span'>> }) {
+function Name() {
   const member = useMemberContext();
-  return <Typography {...props}>{member.name}</Typography>;
+  return <Typography>{member.name}</Typography>;
 }
 
-function Phone({ props }: { props?: DefaultComponentProps<TypographyTypeMap<object, 'span'>> }) {
+function Phone() {
   const member = useMemberContext();
-  return <Typography {...props}>{member.phone}</Typography>;
+  return <Typography>{member.phone}</Typography>;
 }
 
-function Email({ props }: { props?: DefaultComponentProps<TypographyTypeMap<object, 'span'>> }) {
+function Email() {
   const member = useMemberContext();
   return (
-    <Typography {...props}>
+    <Typography>
       <a href={`mailto:${member.email}`}>{member.email}</a>
     </Typography>
   );
 }
 
-function Photo({ props }: { props?: DetailedHTMLProps<ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement> }) {
+function Photo() {
   const member = useMemberContext();
   return (
     <img //
       src={`/api/v1/organizations/${member.orgId}/members/${member.id}/photo`}
       alt={`Photo of ${member.name}`}
       style={{ width: '8rem', minHeight: '10rem', border: 'solid 1px #777', borderRadius: '4px' }}
-      {...props}
     />
   );
 }
