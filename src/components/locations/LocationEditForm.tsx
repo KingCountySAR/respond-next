@@ -6,6 +6,7 @@ import { Controller, Resolver, ResolverResult, useForm } from 'react-hook-form';
 import { createNewLocation, Location } from '@respond/types/location';
 
 import ConfirmDialog from '../ConfirmDialog';
+import { GoogleMapEmbed } from '../GoogleMapEmbed';
 import { FormControlLabel } from '../Material';
 
 type InputVariant = 'filled' | 'outlined' | 'standard';
@@ -54,6 +55,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
     control,
     handleSubmit,
     formState: { isDirty, errors },
+    watch,
   } = useForm<Location>({
     resolver,
     defaultValues,
@@ -75,6 +77,10 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
   const handleFormClose = () => {
     onClose?.();
   };
+
+  const lat = watch('lat');
+  const lon = watch('lon');
+  const address = watch('address');
 
   return (
     <>
@@ -168,6 +174,9 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
                 </Button>
               </Stack>
             </Stack>
+          </Grid>
+          <Grid item xs={12}>
+            <GoogleMapEmbed lat={lat} lon={lon} address={address} />
           </Grid>
         </Grid>
       </form>
