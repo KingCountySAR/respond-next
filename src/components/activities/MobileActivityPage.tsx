@@ -15,6 +15,7 @@ import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 import { ParticipantTile } from '../participant/ParticipantTile';
 
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { useActivityContext } from './ActivityProvider';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
@@ -31,7 +32,7 @@ export enum MobilePageId {
   Manage = 'Manage',
 }
 
-export function MobileActivityPage({ activity }: { activity?: Activity }) {
+export function MobileActivityPage() {
   //const breadcrumbText = `${activity?.isMission ? 'Mission' : 'Event'} Details`;
 
   return (
@@ -40,7 +41,7 @@ export function MobileActivityPage({ activity }: { activity?: Activity }) {
         <Link href="/">Home</Link>
         <Typography color="text.primary">{breadcrumbText}</Typography>
       </Breadcrumbs> */}
-      <ActivityGuardPanel activity={activity} component={MobileActivityContents} />
+      <ActivityGuardPanel component={MobileActivityContents} />
     </ToolbarPage>
   );
 }
@@ -100,7 +101,8 @@ function MobileManageScreen({ activity, startRemove, startChangeState }: { activ
   );
 }
 
-function MobileActivityContents({ activity, startRemove, startChangeState }: ActivityContentProps) {
+function MobileActivityContents({ startRemove, startChangeState }: ActivityContentProps) {
+  const activity = useActivityContext();
   const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
   const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
   const user = useAppSelector((state) => state.auth.userInfo);

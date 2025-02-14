@@ -7,22 +7,24 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
-import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/types/activity';
+import { getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 import { ParticipantTile } from '../participant/ParticipantTile';
 
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { useActivityContext } from './ActivityProvider';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { RosterPanel } from './RosterPanel';
 
-export function DesktopActivityPage({ activity }: { activity?: Activity }) {
-  return <ActivityGuardPanel activity={activity} component={DesktopActivityContents} />;
+export function DesktopActivityPage() {
+  return <ActivityGuardPanel component={DesktopActivityContents} />;
 }
 
-function DesktopActivityContents({ activity, startChangeState, startRemove }: ActivityContentProps) {
+function DesktopActivityContents({ startChangeState, startRemove }: ActivityContentProps) {
+  const activity = useActivityContext();
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.participantId ?? ''];
   const isActivityActive = isActive(activity);
