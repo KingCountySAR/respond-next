@@ -14,6 +14,7 @@ import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipantSt
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { useActivityContext } from './ActivityProvider';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
@@ -30,7 +31,7 @@ export enum MobilePageId {
   Manage = 'Manage',
 }
 
-export function MobileActivityPage({ activity }: { activity?: Activity }) {
+export function MobileActivityPage() {
   //const breadcrumbText = `${activity?.isMission ? 'Mission' : 'Event'} Details`;
 
   return (
@@ -39,7 +40,7 @@ export function MobileActivityPage({ activity }: { activity?: Activity }) {
         <Link href="/">Home</Link>
         <Typography color="text.primary">{breadcrumbText}</Typography>
       </Breadcrumbs> */}
-      <ActivityGuardPanel activity={activity} component={MobileActivityContents} />
+      <ActivityGuardPanel component={MobileActivityContents} />
     </ToolbarPage>
   );
 }
@@ -55,10 +56,9 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
 
   return (
     <>
-      <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} />
+      <ParticipatingOrgChips orgFilter={orgFilter} setOrgFilter={setOrgFilter} />
       <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} flex="1 1 auto">
         <RosterPanel //
-          activity={activity}
           filter={orgFilter}
           participantContainerComponent={RosterContainer}
           participantRowComponent={RosterRow}
@@ -101,15 +101,16 @@ function RosterContainer({ children }: { children: ReactNode }) {
 function MobileManageScreen({ activity, startRemove, startChangeState }: { activity: Activity; startRemove: () => void; startChangeState: () => void }) {
   return (
     <>
-      <ActivityActionsBar activity={activity} startRemove={startRemove} startChangeState={startChangeState} />
+      <ActivityActionsBar startRemove={startRemove} startChangeState={startChangeState} />
       <ManagerPanel activity={activity} />
     </>
   );
 }
 
-function MobileActivityContents({ activity, startRemove, startChangeState }: ActivityContentProps) {
+function MobileActivityContents({ startRemove, startChangeState }: ActivityContentProps) {
   const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
   const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
+  const activity = useActivityContext();
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.participantId ?? ''];
   const showStatusUpdater = isActive(activity);
@@ -127,7 +128,7 @@ function MobileActivityContents({ activity, startRemove, startChangeState }: Act
           {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
           {showStatusUpdater && (
             <Box>
-              <StatusUpdater fullWidth={true} activity={activity} />
+              <StatusUpdater fullWidth={true} />
             </Box>
           )}
         </Stack>

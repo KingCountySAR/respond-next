@@ -2,10 +2,11 @@ import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { Activity, getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/types/activity';
+import { getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/types/activity';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
+import { useActivityContext } from '../activities/ActivityProvider';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '../Material';
 import { SplitButton } from '../SplitButton';
 
@@ -89,21 +90,22 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
   return statusOptions[status];
 }
 
-export const StatusUpdater = ({ activity, current, fullWidth }: { activity: Activity; current?: ParticipantStatus; fullWidth?: boolean }) => {
+export const StatusUpdater = ({ fullWidth }: { current?: ParticipantStatus; fullWidth?: boolean }) => {
   const user = useAppSelector((state) => state.auth.userInfo);
   const thisOrg = useAppSelector((state) => state.organization.mine);
 
-  return user && thisOrg ? <StatusUpdaterProtected activity={activity} current={current} user={user} thisOrg={thisOrg} fullWidth={fullWidth} /> : null;
+  return user && thisOrg ? <StatusUpdaterProtected user={user} thisOrg={thisOrg} fullWidth={fullWidth} /> : null;
 };
 
-const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }: { activity: Activity; user: UserInfo; fullWidth?: boolean; thisOrg: MyOrganization; current?: ParticipantStatus }) => {
+const StatusUpdaterProtected = ({ fullWidth, user, thisOrg }: { user: UserInfo; fullWidth?: boolean; thisOrg: MyOrganization }) => {
+  const activity = useActivityContext();
   const [confirming, setConfirming] = useState<boolean>(false);
   const [confirmTitle, setConfirmTitle] = useState<string>('');
   const [confirmStatus, setConfirmStatus] = useState<ParticipantStatus>(ParticipantStatus.SignedIn);
   const [confirmLabel, setConfirmLabel] = useState<string>('');
 
   const participant = activity.participants[user.participantId];
-  current = current ?? participant?.timeline[0]?.status;
+  const current = participant?.timeline[0]?.status;
 
   const formLogic = useFormLogic(activity, user, thisOrg, participant, current, confirmStatus, () => setConfirming(false));
 

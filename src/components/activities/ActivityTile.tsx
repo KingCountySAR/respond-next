@@ -10,41 +10,45 @@ import { getActivityPath, isActive } from '@respond/lib/client/store/activities'
 import { NavigationApp } from '@respond/lib/client/store/preferences';
 import { Activity, ParticipantStatus } from '@respond/types/activity';
 
+import { ActivityProvider } from './ActivityProvider';
+
 export const ActivityTile = ({ activity, status, children }: { activity: Activity; status?: ParticipantStatus; children?: ReactNode }) => {
   return (
-    <Card>
-      <Box padding={1}>
-        <Box sx={{ pb: 2, display: 'flex', flexDirection: 'row' }} alignItems="center">
-          <Box sx={{ flexGrow: 1 }}>
-            <Link href={getActivityPath(activity)} color="textPrimary" underline="hover">
-              <Typography sx={{ fontWeight: 'bold' }} variant="h6">
-                {activity.title}
-              </Typography>
-            </Link>
+    <ActivityProvider activity={activity}>
+      <Card>
+        <Box padding={1}>
+          <Box sx={{ pb: 2, display: 'flex', flexDirection: 'row' }} alignItems="center">
+            <Box sx={{ flexGrow: 1 }}>
+              <Link href={getActivityPath(activity)} color="textPrimary" underline="hover">
+                <Typography sx={{ fontWeight: 'bold' }} variant="h6">
+                  {activity.title}
+                </Typography>
+              </Link>
+            </Box>
+            <Box>{status && <StatusChip status={status} />}</Box>
           </Box>
-          <Box>{status && <StatusChip status={status} />}</Box>
+          <Box>{children}</Box>
         </Box>
-        <Box>{children}</Box>
-      </Box>
 
-      {isActive(activity) && (
-        <CardActions>
-          <Grid container justifyContent="space-between" alignItems="center">
-            <Grid item>
-              {activity.mapId && (
-                <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
-                  <Image src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
-                </IconButton>
-              )}
-              <NavigationButton lat={activity.location.lat} lon={activity.location.lon} />
+        {isActive(activity) && (
+          <CardActions>
+            <Grid container justifyContent="space-between" alignItems="center">
+              <Grid item>
+                {activity.mapId && (
+                  <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
+                    <Image src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
+                  </IconButton>
+                )}
+                <NavigationButton lat={activity.location.lat} lon={activity.location.lon} />
+              </Grid>
+              <Grid item>
+                <StatusUpdater />
+              </Grid>
             </Grid>
-            <Grid item>
-              <StatusUpdater activity={activity} />
-            </Grid>
-          </Grid>
-        </CardActions>
-      )}
-    </Card>
+          </CardActions>
+        )}
+      </Card>
+    </ActivityProvider>
   );
 };
 

@@ -13,10 +13,10 @@ import { ParticipantInfo } from '@respond/types/participant';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
+import { useActivityContext } from './ActivityProvider';
 import ParticipantTimeline from './ParticipantTimeline';
 
 interface RosterPanelProps {
-  activity: Activity;
   filter?: string;
   participantContainerComponent: FunctionComponent<{ children: ReactNode }>;
   participantRowComponent: FunctionComponent<{ orgs: Record<string, ParticipatingOrg>; participant: Participant; onClick?: () => void }>;
@@ -43,7 +43,8 @@ const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean =
   return null;
 };
 
-export function RosterPanel({ activity, filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
+export function RosterPanel({ filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
+  const activity = useActivityContext();
   const [sortEta, setSortEta] = useState(false);
   const [participants, setParticipants] = useState<Array<Participant>>(Object.values(activity.participants));
 
