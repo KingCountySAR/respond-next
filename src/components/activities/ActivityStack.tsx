@@ -34,7 +34,7 @@ export function ActivityStack({ type, activities, showOrgs, statusMap }: Activit
           {showOrgs && (
             <Box sx={{ pt: 2 }}>
               {Object.entries(a.organizations ?? {}).map(([id, org]) => (
-                <OrganizationChip key={id} org={org} activity={a} />
+                <OrganizationChip key={id} org={org} />
               ))}
             </Box>
           )}
