@@ -90,7 +90,7 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
   return statusOptions[status];
 }
 
-export const StatusUpdater = ({ fullWidth }: { current?: ParticipantStatus; fullWidth?: boolean }) => {
+export const StatusUpdater = ({ fullWidth }: { fullWidth?: boolean }) => {
   const user = useAppSelector((state) => state.auth.userInfo);
   const thisOrg = useAppSelector((state) => state.organization.mine);
 
