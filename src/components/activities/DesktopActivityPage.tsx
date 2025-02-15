@@ -11,7 +11,7 @@ import { getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
-import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { ActivityActionsBar } from './ActivityPage';
 import { useActivityContext } from './ActivityProvider';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
@@ -19,10 +19,6 @@ import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
 export function DesktopActivityPage() {
-  return <ActivityGuardPanel component={DesktopActivityContents} />;
-}
-
-function DesktopActivityContents({ startChangeState, startRemove }: ActivityContentProps) {
   const activity = useActivityContext();
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.participantId ?? ''];
@@ -40,7 +36,7 @@ function DesktopActivityContents({ startChangeState, startRemove }: ActivityCont
         <Typography variant="h4" flex="1 1 auto">
           {activity.idNumber} {activity.title}
         </Typography>
-        <ActivityActionsBar startRemove={startRemove} startChangeState={startChangeState} />
+        <ActivityActionsBar />
       </Stack>
       <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
         <Box display="flex" flex="1 1 auto" flexDirection="column">
@@ -72,7 +68,7 @@ function DesktopActivityContents({ startChangeState, startRemove }: ActivityCont
               <StatusUpdater />
             </Box>
           )}
-          <ManagerPanel activity={activity} sx={{ px: 3 }} />
+          <ManagerPanel sx={{ px: 3 }} />
         </Stack>
       </Stack>
       <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
