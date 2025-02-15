@@ -3,11 +3,14 @@ import { SxProps } from '@mui/material/styles';
 import { Paper } from '@respond/components/Material';
 import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
 import { getActivityStatus } from '@respond/lib/client/store/activities';
-import { Activity, Participant, ParticipantStatus } from '@respond/types/activity';
+import { Participant, ParticipantStatus } from '@respond/types/activity';
 
 import { RelativeStyle } from '../RelativeTimeText';
 
-export function BriefingPanel({ activity, sx }: { activity: Activity; sx?: SxProps }) {
+import { useActivityContext } from './ActivityProvider';
+
+export function BriefingPanel({ sx }: { sx?: SxProps }) {
+  const activity = useActivityContext();
   const reduceSignedIn = (count: number, participant: Participant) => {
     return count + (participant?.timeline[0].status === ParticipantStatus.SignedIn ? 1 : 0);
   };

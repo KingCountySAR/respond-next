@@ -8,7 +8,7 @@ import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
 import { apiFetch } from '@respond/lib/api';
-import { Activity, getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
+import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
 import { ParticipantInfo } from '@respond/types/participant';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
@@ -94,7 +94,8 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
   );
 }
 
-export function ParticipantDialog({ open, participant, activity, onClose }: { open: boolean; onClose: () => void; participant?: Participant; activity: Activity }) {
+export function ParticipantDialog({ open, participant, onClose }: { open: boolean; onClose: () => void; participant?: Participant }) {
+  const activity = useActivityContext();
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
   const [memberInfo, setMemberInfo] = useState<ParticipantInfo | undefined>();
 
@@ -139,7 +140,7 @@ export function ParticipantDialog({ open, participant, activity, onClose }: { op
             <Typography borderBottom={1} variant="h6">
               Timeline
             </Typography>
-            <ParticipantTimeline participant={participant} activity={activity} />
+            <ParticipantTimeline participant={participant} />
           </Stack>
         </Stack>
         {/* <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText> */}

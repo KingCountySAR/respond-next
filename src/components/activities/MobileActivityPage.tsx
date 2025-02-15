@@ -74,12 +74,10 @@ export function MobileActivityPage() {
 }
 
 function MobileBriefingScreen() {
-  const activity = useActivityContext();
-  return <BriefingPanel activity={activity} />;
+  return <BriefingPanel />;
 }
 
 function MobileRosterScreen() {
-  const activity = useActivityContext();
   const [orgFilter, setOrgFilter] = useState<string>('');
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
@@ -98,7 +96,7 @@ function MobileRosterScreen() {
           }}
         />
       </Box>
-      <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </>
   );
 }

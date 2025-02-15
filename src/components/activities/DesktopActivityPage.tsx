@@ -57,7 +57,7 @@ export function DesktopActivityPage() {
           />
         </Box>
         <Stack alignItems="stretch" sx={{ width: 400 }}>
-          <BriefingPanel activity={activity} sx={{ px: 3 }} />
+          <BriefingPanel sx={{ px: 3 }} />
           {showEta && (
             <Paper sx={{ mt: 2, p: 2 }}>
               <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />
@@ -71,7 +71,7 @@ export function DesktopActivityPage() {
           <ManagerPanel sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </ToolbarPage>
   );
 }
