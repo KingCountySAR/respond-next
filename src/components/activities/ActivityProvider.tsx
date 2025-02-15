@@ -12,7 +12,7 @@ export const useActivityContext = () => {
   const activityContext = useContext(ActivityContext);
 
   if (!activityContext) {
-    throw new Error('useActivityContext has to be used within <ActivityProvider>');
+    throw new Error('useActivityContext must be used within <ActivityProvider>');
   }
 
   return activityContext;
