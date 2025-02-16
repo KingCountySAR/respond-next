@@ -7,28 +7,29 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
-import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/types/activity';
+import { getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
+import { ParticipantTile } from '../participant/ParticipantTile';
 
 import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { useActivityContext } from './ActivityProvider';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
-import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
+import { RosterPanel } from './RosterPanel';
 
-export function DesktopActivityPage({ activity }: { activity?: Activity }) {
-  return <ActivityGuardPanel activity={activity} component={DesktopActivityContents} />;
+export function DesktopActivityPage() {
+  return <ActivityGuardPanel component={DesktopActivityContents} />;
 }
 
-function DesktopActivityContents({ activity, startChangeState, startRemove }: ActivityContentProps) {
+function DesktopActivityContents({ startChangeState, startRemove }: ActivityContentProps) {
+  const activity = useActivityContext();
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.participantId ?? ''];
   const isActivityActive = isActive(activity);
 
   const [orgFilter, setOrgFilter] = useState<string>('');
-  const [participantOpen, setParticipantOpen] = useState<boolean>(false);
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
 
   const showEta = isEnrouteOrStandby(myParticipation?.timeline[0]?.status);
 
@@ -44,44 +45,43 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
         <Box display="flex" flex="1 1 auto" flexDirection="column">
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} display="flex" flexDirection="row" />
-            <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
-              View Roster
-            </Button>
+            <Stack direction={'row'} spacing={1}>
+              <Button href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/kiosk`} variant="outlined" size="small">
+                Base Mode
+              </Button>
+              <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
+                View Roster
+              </Button>
+            </Stack>
           </Stack>
           <RosterPanel //
-            activity={activity}
             filter={orgFilter}
             participantContainerComponent={RosterContainer}
             participantRowComponent={RosterRow}
-            onClick={(p) => {
-              setSelectedParticipant(p);
-              setParticipantOpen(true);
-            }}
           />
         </Box>
         <Stack alignItems="stretch" sx={{ width: 400 }}>
           <BriefingPanel activity={activity} sx={{ px: 3 }} />
           {showEta && (
             <Paper sx={{ mt: 2, p: 2 }}>
-              <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />
+              <ParticipantEtaUpdater />
             </Paper>
           )}
           {isActivityActive && (
             <Box sx={{ my: 2 }} display="flex" justifyContent="end">
-              <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
+              <StatusUpdater />
             </Box>
           )}
           <ManagerPanel activity={activity} sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </ToolbarPage>
   );
 }
 
-function RosterRow({ participant, orgs, onClick }: { participant: Participant; orgs: Record<string, ParticipatingOrg>; onClick?: () => void }) {
+function RosterRow({ participant, orgs }: { participant: Participant; orgs: Record<string, ParticipatingOrg> }) {
   return (
-    <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
+    <ParticipantTile participant={participant}>
       <Stack direction="column" sx={{ m: '5px', ml: '8px' }} flexGrow={1}>
         <Stack direction="row" spacing={2} justifyContent={'space-between'}>
           <Stack>
@@ -98,7 +98,7 @@ function RosterRow({ participant, orgs, onClick }: { participant: Participant; o
           </Stack>
         </Stack>
       </Stack>
-    </RosterRowCard>
+    </ParticipantTile>
   );
 }
 

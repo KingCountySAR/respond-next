@@ -2,10 +2,11 @@ import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { Activity, getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/types/activity';
-import { MyOrganization } from '@respond/types/organization';
-import { UserInfo } from '@respond/types/userInfo';
+import { getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/types/activity';
+import { buildMemberFromUserInfo, Member } from '@respond/types/member';
+import { BaseOrganization } from '@respond/types/organization';
 
+import { useActivityContext } from '../activities/ActivityProvider';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '../Material';
 import { SplitButton } from '../SplitButton';
 
@@ -89,23 +90,24 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
   return statusOptions[status];
 }
 
-export const StatusUpdater = ({ activity, current, fullWidth }: { activity: Activity; current?: ParticipantStatus; fullWidth?: boolean }) => {
+export const StatusUpdater = ({ fullWidth, member, org }: { fullWidth?: boolean; member?: Member; org?: BaseOrganization }) => {
   const user = useAppSelector((state) => state.auth.userInfo);
   const thisOrg = useAppSelector((state) => state.organization.mine);
 
-  return user && thisOrg ? <StatusUpdaterProtected activity={activity} current={current} user={user} thisOrg={thisOrg} fullWidth={fullWidth} /> : null;
+  return user && thisOrg ? <StatusUpdaterProtected member={member ?? buildMemberFromUserInfo(user)} org={org ?? thisOrg} fullWidth={fullWidth} /> : null;
 };
 
-const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }: { activity: Activity; user: UserInfo; fullWidth?: boolean; thisOrg: MyOrganization; current?: ParticipantStatus }) => {
+const StatusUpdaterProtected = ({ fullWidth, member, org }: { member: Member; fullWidth?: boolean; org: BaseOrganization }) => {
+  const activity = useActivityContext();
   const [confirming, setConfirming] = useState<boolean>(false);
   const [confirmTitle, setConfirmTitle] = useState<string>('');
   const [confirmStatus, setConfirmStatus] = useState<ParticipantStatus>(ParticipantStatus.SignedIn);
   const [confirmLabel, setConfirmLabel] = useState<string>('');
 
-  const participant = activity.participants[user.participantId];
-  current = current ?? participant?.timeline[0]?.status;
+  const participant = activity.participants[member.id];
+  const current = participant?.timeline[0]?.status;
 
-  const formLogic = useFormLogic(activity, user, thisOrg, participant, current, confirmStatus, () => setConfirming(false));
+  const formLogic = useFormLogic(activity, member, org, participant, current, confirmStatus, () => setConfirming(false));
 
   function confirmPrompt(title: string, optionId: number) {
     const option = Object.values(statusTransitions).find((f) => f.id === optionId);
@@ -116,7 +118,7 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
   }
 
   const lastOrgId = participant?.timeline[0].organizationId;
-  const currentOrgId = thisOrg.id;
+  const currentOrgId = org.id;
   let actions;
   if (isActive(current) && currentOrgId !== lastOrgId) {
     let transition;
@@ -153,9 +155,9 @@ const StatusUpdaterProtected = ({ activity, current, fullWidth, user, thisOrg }:
           <DialogTitle id="status-update-dialog-title">{confirmTitle}</DialogTitle>
           <DialogContent>
             <>
-              {!activity.organizations[thisOrg.id] && (
+              {!activity.organizations[org.id] && (
                 <Alert sx={{ mb: 1 }} severity="warning">
-                  You are the first responder for {thisOrg.rosterName}. Make sure you are authorized to commit {thisOrg.rosterName} to this {activity.isMission ? 'mission' : 'event'}.
+                  You are the first responder for {org.rosterName}. Make sure you are authorized to commit {org.rosterName} to this {activity.isMission ? 'mission' : 'event'}.
                 </Alert>
               )}
               <UpdateStatusForm form={formLogic} />

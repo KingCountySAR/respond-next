@@ -38,6 +38,12 @@ export default clientPromise.then(async (m) => {
   return m;
 });
 
+export async function getOrganizations() {
+  const client = await clientPromise;
+  const organizations = await client.db().collection<OrganizationDoc>(ORGS_COLLECTION).find().toArray();
+  return organizations;
+}
+
 export async function getOrganizationForDomain(domain: string) {
   const client = await clientPromise;
   const organization = await client.db().collection<OrganizationDoc>(ORGS_COLLECTION).findOne({ domain });

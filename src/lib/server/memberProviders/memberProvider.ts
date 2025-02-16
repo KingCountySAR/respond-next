@@ -1,4 +1,5 @@
 import { MemberProviderType } from '@respond/types/data/MemberProviderType';
+import { Member } from '@respond/types/member';
 import { ParticipantInfo } from '@respond/types/participant';
 
 export interface MemberInfo {
@@ -18,6 +19,7 @@ export interface MemberProvider {
   getMemberInfoById(memberId: string): Promise<MemberInfo | undefined>;
   getMemberPhoto(memberId: string): Promise<ArrayBuffer | undefined>;
   getParticipantInfo(query: string): Promise<ParticipantInfo | undefined>;
+  findMembersByName(orgId: string, query: string): Promise<Array<Member> | undefined>;
   refresh(force?: boolean): Promise<{ ok: boolean; runtime: number; cached?: boolean }>;
 }
 

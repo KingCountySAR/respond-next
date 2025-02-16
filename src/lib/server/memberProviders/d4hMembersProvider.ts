@@ -1,5 +1,6 @@
 import mongoPromise from '@respond/lib/server/mongodb';
 import { MemberProviderConfig, OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
+import { Member } from '@respond/types/member';
 import { ParticipantInfo } from '@respond/types/participant';
 
 import { MemberAuthInfo, MemberInfo, MemberProvider } from './memberProvider';
@@ -18,7 +19,7 @@ interface Group {
   title: string;
 }
 
-interface D4HMemberResponse {
+export interface D4HMemberResponse {
   id: number;
   ref?: string;
   name: string;
@@ -76,6 +77,30 @@ export default class D4HMembersProvider implements MemberProvider {
         },
       });
       return await response.arrayBuffer();
+    }
+  }
+
+  async findMembersByName(orgId: string, query: string) {
+    await this.initialize();
+    for (const token in this.tokenFetchInfo) {
+      const res = (
+        await (
+          await fetch(`https://api.d4h.org/v2/team/members?status=Operational&name=${query}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        ).json()
+      )?.data as D4HMemberResponse[];
+      return res.map((memberInfo) => {
+        const [lastName, firstName] = memberInfo.name.split(',').map((m) => m.trim());
+        return {
+          id: memberInfo.id.toString(),
+          orgId: orgId,
+          name: `${firstName} ${lastName}`,
+          email: memberInfo.email,
+        } as Member;
+      }) as Member[];
     }
   }
 

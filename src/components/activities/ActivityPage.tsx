@@ -11,6 +11,9 @@ import { buildActivitySelector, isActive } from '@respond/lib/client/store/activ
 import { ActivityActions } from '@respond/lib/state';
 import { Activity } from '@respond/types/activity';
 
+import { ParticipantProvider } from '../participant/ParticipantProvider';
+
+import { ActivityProvider, useActivityContext } from './ActivityProvider';
 import { DesktopActivityPage } from './DesktopActivityPage';
 import { MobileActivityPage } from './MobileActivityPage';
 
@@ -22,30 +25,35 @@ export const ActivityPage = ({ activityId }: { activityId: string }) => {
   }, [activity?.idNumber, activity?.title]);
 
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
-  return isMobile ? <MobileActivityPage activity={activity} /> : <DesktopActivityPage activity={activity} />;
+
+  if (!activity) return <Alert severity="error">Activity not found</Alert>;
+
+  return <ActivityProvider activity={activity}>{isMobile ? <MobileActivityPage /> : <DesktopActivityPage />}</ActivityProvider>;
 };
 
 export interface ActivityContentProps {
-  activity: Activity;
   startRemove: () => void;
   startChangeState: () => void;
 }
 
-export function ActivityGuardPanel({ activity, component: ContentComponent }: { activity?: Activity; component: FunctionComponent<ActivityContentProps> }) {
+export function ActivityGuardPanel({ component: ContentComponent }: { component: FunctionComponent<ActivityContentProps> }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const activity = useActivityContext();
   const org = useAppSelector((state) => state.organization.mine);
+  const user = useAppSelector((state) => state.auth.userInfo);
 
   const [promptingRemove, setPromptingRemove] = useState<boolean>(false);
   const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
 
   if (!org) return <div>Loading org...</div>;
-  if (!activity) return <Alert severity="error">Activity not found</Alert>;
+
+  const myParticipation = activity.participants[user?.participantId ?? ''];
 
   const isActivityActive = isActive(activity);
   return (
-    <>
-      <ContentComponent activity={activity} startRemove={() => setPromptingRemove(true)} startChangeState={() => setPromptingActivityState(true)} />
+    <ParticipantProvider participant={myParticipation}>
+      <ContentComponent startRemove={() => setPromptingRemove(true)} startChangeState={() => setPromptingActivityState(true)} />
       <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
         <DialogTitle>Remove Activity?</DialogTitle>
         <DialogContent>
@@ -84,7 +92,7 @@ export function ActivityGuardPanel({ activity, component: ContentComponent }: { 
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </ParticipantProvider>
   );
 }
 
