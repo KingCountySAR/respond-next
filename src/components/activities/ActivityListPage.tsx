@@ -43,7 +43,7 @@ export function ActivityListPage({ activityType }: { activityType: ActivityType 
 
   React.useEffect(() => {
     document.title = pageTitle;
-    apiFetch<{ data: Activity[] }>(`/api/v1/${activityType}`).then((api) => {
+    apiFetch<{ data: Activity[] }>(`/api/v1/${activityType}`, { cache: 'no-cache' }).then((api) => {
       setLoading(false);
       setActivities(api.data.sort((a, b) => (a.startTime === b.startTime ? (a.title < b.title ? -1 : 1) : a.startTime < b.startTime ? 1 : -1)));
     });
