@@ -32,39 +32,46 @@ export const ActivityPage = ({ activityId }: { activityId: string }) => {
 };
 
 export function ActivityActionsBar() {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const activity = useActivityContext();
+  const isActivityActive = isActive(activity);
+
+  const handleRemove = () => {
+    dispatch(ActivityActions.remove(activity.id));
+    router.replace('/');
+  };
+
+  const toggleStatus = () => {
+    dispatch(isActivityActive ? ActivityActions.complete(activity.id, new Date().getTime()) : ActivityActions.reactivate(activity.id));
+  };
+
   return (
     <Stack direction="row" spacing={1} alignItems="center">
-      <EditActivityButton />
-      <UpdateActivityStatusButton />
-      <RemoveActivityButton />
+      <EditActivityButton href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/edit`} />
+      <UpdateActivityStatusButton label={isActivityActive ? 'Complete' : 'Reactivate'} onClick={toggleStatus} />
+      <RemoveActivityButton onClick={handleRemove} />
     </Stack>
   );
 }
 
-function EditActivityButton() {
-  const activity = useActivityContext();
+function EditActivityButton({ href }: { href: string }) {
   return (
-    <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/edit`}>
+    <Button variant="outlined" size="small" component={Link} href={href}>
       Edit
     </Button>
   );
 }
 
-function UpdateActivityStatusButton() {
-  const activity = useActivityContext();
-  const dispatch = useAppDispatch();
-
+function UpdateActivityStatusButton({ label, onClick }: { label: string; onClick: () => void }) {
   const [showDialog, setShowDialog] = useState(false);
-
-  const isActivityActive = isActive(activity);
-
   return (
     <>
       <Button variant="outlined" size="small" onClick={() => setShowDialog(true)}>
-        {isActive(activity) ? 'Complete' : 'Reactivate'}
+        {label}
       </Button>
       <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
-        <DialogTitle>{isActivityActive ? 'Complete' : 'Reactivate'} event?</DialogTitle>
+        <DialogTitle>{label} event?</DialogTitle>
         <DialogContent>
           <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
         </DialogContent>
@@ -73,11 +80,11 @@ function UpdateActivityStatusButton() {
           <Button
             autoFocus
             onClick={() => {
-              dispatch(isActivityActive ? ActivityActions.complete(activity.id, new Date().getTime()) : ActivityActions.reactivate(activity.id));
+              onClick();
               setShowDialog(false);
             }}
           >
-            {isActivityActive ? 'Complete' : 'Reactivate'}
+            {label}
           </Button>
         </DialogActions>
       </Dialog>
@@ -85,13 +92,8 @@ function UpdateActivityStatusButton() {
   );
 }
 
-function RemoveActivityButton() {
-  const activity = useActivityContext();
-  const router = useRouter();
-  const dispatch = useAppDispatch();
-
+function RemoveActivityButton({ onClick }: { onClick: () => void }) {
   const [showDialog, setShowDialog] = useState(false);
-
   return (
     <>
       <IconButton color="danger" onClick={() => setShowDialog(true)}>
@@ -104,14 +106,7 @@ function RemoveActivityButton() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowDialog(false)}>Cancel</Button>
-          <Button
-            autoFocus
-            color="danger"
-            onClick={() => {
-              dispatch(ActivityActions.remove(activity.id));
-              router.replace('/');
-            }}
-          >
+          <Button autoFocus color="danger" onClick={onClick}>
             Remove
           </Button>
         </DialogActions>
