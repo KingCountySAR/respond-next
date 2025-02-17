@@ -9,11 +9,12 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
-import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
+import { getStatusText, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
-import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { ActivityActionsBar } from './ActivityPage';
+import { useActivityContext } from './ActivityProvider';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
@@ -30,35 +31,62 @@ export enum MobilePageId {
   Manage = 'Manage',
 }
 
-export function MobileActivityPage({ activity }: { activity?: Activity }) {
-  //const breadcrumbText = `${activity?.isMission ? 'Mission' : 'Event'} Details`;
+export function MobileActivityPage() {
+  const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
+  const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
+  const activity = useActivityContext();
+  const user = useAppSelector((state) => state.auth.userInfo);
+  const myParticipation = activity?.participants[user?.participantId ?? ''];
+  const showStatusUpdater = isActive(activity);
+  const showEta = myParticipation?.timeline[0] && [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(myParticipation.timeline[0].status);
+  const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showStatusUpdater ? MOBILE_STATUS_UPDATER_HEIGHT : 0) + (showEta ? MOBILE_ETA_INPUT_HEIGHT : 0) - ROSTER_PANEL_PADDING;
 
   return (
     <ToolbarPage>
-      {/* <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-        <Link href="/">Home</Link>
-        <Typography color="text.primary">{breadcrumbText}</Typography>
-      </Breadcrumbs> */}
-      <ActivityGuardPanel activity={activity} component={MobileActivityContents} />
+      <Typography variant="h5">{activity.title}</Typography>
+      {bottomNav === MobilePageId.Roster && <MobileRosterScreen />}
+      {bottomNav === MobilePageId.Briefing && <MobileBriefingScreen />}
+      {bottomNav === MobilePageId.Manage && <MobileManageScreen />}
+      <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
+      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
+        <Stack spacing={2} p={2}>
+          {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
+          {showStatusUpdater && (
+            <Box>
+              <StatusUpdater fullWidth={true} />
+            </Box>
+          )}
+        </Stack>
+        <BottomNavigation
+          showLabels
+          value={bottomNav}
+          onChange={(_evt, value) => {
+            setBottomNav(value);
+          }}
+        >
+          <BottomNavigationAction value={MobilePageId.Manage} label="Manage" icon={<DescriptionIcon />} />
+          <BottomNavigationAction value={MobilePageId.Roster} label="Roster" icon={<GroupsIcon />} />
+          <BottomNavigationAction value={MobilePageId.Briefing} label="Briefing" icon={<AnnouncementIcon />} />
+        </BottomNavigation>
+      </Paper>
     </ToolbarPage>
   );
 }
 
-function MobileBriefingScreen({ activity }: { activity: Activity }) {
-  return <BriefingPanel activity={activity} />;
+function MobileBriefingScreen() {
+  return <BriefingPanel />;
 }
 
-function MobileRosterScreen({ activity }: { activity: Activity }) {
+function MobileRosterScreen() {
   const [orgFilter, setOrgFilter] = useState<string>('');
   const [participantOpen, setParticipantOpen] = useState<boolean>(false);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
 
   return (
     <>
-      <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} />
+      <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} />
       <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} flex="1 1 auto">
         <RosterPanel //
-          activity={activity}
           filter={orgFilter}
           participantContainerComponent={RosterContainer}
           participantRowComponent={RosterRow}
@@ -68,7 +96,7 @@ function MobileRosterScreen({ activity }: { activity: Activity }) {
           }}
         />
       </Box>
-      <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </>
   );
 }
@@ -98,51 +126,11 @@ function RosterContainer({ children }: { children: ReactNode }) {
   return <Stack spacing={1}>{children}</Stack>;
 }
 
-function MobileManageScreen({ activity, startRemove, startChangeState }: { activity: Activity; startRemove: () => void; startChangeState: () => void }) {
+function MobileManageScreen() {
   return (
     <>
-      <ActivityActionsBar activity={activity} startRemove={startRemove} startChangeState={startChangeState} />
-      <ManagerPanel activity={activity} />
-    </>
-  );
-}
-
-function MobileActivityContents({ activity, startRemove, startChangeState }: ActivityContentProps) {
-  const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
-  const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
-  const user = useAppSelector((state) => state.auth.userInfo);
-  const myParticipation = activity?.participants[user?.participantId ?? ''];
-  const showStatusUpdater = isActive(activity);
-  const showEta = myParticipation?.timeline[0] && [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(myParticipation.timeline[0].status);
-  const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showStatusUpdater ? MOBILE_STATUS_UPDATER_HEIGHT : 0) + (showEta ? MOBILE_ETA_INPUT_HEIGHT : 0) - ROSTER_PANEL_PADDING;
-  return (
-    <>
-      <Typography variant="h5">{activity.title}</Typography>
-      {bottomNav === MobilePageId.Roster && <MobileRosterScreen activity={activity} />}
-      {bottomNav === MobilePageId.Briefing && <MobileBriefingScreen activity={activity} />}
-      {bottomNav === MobilePageId.Manage && <MobileManageScreen activity={activity} startRemove={startRemove} startChangeState={startChangeState} />}
-      <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
-      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
-        <Stack spacing={2} p={2}>
-          {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
-          {showStatusUpdater && (
-            <Box>
-              <StatusUpdater fullWidth={true} activity={activity} />
-            </Box>
-          )}
-        </Stack>
-        <BottomNavigation
-          showLabels
-          value={bottomNav}
-          onChange={(_evt, value) => {
-            setBottomNav(value);
-          }}
-        >
-          <BottomNavigationAction value={MobilePageId.Manage} label="Manage" icon={<DescriptionIcon />} />
-          <BottomNavigationAction value={MobilePageId.Roster} label="Roster" icon={<GroupsIcon />} />
-          <BottomNavigationAction value={MobilePageId.Briefing} label="Briefing" icon={<AnnouncementIcon />} />
-        </BottomNavigation>
-      </Paper>
+      <ActivityActionsBar />
+      <ManagerPanel />
     </>
   );
 }

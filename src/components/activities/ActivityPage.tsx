@@ -3,84 +3,88 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FunctionComponent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Stack } from '@respond/components/Material';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
-import { Activity } from '@respond/types/activity';
 
+import { ActivityProvider, useActivityContext } from './ActivityProvider';
 import { DesktopActivityPage } from './DesktopActivityPage';
 import { MobileActivityPage } from './MobileActivityPage';
 
 export const ActivityPage = ({ activityId }: { activityId: string }) => {
   const activity = useAppSelector(buildActivitySelector(activityId));
+  const org = useAppSelector((state) => state.organization.mine);
 
   useEffect(() => {
     document.title = `${activity?.idNumber} ${activity?.title}`;
   }, [activity?.idNumber, activity?.title]);
 
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
-  return isMobile ? <MobileActivityPage activity={activity} /> : <DesktopActivityPage activity={activity} />;
-};
 
-export interface ActivityContentProps {
-  activity: Activity;
-  startRemove: () => void;
-  startChangeState: () => void;
-}
-
-export function ActivityGuardPanel({ activity, component: ContentComponent }: { activity?: Activity; component: FunctionComponent<ActivityContentProps> }) {
-  const dispatch = useAppDispatch();
-  const router = useRouter();
-  const org = useAppSelector((state) => state.organization.mine);
-
-  const [promptingRemove, setPromptingRemove] = useState<boolean>(false);
-  const [promptingActivityState, setPromptingActivityState] = useState<boolean>(false);
-
-  if (!org) return <div>Loading org...</div>;
   if (!activity) return <Alert severity="error">Activity not found</Alert>;
 
+  if (!org) return <div>Loading org...</div>;
+
+  return <ActivityProvider activity={activity}>{isMobile ? <MobileActivityPage /> : <DesktopActivityPage />}</ActivityProvider>;
+};
+
+export function ActivityActionsBar() {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const activity = useActivityContext();
   const isActivityActive = isActive(activity);
+
+  const handleRemove = () => {
+    dispatch(ActivityActions.remove(activity.id));
+    router.replace('/');
+  };
+
+  const toggleStatus = () => {
+    dispatch(isActivityActive ? ActivityActions.complete(activity.id, new Date().getTime()) : ActivityActions.reactivate(activity.id));
+  };
+
+  return (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <EditActivityButton href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/edit`} />
+      <UpdateActivityStatusButton label={isActivityActive ? 'Complete' : 'Reactivate'} onClick={toggleStatus} />
+      <RemoveActivityButton onClick={handleRemove} />
+    </Stack>
+  );
+}
+
+function EditActivityButton({ href }: { href: string }) {
+  return (
+    <Button variant="outlined" size="small" component={Link} href={href}>
+      Edit
+    </Button>
+  );
+}
+
+function UpdateActivityStatusButton({ label, onClick }: { label: string; onClick: () => void }) {
+  const [showDialog, setShowDialog] = useState(false);
   return (
     <>
-      <ContentComponent activity={activity} startRemove={() => setPromptingRemove(true)} startChangeState={() => setPromptingActivityState(true)} />
-      <Dialog open={promptingRemove} onClose={() => setPromptingRemove(false)}>
-        <DialogTitle>Remove Activity?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPromptingRemove(false)}>Cancel</Button>
-          <Button
-            autoFocus
-            color="danger"
-            onClick={() => {
-              dispatch(ActivityActions.remove(activity.id));
-              router.replace('/');
-            }}
-          >
-            Remove
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={promptingActivityState} onClose={() => setPromptingActivityState(false)}>
-        <DialogTitle>{isActivityActive ? 'Complete' : 'Reactivate'} event?</DialogTitle>
+      <Button variant="outlined" size="small" onClick={() => setShowDialog(true)}>
+        {label}
+      </Button>
+      <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
+        <DialogTitle>{label} event?</DialogTitle>
         <DialogContent>
           <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPromptingActivityState(false)}>Cancel</Button>
+          <Button onClick={() => setShowDialog(false)}>Cancel</Button>
           <Button
             autoFocus
             onClick={() => {
-              dispatch(isActivityActive ? ActivityActions.complete(activity.id, new Date().getTime()) : ActivityActions.reactivate(activity.id));
-              setPromptingActivityState(false);
+              onClick();
+              setShowDialog(false);
             }}
           >
-            {isActivityActive ? 'Complete' : 'Reactivate'}
+            {label}
           </Button>
         </DialogActions>
       </Dialog>
@@ -88,18 +92,25 @@ export function ActivityGuardPanel({ activity, component: ContentComponent }: { 
   );
 }
 
-export function ActivityActionsBar({ activity, startChangeState, startRemove }: { activity: Activity; startChangeState: () => void; startRemove: () => void }) {
+function RemoveActivityButton({ onClick }: { onClick: () => void }) {
+  const [showDialog, setShowDialog] = useState(false);
   return (
-    <Stack direction="row" spacing={1} alignItems="center">
-      <Button variant="outlined" size="small" component={Link} href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/edit`}>
-        Edit
-      </Button>
-      <Button variant="outlined" size="small" onClick={startChangeState}>
-        {isActive(activity) ? 'Complete' : 'Reactivate'}
-      </Button>
-      <IconButton color="danger" onClick={startRemove}>
+    <>
+      <IconButton color="danger" onClick={() => setShowDialog(true)}>
         <DeleteIcon />
       </IconButton>
-    </Stack>
+      <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
+        <DialogTitle>Remove Activity?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowDialog(false)}>Cancel</Button>
+          <Button autoFocus color="danger" onClick={onClick}>
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

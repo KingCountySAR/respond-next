@@ -1,12 +1,13 @@
 import { Box, Stack, Typography } from '@mui/material';
 
 import { ActivityTile } from '@respond/components/activities/ActivityTile';
-import { OrganizationChip } from '@respond/components/OrganizationChip';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { getActiveParticipants, getActivityStatus, isFuture } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType, ParticipantStatus } from '@respond/types/activity';
 
 import { RelativeStyle } from '../RelativeTimeText';
+
+import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 
 interface ActivityStackProps {
   type: ActivityType;
@@ -31,13 +32,7 @@ export function ActivityStack({ type, activities, showOrgs, statusMap }: Activit
               <OutputText label="Active Responders" value={getActiveParticipants(a).length.toString()} />
             </Box>
           </OutputForm>
-          {showOrgs && (
-            <Box sx={{ pt: 2 }}>
-              {Object.entries(a.organizations ?? {}).map(([id, org]) => (
-                <OrganizationChip key={id} org={org} activity={a} />
-              ))}
-            </Box>
-          )}
+          {showOrgs && <ParticipatingOrgChips sx={{ mt: 2 }} />}
         </ActivityTile>
       ))}
       {activities.length === 0 && <Typography>No recent {type == 'missions' ? 'missions' : 'events'}</Typography>}

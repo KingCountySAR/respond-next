@@ -7,21 +7,19 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
-import { Activity, getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/types/activity';
+import { getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
-import { ActivityActionsBar, ActivityContentProps, ActivityGuardPanel } from './ActivityPage';
+import { ActivityActionsBar } from './ActivityPage';
+import { useActivityContext } from './ActivityProvider';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
-export function DesktopActivityPage({ activity }: { activity?: Activity }) {
-  return <ActivityGuardPanel activity={activity} component={DesktopActivityContents} />;
-}
-
-function DesktopActivityContents({ activity, startChangeState, startRemove }: ActivityContentProps) {
+export function DesktopActivityPage() {
+  const activity = useActivityContext();
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.participantId ?? ''];
   const isActivityActive = isActive(activity);
@@ -38,18 +36,17 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
         <Typography variant="h4" flex="1 1 auto">
           {activity.idNumber} {activity.title}
         </Typography>
-        <ActivityActionsBar activity={activity} startRemove={startRemove} startChangeState={startChangeState} />
+        <ActivityActionsBar />
       </Stack>
       <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
         <Box display="flex" flex="1 1 auto" flexDirection="column">
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <ParticipatingOrgChips activity={activity} orgFilter={orgFilter} setOrgFilter={setOrgFilter} display="flex" flexDirection="row" />
+            <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} display="flex" flexDirection="row" />
             <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
               View Roster
             </Button>
           </Stack>
           <RosterPanel //
-            activity={activity}
             filter={orgFilter}
             participantContainerComponent={RosterContainer}
             participantRowComponent={RosterRow}
@@ -60,7 +57,7 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
           />
         </Box>
         <Stack alignItems="stretch" sx={{ width: 400 }}>
-          <BriefingPanel activity={activity} sx={{ px: 3 }} />
+          <BriefingPanel sx={{ px: 3 }} />
           {showEta && (
             <Paper sx={{ mt: 2, p: 2 }}>
               <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />
@@ -68,13 +65,13 @@ function DesktopActivityContents({ activity, startChangeState, startRemove }: Ac
           )}
           {isActivityActive && (
             <Box sx={{ my: 2 }} display="flex" justifyContent="end">
-              <StatusUpdater activity={activity} current={myParticipation?.timeline[0].status} />
+              <StatusUpdater />
             </Box>
           )}
-          <ManagerPanel activity={activity} sx={{ px: 3 }} />
+          <ManagerPanel sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={participantOpen} activity={activity} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </ToolbarPage>
   );
 }

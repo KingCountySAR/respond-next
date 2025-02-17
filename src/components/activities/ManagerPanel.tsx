@@ -3,11 +3,15 @@ import { SxProps } from '@mui/material/styles';
 import { Paper } from '@respond/components/Material';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { getActivityStatus } from '@respond/lib/client/store/activities';
-import { Activity, isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus } from '@respond/types/activity';
+import { isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus } from '@respond/types/activity';
 
 import { RelativeStyle } from '../RelativeTimeText';
 
-export function ManagerPanel({ activity, sx }: { activity: Activity; sx?: SxProps }) {
+import { useActivityContext } from './ActivityProvider';
+
+export function ManagerPanel({ sx }: { sx?: SxProps }) {
+  const activity = useActivityContext();
+
   const reduceActive = (count: number, participant: Participant) => {
     return count + (isParticpantActive(participant?.timeline[0].status) ? 1 : 0);
   };

@@ -10,6 +10,8 @@ import { Activity, getOrganizationName, Participant, ParticipantStatus, Particip
 
 import { OutputForm, OutputText, OutputTime } from '../OutputForm';
 
+import { ActivityProvider, useActivityContext } from './ActivityProvider';
+
 const headerCellStyle = { fontWeight: 700, width: 20 };
 
 export function RosterReview({ activityId }: { activityId: string }) {
@@ -42,26 +44,29 @@ export function RosterReview({ activityId }: { activityId: string }) {
   });
 
   return (
-    <ToolbarPage maxWidth="lg">
-      <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
-        <Box display="flex" flex="1 1 auto" flexDirection="column">
-          <Paper>{activity ? <Roster ref={printable} activity={activity} rosterEntries={rosterEntries} /> : <ActivityNotFound />}</Paper>
-        </Box>
-        <Stack alignItems="stretch" spacing={2}>
-          <Button variant="outlined" onClick={download}>
-            Download (csv)
-          </Button>
-          <Button variant="outlined" onClick={handlePrint}>
-            Print
-          </Button>
+    <ActivityProvider activity={activity}>
+      <ToolbarPage maxWidth="lg">
+        <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
+          <Box display="flex" flex="1 1 auto" flexDirection="column">
+            <Paper>{activity ? <Roster ref={printable} rosterEntries={rosterEntries} /> : <ActivityNotFound />}</Paper>
+          </Box>
+          <Stack alignItems="stretch" spacing={2}>
+            <Button variant="outlined" onClick={download}>
+              Download (csv)
+            </Button>
+            <Button variant="outlined" onClick={handlePrint}>
+              Print
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
-    </ToolbarPage>
+      </ToolbarPage>
+    </ActivityProvider>
   );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Roster = forwardRef(function Roster({ activity, rosterEntries }: { activity: Activity; rosterEntries: Array<RosterEntry> }, ref: any) {
+const Roster = forwardRef(function Roster({ rosterEntries }: { rosterEntries: Array<RosterEntry> }, ref: any) {
+  const activity = useActivityContext();
   if (!rosterEntries.length) return <ActivityNotFound />;
   return (
     <Table ref={ref} size="small">

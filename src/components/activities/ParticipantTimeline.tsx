@@ -6,14 +6,17 @@ import { useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { Activity, getOrganizationName, getStatusText, Participant, ParticipantUpdate } from '@respond/types/activity';
+import { getOrganizationName, getStatusText, Participant, ParticipantUpdate } from '@respond/types/activity';
+
+import { useActivityContext } from './ActivityProvider';
 
 interface EnrichedParticipantUpdate extends ParticipantUpdate {
   statusText: string;
   organizationName: string;
 }
 
-export default function ParticipantTimeline({ participant, activity }: { participant: Participant; activity: Activity }) {
+export default function ParticipantTimeline({ participant }: { participant: Participant }) {
+  const activity = useActivityContext();
   const dispatch = useAppDispatch();
   const updateTimeline = (update: ParticipantUpdate, index: number) => {
     dispatch(ActivityActions.participantTimelineUpdate(activity.id, participant.id, update, index));
