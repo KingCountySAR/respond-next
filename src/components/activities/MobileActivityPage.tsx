@@ -84,7 +84,7 @@ function MobileRosterScreen() {
 
   return (
     <>
-      <ParticipatingOrgChips orgFilter={orgFilter} setOrgFilter={setOrgFilter} />
+      <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} />
       <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} flex="1 1 auto">
         <RosterPanel //
           filter={orgFilter}

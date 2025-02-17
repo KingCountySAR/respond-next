@@ -41,7 +41,7 @@ export function DesktopActivityPage() {
       <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
         <Box display="flex" flex="1 1 auto" flexDirection="column">
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <ParticipatingOrgChips orgFilter={orgFilter} setOrgFilter={setOrgFilter} display="flex" flexDirection="row" />
+            <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} display="flex" flexDirection="row" />
             <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
               View Roster
             </Button>
