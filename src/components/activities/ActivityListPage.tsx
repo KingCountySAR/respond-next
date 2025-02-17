@@ -1,11 +1,10 @@
 import { Box, Breadcrumbs, Typography } from '@mui/material';
 import Link from 'next/link';
-import * as React from 'react';
 
 import { RelativeTimeText } from '@respond/components/RelativeTimeText';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { apiFetch } from '@respond/lib/api';
-import { getActivityPath } from '@respond/lib/client/store/activities';
+import { useAppSelector } from '@respond/lib/client/store';
+import { buildActivityTypeSelector, getActivityPath } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType } from '@respond/types/activity';
 
 function ActivityList({ activities }: { activities: Activity[] }) {
@@ -36,18 +35,13 @@ function ActivityList({ activities }: { activities: Activity[] }) {
 }
 
 export function ActivityListPage({ activityType }: { activityType: ActivityType }) {
-  const [loading, setLoading] = React.useState<boolean>(true);
-  const [activities, setActivities] = React.useState<Activity[]>([]);
+  const isMissions = activityType === 'missions';
 
-  const pageTitle = activityType === 'missions' ? 'Mission List' : 'Event List';
+  let activities = useAppSelector(buildActivityTypeSelector(isMissions));
+  activities = activities.sort((a, b) => (a.startTime === b.startTime ? (a.title < b.title ? -1 : 1) : a.startTime < b.startTime ? 1 : -1));
 
-  React.useEffect(() => {
-    document.title = pageTitle;
-    apiFetch<{ data: Activity[] }>(`/api/v1/${activityType}`).then((api) => {
-      setLoading(false);
-      setActivities(api.data.sort((a, b) => (a.startTime === b.startTime ? (a.title < b.title ? -1 : 1) : a.startTime < b.startTime ? 1 : -1)));
-    });
-  }, [activityType, pageTitle]);
+  const pageTitle = isMissions ? 'Mission List' : 'Event List';
+  document.title = pageTitle;
 
   return (
     <ToolbarPage>
@@ -60,7 +54,7 @@ export function ActivityListPage({ activityType }: { activityType: ActivityType 
           <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h5">{pageTitle}</Typography>
           </Box>
-          {loading ? <Typography>Loading ...</Typography> : <ActivityList activities={activities} />}
+          <ActivityList activities={activities} />
         </Box>
       </main>
     </ToolbarPage>
