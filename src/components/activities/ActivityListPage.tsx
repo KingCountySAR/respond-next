@@ -1,6 +1,5 @@
 import { Box, Breadcrumbs, Typography } from '@mui/material';
 import Link from 'next/link';
-import * as React from 'react';
 
 import { RelativeTimeText } from '@respond/components/RelativeTimeText';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
