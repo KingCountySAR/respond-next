@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 import { apiFetch } from '@respond/lib/api';
 import { Member, MemberIdType } from '@respond/types/member';
@@ -22,14 +22,14 @@ const MemberContext = createContext<Member | null>(null);
 export function MemberProvider({ member, children }: { member: Member; children: React.ReactNode }) {
   const [enrichedMember, setEnrichedMember] = useState<Member>(member);
 
-  useEffect(() => {
-    if (member) getMemberInfo(member);
-  }, [member]);
-
-  const getMemberInfo = async (member: Member) => {
+  const getMemberInfo = useCallback(async () => {
     const memberInfo = await findMember(member.orgId, member.id);
     setEnrichedMember({ ...member, email: memberInfo.email, phone: formatPhoneNumber(memberInfo.phone ?? '') });
-  };
+  }, [member]);
+
+  useEffect(() => {
+    getMemberInfo();
+  }, [getMemberInfo]);
 
   return <MemberContext.Provider value={enrichedMember}>{children}</MemberContext.Provider>;
 }
