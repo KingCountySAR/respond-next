@@ -1,6 +1,6 @@
 import mongoPromise from '@respond/lib/server/mongodb';
 import { MemberProviderConfig, OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
-import { ParticipantInfo } from '@respond/types/participant';
+import { Member } from '@respond/types/member';
 
 import { MemberAuthInfo, MemberInfo, MemberProvider } from './memberProvider';
 
@@ -79,14 +79,16 @@ export default class D4HMembersProvider implements MemberProvider {
     }
   }
 
-  async getParticipantInfo(memberId: string) {
+  async getParticipantInfo(stubMember: Member) {
     await this.initialize();
     for (const token in this.tokenFetchInfo) {
-      const member = this.tokenFetchInfo[token].lookup[memberId].response;
+      const member = this.tokenFetchInfo[token].lookup[stubMember.id].response;
       if (!member) continue;
-      const result: ParticipantInfo = {
+      const result: Member = {
+        ...stubMember,
+        name: member.name,
         email: member.email,
-        mobilephone: member.mobilephone,
+        phone: member.mobilephone,
       };
       return result;
     }

@@ -10,26 +10,40 @@ import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
 
+import { ParticipantProvider } from '../participant/ParticipantProvider';
+
 import { ActivityProvider, useActivityContext } from './ActivityProvider';
 import { DesktopActivityPage } from './DesktopActivityPage';
 import { MobileActivityPage } from './MobileActivityPage';
 
 export const ActivityPage = ({ activityId }: { activityId: string }) => {
   const activity = useAppSelector(buildActivitySelector(activityId));
+  const user = useAppSelector((state) => state.auth.userInfo);
   const org = useAppSelector((state) => state.organization.mine);
 
   useEffect(() => {
     document.title = `${activity?.idNumber} ${activity?.title}`;
   }, [activity?.idNumber, activity?.title]);
 
-  const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
-
   if (!activity) return <Alert severity="error">Activity not found</Alert>;
 
   if (!org) return <div>Loading org...</div>;
 
-  return <ActivityProvider activity={activity}>{isMobile ? <MobileActivityPage /> : <DesktopActivityPage />}</ActivityProvider>;
+  const participant = activity.participants[user?.participantId ?? ''];
+
+  return (
+    <ActivityProvider activity={activity}>
+      <ParticipantProvider participant={participant}>
+        <ActivityPageComponent />
+      </ParticipantProvider>
+    </ActivityProvider>
+  );
 };
+
+function ActivityPageComponent() {
+  const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
+  return <>{isMobile ? <MobileActivityPage /> : <DesktopActivityPage />}</>;
+}
 
 export function ActivityActionsBar() {
   const dispatch = useAppDispatch();
