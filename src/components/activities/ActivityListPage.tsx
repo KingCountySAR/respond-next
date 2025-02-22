@@ -1,37 +1,37 @@
-import { Box, Breadcrumbs, Typography } from '@mui/material';
+import { Breadcrumbs, Paper, Typography } from '@mui/material';
+import { DataGrid, GridColDef, GridToolbarContainer, GridToolbarFilterButton } from '@mui/x-data-grid';
 import Link from 'next/link';
 
-import { RelativeTimeText } from '@respond/components/RelativeTimeText';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivityTypeSelector, getActivityPath } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType } from '@respond/types/activity';
 
-function ActivityList({ activities }: { activities: Activity[] }) {
+import { RelativeTimeText } from '../RelativeTimeText';
+
+function GridToolbar() {
   return (
-    <table>
-      <thead>
-        <tr>
-          <th style={{ textAlign: 'left' }}>DEM #</th>
-          <th style={{ textAlign: 'left' }}>Title</th>
-          <th style={{ textAlign: 'left' }}>Start Time</th>
-        </tr>
-      </thead>
-      <tbody>
-        {activities.map((a) => (
-          <tr key={a.id}>
-            <td style={{ paddingRight: '1em' }}>{a.idNumber}</td>
-            <td style={{ paddingRight: '1em' }}>
-              <Link href={getActivityPath(a)}>{a.title}</Link>
-            </td>
-            <td>
-              <RelativeTimeText time={a.startTime}></RelativeTimeText>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <GridToolbarContainer>
+      <GridToolbarFilterButton />
+    </GridToolbarContainer>
   );
+}
+
+const columns: GridColDef[] = [
+  { field: 'idNumber', headerName: 'DEM #', width: 150 },
+  { field: 'title', headerName: 'Title', width: 450, renderCell: (params) => <Link href={getActivityPath(params.row)}>{params.row.title}</Link> },
+  {
+    field: 'startTime',
+    headerName: 'Start Time',
+    width: 200,
+    renderCell: (params) => <RelativeTimeText time={params.row.startTime}></RelativeTimeText>,
+  },
+];
+
+const paginationModel = { page: 0, pageSize: 15 };
+
+function ActivityList({ activities }: { activities: Activity[] }) {
+  return <DataGrid rows={activities} columns={columns} initialState={{ pagination: { paginationModel } }} pageSizeOptions={[15, 25, 50]} density="compact" autoHeight slots={{ toolbar: GridToolbar }} />;
 }
 
 export function ActivityListPage({ activityType }: { activityType: ActivityType }) {
@@ -45,18 +45,13 @@ export function ActivityListPage({ activityType }: { activityType: ActivityType 
 
   return (
     <ToolbarPage>
-      <main>
-        <Box sx={{ pb: 4 }}>
-          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-            <Link href="/">Home</Link>
-            <Typography color="text.primary">{pageTitle}</Typography>
-          </Breadcrumbs>
-          <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h5">{pageTitle}</Typography>
-          </Box>
-          <ActivityList activities={activities} />
-        </Box>
-      </main>
+      <Paper sx={{ p: 2 }}>
+        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+          <Link href="/">Home</Link>
+          <Typography color="text.primary">{pageTitle}</Typography>
+        </Breadcrumbs>
+        <ActivityList activities={activities} />
+      </Paper>
     </ToolbarPage>
   );
 }
