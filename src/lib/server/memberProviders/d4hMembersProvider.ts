@@ -5,12 +5,17 @@ import { ParticipantInfo } from '@respond/types/participant';
 import { MemberAuthInfo, MemberInfo, MemberProvider } from './memberProvider';
 
 const D4H_MEMBER_REFRESH_SECS = 15 * 60;
-const D4H_FETCH_LIMIT = 250;
+const D4H_FETCH_LIMIT = 1000;
 const D4H_CACHE_COLLECTION = 'd4hCache';
 
-interface CustomField {
-  label: string;
+interface CustomFieldValue {
+  customField: { id: number };
   value: string;
+}
+
+interface CustomFieldDef {
+  id: number;
+  title: string;
 }
 
 interface Group {
@@ -22,18 +27,19 @@ interface D4HMemberResponse {
   id: number;
   ref?: string;
   name: string;
-  email?: string;
-  mobilephone?: string;
-  group_ids?: number[];
-  custom_fields: CustomField[];
-  urls: {
-    image?: string;
-  };
+  email?: { value: string };
+  mobile?: { phone: string };
+  customFieldValues: CustomFieldValue[];
 }
 
 interface D4HMember {
   response: D4HMemberResponse;
   memberInfo: MemberInfo;
+}
+
+interface D4HGroupMembership {
+  group: { id: number };
+  member: { id: number };
 }
 
 interface FetchForTokenEntry {
@@ -67,12 +73,12 @@ export default class D4HMembersProvider implements MemberProvider {
     await this.initialize();
 
     for (const token in this.tokenFetchInfo) {
+      const [teamId, v3Token] = token.split(':');
       const member = this.tokenFetchInfo[token].lookup[memberId].response;
       if (!member) continue;
-
-      const response = await fetch(`https://api.d4h.org${member.urls.image}`, {
+      const response = await fetch(`https://api.team-manager.us.d4h.com/v3/team/${teamId}/members/${member.id}/image`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${v3Token}`,
         },
       });
       return await response.arrayBuffer();
@@ -85,8 +91,8 @@ export default class D4HMembersProvider implements MemberProvider {
       const member = this.tokenFetchInfo[token].lookup[memberId].response;
       if (!member) continue;
       const result: ParticipantInfo = {
-        email: member.email,
-        mobilephone: member.mobilephone,
+        email: member.email?.value,
+        mobilephone: member.mobile?.phone,
       };
       return result;
     }
@@ -168,6 +174,7 @@ export default class D4HMembersProvider implements MemberProvider {
         .filter((o) => o.memberProvider?.provider === 'D4HMembers')
         .forEach((org) => {
           const token = org.memberProvider.token;
+
           tokenOrgs[token] = [...(tokenOrgs[token] ?? []), org.id];
           moreEmails[token] = org.memberProvider.moreEmailsLabel ?? 'Secondary Email';
         });
@@ -188,51 +195,86 @@ export default class D4HMembersProvider implements MemberProvider {
   }
 
   private async refreshMembersForToken(token: string, moreEmailsLabel?: string) {
-    let offset: number = 0;
+    const [teamId, v3Token] = token.split(':');
+    let page: number = 0;
+    let totalSize: number = 0;
+
+    let customFieldDefs: CustomFieldDef[] = [];
+    do {
+      const chunk = await (
+        await fetch(`https://api.team-manager.us.d4h.com/v3/team/${teamId}/custom-fields?size=${D4H_FETCH_LIMIT}&page=${page}`, {
+          headers: {
+            Authorization: `Bearer ${v3Token}`,
+          },
+        })
+      ).json();
+
+      totalSize = chunk.totalSize;
+      customFieldDefs = customFieldDefs.concat(chunk.results);
+      page = chunk.page + 1;
+    } while (customFieldDefs.length < totalSize);
+    const customFieldNames = customFieldDefs.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.title }), {} as { [id: number]: string });
 
     let groupRows: Group[] = [];
     do {
-      const chunk = (
-        await (
-          await fetch(`https://api.d4h.org/v2/team/groups?limit=${D4H_FETCH_LIMIT}&offset=${offset}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-        ).json()
-      )?.data as Group[];
+      const chunk = await (
+        await fetch(`https://api.team-manager.us.d4h.com/v3/team/${teamId}/member-groups?size=${D4H_FETCH_LIMIT}&page=${page}`, {
+          headers: {
+            Authorization: `Bearer ${v3Token}`,
+          },
+        })
+      ).json();
 
-      offset += D4H_FETCH_LIMIT;
-      groupRows = groupRows.concat(chunk);
-    } while (offset === groupRows.length);
+      totalSize = chunk.totalSize;
+      groupRows = groupRows.concat(chunk.results);
+      page = chunk.page + 1;
+    } while (groupRows.length < totalSize);
+
     const groupLookup = groupRows.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.title }), {} as { [id: number]: string });
 
     let rows: D4HMemberResponse[] = [];
-    offset = 0;
+    page = 0;
     do {
-      const url = `https://api.d4h.org/v2/team/members?include_custom_fields=true&include_details=true&limit=${D4H_FETCH_LIMIT}&offset=${offset}`;
-      console.log('Fetching ' + url, offset, rows.length);
-      const chunk = (
-        await (
-          await fetch(url, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-        ).json()
-      )?.data as D4HMemberResponse[];
-
-      offset += D4H_FETCH_LIMIT;
-      rows = rows.concat(chunk);
-    } while (offset === rows.length);
+      const url = `https://api.team-manager.us.d4h.com/v3/team/${teamId}/members?size=${D4H_FETCH_LIMIT}&page=${page}`;
+      const chunk = await (
+        await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${v3Token}`,
+          },
+        })
+      ).json();
+      totalSize = chunk.totalSize;
+      rows = rows.concat(chunk.results);
+      page = chunk.page + 1;
+    } while (rows.length < totalSize);
 
     const emailLookup: { [authEmail: string]: string } = {};
+
+    let memberships: D4HGroupMembership[] = [];
+    page = 0;
+    do {
+      const url = `https://api.team-manager.us.d4h.com/v3/team/${teamId}/member-group-memberships?size=${D4H_FETCH_LIMIT}&page=${page}`;
+      const chunk = await (
+        await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${v3Token}`,
+          },
+        })
+      ).json();
+
+      totalSize = chunk.totalSize;
+      memberships = memberships.concat(chunk.results);
+      page = chunk.page + 1;
+    } while (memberships.length < totalSize);
 
     const lookup = rows.reduce(
       (accum, cur) => {
         const memberInfo: MemberInfo = {
           id: cur.id + '',
-          groups: cur.group_ids?.reduce((accum, cur) => [...accum, groupLookup[cur]], [] as string[]) ?? [],
+          groups: memberships
+            .filter((f) => f.member.id === cur.id)
+            .map((f) => groupLookup[f.group.id])
+            .filter((f) => !!f),
         };
 
         const member: D4HMember = {
@@ -241,10 +283,10 @@ export default class D4HMembersProvider implements MemberProvider {
         };
 
         if (cur.email) {
-          emailLookup[cur.email] = member.memberInfo.id;
+          emailLookup[cur.email.value] = member.memberInfo.id;
         }
         if (moreEmailsLabel) {
-          const moreEmails = ((cur.custom_fields?.find((f) => f.label === moreEmailsLabel)?.value as string) ?? '').split(/[;, /]+/);
+          const moreEmails = ((cur.customFieldValues?.find((f) => customFieldNames[f.customField.id] === moreEmailsLabel)?.value as string) ?? '').split(/[;, /]+/);
           moreEmails.forEach((email) => (emailLookup[email] = member.memberInfo.id));
         }
 
