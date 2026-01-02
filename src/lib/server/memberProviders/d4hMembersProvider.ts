@@ -114,6 +114,7 @@ export default class D4HMembersProvider implements MemberProvider {
     }
 
     if (!this.tokenFetchInfo[config.token]) {
+      console.log('server-out-of-sync:', config.token, Object.keys(this.tokenFetchInfo));
       throw new Error('Server is out of sync with member database');
     }
 
@@ -157,6 +158,7 @@ export default class D4HMembersProvider implements MemberProvider {
     if (this.fetching) {
       return { ok: true, runtime: 0, cached: true };
     }
+
     const window = new Date().getTime() - D4H_MEMBER_REFRESH_SECS * 1000;
     const expired = window > this.lastFetch;
     if (!(force || expired)) {
@@ -189,6 +191,9 @@ export default class D4HMembersProvider implements MemberProvider {
         ok: true,
         runtime: new Date().getTime() - start,
       };
+    } catch (err: unknown) {
+      console.log('Error refreshing D4HMemberProvider', err);
+      throw err;
     } finally {
       this.fetching = false;
     }
