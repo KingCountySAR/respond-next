@@ -221,6 +221,7 @@ export default class D4HMembersProvider implements MemberProvider {
     const customFieldNames = customFieldDefs.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.title }), {} as { [id: number]: string });
 
     let groupRows: Group[] = [];
+    page = 0;
     do {
       const chunk = await (
         await fetch(`https://api.team-manager.us.d4h.com/v3/team/${teamId}/member-groups?size=${D4H_FETCH_LIMIT}&page=${page}`, {
