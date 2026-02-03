@@ -22,15 +22,49 @@ Mongo Atlas has a database creation wizard which shows up for new accounts, and 
 #### Add Seed Data to MongoDB
 The app is multi-tenant, and matches hostnames to organizations stored in the database. To be able to use the application, at least one organization must be created in the database. Below are two documents that should allow you to get up and running.
 
-The application also has integration with D4H, so you will need an API key, either generated yourself or from your member database admin.
-**Note that a D4H API key is equivalent to your password: it provides full access to personal information for every KCSARA member - even the bits that are marked ‘private’. Make sure you don't make this key public (e.g. by checking it in).**
-Try to get a key yourself:
+The application also has integration with D4H, so you will need a Personal Access Token, either generated yourself or from your member database admin. You will also need your Organization's teamId.
+**Note that a D4H Personal Access Token is equivalent to your password: it provides full access to personal information for every KCSARA member - even the bits that are marked ‘private’. Make sure you don't make this key public (e.g. by checking it in).**
+
+[D4H - Getting Authenticated](https://api.team-manager.us.d4h.com/v3/docs?_gl=1*1t84xi8*_gcl_au*MjA2MzYwNjE2OC4xNzcwMDc5NTcy#section/Introduction/Getting-Authenticated)
+
+Personal Access Token:
+
 - Login to D4H
-- Click on the small head icon in the upper right and go to "My Settings"
-- Click on API access keys
-- Give your key a name and click "Generate API Access Key". You'll use this key in the next section.
+- Click on the avatar in the upper right, then select "Manage Your D4H Account"
+- On your account page, click on the avatar again, then select "Personal Access Tokens"
+- Click "Create Token"
+- Give your key a name and expiration date, select appropriate products, then click "Create Token".
+- Make note of the token for the next steps.
 
 If this fails, contact your database admin to ask for a key.
+
+D4H Team Id:
+
+To find your teamId open your terminal / command line and run the following command (after modifying it to replace `YOUR_ACCESS_TOKEN` with your token):
+
+`curl -X GET -H "Authorization: Bearer YOUR_ACCESS_TOKEN" -o d4h-api-whoami-response.json https://api.team-manager.us.d4h.com/v3/whoami`
+
+This will make a GET request to the whoami endpoint, which if successful will return a JSON response that will be stored in d4h-api-whoami-response.json in the directory from which the command is run.
+
+Your teamId is `members[0].owner.id`:
+```json
+{
+  "members": [
+    {
+      "id": 1,
+      "owner":
+      {
+        "resourceType": "Team",
+        "id": 600,
+        "title": "Team Y",
+      },
+      "name": "Member X",
+      "hasAccess": true,
+      "resourceType": "Member",
+    },
+  ]
+}
+```
 
 To fully test multi-tenancy you'll also need to be able to refer to the site by multiple host names. It may be possible to do this with a combination of `localhost` and your computer's hostname. You may also want/need to add aliases to your local machine in your hosts file (`/etc/hosts` on Linux or `C:\Windows\System32\drivers\etc\hosts` on Windows) or router DNS configuration. These hostnames will be used in the seed data. However this is optional for an initial setup.
 
@@ -48,7 +82,7 @@ In your MongoDB database, make sure there is a collection called `organizations`
   "domain": "<YOUR-PREFERRED-HOSTNAME-EX-localhost>",
   "memberProvider": {
     "provider": "D4HMembers",
-    "token": "<YOUR-D4H-TOKEN>"
+    "token": "<YOUR-D4H-TEAM-ID>:<YOUR-D4H-TOKEN>"
   },
   "id": "1",
   "canCreateEvents": true,
