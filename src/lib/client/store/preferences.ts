@@ -11,11 +11,19 @@ export enum NavigationApp {
 export interface PerferencesState {
   defaultMobileView: MobilePageId;
   navigationApp: NavigationApp;
+  etaIncrement: number;
+  etaPreset1: number;
+  etaPreset2: number;
+  etaPreset3: number;
 }
 
 const initialState: PerferencesState = {
   defaultMobileView: MobilePageId.Briefing,
   navigationApp: NavigationApp.Google,
+  etaIncrement: 5,
+  etaPreset1: 15,
+  etaPreset2: 30,
+  etaPreset3: 60,
 };
 
 const preferencesSlice = createSlice({
