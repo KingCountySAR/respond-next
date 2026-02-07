@@ -25,7 +25,7 @@ The app is multi-tenant, and matches hostnames to organizations stored in the da
 The application also has integration with D4H, so you will need a Personal Access Token, either generated yourself or from your member database admin. You will also need your Organization's teamId.
 **Note that a D4H Personal Access Token is equivalent to your password: it provides full access to personal information for every KCSARA member - even the bits that are marked ‘private’. Make sure you don't make this key public (e.g. by checking it in).**
 
-[D4H - Getting Authenticated](https://api.team-manager.us.d4h.com/v3/docs?_gl=1*1t84xi8*_gcl_au*MjA2MzYwNjE2OC4xNzcwMDc5NTcy#section/Introduction/Getting-Authenticated)
+[D4H - Getting Authenticated](https://api.team-manager.us.d4h.com/v3/docs#section/Introduction/Getting-Authenticated)
 
 Personal Access Token:
 
