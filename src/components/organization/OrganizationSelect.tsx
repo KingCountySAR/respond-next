@@ -2,15 +2,16 @@ import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@m
 import * as React from 'react';
 
 import useOrganizations from '@respond/hooks/useOrganizations';
+import { Organization } from '@respond/types/organization';
 
-export default function OrganizationSelect({ onChange }: { onChange: (id: string) => void }) {
+export default function OrganizationSelect({ onChange }: { onChange: (id: Organization | undefined) => void }) {
   const { organizations } = useOrganizations();
 
   const [value, setValue] = React.useState('');
 
   const handleChange = (event: SelectChangeEvent<string>) => {
     setValue(event.target.value);
-    onChange(event.target.value);
+    onChange(event.target.value ? organizations?.find((f) => f.id === event.target.value) : undefined);
   };
 
   return (

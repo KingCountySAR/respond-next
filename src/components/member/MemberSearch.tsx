@@ -13,7 +13,7 @@ const findMembers = async (organizationId: string, query: string) => {
 
 type TextFieldVariant = 'filled' | 'outlined' | 'standard';
 
-export default function MemberSearch({ organizationId, label = 'Member', variant = 'outlined', onChange }: { organizationId: string; label?: string; variant?: TextFieldVariant; onChange: (id: string) => void }) {
+export default function MemberSearch({ organizationId, label = 'Member', variant = 'outlined', onChange }: { organizationId: string | undefined; label?: string; variant?: TextFieldVariant; onChange: (member: MemberInfo | undefined) => void }) {
   const [open, setOpen] = React.useState(false);
   const [options, setOptions] = React.useState<readonly MemberInfo[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -22,7 +22,7 @@ export default function MemberSearch({ organizationId, label = 'Member', variant
   const debouncedSearch = useDebounce(search, 500);
 
   React.useEffect(() => {
-    if (debouncedSearch) {
+    if (organizationId && debouncedSearch) {
       findMembers(organizationId, debouncedSearch).then((infos) => {
         setOptions(infos);
         setLoading(false);
@@ -48,7 +48,7 @@ export default function MemberSearch({ organizationId, label = 'Member', variant
       }}
       onChange={(event, value) => {
         if (value && typeof value !== 'string') {
-          onChange(value.id);
+          onChange(value ? options.find((f) => f.id === value.id) : undefined);
         }
       }}
       freeSolo={true}

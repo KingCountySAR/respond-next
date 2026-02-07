@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useAppDispatch } from '@respond/lib/client/store';
+import { MemberInfo } from '@respond/lib/server/memberProviders/memberProvider';
 import { ActivityActions } from '@respond/lib/state';
 import { Activity, OrganizationStatus, Participant, ParticipantStatus } from '@respond/types/activity';
-import { MyOrganization } from '@respond/types/organization';
+import { Organization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
 import { DialogContentText, FormControl, FormHelperText, Stack } from '../Material';
@@ -17,8 +18,10 @@ interface FormValues {
   statusTime: number;
 }
 
-export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: MyOrganization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
+export function useFormLogic(activity: Activity, user: UserInfo | MemberInfo, respondingOrg: Organization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
   const dispatch = useAppDispatch();
+
+  const participantId = 'participantId' in user ? user.participantId : user.id;
 
   const resolver: Resolver<FormValues> = async (values) => {
     const result: ResolverResult<FormValues> = {
@@ -75,7 +78,7 @@ export function useFormLogic(activity: Activity, user: UserInfo, respondingOrg: 
         ),
       );
     }
-    dispatch(ActivityActions.participantUpdate(activity.id, user.participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles));
+    dispatch(ActivityActions.participantUpdate(activity.id, participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles));
     onFinish();
   };
 

@@ -1,6 +1,5 @@
 import mongoPromise from '@respond/lib/server/mongodb';
 import { MemberProviderConfig, OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
-import { ParticipantInfo } from '@respond/types/participant';
 
 import { MemberAuthInfo, MemberInfo, MemberProvider } from './memberProvider';
 
@@ -53,6 +52,20 @@ interface D4HCacheDoc extends FetchForTokenEntry {
   token: string;
 }
 
+function buildMemberInfo(member: D4HMemberResponse, groups: string[] = []): MemberInfo {
+  const [family_name, given_name] = member.name.split(', ');
+  return {
+    id: member.id.toString(),
+    label: `${member.name}${member.ref ? ' (' + member.ref + ')' : ''}`,
+    name: member.name,
+    given_name,
+    family_name,
+    groups,
+    email: member.email?.value,
+    mobilephone: member.mobile?.phone,
+  };
+}
+
 export default class D4HMembersProvider implements MemberProvider {
   initialized: boolean = false;
   fetching: boolean = false;
@@ -91,11 +104,7 @@ export default class D4HMembersProvider implements MemberProvider {
     for (const token in this.tokenFetchInfo) {
       const member = this.tokenFetchInfo[token].lookup[memberId].response;
       if (!member) continue;
-      const result: ParticipantInfo = {
-        email: member.email?.value,
-        mobilephone: member.mobile?.phone,
-      };
-      return result;
+      return buildMemberInfo(member);
     }
   }
 
@@ -156,14 +165,7 @@ export default class D4HMembersProvider implements MemberProvider {
     }
 
     const data = await response.json();
-    const results = (data.results || []).map((res: D4HMemberResponse) => {
-      return {
-        id: res.id,
-        label: `${res.name} (${res.ref})`,
-        name: res.name,
-        groups: [],
-      };
-    }) as MemberInfo[];
+    const results = (data.results || []).map((member: D4HMemberResponse) => buildMemberInfo(member)) as MemberInfo[];
 
     console.log(results);
     return results;
@@ -315,13 +317,13 @@ export default class D4HMembersProvider implements MemberProvider {
 
     const lookup = rows.reduce(
       (accum, cur) => {
-        const memberInfo: MemberInfo = {
-          id: cur.id + '',
-          groups: memberships
+        const memberInfo: MemberInfo = buildMemberInfo(
+          cur,
+          memberships
             .filter((f) => f.member.id === cur.id)
             .map((f) => groupLookup[f.group.id])
             .filter((f) => !!f),
-        };
+        );
 
         const member: D4HMember = {
           response: cur,

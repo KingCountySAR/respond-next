@@ -1,56 +1,66 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
 import * as React from 'react';
 
-import { Activity } from '@respond/types/activity';
+import { MemberInfo } from '@respond/lib/server/memberProviders/memberProvider';
+import { Activity, Participant } from '@respond/types/activity';
+import { Organization } from '@respond/types/organization';
 
 import MemberSearch from '../member/MemberSearch';
 import OrganizationSelect from '../organization/OrganizationSelect';
+import { StatusUpdater } from '../StatusUpdater';
+
+import ParticipantTimeline from './ParticipantTimeline';
+
+const getTitle = (activity: Activity) => `Add ${activity.isMission ? 'Responder' : 'Participant'}`;
 
 export default function AddParticipantButton({ activity }: { activity: Activity }) {
   const [openDialog, setOpenDialog] = React.useState<boolean>(false);
 
-  const label = `Add ${activity.isMission ? 'Responder' : 'Participant'}`;
-
-  const handleResult = (data?: { memberId: string; organizationId: string }) => {
-    setOpenDialog(false);
-    if (data) console.log(`Add ${data.memberId}`);
-  };
-
   return (
     <>
       <Button size="small" variant="outlined" onClick={() => setOpenDialog(true)}>
-        {label}
+        {getTitle(activity)}
       </Button>
-      <AddParticipantDialog open={openDialog} title={label} onAdd={handleResult} onClose={handleResult} />
+      <AddParticipantDialog open={openDialog} activity={activity} onClose={() => setOpenDialog(false)} />
     </>
   );
 }
 
-function AddParticipantDialog({ open, title, onClose, onAdd }: { open: boolean; title: string; onAdd: (data: { memberId: string; organizationId: string }) => void; onClose: () => void }) {
-  const [organizationId, setOrganizationId] = React.useState('');
-  const [memberId, setMemberId] = React.useState('');
+function AddParticipantDialog({ open, activity, onClose }: { open: boolean; activity: Activity; onClose: () => void }) {
+  const [organization, setOrganization] = React.useState<Organization | undefined>(undefined);
+  const [member, setMember] = React.useState<MemberInfo | undefined>(undefined);
+  const [participant, setParticipant] = React.useState<Participant | undefined>(undefined);
 
-  const handleAdd = () => {
-    onAdd({ memberId, organizationId });
+  React.useEffect(() => {
+    if (member && activity.participants[member.id]) {
+      setParticipant(activity.participants[member.id]);
+    } else {
+      setParticipant(undefined);
+    }
+  }, [activity, member]);
+
+  const handleClose = () => {
+    setOrganization(undefined);
+    setMember(undefined);
+    setParticipant(undefined);
     onClose();
   };
 
   return (
     <Dialog fullWidth={true} open={open} onClose={onClose}>
       <DialogTitle alignItems="center" justifyContent="space-between" display="flex">
-        <Box>{title}</Box>
+        <Box>{getTitle(activity)}</Box>
       </DialogTitle>
       <DialogContent>
         <Stack sx={{ py: 1 }} spacing={2}>
-          <OrganizationSelect onChange={(id: string) => setOrganizationId(id)}></OrganizationSelect>
-          <MemberSearch organizationId={organizationId} onChange={(id: string) => setMemberId(id)}></MemberSearch>
+          <OrganizationSelect onChange={(organization) => setOrganization(organization)}></OrganizationSelect>
+          <MemberSearch organizationId={organization?.id} onChange={(member) => setMember(member)}></MemberSearch>
+          {participant && <ParticipantTimeline participant={participant} />}
+          {organization && member && <StatusUpdater member={member} organization={organization} fullWidth />}
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button disabled={!memberId || !organizationId} onClick={handleAdd} variant="contained">
-          Add
-        </Button>
+        <Button onClick={handleClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

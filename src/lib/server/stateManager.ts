@@ -48,7 +48,7 @@ export class StateManager {
     this.locationsState = {
       list: allLocations,
     };
-    const allOrganizations = (await mongo.db().collection<Organization>(ORGS_COLLECTION).find().project({ id: 1, title: 1 }).toArray()) as Organization[];
+    const allOrganizations = (await mongo.db().collection<Organization>(ORGS_COLLECTION).find().project({ id: 1, title: 1, rosterName: 1 }).toArray()) as Organization[];
     this.organizationsState = {
       list: allOrganizations,
     };
