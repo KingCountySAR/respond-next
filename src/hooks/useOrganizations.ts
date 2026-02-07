@@ -1,20 +1,18 @@
 import * as React from 'react';
 
 import { apiFetch } from '@respond/lib/api';
-import { OrganizationDoc } from '@respond/types/data/organizationDoc';
+import { Organization } from '@respond/types/organization';
 
-type OrganizationOption = Pick<OrganizationDoc, 'id' | 'title'>;
-
-let cachedOrgs: OrganizationOption[] | null = null;
+let cachedOrgs: Organization[] | null = null;
 
 export default function useOrganizations() {
-  const [organizations, setOrganizations] = React.useState<OrganizationOption[] | null>(cachedOrgs);
+  const [organizations, setOrganizations] = React.useState<Organization[] | null>(cachedOrgs);
   const [loading, setLoading] = React.useState<boolean>(!cachedOrgs);
 
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiFetch<{ data: OrganizationOption[] }>('/api/v1/organizations');
+      const res = await apiFetch<{ data: Organization[] }>('/api/v1/organizations');
       cachedOrgs = res.data;
       setOrganizations(res.data);
     } finally {
@@ -36,5 +34,3 @@ export default function useOrganizations() {
 
   return { organizations, loading, reload } as const;
 }
-
-export type { OrganizationOption };
