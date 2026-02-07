@@ -3,6 +3,8 @@ import { ParticipantInfo } from '@respond/types/participant';
 
 export interface MemberInfo {
   id: string;
+  label?: string;
+  name?: string;
   groups: string[];
   email?: string;
   mobilephone?: string;
@@ -18,6 +20,7 @@ export interface MemberProvider {
   getMemberInfoById(memberId: string): Promise<MemberInfo | undefined>;
   getMemberPhoto(memberId: string): Promise<ArrayBuffer | undefined>;
   getParticipantInfo(query: string): Promise<ParticipantInfo | undefined>;
+  searchMembers(organizationId: string, query: string): Promise<Array<MemberInfo>>;
   refresh(force?: boolean): Promise<{ ok: boolean; runtime: number; cached?: boolean }>;
 }
 

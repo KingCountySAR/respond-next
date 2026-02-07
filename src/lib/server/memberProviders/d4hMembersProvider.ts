@@ -7,6 +7,7 @@ import { MemberAuthInfo, MemberInfo, MemberProvider } from './memberProvider';
 const D4H_MEMBER_REFRESH_SECS = 15 * 60;
 const D4H_FETCH_LIMIT = 1000;
 const D4H_CACHE_COLLECTION = 'd4hCache';
+const D4H_STATUS_OPERATIONAL = 'OPERATIONAL';
 
 interface CustomFieldValue {
   customField: { id: number };
@@ -127,6 +128,45 @@ export default class D4HMembersProvider implements MemberProvider {
     } else {
       return undefined;
     }
+  }
+
+  async searchMembers(organizationId: string, query: string): Promise<MemberInfo[]> {
+    await this.initialize();
+
+    const mongo = await mongoPromise;
+    const organization = await mongo.db().collection<OrganizationDoc>(ORGS_COLLECTION).findOne({ id: organizationId });
+    if (!organization) {
+      throw new Error('Unknown Organization');
+    }
+
+    const config = organization?.memberProvider as MemberProviderConfig;
+    if (!config || !config.token) {
+      throw new Error('Invalid Configuration');
+    }
+
+    const [teamId, v3Token] = config.token.split(':');
+    const response = await fetch(`https://api.team-manager.us.d4h.com/v3/team/${teamId}/members?search=${encodeURIComponent(query)}&size=25&status=${D4H_STATUS_OPERATIONAL}`, {
+      headers: {
+        Authorization: `Bearer ${v3Token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`D4H API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const results = (data.results || []).map((res: D4HMemberResponse) => {
+      return {
+        id: res.id,
+        label: `${res.name} (${res.ref})`,
+        name: res.name,
+        groups: [],
+      };
+    }) as MemberInfo[];
+
+    console.log(results);
+    return results;
   }
 
   private async initialize() {
