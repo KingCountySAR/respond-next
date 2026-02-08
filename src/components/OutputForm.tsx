@@ -138,6 +138,42 @@ export const OutputLink = ({ label, value, href, target }: { label: string; valu
   );
 };
 
+// eslint-disable-next-line prettier/prettier
+const escapeHtml = (str: string) => str
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const linkifyEscaped = (str: string) => {
+  const urlRegex = /(\bhttps?:\/\/[^\s<>]+|\bwww\.[^\s<>]+)/gi;
+  return str.replace(urlRegex, (url) => {
+    let href = url;
+    if (!/^https?:\/\//i.test(href)) {
+      href = 'http://' + href;
+    }
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+  });
+};
+
+const sanitizeAndLinkify = (input: string) => {
+  if (!input) return '';
+  const escaped = escapeHtml(input);
+  const linked = linkifyEscaped(escaped);
+  return linked.replace(/\n/g, '<br/>');
+};
+
+export const OutputLinkified = ({ label, value, rows }: { label: string; value?: string; rows?: number }) => {
+  const html = value ? sanitizeAndLinkify(value) : undefined;
+  console.log(html);
+  return (
+    <OutputField label={label} multiline>
+      <OutputShowMore rows={rows}>{html && <div dangerouslySetInnerHTML={{ __html: html }} />}</OutputShowMore>
+    </OutputField>
+  );
+};
+
 export const OutputTime = ({ label, time, relative = RelativeStyle.Absolute }: { label: string; time?: number; relative?: RelativeStyle }) => {
   const [nowTime, setNowTime] = useState<number>(new Date().getTime());
 

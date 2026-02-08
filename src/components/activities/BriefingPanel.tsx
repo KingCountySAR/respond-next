@@ -1,7 +1,7 @@
 import { SxProps } from '@mui/material/styles';
 
 import { Paper } from '@respond/components/Material';
-import { OutputForm, OutputLink, OutputText, OutputTextArea, OutputTime } from '@respond/components/OutputForm';
+import { OutputForm, OutputLink, OutputLinkified, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { getActivityStatus } from '@respond/lib/client/store/activities';
 import { Participant, ParticipantStatus } from '@respond/types/activity';
 
@@ -24,7 +24,7 @@ export function BriefingPanel({ sx }: { sx?: SxProps }) {
         <OutputText label="Mission Status" value={getActivityStatus(activity)} />
         <OutputText label="Responding" value={Object.values(activity.participants).reduce(reduceSignedIn, 0).toString()}></OutputText>
       </OutputForm>
-      <OutputTextArea label="Description" value={activity.description} rows={3}></OutputTextArea>
+      <OutputLinkified label="Description" value={activity.description} rows={3}></OutputLinkified>
     </Paper>
   );
 }
