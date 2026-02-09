@@ -1,6 +1,7 @@
-import { Box, Button, Divider, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, Button, Divider, FormControlLabel, FormGroup, Paper, Stack, Switch, Table, TableBody, TableCell, TableClasses, TableHead, TableRow, Typography } from '@mui/material';
+import { tableCellClasses } from '@mui/material/TableCell';
 import { differenceInCalendarDays, format as formatDate } from 'date-fns';
-import { forwardRef, useRef } from 'react';
+import { forwardRef, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
@@ -12,11 +13,26 @@ import { OutputForm, OutputText, OutputTime } from '../OutputForm';
 
 import { ActivityProvider, useActivityContext } from './ActivityProvider';
 
+interface RosterEntryProps {
+  participant: Participant;
+  organizationName: string;
+  lastNameFirst: boolean;
+}
+
 const headerCellStyle = { fontWeight: 700, width: 20 };
+const columnBordersStyle = {
+  [`& .${tableCellClasses.root}`]: {
+    borderLeft: '1px solid rgba(224, 224, 224, 1)', // Adds a left border to all cells
+  },
+};
 
 export function RosterReview({ activityId }: { activityId: string }) {
   const activity = useAppSelector(buildActivitySelector(activityId));
-  const rosterEntries = getRosterEntries(activity);
+  const [lastNameFirst, setLastNameFirst] = useState(false);
+  const [showColumnBorders, setShowColumnBorders] = useState(false);
+  const [showStandby, setShowStandby] = useState(false);
+
+  const rosterEntries = activity ? getRosterEntries(activity, lastNameFirst, showStandby) : [];
 
   const download = () => {
     const data = rosterEntries.map((e) => {
@@ -48,9 +64,14 @@ export function RosterReview({ activityId }: { activityId: string }) {
       <ToolbarPage maxWidth="lg">
         <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
           <Box display="flex" flex="1 1 auto" flexDirection="column">
-            <Paper>{activity ? <Roster ref={printable} rosterEntries={rosterEntries} /> : <ActivityNotFound />}</Paper>
+            <Paper>{activity ? <Roster ref={printable} rosterEntries={rosterEntries} styles={showColumnBorders ? columnBordersStyle : undefined} /> : <ActivityNotFound />}</Paper>
           </Box>
           <Stack alignItems="stretch" spacing={2}>
+            <FormGroup>
+              <FormControlLabel control={<Switch />} label="Include Standby" onChange={() => setShowStandby(!showStandby)} />
+              <FormControlLabel control={<Switch />} label="Show Column Borders" onChange={() => setShowColumnBorders(!showColumnBorders)} />
+              <FormControlLabel control={<Switch />} label="Last Name, First, Name" onChange={() => setLastNameFirst(!lastNameFirst)} />
+            </FormGroup>
             <Button variant="outlined" onClick={download}>
               Download (csv)
             </Button>
@@ -65,11 +86,11 @@ export function RosterReview({ activityId }: { activityId: string }) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Roster = forwardRef(function Roster({ rosterEntries }: { rosterEntries: Array<RosterEntry> }, ref: any) {
+const Roster = forwardRef(function Roster({ rosterEntries, styles }: { rosterEntries: Array<RosterEntry>; styles: Partial<TableClasses> | undefined }, ref: any) {
   const activity = useActivityContext();
   if (!rosterEntries.length) return <ActivityNotFound />;
   return (
-    <Table ref={ref} size="small">
+    <Table ref={ref} size="small" sx={{ ...styles }}>
       <TableHead>
         <TableRow>
           <TableCell colSpan={7}>
@@ -175,7 +196,7 @@ interface RosterEntry {
     [RosterStage.DepartBase]: number;
     [RosterStage.SignOut]: number;
   };
-  miles: number;
+  miles: number | undefined;
 }
 
 const scrubTimeline = (timeline: Array<ParticipantUpdate>): Array<ParticipantUpdate> => {
@@ -198,18 +219,18 @@ const scrubTimeline = (timeline: Array<ParticipantUpdate>): Array<ParticipantUpd
   return newTimeline;
 };
 
-const buildRosterEntry = (participant: Participant, organizationName: string): RosterEntry => {
+const buildRosterEntry = (props: RosterEntryProps): RosterEntry => {
   return {
-    participantId: participant.id,
-    participantName: `${participant.firstname} ${participant.lastname}`,
-    organizationName: organizationName,
+    participantId: props.participant.id,
+    participantName: props.lastNameFirst ? `${props.participant.lastname}, ${props.participant.firstname}` : `${props.participant.firstname} ${props.participant.lastname}`,
+    organizationName: props.organizationName,
     timestamps: {
       [RosterStage.SignIn]: 0,
       [RosterStage.ArriveBase]: 0,
       [RosterStage.DepartBase]: 0,
       [RosterStage.SignOut]: 0,
     },
-    miles: 0,
+    miles: undefined,
   };
 };
 
@@ -217,7 +238,7 @@ const isComplete = (entry: RosterEntry): boolean => {
   return !!entry.timestamps[RosterStage.SignOut];
 };
 
-const getRosterEntries = (activity?: Activity) => {
+const getRosterEntries = (activity: Activity, lastNameFirst: boolean, showStandby: boolean) => {
   if (!activity) return [];
 
   const rosterEntries: Array<RosterEntry> = [];
@@ -243,11 +264,14 @@ const getRosterEntries = (activity?: Activity) => {
     if (firstEntry) {
       firstEntry.miles = participant.miles ?? 0;
     }
+    if (showStandby && !rosterEntries.some((entry) => entry.participantId === participant.id)) {
+      createRosterEntry(participant, participant.organizationId);
+    }
   };
 
   const createRosterEntry = (participant: Participant, organizationId: string) => {
     const org = getOrganizationName(activity, organizationId);
-    const newEntry = buildRosterEntry(participant, org);
+    const newEntry = buildRosterEntry({ participant, organizationName: org, lastNameFirst });
     rosterEntries.unshift(newEntry);
     return newEntry;
   };
