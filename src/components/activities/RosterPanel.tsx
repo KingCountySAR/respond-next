@@ -35,10 +35,14 @@ const STATUS_SORT_ORDER = [
   ParticipantStatus.NotResponding,
 ];
 
+const etaStatus = (status: ParticipantStatus) => {
+  return [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(status) ? 1 : 0;
+};
+
 const sortByStatus = (a: Participant, b: Participant) => {
   const statusIndexA = STATUS_SORT_ORDER.indexOf(a.timeline[0].status);
   const statusIndexB = STATUS_SORT_ORDER.indexOf(b.timeline[0].status);
-  return statusIndexA - statusIndexB || (a.eta ?? Infinity) - (b.eta ?? Infinity);
+  return statusIndexA - statusIndexB || etaStatus(b.timeline[0].status) - etaStatus(a.timeline[0].status) || (a.eta ?? Infinity) - (b.eta ?? Infinity);
 };
 const sortAlphabetical = (a: Participant, b: Participant) => a.firstname.localeCompare(b.firstname);
 
