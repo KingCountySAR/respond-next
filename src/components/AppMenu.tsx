@@ -63,8 +63,8 @@ export function AppMenu() {
             Sign Out
           </MenuItem>
           <Divider />
-          <MenuItem component={Link} href="/about">
-            About
+          <MenuItem component={Link} href="https://github.com/KingCountySAR/respond-next/wiki/Quick-Start:-Mission-Responder">
+            Quick Start Guide
           </MenuItem>
         </Menu>
       </div>
