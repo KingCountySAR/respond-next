@@ -27,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: { params: { orgId: 
     return NextResponse.json({ status: 'invalid query, must be at least 3 characters' }, { status: 400 });
   }
 
-  const list = await memberProvider.searchMembers(organizationDoc.id, query);
+  const list = await memberProvider.searchMembers(organizationDoc.id, encodeURIComponent(query));
 
   if (!list) {
     return NextResponse.json({ status: 'not found' }, { status: 404 });
