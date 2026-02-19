@@ -5,32 +5,39 @@ import * as Mongo from '@respond/lib/server/mongodb';
 import { getServices } from '@respond/lib/server/services';
 
 export async function GET(_request: NextRequest, { params }: { params: { orgId: string } }) {
-  const user = userFromAuth(await getCookieAuth());
-  if (user == null) {
-    return NextResponse.json({ status: 'not authenticated' }, { status: 401 });
-  }
+  try {
+    const user = userFromAuth(await getCookieAuth());
+    if (user == null) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  const organizationDoc = await Mongo.getOrganizationById(params.orgId);
-  if (!organizationDoc) {
-    return NextResponse.json({ status: 'unknown organization' }, { status: 500 });
-  }
+    const organizationDoc = await Mongo.getOrganizationById(params.orgId);
+    if (!organizationDoc) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+    }
 
-  const memberProvider = (await getServices()).memberProviders.get(organizationDoc.memberProvider.provider);
-  if (!memberProvider) {
-    console.log(`Can't find memberProvider for org ${organizationDoc.id}: ${organizationDoc.memberProvider?.provider}`);
-    return NextResponse.json({ status: 'unknown member provider' }, { status: 500 });
-  }
+    const memberProvider = (await getServices()).memberProviders.get(organizationDoc.memberProvider.provider);
+    if (!memberProvider) {
+      console.error(`Member provider not found for org ${organizationDoc.id}: ${organizationDoc.memberProvider?.provider}`);
+      return NextResponse.json({ error: 'Member provider not configured' }, { status: 500 });
+    }
 
-  const searchParams = _request.nextUrl.searchParams;
-  const query = searchParams.get('query');
-  if (!query || query.length < 3) {
-    return NextResponse.json({ status: 'invalid query, must be at least 3 characters' }, { status: 400 });
-  }
+    const searchParams = _request.nextUrl.searchParams;
+    const query = searchParams.get('query')?.trim() ?? '';
 
-  const list = await memberProvider.searchMembers(organizationDoc.id, encodeURIComponent(query));
+    if (query.length < 3 || query.length > 100) {
+      return NextResponse.json({ error: 'Query must be between 3 and 100 characters' }, { status: 400 });
+    }
 
-  if (!list) {
-    return NextResponse.json({ status: 'not found' }, { status: 404 });
+    const list = await memberProvider.searchMembers(organizationDoc.id, query);
+
+    if (!list) {
+      return NextResponse.json({ error: 'No results found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: list });
+  } catch (error) {
+    console.error('Error searching members:', error);
+    return NextResponse.json({ error: 'Failed to search members' }, { status: 500 });
   }
-  return NextResponse.json({ status: 'ok', data: list });
 }

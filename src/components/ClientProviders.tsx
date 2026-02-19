@@ -1,6 +1,7 @@
 'use client';
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 
@@ -22,6 +23,7 @@ export interface SiteConfig {
 export default function ClientProviders({ googleClient, config, user, myOrg, children }: { googleClient: string; config: SiteConfig; user?: UserInfo; myOrg?: MyOrganization; children: ReactNode }) {
   const [store] = useState<AppStore>(buildClientStore([]));
   const [sync] = useState<ClientSync>(new ClientSync(store));
+  const [queryClient] = useState(() => new QueryClient());
 
   useEffect(() => {
     console.log('ClientProviders mounting ...');
@@ -60,8 +62,10 @@ export default function ClientProviders({ googleClient, config, user, myOrg, chi
   }
 
   return (
-    <Provider store={store}>
-      <ThemeProvider theme={hydratedTheme}>{inner}</ThemeProvider>
-    </Provider>
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>
+        <ThemeProvider theme={hydratedTheme}>{inner}</ThemeProvider>
+      </Provider>
+    </QueryClientProvider>
   );
 }

@@ -1,36 +1,18 @@
-import * as React from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 import { apiFetch } from '@respond/lib/api';
 import { Organization } from '@respond/types/organization';
 
-let cachedOrgs: Organization[] | null = null;
+const ORGANIZATIONS_QUERY_KEY = ['organizations'] as const;
 
 export default function useOrganizations() {
-  const [organizations, setOrganizations] = React.useState<Organization[] | null>(cachedOrgs);
-  const [loading, setLoading] = React.useState<boolean>(!cachedOrgs);
-
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ORGANIZATIONS_QUERY_KEY,
+    queryFn: async () => {
       const res = await apiFetch<{ data: Organization[] }>('/api/v1/organizations');
-      cachedOrgs = res.data;
-      setOrganizations(res.data);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return res.data;
+    },
+  });
 
-  React.useEffect(() => {
-    if (!cachedOrgs) {
-      load();
-    }
-  }, [load]);
-
-  const reload = React.useCallback(() => {
-    // clear cache and reload
-    cachedOrgs = null;
-    load();
-  }, [load]);
-
-  return { organizations, loading, reload } as const;
+  return { organizations: data ?? null, isLoading, isError, reload: refetch } as const;
 }
