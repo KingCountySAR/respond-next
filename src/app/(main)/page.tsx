@@ -15,7 +15,11 @@ import { Activity, isActive as isParticipantStatusActive } from '@respond/types/
 
 function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible: number, oldestVisible: number) {
   // Most recent first
-  const sort = (a: Activity, b: Activity) => (a.startTime > b.startTime ? -1 : 1);
+  const sort = (a: Activity, b: Activity) => {
+    // sort missions date descending. Other activities date ascending
+    const sign = a.isMission ? -1 : 1;
+    return a.startTime === b.startTime ? 0 : a.startTime > b.startTime ? sign : -sign;
+  };
 
   const active = activities.filter(isActive).sort(sort);
   const complete = activities
