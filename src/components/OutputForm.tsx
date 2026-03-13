@@ -1,6 +1,7 @@
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Grid, Typography } from '@mui/material';
+import Linkify from 'linkify-react';
 import Link from 'next/link';
 import React, { Children, ReactNode, useEffect, useRef, useState } from 'react';
 
@@ -134,6 +135,14 @@ export const OutputLink = ({ label, value, href, target }: { label: string; valu
           {value}
         </Link>
       )}
+    </OutputField>
+  );
+};
+
+export const OutputLinkified = ({ label, value, rows }: { label: string; value?: string; rows?: number }) => {
+  return (
+    <OutputField label={label} multiline>
+      <OutputShowMore rows={rows}>{value && <Linkify>{value}</Linkify>}</OutputShowMore>
     </OutputField>
   );
 };
