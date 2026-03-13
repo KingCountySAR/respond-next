@@ -13,6 +13,7 @@ import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
 import { ActivityActionsBar } from './ActivityPage';
 import { useActivityContext } from './ActivityProvider';
+import AddParticipantButton from './AddParticipantButton';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
@@ -42,9 +43,12 @@ export function DesktopActivityPage() {
         <Box display="flex" flex="1 1 auto" flexDirection="column">
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} display="flex" flexDirection="row" />
-            <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
-              View Roster
-            </Button>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <AddParticipantButton activity={activity} />
+              <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
+                View Roster
+              </Button>
+            </Stack>
           </Stack>
           <RosterPanel //
             filter={orgFilter}

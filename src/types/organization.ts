@@ -1,9 +1,12 @@
 import { MemberProviderType } from './data/MemberProviderType';
 
-export interface BaseOrganization {
+export interface Organization {
   id: string;
   title: string;
   rosterName?: string;
+}
+
+export interface BaseOrganization extends Organization {
   canCreateMissions: boolean;
   canCreateEvents: boolean;
 }

@@ -8,8 +8,8 @@ import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
 import { apiFetch } from '@respond/lib/api';
+import { MemberInfo } from '@respond/lib/server/memberProviders/memberProvider';
 import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
-import { ParticipantInfo } from '@respond/types/participant';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
@@ -47,7 +47,7 @@ const sortByStatus = (a: Participant, b: Participant) => {
 const sortAlphabetical = (a: Participant, b: Participant) => a.firstname.localeCompare(b.firstname);
 
 const findMember = async (orgId: string, memberId: string) => {
-  return (await apiFetch<{ data: ParticipantInfo }>(`/api/v1/organizations/${orgId}/members/${memberId}`)).data;
+  return (await apiFetch<{ data: MemberInfo }>(`/api/v1/organizations/${orgId}/members/${memberId}`)).data;
 };
 
 const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean = false) => {
@@ -114,7 +114,7 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
 export function ParticipantDialog({ open, participant, onClose }: { open: boolean; onClose: () => void; participant?: Participant }) {
   const activity = useActivityContext();
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
-  const [memberInfo, setMemberInfo] = useState<ParticipantInfo | undefined>();
+  const [memberInfo, setMemberInfo] = useState<MemberInfo | undefined>();
 
   useEffect(() => {
     if (participant) getMemberInfo(participant);
