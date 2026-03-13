@@ -23,10 +23,27 @@ interface RosterPanelProps {
   onClick?: (participant: Participant) => void;
 }
 
+// eslint-disable-next-line prettier/prettier
+const STATUS_SORT_ORDER = [
+  ParticipantStatus.SignedIn,
+  ParticipantStatus.Available,
+  ParticipantStatus.Assigned,
+  ParticipantStatus.Demobilized,
+  ParticipantStatus.Remote,
+  ParticipantStatus.Standby,
+  ParticipantStatus.SignedOut,
+  ParticipantStatus.NotResponding,
+];
+
 const etaStatus = (status: ParticipantStatus) => {
   return [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(status) ? 1 : 0;
 };
-const sortArrivingNext = (a: Participant, b: Participant) => etaStatus(b.timeline[0].status) - etaStatus(a.timeline[0].status) || (a.eta ?? Infinity) - (b.eta ?? Infinity);
+
+const sortByStatus = (a: Participant, b: Participant) => {
+  const statusIndexA = STATUS_SORT_ORDER.indexOf(a.timeline[0].status);
+  const statusIndexB = STATUS_SORT_ORDER.indexOf(b.timeline[0].status);
+  return statusIndexA - statusIndexB || etaStatus(b.timeline[0].status) - etaStatus(a.timeline[0].status) || (a.eta ?? Infinity) - (b.eta ?? Infinity);
+};
 const sortAlphabetical = (a: Participant, b: Participant) => a.firstname.localeCompare(b.firstname);
 
 const findMember = async (orgId: string, memberId: string) => {
@@ -45,15 +62,15 @@ const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean =
 
 export function RosterPanel({ filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
   const activity = useActivityContext();
-  const [sortEta, setSortEta] = useState(false);
+  const [sortOnStatus, setSortOnStatus] = useState(false);
   const [participants, setParticipants] = useState<Array<Participant>>(Object.values(activity.participants));
 
   useEffect(() => {
     let list = Object.values(activity.participants);
     if (filter) list = list.filter((p) => p.organizationId === filter);
-    list.sort(sortEta ? sortArrivingNext : sortAlphabetical);
+    list.sort(sortOnStatus ? sortByStatus : sortAlphabetical);
     setParticipants(list);
-  }, [activity, filter, sortEta]);
+  }, [activity, filter, sortOnStatus]);
 
   let cards: ReactNode = participants.map((p) => <Participant key={p.id} orgs={activity.organizations} participant={p} onClick={() => onClick?.(p)} />);
   if (participants.length == 0) {
@@ -68,8 +85,8 @@ export function RosterPanel({ filter, participantContainerComponent: Participant
     <Box flex="1 1 auto">
       <Stack direction="row" spacing={1} alignItems="center" justifyContent={'right'}>
         <Typography>Sort By: Name</Typography>
-        <Switch value={sortEta} onChange={(event) => setSortEta(event.target.checked)} color="primary" />
-        <Typography>ETA</Typography>
+        <Switch value={sortOnStatus} onChange={(event) => setSortOnStatus(event.target.checked)} color="primary" />
+        <Typography>Status</Typography>
       </Stack>
       <Participants>{cards}</Participants>
     </Box>
