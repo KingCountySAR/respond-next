@@ -3,17 +3,19 @@ import { getCookie } from 'hono/cookie'
 import { getSession, type Session } from '../lib/session.js'
 
 // Extend Hono's context variables type
-type AuthVariables = {
-  session: Session
+export type AuthVariables = {
+  login: Required<Pick<Session, 'login'>>['login']
 }
 
-export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(async (c, next) => {
+export const withApiLogin = createMiddleware<{ Variables: AuthVariables }>(async (c, next) => {
+  const errorBody = { error: 'Unauthorized' }
   const sessionId = getCookie(c, 'session')
-  if (!sessionId) return c.json({ error: 'Unauthorized' }, 401)
+  if (!sessionId) return c.json(errorBody, 401)
 
-  const session = getSession(sessionId)
-  if (!session) return c.json({ error: 'Session expired' }, 401)
+  const session = getSession(c, false)
+  if (!session?.login) return c.json(errorBody, 401)
 
-  c.set('session', session)
+  c.set('login', session.login)
+
   await next()
 })

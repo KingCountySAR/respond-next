@@ -1,12 +1,12 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { requireAuth } from '../middleware/auth'
+import { withApiLogin } from '../middleware/auth'
 
 export const eventsRoutes = new Hono()
 
 // Example SSE endpoint — replace the interval with your real event source
 // e.g. MongoDB change streams, pub/sub, polling, etc.
-eventsRoutes.get('/stream', requireAuth, (c) => {
+eventsRoutes.get('/stream', withApiLogin, (c) => {
   return streamSSE(c, async (stream) => {
     let count = 0
 

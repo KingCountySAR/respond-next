@@ -32,7 +32,7 @@ app.use('*', logger())
 // }
 
 // Routes
-app.route('/auth', authRoutes)
+app.route('/api/auth', authRoutes)
 app.route('/events', eventsRoutes)
 app.route('/api', apiRoutes)
 

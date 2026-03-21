@@ -3,9 +3,21 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   build: {
-    outDir: '../server/static'
+    outDir: '../server/static',
+    emptyOutDir: true,
   },
-  plugins: [react()],
+  plugins: [react({
+            babel: {
+                plugins: [
+                    [
+                        "@babel/plugin-proposal-decorators",
+                        {
+                            version: "2023-05"
+                        }
+                    ]
+                ]
+            }
+        })],
   server: {
     port: 3000,
     proxy: {

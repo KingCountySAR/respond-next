@@ -1,16 +1,13 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { requireAuth } from '../middleware/auth'
+import { AuthVariables, withApiLogin } from '../middleware/auth'
 import { getDb } from '../db/mongo'
-import type { Session } from '../lib/session'
 
-type Variables = { session: Session }
-
-export const apiRoutes = new Hono<{ Variables: Variables }>()
+export const apiRoutes = new Hono<{ Variables: AuthVariables }>()
 
 // All API routes require auth
-apiRoutes.use('*', requireAuth)
+apiRoutes.use('*', withApiLogin)
 
 // Example CRUD route — replace with your actual domain models
 apiRoutes.get('/items', async (c) => {
@@ -30,12 +27,12 @@ apiRoutes.post(
   ),
   async (c) => {
     const body = c.req.valid('json')
-    const session = c.get('session')
+    const login = c.get('login')
     const db = getDb()
 
     const result = await db.collection('items').insertOne({
       ...body,
-      createdBy: session.userId,
+      createdBy: login.id,
       createdAt: new Date(),
     })
 
