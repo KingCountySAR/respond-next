@@ -8,6 +8,6 @@
     "start": "npm run start -w server"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^9.2.1"
   }
 }
