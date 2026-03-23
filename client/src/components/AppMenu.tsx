@@ -1,7 +1,8 @@
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { Divider, IconButton, Menu, MenuItem } from '@mui/material';
-import { Link } from 'react-router';
 import * as React from 'react';
+import { Link } from 'react-router';
+
 import { useAuthContext } from '@respond/lib/authProvider';
 
 // import { PreferencesDialog } from './Preferences';
@@ -12,11 +13,11 @@ export function AppMenu() {
   const handleMenu = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => setMenuAnchor(event.currentTarget);
   const handleClose = () => setMenuAnchor(null);
 
-  const [openPreferences, setOpenPreferences] = React.useState(false);
-  const handleOpenPreferences = () => {
-    setOpenPreferences(true);
-  };
-  const handleClosePreferences = () => setOpenPreferences(false);
+  // const [openPreferences, setOpenPreferences] = React.useState(false);
+  // const handleOpenPreferences = () => {
+  //   setOpenPreferences(true);
+  // };
+  // const handleClosePreferences = () => setOpenPreferences(false);
 
   return (
     <>
@@ -43,7 +44,7 @@ export function AppMenu() {
           <MenuItem
             onClick={() => {
               handleClose();
-              handleOpenPreferences();
+              //handleOpenPreferences();
             }}
           >
             Preferences

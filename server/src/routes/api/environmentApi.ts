@@ -1,8 +1,9 @@
-import { BootDataResult } from "@app/shared";
-import { getUserFromSession } from "@server/lib/session";
-import { AuthVariables } from "@server/middleware/auth";
-import { EnvironmentService } from "@server/svc/environmentService";
-import { Hono } from "hono";
+import { BootDataResult } from '@app/shared';
+import { Hono } from 'hono';
+
+import { getUserFromSession } from '@server/lib/session';
+import { AuthVariables } from '@server/middleware/auth';
+import { EnvironmentService } from '@server/svc/environmentService';
 
 export function setupEnvironmentApi(envService: EnvironmentService, googleClientId: string) {
   const apiRoutes = new Hono<{ Variables: AuthVariables }>();
@@ -15,7 +16,7 @@ export function setupEnvironmentApi(envService: EnvironmentService, googleClient
         googleClientId,
         environment: await envService.getClientEnvironment(new URL(c.req.url).hostname),
       }
-    }
+    };
     const sessionLogin = await getUserFromSession(c);
     if (sessionLogin) {
       const { id, ...clientParts } = sessionLogin;

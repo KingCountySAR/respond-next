@@ -1,5 +1,6 @@
-import { useAuthContext } from '@respond/lib/authProvider'
-import { LoginPanel } from '../components/LoginPanel'
+import { useAuthContext } from '@respond/lib/authProvider';
+
+import { LoginPanel } from '../components/LoginPanel';
 
 export function LoginPage() {
   const auth = useAuthContext();
@@ -8,5 +9,5 @@ export function LoginPage() {
       <h1>Welcome</h1>
       {auth.loggedIn ? null : <LoginPanel />}
     </div>
-  )
+  );
 }

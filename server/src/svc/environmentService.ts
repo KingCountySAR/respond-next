@@ -1,5 +1,6 @@
-import type { ClientEnvironment } from "@app/shared/api";
-import { OrganizationService } from "./organizationService";
+import type { ClientEnvironment } from '@app/shared/api';
+
+import { OrganizationService } from './organizationService';
 
 
 

@@ -1,4 +1,3 @@
-import * as React from 'react';
 import CloudIcon from '@mui/icons-material/Cloud';
 import NoCloudIcon from '@mui/icons-material/CloudOff';
 import { Breakpoint, Container, Stack } from '@mui/material';
@@ -7,13 +6,16 @@ import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import { observer } from 'mobx-react-lite';
+import * as React from 'react';
+import { Link } from 'react-router';
 
 import { AppMenu } from '@respond/components/AppMenu';
 import { LoginPanel } from '@respond/components/LoginPanel';
-import { Link } from 'react-router';
-import { useConfigContext } from '@respond/lib/configProvider';
-import { observer } from 'mobx-react-lite';
 import { useAuthContext } from '@respond/lib/authProvider';
+import { useConfigContext } from '@respond/lib/configProvider';
+
+
 
 export const ToolbarPage = observer(({ children, maxWidth }: { children: React.ReactNode; maxWidth?: false | Breakpoint }) => {
   // const { connected } = useAppSelector((state) => state.sync);
@@ -56,4 +58,4 @@ export const ToolbarPage = observer(({ children, maxWidth }: { children: React.R
       </Box>
     </Container>
   );
-})
+});

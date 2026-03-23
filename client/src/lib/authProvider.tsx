@@ -1,7 +1,9 @@
-import { createContext, useContext } from 'react';
-import { observer } from 'mobx-react-lite';
-import { AuthStore } from '../store/authStore';
 import { ClientLogin } from '@app/shared';
+import { observer } from 'mobx-react-lite';
+import { createContext, useContext } from 'react';
+
+import { AuthStore } from '../store/authStore';
+
 
 interface AuthContext {
   readonly working: boolean
@@ -15,7 +17,7 @@ const AuthContextInstance = createContext<AuthContext | null>(null);
 
 export const AuthProvider = observer(({ store, children }: { store: AuthStore; children: React.ReactNode }) => (
   <AuthContextInstance.Provider value={store}>{children}</AuthContextInstance.Provider>
-))
+));
 
 export const useAuthContext = () => {
   const authContext = useContext(AuthContextInstance);

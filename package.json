@@ -1,13 +1,28 @@
 {
   "name": "hono-vite-scaffold",
   "private": true,
-  "workspaces": ["server", "shared", "client"],
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client && npm run build -w server",
-    "start": "npm run start -w server"
+    "start": "npm run start -w server",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "@eslint/js": "^9.39.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "typescript-eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-import-x": "^4.16.2",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "globals": "^17.4.0"
   }
 }

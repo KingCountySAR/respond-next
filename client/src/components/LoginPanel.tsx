@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
+import { useEffect, useRef } from 'react';
+
 import { useAuthContext } from '@respond/lib/authProvider';
 
 declare global {
@@ -23,11 +24,11 @@ export const LoginPanel = observer(() => {
     if (ref.current) {
       auth.setupButton(ref.current);
     }
-  }, []);
+  }, [ auth ]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center'}}>
+    <div style={{ display: 'flex', alignItems: 'center' }}>
       <div ref={ref} id="google-signin-btn" /> {auth.working ? '...' : ''}
     </div>
-  )
+  );
 });

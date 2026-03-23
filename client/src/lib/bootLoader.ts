@@ -1,4 +1,4 @@
-import { BootData, BootDataResult, ClientEnvironment } from '@app/shared/api';
+import { BootData, BootDataResult } from '@app/shared/api';
 
 
 declare global {

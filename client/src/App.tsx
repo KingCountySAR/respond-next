@@ -1,7 +1,9 @@
-import { LoginPage } from './pages/LoginPage'
-import { observer } from 'mobx-react-lite'
-import { useAuthContext } from './lib/authProvider'
-import { ToolbarPage } from '@respond/components/ToolbarPage'
+import { observer } from 'mobx-react-lite';
+
+import { ToolbarPage } from '@respond/components/ToolbarPage';
+
+import { useAuthContext } from './lib/authProvider';
+import { LoginPage } from './pages/LoginPage';
 
 const AppPage = observer(() => {
   // useSSE({
@@ -10,7 +12,7 @@ const AppPage = observer(() => {
   //     setUpdates((prev) => [`${new Date().toLocaleTimeString()} — ${JSON.stringify(data)}`, ...prev.slice(0, 19)])
   //   },
   // })
-  const { logout, user } = useAuthContext()
+  const { logout, user } = useAuthContext();
 
   return (
     <ToolbarPage>
@@ -29,12 +31,12 @@ const AppPage = observer(() => {
         </ul>
       </div>
     </ToolbarPage>
-  )
-})
+  );
+});
 
 const App = observer(() => {
   const auth = useAuthContext();
-  return auth.loggedIn ? <AppPage /> : <LoginPage />
-})
+  return auth.loggedIn ? <AppPage /> : <LoginPage />;
+});
 
 export default App;

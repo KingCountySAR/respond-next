@@ -1,12 +1,13 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
-import { ConfigStore } from './store/configStore';
-import { AuthStore } from './store/authStore';
+
+import App from './App';
+import { AuthProvider } from './lib/authProvider';
 import { loadBootData } from './lib/bootLoader';
 import { ConfigProvider } from './lib/configProvider';
-import { AuthProvider } from './lib/authProvider';
-import App from './App';
+import { AuthStore } from './store/authStore';
+import { ConfigStore } from './store/configStore';
 
 async function boot() {
   const bootData = await loadBootData();
