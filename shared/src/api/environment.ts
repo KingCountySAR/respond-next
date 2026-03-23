@@ -3,8 +3,12 @@ import { ApiResult } from './common.js';
 import { ClientLogin } from './index.js';
 
 export interface ClientEnvironment {
-  readonly shortTitle: string;
-  readonly primaryColor: string;
+  readonly title: string;
+  readonly shortTitle?: string;
+  readonly brand: {
+    readonly primary: string;
+    readonly primaryDark?: string;
+  }
 }
 
 export interface BootData {

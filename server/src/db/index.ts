@@ -1,6 +1,6 @@
-import { Session } from '@server/lib/session';
+import { Session } from '@server/lib/session.js';
 
-export { getDb } from './mongo';
+export { getDb } from './mongo.js';
 
 export interface SessionDoc {
   sessionId: string;

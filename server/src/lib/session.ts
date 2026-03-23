@@ -3,9 +3,9 @@ import { randomBytes } from 'crypto';
 import { Context } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 
-import { SessionDoc, SESSIONS_COLLECTION } from '@server/db';
-import { getDb } from '@server/db/mongo';
-import { SessionLogin } from '@server/model/auth';
+import { SessionDoc, SESSIONS_COLLECTION } from '@server/db/index.js';
+import { getDb } from '@server/db/mongo.js';
+import { SessionLogin } from '@server/model/auth.js';
 
 export interface Session {
   id: string
@@ -16,7 +16,6 @@ export interface Session {
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 export async function updateSession(session: Session, update: Partial<Omit<Session, 'id'>>) {
-  console.log('updating', session, update);
   const updated = { ...session, ...update };
   setSession(updated);
   return updated;
@@ -65,10 +64,8 @@ export async function deleteSession(id: string) {
 async function getSessionFromDb(id: string): Promise<Session | undefined> {
   const doc = await getDb().collection<SessionDoc>(SESSIONS_COLLECTION).findOne({ sessionId: id });
   if (!doc) {
-    console.log('session not found', id);
     return undefined;
   }
-  console.log('found session', doc);
   return {
     ...doc.content,
     id: doc.sessionId,
@@ -77,7 +74,6 @@ async function getSessionFromDb(id: string): Promise<Session | undefined> {
 }
 
 async function setSession(session: Session) {
-  console.log('setting session', session);
   const { id, expiresAt, ...content } = session;
   await getDb()
     .collection<SessionDoc>(SESSIONS_COLLECTION)

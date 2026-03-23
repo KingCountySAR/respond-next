@@ -3,7 +3,7 @@ import { deleteCookie } from 'hono/cookie';
 
 import { SessionLogin } from '@server/model/auth.js';
 
-import { deleteSession, getSession, updateSession } from '../lib/session';
+import { deleteSession, getSession, updateSession } from '../lib/session.js';
 
 export const authRoutes = new Hono();
 

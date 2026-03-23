@@ -13,7 +13,7 @@
     "start": "npm run start -w server",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "checks": "npm run build && npm run lint"
+    "checks": "npm run lint && npm run build"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

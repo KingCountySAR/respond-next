@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 
-import { withApiLogin } from '../middleware/auth';
+import { withApiLogin } from '../middleware/auth.js';
 
 export const eventsRoutes = new Hono();
 

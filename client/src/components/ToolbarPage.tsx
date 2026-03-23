@@ -34,7 +34,7 @@ export const ToolbarPage = observer(({ children, maxWidth }: { children: React.R
         <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             <Link to="/" style={{ textDecoration: 'inherit', color: 'inherit' }}>
-              {config.env.data.shortTitle} Check-In
+              {config.env.shortTitle} Check-In
             </Link>
           </Typography>
           <Typography variant="h6" noWrap component="div">

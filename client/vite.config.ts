@@ -30,6 +30,8 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
+    host: true,
+    allowedHosts: true,
     proxy: {
       // Proxy /api, /auth, /events to the Hono server in dev
       // This means the browser never does cross-origin requests — no CORS headaches

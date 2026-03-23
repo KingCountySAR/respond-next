@@ -1,19 +1,21 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
+import { BootData } from '@app/shared';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { Hono } from 'hono';
+import { Context, Hono } from 'hono';
 import { logger } from 'hono/logger';
 
-import './config';
-import { connectDb } from './db/mongo';
-import { setupApiRoutes } from './routes/api';
-import { setupEnvironmentApi } from './routes/api/environmentApi';
-import { authRoutes } from './routes/auth';
-import { eventsRoutes } from './routes/events';
-import { EnvironmentService } from './svc/environmentService';
-import { OrganizationService } from './svc/organizationService';
+import './config.js';
+import { connectDb } from './db/mongo.js';
+import { domainFromRequest } from './lib/request.js';
+import { getUserFromSession } from './lib/session.js';
+import { setupEnvironmentApi } from './routes/api/environmentApi.js';
+import { setupApiRoutes } from './routes/api/index.js';
+import { authRoutes } from './routes/auth.js';
+import { eventsRoutes } from './routes/events.js';
+import { OrganizationService } from './svc/organizationService.js';
 
 // In production, the client build output is expected at ../../client/dist
 // relative to the compiled server — adjust if your build layout differs
@@ -23,9 +25,23 @@ if (!GOOGLE_CLIENT_ID) {
   throw new Error('GOOGLE_CLIENT_ID missing from config');
 }
 
-
 const orgService = new OrganizationService();
-const envService = new EnvironmentService(orgService);
+
+async function getBootDataForRequest(c: Context): Promise<BootData> {
+  const domain = domainFromRequest(c);
+
+  const data: BootData = {
+    googleClientId: GOOGLE_CLIENT_ID!,
+    environment: await orgService.getEnvironmentForDomain(domain),
+  };
+  const sessionLogin = await getUserFromSession(c);
+  if (sessionLogin) {
+    const { id, ...clientParts } = sessionLogin;
+    data.login = clientParts;
+  }
+  return data;
+}
+
 
 const app = new Hono();
 
@@ -36,20 +52,34 @@ app.use('*', logger());
 app.route('/api/auth', authRoutes);
 app.route('/events', eventsRoutes);
 app.route('/api', setupApiRoutes());
-app.route('/api', setupEnvironmentApi(envService, GOOGLE_CLIENT_ID));
+app.route('/api', setupEnvironmentApi(getBootDataForRequest));
 app.get('/api', (c) => c.json({ error: 'Not found' }, 404));
 
 // Health check
 app.get('/health', (c) => c.json({ ok: true }));
 
+const indexHandler = async (c: Context) => {
+  const accept = c.req.header('Accept') ?? '';
+  if (accept.length > 0 && !accept.includes('text/html')) {
+    return c.text('not found', 404);
+  }
+
+  const data = await getBootDataForRequest(c);
+  const script = `<script>window.environmentBootConfig = ${JSON.stringify(data).replace(/</g, '\\u003c')};</script>`;
+
+  let html = readFileSync(resolve(CLIENT_DIST, 'index.html'), 'utf-8');
+  html = html.replace('<!-- BOOT_DATA -->', script);
+  console.log('the html', html);
+  return c.html(html);
+};
+
+app.get('/', indexHandler);
+
 // Static assets (JS/CSS/images from Vite build)
-app.use('*', serveStatic({ root: CLIENT_DIST }));
+app.use('*', serveStatic({ root: CLIENT_DIST, onFound: (path, _c) => { console.log('found path', path); } }));
 
 // SPA fallback — any unmatched route serves index.html so React Router can handle it
-app.get('*', (c) => {
-  const html = readFileSync(resolve(CLIENT_DIST, 'index.html'), 'utf-8');
-  return c.html(html);
-});
+app.get('*', indexHandler);
 
 // Boot
 const PORT = Number(process.env.PORT ?? 3000);

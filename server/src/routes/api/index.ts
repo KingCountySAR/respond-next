@@ -2,8 +2,8 @@ import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
-import { getDb } from '@server/db/mongo';
-import { AuthVariables } from '@server/middleware/auth';
+import { getDb } from '@server/db/mongo.js';
+import { AuthVariables } from '@server/middleware/auth.js';
 
 
 export function setupApiRoutes() {
