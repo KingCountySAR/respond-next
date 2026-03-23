@@ -7,9 +7,13 @@
     "rootDir": "./src",
     "strict": true,
     "skipLibCheck": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@server/*": ["./src/*"]
+    }
   },
   "include": [
     "src"
-  ]
+   ]
 }

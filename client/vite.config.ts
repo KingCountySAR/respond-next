@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
+import path from 'path';
 
 export default defineConfig({
   build: {
@@ -9,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'react-dom': 'react-dom',
+      '@respond': path.resolve(__dirname, './src'),
     },
     dedupe: ['react', 'react-dom', 'mobx', 'mobx-react-lite'],
   },

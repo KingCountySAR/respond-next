@@ -12,7 +12,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@respond/*": ["./src/*"],
+      "@api/*": ["./src/model/api/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../shared/src/api/environment.ts", "../shared/src/api/index.ts"],
 }

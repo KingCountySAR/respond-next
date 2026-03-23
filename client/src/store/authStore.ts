@@ -1,10 +1,5 @@
+import { ClientLogin } from '@app/shared'
 import { action, computed, makeObservable, observable, runInAction } from 'mobx'
-
-export interface LoginUser {
-  email: string
-  name: string
-  picture?: string
-}
 
 export class AuthStore {
   @observable accessor working: boolean = false
@@ -12,15 +7,14 @@ export class AuthStore {
 
   @observable accessor error: string = ''
 
-  @observable accessor user: LoginUser|undefined = undefined
+  @observable accessor user: ClientLogin|undefined = undefined
 
-  @observable private accessor clientId: string = ''
-
-  private initPromise: Promise<void>|undefined = undefined
   private gsiPromise: Promise<void> | undefined = undefined
 
-  constructor() {
-    makeObservable(this)
+  constructor(private readonly googleClientId: string, initialLogin: ClientLogin|undefined) {
+    makeObservable(this);
+    this.googleClientId = googleClientId;
+    runInAction(() => this.user = initialLogin);
   }
 
   @computed
@@ -28,50 +22,11 @@ export class AuthStore {
     return this.user != null
   }
 
-  async init() {
-    if (!this.initPromise) {
-      this.initPromise = new Promise(this.initBody)
-    }
-    return this.initPromise
-  }
-
-  @action.bound
-  private async initBody(resolve: () => void) {
-    this.working = true
-    try {
-      const response = await fetch('/api/auth/me', { credentials: 'include' })
-      if (response.ok) {
-        const json = await response.json()
-        runInAction(() => {
-          if (json.clientId) {
-            this.clientId = json.clientId
-          } else {
-            this.user = json.login
-          }
-          this.inited = true
-        })
-      } else {
-        console.log('cant get auth info', await response.text())
-      }
-    } catch (e) {
-      runInAction(() => {
-        this.user = undefined
-        this.error = e + ''
-      })
-    } finally {
-      runInAction(() => {
-        this.working = false
-      })
-    }
-    resolve()
-  }
-
   /**
    * Configures a DIV element to be a Google GSI login button. Loads the GSI script if it hasn't been loaded
    * @param button The button
    */
   async setupButton(button: HTMLDivElement) {
-    await this.init()
     await this.loadGsiScript()
 
     await this.gsiPromise
@@ -84,9 +39,13 @@ export class AuthStore {
     }
   }
 
+  /**
+   * Load the script for Google client-side login button
+   * @returns 
+   */
   private loadGsiScript(): Promise<void>   {
     if (!this.gsiPromise) {
-      if (!this.clientId) {
+      if (!this.googleClientId) {
         throw new Error('dont have auth config')
       }
 
@@ -100,7 +59,7 @@ export class AuthStore {
           }
 
           window.google.accounts.id.initialize({
-            client_id: this.clientId,
+            client_id: this.googleClientId,
             callback: async ({ credential }: { credential: string }) => {
               await this.processCredential(credential)
             },
@@ -114,6 +73,11 @@ export class AuthStore {
     return this.gsiPromise
   }
 
+  /**
+   * Convert Google GSI token into a login session
+   * @param credential credential from Google GSI button
+   * @returns 
+   */
   @action.bound
   private async processCredential(credential: string) {
     this.working = true
@@ -134,6 +98,9 @@ export class AuthStore {
     return Promise.resolve()
   }
 
+  /**
+   * Logout of the app and destroy the server session
+   */
   @action.bound
   async logout() {
     this.working = true

@@ -12,7 +12,7 @@ export const withApiLogin = createMiddleware<{ Variables: AuthVariables }>(async
   const sessionId = getCookie(c, 'session')
   if (!sessionId) return c.json(errorBody, 401)
 
-  const session = getSession(c, false)
+  const session = await getSession(c, false)
   if (!session?.login) return c.json(errorBody, 401)
 
   c.set('login', session.login)

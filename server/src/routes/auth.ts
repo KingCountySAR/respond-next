@@ -2,8 +2,19 @@ import { Hono } from 'hono'
 import { deleteCookie } from 'hono/cookie'
 import { getDb } from '../db/mongo.js'
 import { updateSession, deleteSession, getSession } from '../lib/session'
+import { SessionLogin } from '@server/model/auth.js'
 
 export const authRoutes = new Hono()
+
+interface GoogleUser {
+  sub: string
+  email?: string
+  name?: string
+  picture?: string
+  aud?: string
+  exp?: string
+  hd?: string
+}
 
 // Verify a Google ID token and exchange it for a session cookie.
 // The token is obtained entirely client-side via Google Identity Services —
@@ -17,15 +28,7 @@ authRoutes.post('/google', async (c) => {
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`)
   if (!res.ok) return c.json({ error: 'Invalid token' }, 401)
 
-  const payload = await res.json() as {
-    sub: string
-    email?: string
-    name?: string
-    picture?: string
-    aud?: string
-    exp?: string
-    hd?: string
-  }
+  const payload = await res.json() as GoogleUser
 
   // Ensure the token was issued for your client ID, not someone else's app
   if (payload.aud !== process.env.GOOGLE_CLIENT_ID) {
@@ -43,35 +46,23 @@ authRoutes.post('/google', async (c) => {
   // const existingUser = await db.collection('users').findOne({ email: payload.email })
   // if (!existingUser) return c.json({ error: 'Unauthorized' }, 403)
 
-  const login = {
+  const login: SessionLogin = {
       id: payload.sub,
       name: payload.name ?? 'Unknown',
       email: payload.email,
       picture: payload.picture,
     }
 
-  await updateSession(getSession(c, true), { login })
+  await updateSession(await getSession(c, true), { login })
   const { id, ...clientLogin } = login;
   return c.json({ ok: true, login: clientLogin })
 })
 
 authRoutes.post('/logout', async (c) => {
-  const session = getSession(c)
+  const session = await getSession(c)
   if (session) {
     deleteSession(session.id)
     deleteCookie(c, 'session')
   }
   return c.json({ ok: true })
-})
-
-authRoutes.get('/me', (c) => {
-  const session = getSession(c, false)
-  const clientId = process.env.GOOGLE_CLIENT_ID
-  if (session?.login) {
-    // Hide the id from the client
-    const { id, ...login } = session.login
-    return c.json({ login, clientId })
-  } else {
-    return c.json({ clientId })
-  }
 })

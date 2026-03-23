@@ -1,11 +1,14 @@
 import { createContext, useContext } from 'react';
-import { AuthStore, LoginUser } from '../store/authStore';
 import { observer } from 'mobx-react-lite';
+import { AuthStore } from '../store/authStore';
+import { ClientLogin } from '@app/shared';
 
 interface AuthContext {
-  loggedIn: boolean
-  user: LoginUser|undefined;
-  logout: () => Promise<void>
+  readonly working: boolean
+  readonly loggedIn: boolean
+  readonly user: ClientLogin|undefined
+  logout(): Promise<void>
+  setupButton(button: HTMLDivElement): Promise<void>
 }
 
 const AuthContextInstance = createContext<AuthContext | null>(null);

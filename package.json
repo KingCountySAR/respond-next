@@ -1,7 +1,7 @@
 {
   "name": "hono-vite-scaffold",
   "private": true,
-  "workspaces": ["server", "client"],
+  "workspaces": ["server", "shared", "client"],
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client && npm run build -w server",

@@ -1,26 +1,22 @@
 import { randomBytes } from 'crypto'
 import { Context } from 'hono'
 import { getCookie, setCookie } from 'hono/cookie'
-
-// In-memory session store — swap for Redis/Mongo in production if you need persistence across restarts
-const sessions = new Map<string, Session>()
+import { getDb } from '@server/db/mongo'
+import { SessionDoc, SESSIONS_COLLECTION } from '@server/db'
+import { SessionLogin } from '@server/model/auth'
 
 export interface Session {
   id: string
-  login?: {
-    id: string
-    email: string
-    name: string
-    picture?: string
-  }
+  login?: SessionLogin
   expiresAt: Date
 }
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
 
 export async function updateSession(session: Session, update: Partial<Omit<Session, 'id'>>) {
+  console.log('updating', session, update);
   const updated = { ...session, ...update }
-  sessions.set(session.id, updated)
+  setSession(updated);
   return updated
 }
 
@@ -32,22 +28,22 @@ function createSession(): Session {
   return session
 }
 
-export function getSession(c: Context<any, any, {}>, create?: false): Session | undefined;
-export function getSession(c: Context<any, any, {}>, create: true): Session;
-export function getSession(c: Context<any, any, {}>, create?: boolean): Session | undefined {
-  let session: Session|undefined = undefined
+export function getSession(c: Context<any, any, {}>, create?: false): Promise<Session | undefined>;
+export function getSession(c: Context<any, any, {}>, create: true): Promise<Session>;
+export async function getSession(c: Context<any, any, {}>, create?: boolean): Promise<Session | undefined> {
+  let session: Session | undefined = undefined
   const id = getCookie(c, 'session')
   if (id) {
-    session = sessions.get(id)
+    session = await getSessionFromDb(id);
     if (session && session.expiresAt < new Date()) {
-      sessions.delete(id)
+      await deleteSession(id);
       session = undefined
     }
   }
-  
+
   if (!session && create) {
     session = createSession()
-    sessions.set(session.id, session)
+    setSession(session);
     setCookie(c, 'session', session.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -60,6 +56,42 @@ export function getSession(c: Context<any, any, {}>, create?: boolean): Session 
   return session
 }
 
-export function deleteSession(id: string) {
-  sessions.delete(id)
+export async function deleteSession(id: string) {
+  await getDb().collection<SessionDoc>(SESSIONS_COLLECTION).deleteOne({ sessionId: id });
+}
+
+async function getSessionFromDb(id: string): Promise<Session | undefined> {
+  const doc = await getDb().collection<SessionDoc>(SESSIONS_COLLECTION).findOne({ sessionId: id });
+  if (!doc) {
+    console.log('session not found', id);
+    return undefined;
+  }
+  console.log('found session', doc)
+  return {
+    ...doc.content,
+    id: doc.sessionId,
+    expiresAt: new Date(doc.expires),
+  }
+}
+
+async function setSession(session: Session) {
+  console.log('setting session', session);
+  const { id, expiresAt, ...content } = session;
+  await getDb()
+    .collection<SessionDoc>(SESSIONS_COLLECTION)
+    .replaceOne(
+      { sessionId: id },
+      {
+        sessionId: id,
+        version: 1,
+        content,
+        expires: expiresAt.toISOString(),
+      },
+      { upsert: true }
+    );
+}
+
+export async function getUserFromSession(c: Context<any, any, {}>): Promise<SessionLogin | undefined> {
+  const session = await getSession(c);
+  return session?.login;
 }
