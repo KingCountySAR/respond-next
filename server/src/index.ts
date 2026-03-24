@@ -13,7 +13,7 @@ import { domainFromRequest } from './lib/request.js';
 import { getUserFromSession } from './lib/session.js';
 import { setupEnvironmentApi } from './routes/api/environmentApi.js';
 import { setupApiRoutes } from './routes/api/index.js';
-import { authRoutes } from './routes/auth.js';
+import { setupAuthRoutes } from './routes/auth.js';
 import { eventsRoutes } from './routes/events.js';
 import { OrganizationService } from './svc/organizationService.js';
 
@@ -49,7 +49,7 @@ const app = new Hono();
 app.use('*', logger());
 
 // Routes
-app.route('/api/auth', authRoutes);
+app.route('/api/auth', setupAuthRoutes(orgService));
 app.route('/events', eventsRoutes);
 app.route('/api', setupApiRoutes());
 app.route('/api', setupEnvironmentApi(getBootDataForRequest));
@@ -69,14 +69,15 @@ const indexHandler = async (c: Context) => {
 
   let html = readFileSync(resolve(CLIENT_DIST, 'index.html'), 'utf-8');
   html = html.replace('<!-- BOOT_DATA -->', script);
-  console.log('the html', html);
   return c.html(html);
 };
 
 app.get('/', indexHandler);
 
 // Static assets (JS/CSS/images from Vite build)
-app.use('*', serveStatic({ root: CLIENT_DIST, onFound: (path, _c) => { console.log('found path', path); } }));
+app.use('*', serveStatic({ root: CLIENT_DIST, onFound: (_path, c) => {
+  c.header('Cache-Control', 'public, immutable, max-age=60400'); // Cache for 1 week
+} }));
 
 // SPA fallback — any unmatched route serves index.html so React Router can handle it
 app.get('*', indexHandler);

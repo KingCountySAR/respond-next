@@ -19,5 +19,5 @@
       "@api/*": ["./src/model/api/*"]
     }
   },
-  "include": ["src", "../shared/src/api/environment.ts", "../shared/src/api/index.ts"],
+  "include": ["src"],
 }

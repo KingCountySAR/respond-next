@@ -1,11 +1,3 @@
-import { MemberProviderType } from './memberProviderType.js';
-
-export interface MemberProviderConfig {
-  provider: MemberProviderType;
-  token: string;
-  moreEmailsField: 'Secondary Email';
-}
-
 export const ORGS_COLLECTION = 'organizations';
 
 export interface OrganizationPartner {
@@ -15,6 +7,15 @@ export interface OrganizationPartner {
   canCreateEvents: boolean;
   canCreateMissions: boolean;
 }
+
+export interface WhitelistLoginProvider {
+  type: 'whitelist';
+  list: string[];
+}
+export interface MembershipLoginProvider {
+  type: 'membership';
+}
+export type LoginProvider = WhitelistLoginProvider | MembershipLoginProvider;
 
 export interface OrganizationDoc {
   id: string;
@@ -29,6 +30,7 @@ export interface OrganizationDoc {
     homeScreenIconUrl?: string;
   };
   memberProvider: string;
+  loginProviders: LoginProvider[];
   canCreateEvents: boolean;
   canCreateMissions: boolean;
   supportEmail?: string;
