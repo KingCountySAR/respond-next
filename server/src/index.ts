@@ -13,6 +13,7 @@ import { domainFromRequest } from './lib/request.js';
 import { getUserFromSession } from './lib/session.js';
 import { setupEnvironmentApi } from './routes/api/environmentApi.js';
 import { setupApiRoutes } from './routes/api/index.js';
+import { setupLocationRoutes } from './routes/api/locationsApi.js';
 import { setupAuthRoutes } from './routes/auth.js';
 import { eventsRoutes } from './routes/events.js';
 import { OrganizationService } from './svc/organizationService.js';
@@ -53,6 +54,7 @@ app.route('/api/auth', setupAuthRoutes(orgService));
 app.route('/events', eventsRoutes);
 app.route('/api', setupApiRoutes(orgService));
 app.route('/api', setupEnvironmentApi(getBootDataForRequest));
+app.route('/api', setupLocationRoutes());
 app.get('/api', (c) => c.json({ error: 'Not found' }, 404));
 
 // Health check

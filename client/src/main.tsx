@@ -2,7 +2,6 @@ import { ThemeProvider } from '@mui/material/styles';
 import { observer } from 'mobx-react-lite';
 import { PropsWithChildren, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
 
 import App from './App';
 import { AuthProvider, useAuthContext } from './lib/authProvider';
@@ -12,6 +11,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ActivitiesProvider, ActivitiesStore } from './store/activitiesStore';
 import { AuthStore } from './store/authStore';
 import { ConfigStore } from './store/configStore';
+import { LocationsProvider, LocationsStore } from './store/locationsStore';
 
 const ObservableThemeProvider = observer(({ children }: PropsWithChildren<unknown>) => {
   const config = useConfigContext();
@@ -32,6 +32,7 @@ async function boot() {
   const bootData = await loadBootData();
   const configStore = new ConfigStore(bootData.environment);
   const authStore = new AuthStore(bootData.googleClientId, bootData.login);
+  const locationsStore = new LocationsStore();
 
   const activitiesStore = new ActivitiesStore('participantid');
 
@@ -39,15 +40,15 @@ async function boot() {
     <StrictMode>
       <ConfigProvider store={configStore}>
         <AuthProvider store={authStore}>
-          <BrowserRouter>
-            <ObservableThemeProvider>
-              <AppLoginGuard>
+          <ObservableThemeProvider>
+            <AppLoginGuard>
+              <LocationsProvider store={locationsStore}>
                 <ActivitiesProvider store={activitiesStore}>
                   <App />
                 </ActivitiesProvider>
-              </AppLoginGuard>
-            </ObservableThemeProvider>
-          </BrowserRouter>
+              </LocationsProvider>
+            </AppLoginGuard>
+          </ObservableThemeProvider>
         </AuthProvider>
       </ConfigProvider>
     </StrictMode>

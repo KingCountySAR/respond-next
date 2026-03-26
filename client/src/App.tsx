@@ -1,11 +1,9 @@
-//import { Button } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-
-// import { ToolbarPage } from '@respond/components/ToolbarPage';
+import { createBrowserRouter, RouterProvider } from 'react-router';
 
 import { useAuthContext } from './lib/authProvider';
-import { MainRoutes } from './MainRoutes';
 import { LoginPage } from './pages/LoginPage';
+import routes from './pages/Routes';
 
 // const AppPage = observer(() => {
 //   // useSSE({
@@ -37,9 +35,13 @@ import { LoginPage } from './pages/LoginPage';
 //   );
 // });
 
+const router = createBrowserRouter([
+  ...routes
+]);
+
 const App = observer(() => {
   const auth = useAuthContext();
-  return auth.loggedIn ? <MainRoutes /> : <LoginPage />;
+  return auth.loggedIn ? <RouterProvider router={router}/> : <LoginPage />;
 });
 
 export default App;
