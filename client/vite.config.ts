@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       'react-dom': 'react-dom',
+      '@public': path.resolve(__dirname, './public'),
       '@respond': path.resolve(__dirname, './src'),
     },
     dedupe: ['react', 'react-dom', 'mobx', 'mobx-react-lite'],

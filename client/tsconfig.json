@@ -15,6 +15,7 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
+      "@public/*": ["./public/*"],
       "@respond/*": ["./src/*"],
       "@api/*": ["./src/model/api/*"]
     }

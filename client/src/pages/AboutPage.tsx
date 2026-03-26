@@ -1,4 +1,5 @@
 import { Box, Divider, Link, Paper, Stack, Typography, TypographyVariant } from '@mui/material';
+import ActivityTileImage from '@public/about/activity-tile.jpg';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 
 const APP_BAR_OFFSET = 52;
@@ -140,7 +141,7 @@ function AboutCaltopo() {
             </Paragraph>
           </Box>
           <Box sx={{ minWidth: 1 / 3, maxWidth: 300 }}>
-            <img src="/about/activity-tile.jpg" alt="Activity Tile" width="100%" />
+            <img src={ActivityTileImage} alt="Activity Tile" width="100%" />
           </Box>
         </Stack>
       </Section>
