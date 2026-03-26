@@ -1,9 +1,9 @@
-import { Hono } from 'hono';
-import { deleteCookie } from 'hono/cookie';
 
 import { domainFromRequest } from '@server/lib/request.js';
 import { SessionLogin } from '@server/model/auth.js';
 import { OrganizationService } from '@server/svc/organizationService.js';
+import { Hono } from 'hono';
+import { deleteCookie } from 'hono/cookie';
 
 import { deleteSession, getSession, updateSession } from '../lib/session.js';
 

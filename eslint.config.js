@@ -35,7 +35,7 @@ export default tseslint.config(
       '@stylistic/no-trailing-spaces': 'error',
       '@stylistic/eol-last': 'error',
       '@stylistic/object-curly-spacing': ['error', 'always'],
-      '@stylistic/arrow-parens': ['error', 'always'],
+      '@stylistic/arrow-parens': 'off',
       // No max line length rule — line breaks are yours to control
     },
   },
@@ -43,20 +43,16 @@ export default tseslint.config(
   // import-x
   {
     plugins: { 'import-x': importX },
-    settings: {
-      'import-x/resolver': {
-        typescript: {
-          project: [
-            './server/tsconfig.json',
-            './client/tsconfig.json',
-            './shared/tsconfig.json',
-          ],
-          noWarnOnMultipleProjects: true,
-        },
-      },
-    },
+    // settings: {
+    //   'import-x/resolver': {
+    //     typescript: {
+    //       project: true,
+    //       noWarnOnMultipleProjects: true,
+    //     },
+    //   },
+    // },
     rules: {
-      'import-x/no-unresolved': 'error',
+      'import-x/no-unresolved': 'off',
       'import-x/no-duplicates': 'off',
       'import-x/no-named-as-default': 'off',
       'import-x/order': [

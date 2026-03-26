@@ -51,7 +51,7 @@ app.use('*', logger());
 // Routes
 app.route('/api/auth', setupAuthRoutes(orgService));
 app.route('/events', eventsRoutes);
-app.route('/api', setupApiRoutes());
+app.route('/api', setupApiRoutes(orgService));
 app.route('/api', setupEnvironmentApi(getBootDataForRequest));
 app.get('/api', (c) => c.json({ error: 'Not found' }, 404));
 

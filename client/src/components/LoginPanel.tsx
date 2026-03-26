@@ -1,7 +1,7 @@
+import { useAuthContext } from '@respond/lib/authProvider';
 import { observer } from 'mobx-react-lite';
 import { useEffect, useRef } from 'react';
 
-import { useAuthContext } from '@respond/lib/authProvider';
 
 declare global {
   interface Window {

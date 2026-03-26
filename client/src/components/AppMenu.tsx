@@ -1,9 +1,9 @@
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { Divider, IconButton, Menu, MenuItem } from '@mui/material';
+import { useAuthContext } from '@respond/lib/authProvider';
 import * as React from 'react';
 import { Link } from 'react-router';
 
-import { useAuthContext } from '@respond/lib/authProvider';
 
 // import { PreferencesDialog } from './Preferences';
 

@@ -1,9 +1,8 @@
-import { ParticipantInfo } from '@app/shared/api';
-
+import { MemberInfo, ParticipantInfo } from '@app/shared/api';
 import { D4HMemberProviderDoc } from '@server/db/memberProviderDoc.js';
 import { getDb } from '@server/db/mongo.js';
 
-import { MemberInfo, MemberProvider } from './memberProvider.js';
+import { MemberProvider } from './memberProvider.js';
 
 const D4H_MEMBER_REFRESH_SECS = 15 * 60;
 const D4H_FETCH_LIMIT = 1000;
@@ -63,6 +62,21 @@ export default class D4HMembersProvider implements MemberProvider {
 
 
   constructor(private readonly config: D4HMemberProviderDoc) {  }
+
+  async findMembers(query: string | undefined): Promise<MemberInfo[]> {
+    if (!query || query.length < 3) return [];
+
+    query = query.toLowerCase();
+    await this.initialize();
+    const matches = Object.values(this.cache.lookup).filter(f => (
+      f.response.name.toLowerCase().startsWith(query) ||
+      f.response.name.toLowerCase().includes(`, ${query}`) ||
+      f.response.email?.value?.toLowerCase()?.startsWith(query)
+    ))
+      .slice(0, 20)
+      .map(row => row.memberInfo);
+    return matches;
+  }
 
   async getMemberInfoById(memberId: string) {
     await this.initialize();
@@ -225,8 +239,11 @@ export default class D4HMembersProvider implements MemberProvider {
 
     const lookup = rows.reduce(
       (accum, cur) => {
+        const nameMatch = cur.name.match(/^ *((?<last>.*), *(?<first>[^,]+)|(?<first2>[^ ]+) +(?<last2>.*)) */);
         const memberInfo: MemberInfo = {
           id: cur.id + '',
+          firstname: nameMatch?.groups?.first ?? nameMatch?.groups?.first2 ??cur.name,
+          lastname: nameMatch?.groups?.last ?? nameMatch?.groups?.last2 ??'',
           groups: memberships
             .filter((f) => f.member.id === cur.id)
             .map((f) => groupLookup[f.group.id])

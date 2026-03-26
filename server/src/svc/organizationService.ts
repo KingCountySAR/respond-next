@@ -1,9 +1,8 @@
 import { ClientEnvironment } from '@app/shared';
-import { WithId } from 'mongodb';
-
 import { getDb } from '@server/db/index.js';
 import { isD4HProviderDoc, MEMBER_PROVIDER_COLLECTION, MemberProviderDoc } from '@server/db/memberProviderDoc.js';
 import { OrganizationDoc, ORGS_COLLECTION } from '@server/db/organizationDoc.js';
+import { WithId } from 'mongodb';
 
 import D4HMembersProvider from './member-providers/d4hMembersProvider.js';
 import { MemberProvider } from './member-providers/memberProvider.js';

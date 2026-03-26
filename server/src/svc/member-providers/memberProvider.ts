@@ -1,13 +1,5 @@
-import { ParticipantInfo } from '@app/shared/api';
-
+import { MemberInfo, ParticipantInfo } from '@app/shared/api';
 import { MemberProviderType } from '@server/db/memberProviderDoc.js';
-
-export interface MemberInfo {
-  id: string;
-  groups: string[];
-  email?: string;
-  mobilephone?: string;
-}
 
 export interface MemberAuthInfo {
   provider: string;
@@ -15,6 +7,7 @@ export interface MemberAuthInfo {
 }
 
 export interface MemberProvider {
+  findMembers(query: string | undefined): Promise<MemberInfo[]>;
   getMemberInfoByEmail(email: string): Promise<MemberInfo | undefined>;
   getMemberInfoById(memberId: string): Promise<MemberInfo | undefined>;
   getMemberPhoto(memberId: string): Promise<ArrayBuffer | undefined>;

@@ -1,5 +1,4 @@
 import { Box, Divider, Link, Paper, Stack, Typography, TypographyVariant } from '@mui/material';
-
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 
 const APP_BAR_OFFSET = 52;

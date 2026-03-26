@@ -1,7 +1,7 @@
 import { BootData, BootDataResult } from '@app/shared';
+import { AuthVariables } from '@server/middleware/auth.js';
 import { Context, Hono } from 'hono';
 
-import { AuthVariables } from '@server/middleware/auth.js';
 
 export function setupEnvironmentApi(getData: (c: Context) => Promise<BootData>) {
   const apiRoutes = new Hono<{ Variables: AuthVariables }>();
