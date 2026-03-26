@@ -1,5 +1,5 @@
 import { Box, Divider, Link, Paper, Stack, Typography, TypographyVariant } from '@mui/material';
-import ActivityTileImage from '@public/about/activity-tile.jpg';
+import ActivityTileImage from '@respond/assets/about/activity-tile.jpg';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 
 const APP_BAR_OFFSET = 52;
