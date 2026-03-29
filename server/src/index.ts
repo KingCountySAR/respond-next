@@ -11,6 +11,7 @@ import './config.js';
 import { connectDb } from './db/mongo.js';
 import { domainFromRequest } from './lib/request.js';
 import { getUserFromSession } from './lib/session.js';
+import { setupActivityRoutes } from './routes/api/activitiesApi.js';
 import { setupEnvironmentApi } from './routes/api/environmentApi.js';
 import { setupApiRoutes } from './routes/api/index.js';
 import { setupLocationRoutes } from './routes/api/locationsApi.js';
@@ -55,6 +56,7 @@ app.route('/events', eventsRoutes);
 app.route('/api', setupApiRoutes(orgService));
 app.route('/api', setupEnvironmentApi(getBootDataForRequest));
 app.route('/api', setupLocationRoutes());
+app.route('/api', setupActivityRoutes());
 app.get('/api', (c) => c.json({ error: 'Not found' }, 404));
 
 // Health check

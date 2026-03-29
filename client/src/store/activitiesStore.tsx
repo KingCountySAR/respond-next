@@ -11,6 +11,17 @@ export class ActivitiesStore {
     makeObservable(this);
   }
 
+  async getActivity(activityId: string): Promise<Activity|undefined> {
+    let activity = this.activeActivities.find(f => f.id === activityId);
+    if (!activity) {
+      const response = await fetch(`/api/activity/${activityId}`);
+      if (response.ok) {
+        activity = (await response.json()).result;
+      }
+    }
+    return activity;
+  }
+
   @computed
   get myCurrentActivities() {
     const participantId = this.memberId;
