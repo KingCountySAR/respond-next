@@ -5,19 +5,18 @@ import { format as formatDate } from 'date-fns';
 import { useEffect, useState } from 'react';
 
 import { useDebounce } from '@respond/hooks/useDebounce';
-import { useAppDispatch } from '@respond/lib/client/store';
+import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 
 import { InlineTimeEdit } from '../InlineTimeEdit';
 import { Button, IconButton, Stack, Typography } from '../Material';
 
-const ONE_MINUTE_MILLISECONDS = 60 * 1000;
-const FIFTEEN_MINUTES_MILLISECONDS = 15 * 60 * 1000;
-const THIRTY_MINUTES_MILLISECONDS = 30 * 60 * 1000;
-const SIXTY_MINUTES_MILLISECONDS = 60 * 60 * 1000;
+const toMilliseconds = (minutes: number) => minutes * 60 * 1000;
 
 export function ParticipantEtaUpdater({ activityId, participantId, participantEta }: { activityId: string; participantId: string; participantEta?: number }) {
   const dispatch = useAppDispatch();
+
+  const { etaIncrement, etaPreset1, etaPreset2, etaPreset3 } = useAppSelector((state) => state.preferences);
 
   const [eta, setEta] = useState<number | undefined | null>(participantEta);
   const [editing, setEditing] = useState(false);
@@ -45,10 +44,10 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
         <>
           <Typography variant="h6">ETA</Typography>
           <Typography variant="h6">{formatDate(eta, 'HHmm')}</Typography>
-          <IconButton onClick={() => setEta(eta - ONE_MINUTE_MILLISECONDS)}>
+          <IconButton onClick={() => setEta(eta - toMilliseconds(etaIncrement))}>
             <RemoveIcon />
           </IconButton>
-          <IconButton onClick={() => setEta(eta + ONE_MINUTE_MILLISECONDS)}>
+          <IconButton onClick={() => setEta(eta + toMilliseconds(etaIncrement))}>
             <AddIcon />
           </IconButton>
           <Button onClick={() => setEta(null)}>clear</Button>
@@ -58,9 +57,9 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
         <>
           <Typography variant="h6">ETA</Typography>
           <Stack direction={'row'} spacing={2} alignItems={'center'} justifyContent={'space-between'}>
-            <IconButton onClick={() => setEta(new Date().getTime() + FIFTEEN_MINUTES_MILLISECONDS)}>15</IconButton>
-            <IconButton onClick={() => setEta(new Date().getTime() + THIRTY_MINUTES_MILLISECONDS)}>30</IconButton>
-            <IconButton onClick={() => setEta(new Date().getTime() + SIXTY_MINUTES_MILLISECONDS)}>60</IconButton>
+            <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset1))}>{etaPreset1}</IconButton>
+            <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset2))}>{etaPreset2}</IconButton>
+            <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset3))}>{etaPreset3}</IconButton>
             <IconButton onClick={() => setEditing(true)}>
               <AccessTime />
             </IconButton>
