@@ -1,8 +1,13 @@
 import { Activity } from '@respond/types/activity';
 import { Location } from '@respond/types/location';
+import { Organization } from '@respond/types/organization';
 
 export interface ActivityState {
   list: Activity[];
+}
+
+export interface OrganizationState {
+  list: Organization[];
 }
 
 export interface LocationState {

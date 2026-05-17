@@ -2,11 +2,12 @@ import { Action } from '@reduxjs/toolkit';
 import produce from 'immer';
 
 import mongoPromise, { getRelatedOrgIds } from '@respond/lib/server/mongodb';
-import type { ActivityState, LocationState } from '@respond/lib/state';
+import type { ActivityState, LocationState, OrganizationState } from '@respond/lib/state';
 import { BasicActivityReducers, BasicLocationReducers } from '@respond/lib/state';
 import type { Activity } from '@respond/types/activity';
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/types/data/organizationDoc';
 import { Location } from '@respond/types/location';
+import { Organization } from '@respond/types/organization';
 import type UserAuth from '@respond/types/userAuth';
 
 import { ActivityAction, ActivityActions, isActivityAction, ParticipantUpdateAction } from '../state/activityActions';
@@ -27,6 +28,7 @@ export class StateManager {
   private listeners: ActionListener[] = [];
   private activityState: ActivityState = { list: [] };
   private locationsState: LocationState = { list: [] };
+  private organizationsState: OrganizationState = { list: [] };
 
   addClient(listener: ActionListener) {
     this.listeners = [...this.listeners, listener];
@@ -46,6 +48,10 @@ export class StateManager {
     this.locationsState = {
       list: allLocations,
     };
+    const allOrganizations = (await mongo.db().collection<Organization>(ORGS_COLLECTION).find().project({ id: 1, title: 1, rosterName: 1 }).toArray()) as Organization[];
+    this.organizationsState = {
+      list: allOrganizations,
+    };
   }
 
   async getStateForUser(user: UserAuth) {
@@ -60,6 +66,10 @@ export class StateManager {
 
   getLocationState() {
     return this.locationsState;
+  }
+
+  async getAllOrganizations() {
+    return this.organizationsState.list;
   }
 
   async getAllActivities() {
