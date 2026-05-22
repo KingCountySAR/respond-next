@@ -5,6 +5,7 @@ import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography
 import { format as formatDate } from 'date-fns';
 import { ReactNode, useState } from 'react';
 
+import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
@@ -32,7 +33,7 @@ export enum MobilePageId {
 }
 
 export function MobileActivityPage() {
-  const defaultMobileView: MobilePageId = useAppSelector((state) => state.preferences.defaultMobileView);
+  const { defaultMobileView } = usePreferences();
   const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
   const activity = useActivityContext();
   const user = useAppSelector((state) => state.auth.userInfo);

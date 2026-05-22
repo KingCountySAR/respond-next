@@ -7,7 +7,6 @@ import authReducer from './auth';
 import configReducer from './config';
 import locationsReducer from './locations';
 import organizationReducer from './organization';
-import preferencesReducer from './preferences';
 import syncReducer from './sync';
 
 export const logMiddleware: Middleware<unknown, RootState> = (_storeApi) => (next) => (action: PayloadAction) => {
@@ -22,7 +21,6 @@ function buildClientReducers() {
     auth: authReducer,
     config: configReducer,
     organization: organizationReducer,
-    preferences: preferencesReducer,
     locations: locationsReducer,
     sync: syncReducer,
   });

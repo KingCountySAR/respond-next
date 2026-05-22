@@ -5,18 +5,19 @@ import { format as formatDate } from 'date-fns';
 import { useEffect, useState } from 'react';
 
 import { useDebounce } from '@respond/hooks/useDebounce';
-import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
+import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 
 import { InlineTimeEdit } from '../InlineTimeEdit';
 import { Button, IconButton, Stack, Typography } from '../Material';
+import { usePreferences } from '../PreferencesProvider';
 
 const toMilliseconds = (minutes: number) => minutes * 60 * 1000;
 
 export function ParticipantEtaUpdater({ activityId, participantId, participantEta }: { activityId: string; participantId: string; participantEta?: number }) {
   const dispatch = useAppDispatch();
 
-  const { etaIncrement, etaPreset1, etaPreset2, etaPreset3 } = useAppSelector((state) => state.preferences);
+  const { etaIncrement, etaPreset1, etaPreset2, etaPreset3 } = usePreferences();
 
   const [eta, setEta] = useState<number | undefined | null>(participantEta);
   const [editing, setEditing] = useState(false);
