@@ -3,12 +3,12 @@ import { Box, Card, CardActions, Grid, IconButton, Link, Typography } from '@mui
 import Image from 'next/image';
 import { ReactNode } from 'react';
 
+import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusChip } from '@respond/components/StatusChip';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
-import { useAppSelector } from '@respond/lib/client/store';
 import { getActivityPath, isActive } from '@respond/lib/client/store/activities';
-import { NavigationApp } from '@respond/lib/client/store/preferences';
 import { Activity, ParticipantStatus } from '@respond/types/activity';
+import { NavigationApp } from '@respond/types/preferences';
 
 import { ActivityProvider } from './ActivityProvider';
 
@@ -53,13 +53,13 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
 };
 
 const NavigationButton = ({ lat, lon }: { lat?: string; lon?: string }) => {
-  const navApp: NavigationApp = useAppSelector((state) => state.preferences.navigationApp);
+  const { navigationApp } = usePreferences();
   const mapUrl = {
     [NavigationApp.Apple]: 'http://maps.apple.com/?daddr=',
     [NavigationApp.Google]: 'https://www.google.com/maps/place/',
     [NavigationApp.Waze]: 'https://waze.com/ul?navigate=yes&ll=',
   };
-  const url = lat && lon ? `${mapUrl[navApp]}${lat},${lon}` : undefined;
+  const url = lat && lon ? `${mapUrl[navigationApp]}${lat},${lon}` : undefined;
   return (
     <>
       {url && (

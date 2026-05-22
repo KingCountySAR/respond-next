@@ -14,6 +14,8 @@ import { ClientSync } from '@respond/lib/client/sync';
 import { MyOrganization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
+import PreferencesProvider from './PreferencesProvider';
+
 export interface SiteConfig {
   theme: { primary: string; primaryDark?: string };
   dev: { noExternalNetwork: boolean; buildId: string };
@@ -64,7 +66,9 @@ export default function ClientProviders({ googleClient, config, user, myOrg, chi
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        <ThemeProvider theme={hydratedTheme}>{inner}</ThemeProvider>
+        <ThemeProvider theme={hydratedTheme}>
+          <PreferencesProvider>{inner}</PreferencesProvider>
+        </ThemeProvider>
       </Provider>
     </QueryClientProvider>
   );

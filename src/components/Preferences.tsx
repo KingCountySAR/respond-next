@@ -1,16 +1,16 @@
 import { Button, Dialog, DialogContent, DialogTitle, FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack, TextField } from '@mui/material';
 import { Controller, useForm } from 'react-hook-form';
 
-import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
-import { NavigationApp, PerferencesState, PreferenceActions } from '@respond/lib/client/store/preferences';
+import { NavigationApp, PerferencesState } from '@respond/types/preferences';
 
 import { MobilePageId } from './activities/MobileActivityPage';
+import { usePreferences, useSetPreferences } from './PreferencesProvider';
 
 export function PreferencesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dispatch = useAppDispatch();
+  const setPreferences = useSetPreferences();
 
   const handleSubmit = (preferences: PerferencesState) => {
-    dispatch(PreferenceActions.update(preferences));
+    setPreferences(preferences);
     onClose();
   };
 
@@ -27,7 +27,7 @@ export function PreferencesDialog({ open, onClose }: { open: boolean; onClose: (
 }
 
 function PreferencesForm({ onCancel, onSubmit }: { onCancel: () => void; onSubmit: (preferences: PerferencesState) => void }) {
-  const defaultValues = useAppSelector((state) => state.preferences);
+  const defaultValues = usePreferences();
 
   const {
     control,
