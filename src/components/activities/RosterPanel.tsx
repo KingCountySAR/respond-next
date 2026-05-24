@@ -7,7 +7,7 @@ import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
-import { Box, Dialog, DialogContent, DialogTitle, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
+import { Box, DialogContent, DialogTitle, DialogWithHistory, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
 import { apiFetch } from '@respond/lib/api';
 import { MemberInfo } from '@respond/lib/server/memberProviders/memberProvider';
 import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/types/activity';
@@ -134,7 +134,7 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
 
   const name = `${participant.firstname} ${participant.lastname}`;
   return (
-    <Dialog fullWidth open={open} onClose={onClose}>
+    <DialogWithHistory fullWidth open={open} onClose={onClose}>
       <DialogTitle style={{ borderBottom: 'solid 4px ' + getStatusCssColor(participant.timeline[0].status) }} alignItems="center" justifyContent="space-between" display="flex">
         <Box>{name}</Box>
         <Typography style={{ color: getStatusCssColor(participant.timeline[0].status) }}>{getStatusText(participant.timeline[0].status)}</Typography>
@@ -179,7 +179,7 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
           Close
         </Button>
       </DialogActions>
-    </Dialog>
+    </DialogWithHistory>
   );
 }
 

@@ -8,7 +8,7 @@ import { Organization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
 import { useActivityContext } from '../activities/ActivityProvider';
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '../Material';
+import { Alert, Button, DialogActions, DialogContent, DialogTitle, DialogWithHistory } from '../Material';
 import { SplitButton } from '../SplitButton';
 
 import { UpdateStatusForm, useFormLogic } from './UpdateStatusForm';
@@ -153,7 +153,7 @@ const StatusUpdaterProtected = ({ fullWidth, user, thisOrg }: { user: UserInfo |
           confirmPrompt('Update Status', optionId);
         }}
       />
-      <Dialog open={confirming} onClose={() => setConfirming(false)} aria-labelledby="status-update-dialog-title" aria-describedby="status-update-dialog-description">
+      <DialogWithHistory open={confirming} onClose={() => setConfirming(false)} aria-labelledby="status-update-dialog-title" aria-describedby="status-update-dialog-description">
         <form onSubmit={formLogic.doSubmit}>
           <DialogTitle id="status-update-dialog-title">{confirmTitle}</DialogTitle>
           <DialogContent>
@@ -173,7 +173,7 @@ const StatusUpdaterProtected = ({ fullWidth, user, thisOrg }: { user: UserInfo |
             </Button>
           </DialogActions>
         </form>
-      </Dialog>
+      </DialogWithHistory>
     </>
   );
 };

@@ -1,5 +1,6 @@
-import { Box, Dialog, DialogContent, DialogTitle } from '@mui/material';
+import { Box, DialogContent, DialogTitle } from '@mui/material';
 
+import { DialogWithHistory } from '@respond/components/Material';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { LocationActions } from '@respond/lib/state';
 import { createNewLocation, Location } from '@respond/types/location';
@@ -16,7 +17,7 @@ export function LocationEditDialog({ location = createNewLocation(), open, onSub
     onClose();
   };
   return (
-    <Dialog open={open} onClose={onClose}>
+    <DialogWithHistory open={open} onClose={onClose}>
       <DialogTitle alignItems="center" justifyContent="space-between" display="flex">
         <Box>{location.title ? `Update ${location.title}` : 'Create New Location'}</Box>
       </DialogTitle>
@@ -25,6 +26,6 @@ export function LocationEditDialog({ location = createNewLocation(), open, onSub
           <LocationEditForm enableTemporary variant="outlined" location={{ ...location }} onClose={onClose} onSubmit={handleSubmit} />
         </Box>
       </DialogContent>
-    </Dialog>
+    </DialogWithHistory>
   );
 }

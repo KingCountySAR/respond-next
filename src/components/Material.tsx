@@ -9,6 +9,7 @@ export { default as DialogContent } from '@mui/material/DialogContent';
 export { default as DialogContentText } from '@mui/material/DialogContentText';
 export { default as DialogTitle } from '@mui/material/DialogTitle';
 export { default as IconButton } from '@mui/material/IconButton';
+export { default as DialogWithHistory } from './DialogWithHistory';
 export { default as List } from '@mui/material/List';
 export { default as ListItem } from '@mui/material/ListItem';
 export { default as createTheme } from '@mui/material/styles/createTheme';

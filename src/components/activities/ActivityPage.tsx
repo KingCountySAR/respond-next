@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Stack } from '@respond/components/Material';
+import { Alert, Button, DialogActions, DialogContent, DialogContentText, DialogTitle, DialogWithHistory, IconButton, Stack } from '@respond/components/Material';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, isActive } from '@respond/lib/client/store/activities';
 import { ActivityActions } from '@respond/lib/state';
@@ -70,7 +70,7 @@ function UpdateActivityStatusButton({ label, onClick }: { label: string; onClick
       <Button variant="outlined" size="small" onClick={() => setShowDialog(true)}>
         {label}
       </Button>
-      <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
+      <DialogWithHistory open={showDialog} onClose={() => setShowDialog(false)}>
         <DialogTitle>{label} event?</DialogTitle>
         <DialogContent>
           <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
@@ -87,7 +87,7 @@ function UpdateActivityStatusButton({ label, onClick }: { label: string; onClick
             {label}
           </Button>
         </DialogActions>
-      </Dialog>
+      </DialogWithHistory>
     </>
   );
 }
@@ -99,7 +99,7 @@ function RemoveActivityButton({ onClick }: { onClick: () => void }) {
       <IconButton color="danger" onClick={() => setShowDialog(true)}>
         <DeleteIcon />
       </IconButton>
-      <Dialog open={showDialog} onClose={() => setShowDialog(false)}>
+      <DialogWithHistory open={showDialog} onClose={() => setShowDialog(false)}>
         <DialogTitle>Remove Activity?</DialogTitle>
         <DialogContent>
           <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
@@ -110,7 +110,7 @@ function RemoveActivityButton({ onClick }: { onClick: () => void }) {
             Remove
           </Button>
         </DialogActions>
-      </Dialog>
+      </DialogWithHistory>
     </>
   );
 }

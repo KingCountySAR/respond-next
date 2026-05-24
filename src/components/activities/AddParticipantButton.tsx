@@ -1,6 +1,7 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
+import { Box, Button, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
 import * as React from 'react';
 
+import { DialogWithHistory } from '@respond/components/Material';
 import { MemberInfo } from '@respond/lib/server/memberProviders/memberProvider';
 import { Activity, Participant } from '@respond/types/activity';
 import { Organization } from '@respond/types/organization';
@@ -47,7 +48,7 @@ function AddParticipantDialog({ open, activity, onClose }: { open: boolean; acti
   };
 
   return (
-    <Dialog fullWidth={true} open={open} onClose={onClose}>
+    <DialogWithHistory fullWidth={true} open={open} onClose={onClose}>
       <DialogTitle alignItems="center" justifyContent="space-between" display="flex">
         <Box>{getTitle(activity)}</Box>
       </DialogTitle>
@@ -62,6 +63,6 @@ function AddParticipantDialog({ open, activity, onClose }: { open: boolean; acti
       <DialogActions>
         <Button onClick={handleClose}>Close</Button>
       </DialogActions>
-    </Dialog>
+    </DialogWithHistory>
   );
 }
