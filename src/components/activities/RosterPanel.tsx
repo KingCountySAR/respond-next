@@ -1,3 +1,4 @@
+import PhoneIcon from '@mui/icons-material/Phone';
 import { Button, ButtonBase, Chip, DialogActions, Divider } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
@@ -58,6 +59,10 @@ const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean =
     return [includeIntlCode ? intlCode : '', '(', match[2], ') ', match[3], '-', match[4]].join('');
   }
   return null;
+};
+
+const normalizePhoneNumber = (phoneNumberString: string) => {
+  return ('' + phoneNumberString).replace(/\D/g, '');
 };
 
 export function RosterPanel({ filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
@@ -144,7 +149,14 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
             />
             <Typography fontWeight={600}>{getOrganizationName(activity, participant.organizationId)}</Typography>
             <Box>{participant.tags?.map((t) => <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />)}</Box>
-            {memberInfo?.mobilephone && <Typography>{formatPhoneNumber(memberInfo.mobilephone)}</Typography>}
+            {memberInfo?.mobilephone &&
+              (isMobile ? (
+                <Button fullWidth component="a" href={`tel:${normalizePhoneNumber(memberInfo.mobilephone)}`} variant="contained" size="small" startIcon={<PhoneIcon />} sx={{ textTransform: 'none', my: 1 }}>
+                  {formatPhoneNumber(memberInfo.mobilephone)}
+                </Button>
+              ) : (
+                <Typography>{formatPhoneNumber(memberInfo.mobilephone)}</Typography>
+              ))}
             {memberInfo?.email && (
               <Typography>
                 <a href={`mailto:${memberInfo.email}`}>{memberInfo.email}</a>
