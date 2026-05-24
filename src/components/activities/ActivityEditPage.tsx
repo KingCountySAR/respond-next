@@ -193,7 +193,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       <Paper>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container padding={2} spacing={2} alignItems="center">
-            <Grid item xs={12} sm={8}>
+            <Grid item xs={12} sm={6}>
               <Controller
                 name="title"
                 control={control}
@@ -206,7 +206,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <Controller
                 name="isMission"
                 control={control}
