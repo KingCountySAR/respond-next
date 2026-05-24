@@ -1,6 +1,7 @@
 import produce from 'immer';
 
 import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
+import { createNewLocation } from '@respond/types/location';
 
 import { ActivityState } from '..';
 import { ActivityActions } from '../activityActions';
@@ -15,10 +16,11 @@ describe('Activity Reducers', () => {
       list: [
         {
           id: activityId,
+          forceStandbyOnly: false,
           idNumber: '',
           title: 'sample event',
           description: '',
-          location: { title: 'home' },
+          location: createNewLocation(),
           mapId: '',
           startTime: 1699765740000,
           earlySignInWindow: defaultEarlySigninWindow,
@@ -45,5 +47,40 @@ describe('Activity Reducers', () => {
     const newState = produce(startState, (draft) => BasicReducers[ActivityActions.tagParticipant.type](draft, tagAction));
 
     expect(newState.list[0].participants[participantId].tags).toEqual(tags);
+  });
+
+  it('supports updating activity type via ActivityActions.update', () => {
+    const activityId = 'd5ce23b0-4a91-4f2d-ad34-b39166a1d5f4';
+    const startState: ActivityState = {
+      list: [
+        {
+          id: activityId,
+          forceStandbyOnly: false,
+          idNumber: '',
+          title: 'sample event',
+          description: '',
+          location: createNewLocation(),
+          mapId: '',
+          startTime: 1699765740000,
+          earlySignInWindow: defaultEarlySigninWindow,
+          isMission: false,
+          asMission: false,
+          ownerOrgId: '1',
+          participants: {},
+          organizations: {},
+        },
+      ],
+    };
+
+    const updatedActivity = {
+      ...startState.list[0],
+      isMission: true,
+      asMission: true,
+    };
+
+    const newState = produce(startState, (draft) => BasicReducers[ActivityActions.update.type](draft, ActivityActions.update(updatedActivity)));
+
+    expect(newState.list[0].isMission).toBe(true);
+    expect(newState.list[0].asMission).toBe(true);
   });
 });

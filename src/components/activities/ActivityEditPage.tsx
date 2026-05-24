@@ -4,7 +4,7 @@ import Edit from '@mui/icons-material/Edit';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
@@ -67,14 +67,14 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const [showLocationEditDialog, setShowLocationEditDialog] = useState(false);
 
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
-  const ownerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
+  const initialOwnerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
   const isNew = !selectedActivity;
 
   let activity: Activity;
   if (isNew) {
     activity = {
       ...createNewActivity(),
-      ownerOrgId: ownerOptions[0].id,
+      ownerOrgId: initialOwnerOptions[0]?.id ?? '',
       isMission: activityType === 'missions',
       asMission: activityType === 'missions',
     };
@@ -90,6 +90,9 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     defaultValues.earlySignInWindow = defaultEarlySigninWindow;
   }
 
+  const initialOwnerOrgId = useRef(defaultValues.ownerOrgId);
+  const initialSelectedType = useRef(defaultValues.isMission ? 'missions' : 'events');
+
   const {
     control,
     handleSubmit,
@@ -103,10 +106,36 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
   const focusRef = useRef<HTMLInputElement>();
   const watchLocation = watch('location');
+  const selectedIsMission = watch('isMission');
+  const selectedType = selectedIsMission ? 'missions' : 'events';
+  const selectedOwnerOrgId = watch('ownerOrgId');
+
+  const permissionProp = selectedType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
+  const ownerOptions = useMemo(() => [...(org?.[permissionProp] ? [org] : []), ...(org?.partners.filter((p) => p[permissionProp]) ?? [])], [org, permissionProp]);
 
   useEffect(() => {
     focusRef.current?.focus();
   }, [focusRef]);
+
+  useEffect(() => {
+    if (!ownerOptions.length) {
+      return;
+    }
+
+    const currentOwnerIsValid = selectedOwnerOrgId && ownerOptions.some((o) => o.id === selectedOwnerOrgId);
+    if (currentOwnerIsValid) {
+      return;
+    }
+
+    const initialOwnerMatchesCurrentType = selectedType === initialSelectedType.current;
+    const initialOwnerIsAvailable = ownerOptions.some((o) => o.id === initialOwnerOrgId.current);
+    if (initialOwnerMatchesCurrentType && initialOwnerIsAvailable) {
+      setValue('ownerOrgId', initialOwnerOrgId.current);
+      return;
+    }
+
+    setValue('ownerOrgId', ownerOptions[0].id);
+  }, [ownerOptions, selectedOwnerOrgId, selectedType, setValue]);
 
   if (!org) {
     return <Box>Waiting for org...</Box>;
@@ -156,7 +185,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
     // We're optimistic that the submitted event will be processed successfully. With partially offline clients,
     // we may not know of a conflict/etc. until later and will have to have UI for that anyways.
-    router.push(`/${activityType === 'missions' ? 'mission' : 'event'}/${updated.id}`);
+    router.push(`/${updated.isMission ? 'mission' : 'event'}/${updated.id}`);
   };
 
   return (
@@ -164,7 +193,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       <Paper>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container padding={2} spacing={2} alignItems="center">
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <Controller
                 name="title"
                 control={control}
@@ -172,6 +201,22 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                   <FormControl fullWidth error={!!errors.title?.message}>
                     <TextField {...field} inputRef={focusRef} variant="outlined" label="Name" required />
                     <FormHelperText>{errors.title?.message}</FormHelperText>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="isMission"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel id="activity-type-label">Type</InputLabel>
+                    <Select {...field} labelId="activity-type-label" label="Type" value={field.value ? 'missions' : 'events'} onChange={(event) => field.onChange(event.target.value === 'missions')}>
+                      <MenuItem value="missions">Mission</MenuItem>
+                      <MenuItem value="events">Event</MenuItem>
+                    </Select>
                   </FormControl>
                 )}
               />
@@ -325,7 +370,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                 <Stack direction="row" justifyContent="flex-end" spacing={1}>
                   <Button onClick={() => router.back()}>Cancel</Button>
                   <Button type="submit" variant="contained">
-                    Save {activityType === 'missions' ? 'Mission' : 'Event'}
+                    Save {selectedType === 'missions' ? 'Mission' : 'Event'}
                   </Button>
                 </Stack>
               </Grid>
