@@ -1,7 +1,7 @@
 'use client';
 import AddLocation from '@mui/icons-material/AddLocation';
 import Edit from '@mui/icons-material/Edit';
-import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, FormLabel, Grid, IconButton, InputLabel, MenuItem, Paper, Radio, RadioGroup, Select, Stack, Switch, TextField } from '@mui/material';
+import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -193,7 +193,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       <Paper>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container padding={2} spacing={2} alignItems="center">
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={8}>
               <Controller
                 name="title"
                 control={control}
@@ -206,17 +206,17 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <Controller
                 name="isMission"
                 control={control}
                 render={({ field }) => (
-                  <FormControl component="fieldset">
-                    <FormLabel>Type</FormLabel>
-                    <RadioGroup row value={field.value ? 'missions' : 'events'} onChange={(event) => field.onChange(event.target.value === 'missions')}>
-                      <FormControlLabel value="missions" control={<Radio />} label="Mission" />
-                      <FormControlLabel value="events" control={<Radio />} label="Event" />
-                    </RadioGroup>
+                  <FormControl fullWidth>
+                    <InputLabel id="activity-type-label">Type</InputLabel>
+                    <Select {...field} labelId="activity-type-label" label="Type" value={field.value ? 'missions' : 'events'} onChange={(event) => field.onChange(event.target.value === 'missions')}>
+                      <MenuItem value="missions">Mission</MenuItem>
+                      <MenuItem value="events">Event</MenuItem>
+                    </Select>
                   </FormControl>
                 )}
               />
