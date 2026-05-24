@@ -60,6 +60,10 @@ const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean =
   return null;
 };
 
+const normalizePhoneNumber = (phoneNumberString: string) => {
+  return ('' + phoneNumberString).replace(/\D/g, '');
+};
+
 export function RosterPanel({ filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
   const activity = useActivityContext();
   const [sortOnStatus, setSortOnStatus] = useState(false);
@@ -122,6 +126,8 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
 
   const getMemberInfo = async (participant: Participant) => {
     const member = await findMember(participant.organizationId, participant.id);
+    member.mobilephone = '555-555-5555';
+    console.log('found member info', member);
     setMemberInfo(member);
   };
 
@@ -144,7 +150,14 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
             />
             <Typography fontWeight={600}>{getOrganizationName(activity, participant.organizationId)}</Typography>
             <Box>{participant.tags?.map((t) => <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />)}</Box>
-            {memberInfo?.mobilephone && <Typography>{formatPhoneNumber(memberInfo.mobilephone)}</Typography>}
+            {memberInfo?.mobilephone &&
+              (isMobile ? (
+                <Button fullWidth component="a" href={`tel:${normalizePhoneNumber(memberInfo.mobilephone)}`} variant="contained" size="small" sx={{ textTransform: 'none', mt: 1 }}>
+                  {formatPhoneNumber(memberInfo.mobilephone)}
+                </Button>
+              ) : (
+                <Typography>{formatPhoneNumber(memberInfo.mobilephone)}</Typography>
+              ))}
             {memberInfo?.email && (
               <Typography>
                 <a href={`mailto:${memberInfo.email}`}>{memberInfo.email}</a>
