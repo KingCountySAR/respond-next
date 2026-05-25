@@ -1,19 +1,22 @@
+import CloseIcon from '@mui/icons-material/Close';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
+import { usePreferences } from '@respond/components/PreferencesProvider';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { MemberInfo } from '@respond/lib/server/memberProviders/memberProvider';
 import { ActivityActions } from '@respond/lib/state';
-import { Activity, OrganizationStatus, Participant, ParticipantStatus } from '@respond/types/activity';
+import { Activity, isEnrouteOrStandby, OrganizationStatus, Participant, ParticipantStatus } from '@respond/types/activity';
 import { Organization } from '@respond/types/organization';
 import { UserInfo } from '@respond/types/userInfo';
 
-import { DialogContentText, FormControl, FormHelperText, Stack } from '../Material';
+import { DialogContentText, FormControl, FormHelperText, IconButton, Stack } from '../Material';
 import { ParticipantMilesInput } from '../participant/ParticipantMilesInput';
 import { formatTime } from '../RelativeTimeText';
 
 interface FormValues {
+  eta?: number | undefined;
   miles: number | '';
   statusTime: number;
 }
@@ -78,7 +81,7 @@ export function useFormLogic(activity: Activity, user: UserInfo | MemberInfo, re
         ),
       );
     }
-    dispatch(ActivityActions.participantUpdate(activity.id, participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles));
+    dispatch(ActivityActions.participantUpdate(activity.id, participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles, data.eta));
     onFinish();
   };
 
@@ -142,6 +145,7 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
     <Stack flexGrow={1} spacing={2} justifyContent="space-between">
       <DialogContentText id="status-update-dialog-description">Change your status for {activity.title}?</DialogContentText>
       <StatusTimeInput form={form} />
+      {isEnrouteOrStandby(newStatus) ? <EtaInput form={form} /> : undefined}
       {newStatus === ParticipantStatus.SignedOut ? (
         <Controller
           name="miles"
@@ -161,5 +165,60 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
         />
       ) : undefined}
     </Stack>
+  );
+};
+
+const EtaInput = ({ form: { control, errors } }: { form: FormLogic }) => {
+  const toMilliseconds = (minutes: number) => minutes * 60 * 1000;
+  const { etaPreset1, etaPreset2, etaPreset3 } = usePreferences();
+  return (
+    <Controller
+      name="eta"
+      control={control}
+      render={({ field }) => (
+        <FormControl error={!!errors.eta?.message}>
+          <DateTimePicker
+            label="ETA"
+            value={field.value}
+            inputRef={field.ref}
+            onChange={(date) => {
+              field.onChange(date);
+            }}
+            onAccept={(date) => {
+              field.onChange(date);
+            }}
+            format="MM/dd HH:mm"
+            slotProps={{
+              textField: {
+                InputProps: field.value
+                  ? {
+                      endAdornment: (
+                        <Stack direction={'row'} spacing={1} alignItems={'center'} justifyContent={'end'} fontSize={8} marginRight={-1.5}>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              field.onChange(null);
+                            }}
+                          >
+                            <CloseIcon />
+                          </IconButton>
+                        </Stack>
+                      ),
+                    }
+                  : undefined,
+              },
+            }}
+          />
+          <>
+            <Stack direction={'row'} spacing={1} alignItems={'center'} justifyContent={'end'} fontSize={8}>
+              <IconButton onClick={() => field.onChange(new Date().getTime() + toMilliseconds(etaPreset1))}>{etaPreset1}</IconButton>
+              <IconButton onClick={() => field.onChange(new Date().getTime() + toMilliseconds(etaPreset2))}>{etaPreset2}</IconButton>
+              <IconButton onClick={() => field.onChange(new Date().getTime() + toMilliseconds(etaPreset3))}>{etaPreset3}</IconButton>
+            </Stack>
+          </>
+          <FormHelperText>{errors.eta?.message}</FormHelperText>
+        </FormControl>
+      )}
+    />
   );
 };
