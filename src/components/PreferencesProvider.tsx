@@ -15,7 +15,8 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [preferences, setPreferencesState] = useState<PerferencesState>(() => {
     try {
       if (typeof window !== 'undefined' && window.localStorage && localStorage.preferences) {
-        return JSON.parse(localStorage.preferences) as PerferencesState;
+        const stored = JSON.parse(localStorage.preferences) as Partial<PerferencesState>;
+        return { ...defaultPreferences, ...stored };
       }
     } catch (e) {
       console.error('Failed to load saved preferences', e);
