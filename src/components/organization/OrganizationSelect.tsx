@@ -12,7 +12,7 @@ export default function OrganizationSelect({ onChange }: { onChange: (organizati
   const handleChange = React.useCallback(
     (event: SelectChangeEvent<string>) => {
       setValue(event.target.value);
-      onChange(event.target.value ? organizations?.find((f) => f.id === event.target.value) : undefined);
+      onChange(event.target.value ? organizations?.find((f: Organization) => f.id === event.target.value) : undefined);
     },
     [organizations, onChange],
   );
