@@ -64,6 +64,8 @@ export function useFormLogic(activity: Activity, user: UserInfo | MemberInfo, re
 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
     const time = new Date(data.statusTime).getTime();
+    // The ETA form returns a string when the user sets a date manually; a number when the date is set via the preset buttons; and null when cleared. Normalize to undefined when not set, and number when set.
+    const etaValue: number | undefined = data.eta == null ? undefined : typeof data.eta === 'number' ? data.eta : new Date(data.eta as unknown as string).getTime();
 
     if (!activity.organizations[respondingOrg.id]) {
       dispatch(
@@ -81,7 +83,7 @@ export function useFormLogic(activity: Activity, user: UserInfo | MemberInfo, re
         ),
       );
     }
-    dispatch(ActivityActions.participantUpdate(activity.id, participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles, data.eta));
+    dispatch(ActivityActions.participantUpdate(activity.id, participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles, etaValue));
     onFinish();
   };
 
