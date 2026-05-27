@@ -139,9 +139,10 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
 
       // Set fields with dynamic default values.
       form.setValue('miles', participant?.miles ?? '');
+      form.setValue('eta', participant?.eta ?? undefined);
       form.setValue('statusTime', new Date().getTime());
     }
-  }, [isInitialized, form, participant?.miles]);
+  }, [isInitialized, form, participant?.miles, participant?.eta]);
 
   return (
     <Stack flexGrow={1} spacing={2} justifyContent="space-between">
