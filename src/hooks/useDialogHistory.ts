@@ -8,6 +8,8 @@ export default function useDialogHistory(open: boolean, onClose: () => void) {
   const prevStateRef = useRef<any>(null);
   const idRef = useRef<string | null>(null);
   const onCloseRef = useRef(onClose);
+  const suppressPopRef = useRef(false);
+  const popInitiatedRef = useRef(false);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -18,9 +20,21 @@ export default function useDialogHistory(open: boolean, onClose: () => void) {
 
     const handlePop = (ev: PopStateEvent) => {
       if (!pushedRef.current) return;
-      // Close when the new state does NOT include our dialog id (i.e. user navigated back)
       const state = ev.state as any;
+      // If this pop was triggered by our programmatic `history.back()`, just clean up.
+      if (suppressPopRef.current) {
+        suppressPopRef.current = false;
+        pushedRef.current = false;
+        idRef.current = null;
+        prevStateRef.current = null;
+        window.removeEventListener('popstate', handlePop);
+        return;
+      }
+
+      // Close when the new state does NOT include our dialog id (i.e. user navigated back)
       if (!state || state.__respond_dialog_id !== idRef.current) {
+        // Mark that the pop initiated the close so we don't try to pop again.
+        popInitiatedRef.current = true;
         onCloseRef.current();
       }
     };
@@ -39,15 +53,22 @@ export default function useDialogHistory(open: boolean, onClose: () => void) {
 
     if (!open && pushedRef.current) {
       try {
-        // Restore previous state without firing popstate
-        history.replaceState(prevStateRef.current, '');
+        // If the dialog was closed because the user clicked Back, the pop handler
+        // already cleaned up. Avoid calling history.back() in that case.
+        if (popInitiatedRef.current) {
+          popInitiatedRef.current = false;
+          pushedRef.current = false;
+          idRef.current = null;
+          prevStateRef.current = null;
+          window.removeEventListener('popstate', handlePop);
+        } else {
+          // Programmatic close: go back to remove the pushed history entry.
+          suppressPopRef.current = true;
+          history.back();
+        }
       } catch (e) {
-        console.error('useDialogHistory replaceState error:', e);
+        console.error('useDialogHistory cleanup error:', e);
       }
-      pushedRef.current = false;
-      idRef.current = null;
-      prevStateRef.current = null;
-      window.removeEventListener('popstate', handlePop);
     }
 
     return () => {
