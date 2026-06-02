@@ -122,13 +122,16 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
   const [memberInfo, setMemberInfo] = useState<MemberInfo | undefined>();
 
   useEffect(() => {
-    if (participant) getMemberInfo(participant);
-  }, [participant]);
+    if (!participant) return;
 
-  const getMemberInfo = async (participant: Participant) => {
-    const member = await findMember(participant.organizationId, participant.id);
-    setMemberInfo(member);
-  };
+    findMember(participant.organizationId, participant.id).then((member) => {
+      setMemberInfo(member);
+    });
+
+    return () => {
+      setMemberInfo(undefined);
+    };
+  }, [participant]);
 
   if (!participant) return <></>;
 
