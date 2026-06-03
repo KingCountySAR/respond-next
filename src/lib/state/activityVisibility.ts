@@ -6,7 +6,7 @@ import type { Activity } from '@respond/types/activity';
  * * Future activities (start time in the future) are always included.
  * * Completed activities are included only when their latest activity time is inside the retention window.
  *
- * This is used to determine which activities should be included in the initial state when the app loads, and also to 
+ * This is used to determine which activities should be included in the initial state when the app loads, and also to
  * filter activities before saving them to localStorage for caching purposes.
  */
 export const INITIAL_ACTIVITY_HISTORY_DAYS = 90;
