@@ -4,7 +4,7 @@ import io, { Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/types/syncSocket';
 
 import { apiFetch } from '../api';
-import { ActivityActions } from '../state';
+import { ActivityActions, filterInitialActivities } from '../state';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
 import { AuthActions } from './store/auth';
@@ -80,8 +80,19 @@ export class ClientSync {
       addAppListener({
         matcher: isAnyOf(ActivityActions.reload, ActivityActions.update),
         effect: (_action, listenerApi) => {
-          console.log('SHOULD SAVE TO LOCALSTORAGE', listenerApi.getState().activities);
-          localStorage.activities = JSON.stringify(listenerApi.getState().activities);
+          const activities = listenerApi.getState().activities;
+          const cachedActivities = { ...activities, list: filterInitialActivities(activities.list) };
+          console.log('SHOULD SAVE TO LOCALSTORAGE', cachedActivities);
+          try {
+            const serializedActivities = JSON.stringify(cachedActivities);
+
+            // remove activities from localStorage to then ...
+            localStorage.removeItem('activities');
+            // ... update with the fresh list
+            localStorage.setItem('activities', serializedActivities);
+          } catch (error) {
+            console.warn('Unable to save filtered activities cache', error);
+          }
         },
       }),
     );

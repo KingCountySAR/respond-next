@@ -11,6 +11,7 @@ import { Organization } from '@respond/types/organization';
 import type UserAuth from '@respond/types/userAuth';
 
 import { ActivityAction, ActivityActions, isActivityAction, ParticipantUpdateAction } from '../state/activityActions';
+import { filterInitialActivities } from '../state/activityVisibility';
 import { isLocationAction, LocationAction } from '../state/locationActions';
 
 import { getServices } from './services';
@@ -60,7 +61,7 @@ export class StateManager {
     const myOrgIds = await getRelatedOrgIds(user.organizationId);
 
     return {
-      list: this.activityState.list.filter((a) => myOrgIds.includes(a.ownerOrgId)),
+      list: filterInitialActivities(this.activityState.list.filter((a) => myOrgIds.includes(a.ownerOrgId))),
     };
   }
 
