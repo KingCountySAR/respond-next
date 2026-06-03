@@ -20,6 +20,8 @@ interface RosterEntryProps {
 }
 
 const headerCellStyle = { fontWeight: 700, width: 20 };
+const rosterRowStyle = { height: 45 };
+const MIN_ROSTER_ROWS = 5;
 const columnBordersStyle = {
   [`& .${tableCellClasses.root}`]: {
     borderLeft: '1px solid rgba(224, 224, 224, 1)', // Adds a left border to all cells
@@ -88,7 +90,7 @@ export function RosterReview({ activityId }: { activityId: string }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Roster = forwardRef(function Roster({ rosterEntries, styles }: { rosterEntries: Array<RosterEntry>; styles: Partial<TableClasses> | undefined }, ref: any) {
   const activity = useActivityContext();
-  if (!rosterEntries.length) return <ActivityNotFound />;
+  const paddedRosterEntries = padRosterEntries(rosterEntries);
   return (
     <Table ref={ref} size="small" sx={{ ...styles }}>
       <TableHead>
@@ -117,7 +119,7 @@ const Roster = forwardRef(function Roster({ rosterEntries, styles }: { rosterEnt
         </TableRow>
       </TableHead>
       <TableBody>
-        {rosterEntries.map((entry, i) => (
+        {paddedRosterEntries.map((entry, i) => (
           <RosterRow key={i} rosterEntry={entry} activityStartTime={activity.startTime} />
         ))}
       </TableBody>
@@ -139,7 +141,7 @@ function ActivityNotFound() {
 
 function RosterRow({ activityStartTime, rosterEntry }: { activityStartTime: number; rosterEntry: RosterEntry }) {
   return (
-    <TableRow>
+    <TableRow sx={rosterRowStyle}>
       <TableCell>{rosterEntry.participantName}</TableCell>
       <TableCell>{rosterEntry.organizationName}</TableCell>
       {Object.values(rosterEntry.timestamps).map((time, i) => (
@@ -234,6 +236,27 @@ const buildRosterEntry = (props: RosterEntryProps): RosterEntry => {
   };
 };
 
+const buildEmptyRosterEntry = (): RosterEntry => {
+  return {
+    participantId: '',
+    participantName: '',
+    organizationName: '',
+    timestamps: {
+      [RosterStage.SignIn]: 0,
+      [RosterStage.ArriveBase]: 0,
+      [RosterStage.DepartBase]: 0,
+      [RosterStage.SignOut]: 0,
+    },
+    miles: undefined,
+  };
+};
+
+const padRosterEntries = (rosterEntries: Array<RosterEntry>): Array<RosterEntry> => {
+  if (rosterEntries.length >= MIN_ROSTER_ROWS) return rosterEntries;
+
+  return [...rosterEntries, ...Array.from({ length: MIN_ROSTER_ROWS - rosterEntries.length }, buildEmptyRosterEntry)];
+};
+
 const isComplete = (entry: RosterEntry): boolean => {
   return !!entry.timestamps[RosterStage.SignOut];
 };
@@ -260,7 +283,7 @@ const getRosterEntries = (activity: Activity, lastNameFirst: boolean, showStandb
     }
     // Miles are currently only tracked in aggregate at the participant level. For now, we only
     // want to append them to the first roster entry for this participant.
-    const firstEntry = rosterEntries.reverse().find((entry) => entry.participantId === participant.id);
+    const firstEntry = [...rosterEntries].reverse().find((entry) => entry.participantId === participant.id);
     if (firstEntry) {
       firstEntry.miles = participant.miles ?? 0;
     }
