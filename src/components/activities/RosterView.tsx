@@ -21,7 +21,7 @@ interface RosterEntryProps {
 
 const headerCellStyle = { fontWeight: 700, width: 20 };
 const rosterRowStyle = { height: 45 };
-const MIN_ROSTER_ROWS = 5;
+const MIN_ROSTER_ROWS = 20;
 const columnBordersStyle = {
   [`& .${tableCellClasses.root}`]: {
     borderLeft: '1px solid rgba(224, 224, 224, 1)', // Adds a left border to all cells
