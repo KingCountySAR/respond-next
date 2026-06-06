@@ -63,6 +63,11 @@ export default function useDialogHistory(open: boolean, onClose: () => void) {
           window.removeEventListener('popstate', handlePop);
         } else {
           // Programmatic close: go back to remove the pushed history entry.
+          // React has already run the cleanup for the previous `open=true` effect,
+          // so re-register this effect's handler before calling `history.back()`.
+          // Otherwise the suppressing popstate can be missed, leaving pushedRef true
+          // and causing the next close to navigate back past the current page.
+          window.addEventListener('popstate', handlePop);
           suppressPopRef.current = true;
           history.back();
         }
