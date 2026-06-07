@@ -38,9 +38,9 @@ export function MobileActivityPage() {
   const activity = useActivityContext();
   const user = useAppSelector((state) => state.auth.userInfo);
   const myParticipation = activity?.participants[user?.participantId ?? ''];
-  const showStatusUpdater = isActive(activity);
+  const showParticipantOptions = isActive(activity);
   const showEta = myParticipation?.timeline[0] && [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(myParticipation.timeline[0].status);
-  const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showStatusUpdater ? MOBILE_STATUS_UPDATER_HEIGHT : 0) + (showEta ? MOBILE_ETA_INPUT_HEIGHT : 0) - ROSTER_PANEL_PADDING;
+  const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showParticipantOptions ? MOBILE_STATUS_UPDATER_HEIGHT : 0) + (showEta ? MOBILE_ETA_INPUT_HEIGHT : 0) - ROSTER_PANEL_PADDING;
 
   return (
     <ToolbarPage>
@@ -50,14 +50,12 @@ export function MobileActivityPage() {
       {bottomNav === MobilePageId.Manage && <MobileManageScreen />}
       <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
-        <Stack spacing={2} p={2}>
-          {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
-          {showStatusUpdater && (
-            <Box>
-              <StatusUpdater fullWidth={true} />
-            </Box>
-          )}
-        </Stack>
+        {showParticipantOptions && (
+          <Stack spacing={2} p={2}>
+            {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
+            <StatusUpdater fullWidth={true} />
+          </Stack>
+        )}
         <BottomNavigation
           showLabels
           value={bottomNav}
