@@ -205,4 +205,31 @@ describe('partner API – write-back', () => {
     const res = await updateParticipant(makePost(API_KEY, { participantId: 'p-smr', status: ParticipantStatus.SignedIn }), { params: { activityId: 'act-other' } });
     expect(res.status).toBe(404);
   });
+
+  it('rejects creating a new participant without a name (400)', async () => {
+    const res = await updateParticipant(makePost(API_KEY, { participantId: 'p-new', status: ParticipantStatus.SignedIn, time: 1500 }), { params: { activityId: 'act-smr' } });
+    expect(res.status).toBe(400);
+  });
+
+  it('allows a status-only update (no name) for an already-existing participant', async () => {
+    // First create the participant with a name.
+    const create = await updateParticipant(makePost(API_KEY, { participantId: 'p-smr', firstname: 'Dana', lastname: 'Member', status: ParticipantStatus.SignedIn, time: 1500 }), { params: { activityId: 'act-smr' } });
+    expect(create.status).toBe(200);
+
+    // Then update status only — no name supplied — should succeed.
+    const update = await updateParticipant(makePost(API_KEY, { participantId: 'p-smr', status: ParticipantStatus.SignedOut, time: 1600 }), { params: { activityId: 'act-smr' } });
+    expect(update.status).toBe(200);
+  });
+
+  it('rejects an eta that is in the past (400)', async () => {
+    const pastEta = Date.now() - 60 * 60 * 1000; // an hour ago
+    const res = await updateParticipant(makePost(API_KEY, { participantId: 'p-smr', firstname: 'Dana', lastname: 'Member', status: ParticipantStatus.SignedIn, eta: pastEta }), { params: { activityId: 'act-smr' } });
+    expect(res.status).toBe(400);
+  });
+
+  it('accepts an eta in the future', async () => {
+    const futureEta = Date.now() + 30 * 60 * 1000; // 30 minutes out
+    const res = await updateParticipant(makePost(API_KEY, { participantId: 'p-smr', firstname: 'Dana', lastname: 'Member', status: ParticipantStatus.SignedIn, eta: futureEta }), { params: { activityId: 'act-smr' } });
+    expect(res.status).toBe(200);
+  });
 });
