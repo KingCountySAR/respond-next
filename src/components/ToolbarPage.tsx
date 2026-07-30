@@ -24,7 +24,7 @@ export function ToolbarPage({ children, maxWidth }: { children: React.ReactNode;
   }
 
   return (
-    <Container maxWidth={maxWidth ?? 'md'} sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto' }}>
+    <Container maxWidth={maxWidth ?? 'md'} sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
       <CssBaseline />
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
@@ -48,8 +48,8 @@ export function ToolbarPage({ children, maxWidth }: { children: React.ReactNode;
           <AppMenu />
         </Toolbar>
       </AppBar>
-      <Box className="toolbar-filler" sx={{ height: { xs: 56, sm: 64 } }} />
-      <Box component="main" sx={{ py: 2 }} flex="1 1 auto" display="flex" flexDirection="column">
+      <Box className="toolbar-filler" sx={{ height: { xs: 56, sm: 64 }, flexShrink: 0 }} />
+      <Box component="main" sx={{ py: 2, flex: '1 1 auto', minHeight: 0 }} display="flex" flexDirection="column">
         {children}
       </Box>
     </Container>

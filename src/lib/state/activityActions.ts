@@ -1,6 +1,7 @@
 import { createAction } from '@reduxjs/toolkit';
 
-import { Activity, OrganizationStatus, ParticipantStatus, ParticipantUpdate, pickActivityProperties } from '@respond/types/activity';
+import { Activity, CommunicationsLogEntry, OrganizationStatus, ParticipantStatus, ParticipantUpdate, pickActivityProperties } from '@respond/types/activity';
+import { pickTeamProperties, Team } from '@respond/types/team';
 
 import { ActivityState } from '.';
 
@@ -63,6 +64,15 @@ const participantTimelineUpdate = createAction('participant/timeline', (activity
   meta: { sync: true },
 }));
 
+const participantTimelineAdd = createAction('participant/timelineAdd', (activityId: string, participantId: string, update: ParticipantUpdate) => ({
+  payload: {
+    activityId,
+    participantId,
+    update,
+  },
+  meta: { sync: true },
+}));
+
 const participantMilesUpdate = createAction('participant/milesUpdate', (activityId: string, participantId: string, miles: number) => ({
   payload: {
     activityId,
@@ -90,6 +100,47 @@ const tagParticipant = createAction('participant/tag', (activityId: string, part
   meta: { sync: false },
 }));
 
+const addComm = createAction('activity/commsAdd', (activityId: string, comm: CommunicationsLogEntry) => ({
+  payload: {
+    activityId,
+    comm,
+  },
+  meta: { sync: true },
+}));
+
+const updateComm = createAction('activity/commsUpdate', (activityId: string, commId: string, updates: Partial<CommunicationsLogEntry>) => ({
+  payload: {
+    activityId,
+    commId,
+    updates,
+  },
+  meta: { sync: true },
+}));
+
+const updateStaff = createAction('activity/staffUpdate', (activityId: string, staff: Record<string, string>) => ({
+  payload: {
+    activityId,
+    staff,
+  },
+  meta: { sync: true },
+}));
+
+const createTeam = createAction('team/create', (activityId: string, team: Team) => ({
+  payload: {
+    activityId,
+    team,
+  },
+  meta: { sync: true },
+}));
+
+const updateTeam = createAction('team/update', (activityId: string, updates: Partial<Team> & { id: string }) => ({
+  payload: {
+    activityId,
+    updates: pickTeamProperties(updates),
+  },
+  meta: { sync: true },
+}));
+
 export const ActivityActions = {
   reload,
   update,
@@ -99,9 +150,15 @@ export const ActivityActions = {
   appendOrganizationTimeline,
   participantUpdate,
   participantTimelineUpdate,
+  participantTimelineAdd,
   participantMilesUpdate,
   participantEtaUpdate,
   tagParticipant,
+  addComm,
+  updateComm,
+  updateStaff,
+  createTeam,
+  updateTeam,
 };
 
 export type ActivityActionsType = typeof ActivityActions;
