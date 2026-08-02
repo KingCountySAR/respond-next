@@ -74,8 +74,8 @@ export function DashboardEquipmentManager() {
 
   return (
     <Droppable accepts="equipment" onDrop={returnEquipment} grow>
+      <DashboardSearchBox onChange={setSearchQuery} sx={{ mb: 2 }} />
       <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <DashboardSearchBox onChange={setSearchQuery} sx={{ mb: 1 }} />
         {filteredEquipment.map((item) => (
           <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)}>
             <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1, cursor: 'grab', bgcolor: 'background.paper' }}>
