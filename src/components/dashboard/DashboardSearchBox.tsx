@@ -2,7 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Box, IconButton, InputAdornment, SxProps, TextField, Theme } from '@mui/material';
 import { useState } from 'react';
 
-export function DashboardSearchBox({ onChange, sx }: { onChange: (value: string) => void; sx?: SxProps<Theme> | undefined }) {
+export function DashboardSearchBox({ placeholder, onChange, sx }: { placeholder?: string; onChange: (value: string) => void; sx?: SxProps<Theme> | undefined }) {
   const [searchQuery, setSearchQuery] = useState('');
   const handleChange = (value: string) => {
     setSearchQuery(value);
@@ -12,7 +12,7 @@ export function DashboardSearchBox({ onChange, sx }: { onChange: (value: string)
     <Box sx={sx}>
       <TextField
         size="small"
-        placeholder="Search messages, to, or from"
+        placeholder={placeholder || 'Search...'}
         fullWidth
         value={searchQuery}
         onChange={(e) => handleChange(e.target.value)}

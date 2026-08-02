@@ -74,7 +74,7 @@ export function DashboardCommsManager() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
-      <DashboardSearchBox onChange={setSearchQuery} sx={{ mb: 2 }} />
+      <DashboardSearchBox onChange={setSearchQuery} placeholder="Search messages, to, or from..." sx={{ mb: 2 }} />
       <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
         {filteredCommunications.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
