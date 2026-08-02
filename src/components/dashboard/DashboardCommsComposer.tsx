@@ -1,5 +1,6 @@
 import { Box, Button, Stack, TextField } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { useEffect, useRef } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { v4 as uuid } from 'uuid';
 
@@ -18,6 +19,7 @@ type FormValues = {
 export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: CommunicationsLogEntry | null; onSave?: () => void; onCancel?: () => void }) {
   const dispatch = useAppDispatch();
   const activity = useActivityContext();
+  const fromRef = useRef<HTMLInputElement | null>(null);
 
   const { register, handleSubmit, reset, formState } = useForm<FormValues>({
     defaultValues: {
@@ -26,6 +28,12 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
       message: entry?.message ?? '',
     },
   });
+
+  useEffect(() => {
+    if (!entry) {
+      fromRef.current?.focus();
+    }
+  }, [entry]);
 
   const submit: SubmitHandler<FormValues> = (values) => {
     if (entry && entry.id) {
@@ -51,7 +59,11 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
       onSave?.();
     }
 
-    reset({ from: 'Ops', to: 'All Teams', message: '' });
+    reset({ from: '', to: '', message: '' });
+
+    if (!entry) {
+      fromRef.current?.focus();
+    }
   };
 
   return (
@@ -59,10 +71,24 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
       <form onSubmit={handleSubmit(submit)}>
         <Stack spacing={2}>
           <Stack direction={{ xl: 'row' }} alignItems={{ xs: 'stretch', xl: 'center' }} gap={2}>
-            <TextField label="From" size="small" {...register('from')} />
+            <TextField label="From" size="small" inputRef={fromRef} {...register('from')} />
             <TextField label="To" size="small" {...register('to')} />
           </Stack>
-          <TextField label="Message" size="small" multiline minRows={2} {...register('message', { required: true })} error={!!formState.errors.message} helperText={formState.errors.message ? 'Message is required' : ''} />
+          <TextField
+            label="Message"
+            size="small"
+            multiline
+            minRows={2}
+            {...register('message', { required: true })}
+            error={!!formState.errors.message}
+            helperText={formState.errors.message ? 'Message is required' : ''}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                handleSubmit(submit)();
+              }
+            }}
+          />
           <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
             {entry && (
               <Button
