@@ -1,8 +1,10 @@
-import { Box, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
 
 import { ParticipantStatus } from '@respond/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';
+
+import { DashboardCollapsibleBox } from './DashboardCollapsibleBox';
 
 export function DashboardResponderSummary() {
   const activity = useActivityContext();
@@ -31,15 +33,12 @@ export function DashboardResponderSummary() {
   ] as const;
 
   return (
-    <Box sx={{ px: 1 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-        Responders
-      </Typography>
+    <DashboardCollapsibleBox title="Responders" sx={{ p: 1 }}>
       {summaryLines.map(([label, count]) => (
         <Typography key={label} variant="subtitle1">
           {`${label} (${count})`}
         </Typography>
       ))}
-    </Box>
+    </DashboardCollapsibleBox>
   );
 }

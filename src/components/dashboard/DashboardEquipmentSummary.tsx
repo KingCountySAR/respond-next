@@ -1,6 +1,8 @@
-import { Box, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
 
 import { useActivityContext } from '../activities/ActivityProvider';
+
+import { DashboardCollapsibleBox } from './DashboardCollapsibleBox';
 
 export function DashboardEquipmentSummary() {
   const activity = useActivityContext();
@@ -16,10 +18,7 @@ export function DashboardEquipmentSummary() {
   const equipmentEntries = Object.entries(equipmentCounts).sort(([leftName], [rightName]) => leftName.localeCompare(rightName));
 
   return (
-    <Box sx={{ px: 1 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-        Equipment
-      </Typography>
+    <DashboardCollapsibleBox title="Equipment" sx={{ p: 1 }}>
       {equipmentEntries.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           No equipment assigned.
@@ -31,6 +30,6 @@ export function DashboardEquipmentSummary() {
           </Typography>
         ))
       )}
-    </Box>
+    </DashboardCollapsibleBox>
   );
 }
