@@ -9,7 +9,7 @@ import { EquipmentItem } from '@respond/types/team';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 
-import SortMenuButton, { EquipmentGrouping } from './DashboardEquipmentGroupByMenu';
+import { EquipmentGrouping, EquipmentGroupToggleButton } from './DashboardEquipmentGroupToggleButton';
 import { DashboardSearchBox } from './DashboardSearchBox';
 
 const inventory = [
@@ -92,9 +92,9 @@ export function DashboardEquipmentManager() {
   return (
     <Droppable accepts="equipment" onDrop={returnEquipment} grow>
       <Stack spacing={2} sx={{ overflow: 'auto' }}>
-        <Stack direction="row" spacing={2}>
+        <Stack direction="row" spacing={1}>
           <DashboardSearchBox onChange={setSearchQuery} />
-          <SortMenuButton onChange={(value) => setGroupBy(value)} />
+          <EquipmentGroupToggleButton onChange={(value) => setGroupBy(value)} />
         </Stack>
         <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pr: 0.5 }}>{groupBy === 'All' ? <EquipmentAphabetical items={filteredEquipment} /> : <EquipmentGroups groups={groupedEquipment} />}</Box>
       </Stack>

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 
 export type EquipmentGrouping = 'All' | 'Type';
 
-export default function GroupToggleButton({ onChange }: { onChange: (grouping: EquipmentGrouping) => void }): JSX.Element {
+export function EquipmentGroupToggleButton({ onChange }: { onChange: (grouping: EquipmentGrouping) => void }): JSX.Element {
   const [selected, setSelected] = useState<EquipmentGrouping>('All');
 
   const handleToggle = (): void => {
