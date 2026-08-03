@@ -105,7 +105,24 @@ export function DashboardEquipmentManager() {
 function EquipmentTile({ item }: { item: EquipmentItem }) {
   return (
     <Draggable type="equipment" item={checkOutEquipmentItem(item)}>
-      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1, cursor: 'grab', bgcolor: 'background.paper' }}>
+      <Box
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          p: 1,
+          cursor: 'grab',
+          bgcolor: 'background.paper',
+          ':hover': {
+            bgcolor: 'grey.100',
+            // Targets the child element with class 'promote-button' when Stack is hovered
+            '& .promote-button': {
+              opacity: 1,
+              visibility: 'visible',
+            },
+          },
+        }}
+      >
         <Stack direction="row" justifyContent="space-between">
           <Typography variant="subtitle2">{item.name}</Typography>
           <Typography variant="caption" color="text.secondary">
