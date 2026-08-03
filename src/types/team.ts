@@ -20,6 +20,7 @@ export interface Team {
 
 export interface EquipmentItem {
   id: string;
+  type: string;
   uuid?: string;
   name: string;
 }
