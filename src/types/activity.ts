@@ -4,7 +4,7 @@ import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
 import { pickSafely } from '@respond/lib/pickSafely';
 
 import { createNewLocation, Location } from './location';
-import { Team } from './team';
+import { CommunicationsLogEntry, Place, Team } from './operations';
 
 export enum ParticipantStatus {
   NotResponding = 0,
@@ -118,17 +118,6 @@ export interface ParticipatingOrg {
   timeline: { time: number; status: OrganizationStatus }[];
 }
 
-export interface CommunicationsLogEntry {
-  id: string;
-  to?: string;
-  from?: string;
-  message: string;
-  timestamp: number;
-  isAutomated?: boolean;
-  isDeleted?: boolean;
-  isFavorite?: boolean;
-}
-
 export interface Activity {
   id: string;
   idNumber: string;
@@ -151,9 +140,10 @@ export interface Activity {
   teams: Team[];
   comms: CommunicationsLogEntry[];
   staff: Record<string, string>;
+  places: Place[];
 }
 
-export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'forceStandbyOnly', 'startTime', 'endTime', 'earlySignInWindow', 'comms', 'staff']);
+export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'forceStandbyOnly', 'startTime', 'endTime', 'earlySignInWindow', 'comms', 'staff', 'places']);
 
 export type ActivityType = 'missions' | 'events';
 
@@ -180,5 +170,6 @@ export function createNewActivity(): Activity {
     teams: [],
     comms: [],
     staff: {},
+    places: [],
   };
 }

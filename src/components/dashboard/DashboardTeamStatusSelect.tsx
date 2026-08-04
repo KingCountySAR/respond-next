@@ -1,7 +1,7 @@
 import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import React from 'react';
 
-import { TeamStatus } from '../../types/team';
+import { TeamStatus } from '../../types/operations';
 
 const TEAM_STATUSES: TeamStatus[] = ['In Base', 'In Transit', 'On Assignment', 'On Scene', 'Returning To Base', 'Disbanded'];
 

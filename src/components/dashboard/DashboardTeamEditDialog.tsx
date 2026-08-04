@@ -2,7 +2,7 @@ import { Button, DialogActions, DialogContent, DialogTitle, MenuItem, TextField 
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
-import { SarGar, Team } from '../../types/team';
+import { SarGar, Team } from '../../types/operations';
 import DialogWithHistory from '../DialogWithHistory';
 import { Stack } from '../Material';
 

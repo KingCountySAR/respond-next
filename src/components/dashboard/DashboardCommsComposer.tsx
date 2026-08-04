@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { CommunicationsLogEntry } from '@respond/types/activity';
+import { CommunicationsLogEntry } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 

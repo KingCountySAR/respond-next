@@ -8,7 +8,7 @@ import { useMemo, useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { CommunicationsLogEntry } from '@respond/types/activity';
+import { CommunicationsLogEntry } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import CopyChip from '../CopyChip';

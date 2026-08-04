@@ -6,9 +6,9 @@ import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { CommunicationsLogEntry, Participant, ParticipantStatus } from '@respond/types/activity';
+import { Participant, ParticipantStatus } from '@respond/types/activity';
 
-import { EquipmentItem, Team, TeamStatus } from '../../types/team';
+import { CommunicationsLogEntry, EquipmentItem, Team, TeamStatus } from '../../types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';

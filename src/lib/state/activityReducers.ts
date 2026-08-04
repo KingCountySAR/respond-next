@@ -2,7 +2,7 @@ import { Draft } from '@reduxjs/toolkit';
 import merge from 'lodash.merge';
 
 import { createNewActivity, ParticipantStatus, pickActivityProperties } from '@respond/types/activity';
-import { pickTeamProperties } from '@respond/types/team';
+import { pickTeamProperties } from '@respond/types/operations';
 
 import { ActivityActions, ActivityActionsType } from './activityActions';
 

@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { createNewTeam, Team } from '@respond/types/team';
+import { createNewTeam, Team } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Stack } from '../Material';

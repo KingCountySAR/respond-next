@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { EquipmentItem } from '@respond/types/team';
+import { EquipmentItem } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';

@@ -25,6 +25,22 @@ export interface EquipmentItem {
   name: string;
 }
 
+export interface CommunicationsLogEntry {
+  id: string;
+  to?: string;
+  from?: string;
+  message: string;
+  timestamp: number;
+  isAutomated?: boolean;
+  isDeleted?: boolean;
+  isFavorite?: boolean;
+}
+
+export interface Place {
+  id: string;
+  assignedEquipment: EquipmentItem[];
+}
+
 export function createNewTeam(name: string): Team {
   return {
     id: uuid(),

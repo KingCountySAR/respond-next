@@ -1,7 +1,7 @@
 import { createAction } from '@reduxjs/toolkit';
 
-import { Activity, CommunicationsLogEntry, OrganizationStatus, ParticipantStatus, ParticipantUpdate, pickActivityProperties } from '@respond/types/activity';
-import { pickTeamProperties, Team } from '@respond/types/team';
+import { Activity, OrganizationStatus, ParticipantStatus, ParticipantUpdate, pickActivityProperties } from '@respond/types/activity';
+import { CommunicationsLogEntry, pickTeamProperties, Team } from '@respond/types/operations';
 
 import { ActivityState } from '.';
 

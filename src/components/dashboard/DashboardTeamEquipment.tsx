@@ -1,6 +1,6 @@
 import { Stack, Typography } from '@mui/material';
 
-import { EquipmentItem } from '@respond/types/team';
+import { EquipmentItem } from '@respond/types/operations';
 
 import { Draggable } from '../DragAndDrop/DnDComponents';
 
