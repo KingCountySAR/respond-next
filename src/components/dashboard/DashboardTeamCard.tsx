@@ -111,6 +111,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
       'On Assignment': 'Starting Assignment',
       'On Scene': 'On Scene',
       'Returning To Base': 'RTB',
+      Disbanded: 'Disbanded',
     };
     const comm: CommunicationsLogEntry = {
       id: uuid(),
@@ -138,7 +139,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   return (
     <>
       <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
-        <StatusContainer color={statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <StatusContainer color={team.status === 'Disbanded' ? 'grey' : statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1.5, bgcolor: 'background.paper', height: '100%' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Stack direction="row" alignItems="center">

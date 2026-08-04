@@ -30,6 +30,23 @@ function getNextTeamNumber(teams: Team[]): number {
 }
 
 const sortTeams = (left: Team, right: Team) => {
+  // Sort order for dashboard team listing:
+  // 1. All non-disbanded teams should appear before any 'Disbanded' teams.
+  // 2. Teams with status 'Disbanded' should still be alphabetized by name.
+  // 3. For active teams, sort by GAR priority (red first, then amber, then green).
+  // 4. If GAR is the same, sort active teams alphabetically by name.
+  if (left.status === 'Disbanded' && right.status !== 'Disbanded') {
+    return 1;
+  }
+
+  if (right.status === 'Disbanded' && left.status !== 'Disbanded') {
+    return -1;
+  }
+
+  if (left.status === 'Disbanded' && right.status === 'Disbanded') {
+    return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+  }
+
   const garPriority: Team['gar'][] = ['red', 'amber', 'green'];
 
   const leftPriority = garPriority.indexOf(left.gar as Team['gar']);

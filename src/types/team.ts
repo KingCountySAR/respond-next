@@ -2,7 +2,7 @@ import { v4 as uuid } from 'uuid';
 
 import { pickSafely } from '@respond/lib/pickSafely';
 
-export type TeamStatus = 'In Base' | 'In Transit' | 'On Assignment' | 'On Scene' | 'Returning To Base';
+export type TeamStatus = 'In Base' | 'In Transit' | 'On Assignment' | 'On Scene' | 'Returning To Base' | 'Disbanded';
 
 export type SarGar = 'green' | 'amber' | 'red';
 

@@ -3,7 +3,7 @@ import React from 'react';
 
 import { TeamStatus } from '../../types/team';
 
-const TEAM_STATUSES: TeamStatus[] = ['In Base', 'In Transit', 'On Assignment', 'On Scene', 'Returning To Base'];
+const TEAM_STATUSES: TeamStatus[] = ['In Base', 'In Transit', 'On Assignment', 'On Scene', 'Returning To Base', 'Disbanded'];
 
 // Color mapping for status visual indicators
 const STATUS_COLORS: Record<TeamStatus, 'default' | 'info' | 'warning' | 'success' | 'secondary'> = {
@@ -12,6 +12,7 @@ const STATUS_COLORS: Record<TeamStatus, 'default' | 'info' | 'warning' | 'succes
   'On Assignment': 'warning',
   'On Scene': 'success',
   'Returning To Base': 'secondary',
+  Disbanded: 'default',
 };
 
 interface TeamStatusSelectProps {
