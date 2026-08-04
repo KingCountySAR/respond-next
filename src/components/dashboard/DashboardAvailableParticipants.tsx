@@ -25,7 +25,6 @@ export function DashboardAvailableParticipants() {
     dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDrop = (participant: Participant, type: string, callback?: () => void) => {
     // If the participant is not in Assigned status, do not overwrite the current status.
     if (participant.timeline[0].status !== ParticipantStatus.Assigned) return;

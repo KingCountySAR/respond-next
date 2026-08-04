@@ -124,7 +124,7 @@ function EquipmentAphabetical({ items }: { items: EquipmentItem[] }) {
   return (
     <>
       {items.map((item) => (
-        <Draggable key={item.uuid} type="equipment" item={checkOutEquipmentItem(item)}>
+        <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)}>
           <EquipmentTile item={item} />
         </Draggable>
       ))}
@@ -139,7 +139,7 @@ function EquipmentGroups({ groups }: { groups: GroupedInventory }) {
         <DashboardBoxWithTitle key={groupName} title={groupName} collapsible>
           <Stack spacing={0.5}>
             {list.map((item) => (
-              <Draggable key={item.uuid} type="equipment" item={checkOutEquipmentItem(item)}>
+              <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)}>
                 <EquipmentTile item={item} />
               </Draggable>
             ))}

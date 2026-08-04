@@ -271,6 +271,8 @@ export const BasicReducers: ActivityReducers = {
       return;
     }
     activity.comms = activity.comms ?? [];
+    // guard against sync replay applying the same entry twice
+    if (activity.comms.some((c) => c.id === payload.comm.id)) return;
     activity.comms.push(payload.comm);
   },
 
