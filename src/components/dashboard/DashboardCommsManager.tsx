@@ -14,6 +14,7 @@ import { useActivityContext } from '../activities/ActivityProvider';
 import { CopyChip } from '../CopyChip';
 import { Stack } from '../Material';
 
+import { CommsAutomatedToggleButton } from './DashboardCommsAutomatedToggleButton';
 import { DashboardCommsComposer } from './DashboardCommsComposer';
 import { CommsFavoriteToggleButton } from './DashboardCommsFavoriteToggleButton';
 import { DashboardSearchBox } from './DashboardSearchBox';
@@ -47,8 +48,9 @@ export function DashboardCommsManager() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showFavorites, setShowFavorites] = useState(false);
+  const [hideAutomated, setHideAutomated] = useState(false);
 
-  const visibleCommunications = useMemo(() => (activity.comms ?? []).filter((entry) => !entry.isDeleted && (!showFavorites || entry.isFavorite)), [activity, showFavorites]);
+  const visibleCommunications = useMemo(() => (activity.comms ?? []).filter((entry) => !entry.isDeleted && (!showFavorites || entry.isFavorite) && (!hideAutomated || !entry.isAutomated)), [activity, showFavorites, hideAutomated]);
 
   const filteredCommunications = useMemo(() => {
     const q = (searchQuery || '').trim().toLowerCase();
@@ -79,6 +81,7 @@ export function DashboardCommsManager() {
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         <DashboardSearchBox onChange={setSearchQuery} placeholder="Search messages, to, or from..." sx={{ flex: 1 }} />
+        <CommsAutomatedToggleButton onChange={setHideAutomated} />
         <CommsFavoriteToggleButton onChange={(isSelected) => setShowFavorites(isSelected)} />
       </Stack>
       <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
