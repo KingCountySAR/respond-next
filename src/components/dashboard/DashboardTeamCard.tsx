@@ -99,6 +99,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   }
 
   const updateTeam = (team: Team) => {
+    // TODO: Reassign remaining resource to the unassigned place.
     dispatch(ActivityActions.updateTeam(activity.id, team));
   };
 

@@ -73,6 +73,7 @@ export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPl
     if (!place) return;
 
     const validation = validatePlaceName(activity, place.id, data.name);
+    // TODO: Validate Coordinates Inputs (see LocationEditForm form)
 
     if (!validation.isValid) {
       setError('name', {
@@ -102,8 +103,8 @@ export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPl
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             <TextField autoFocus label="Place Name" disabled={isDefault} fullWidth {...register('name')} error={Boolean(errors.name)} helperText={errors.name?.message ?? 'Choose a unique name for this place.'} />
-            <TextField label="Latitude" fullWidth multiline minRows={3} {...register('lat')} />
-            <TextField label="Longitude" fullWidth multiline minRows={3} {...register('lon')} />
+            <TextField label="Latitude" fullWidth multiline {...register('lat')} />
+            <TextField label="Longitude" fullWidth multiline {...register('lon')} />
             <TextField label="Notes" fullWidth multiline minRows={3} {...register('notes')} />
           </Stack>
         </DialogContent>

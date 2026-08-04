@@ -9,7 +9,7 @@ import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 export function DashboardResponderSummary() {
   const activity = useActivityContext();
 
-  const totals = Object.values(activity.participants).reduce(
+  const participantTotals = Object.values(activity.participants).reduce(
     (counts, participant) => {
       const status = participant.timeline?.[0]?.status;
 
@@ -26,10 +26,16 @@ export function DashboardResponderSummary() {
     { Responding: 0, Available: 0, Assigned: 0 },
   );
 
+  const fieldResources = Object.values(activity.teams).reduce((count, team) => {
+    if (['In Base','Disbanded'].includes(team.status)) return count;
+    return count + team.assignedParticipants.length;
+  }, 0);
+
   const summaryLines = [
-    ['Assigned', totals.Assigned],
-    ['Available', totals.Available],
-    ['Responding', totals.Responding],
+    ['Field', fieldResources],
+    ['Assigned', participantTotals.Assigned],
+    ['Available', participantTotals.Available],
+    ['Responding', participantTotals.Responding],
   ] as const;
 
   return (

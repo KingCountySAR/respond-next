@@ -102,6 +102,7 @@ function PlaceTile({ place }: { place: Place }) {
   };
 
   const deletePlace = (id: string) => {
+    // TODO: Reassign remaining resource to the unassigned place.
     dispatch(
       ActivityActions.updatePlaces(
         activity.id,
