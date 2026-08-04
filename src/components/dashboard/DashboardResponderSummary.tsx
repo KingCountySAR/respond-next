@@ -33,7 +33,7 @@ export function DashboardResponderSummary() {
   ] as const;
 
   return (
-    <DashboardBoxWithTitle title="Responders" sx={{ p: 1 }} collapsible>
+    <DashboardBoxWithTitle title="Responders" collapsible>
       {summaryLines.map(([label, count]) => (
         <Typography key={label} variant="subtitle1">
           {`${label} (${count})`}

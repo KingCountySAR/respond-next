@@ -78,20 +78,13 @@ export function DashboardEquipmentManager() {
     }, {});
   }, [filteredEquipment]);
 
-  const returnEquipment = (equipment: EquipmentItem) => {
-    // Remove from the previous team, if any
-    // TODO: need actions to club these updates into a single activity transaction
-    activity.teams.forEach((team) => {
-      if (team.assignedEquipment.some((item) => item.uuid === equipment.uuid)) {
-        // Remove the participant from the team
-        const updatedTeam = { ...team, assignedEquipment: team.assignedEquipment.filter((item) => item.uuid !== equipment.uuid) };
-        dispatch(ActivityActions.updateTeam(activity.id, updatedTeam));
-      }
-    });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleDrop = (item: any, type: string, callback?: () => void) => {
+    callback?.();
   };
 
   return (
-    <Droppable accepts="equipment" onDrop={returnEquipment} grow>
+    <Droppable accepts="equipment" onDrop={handleDrop} grow>
       <Stack spacing={2} sx={{ overflow: 'auto' }}>
         <Stack direction="row" spacing={1}>
           <DashboardSearchBox onChange={setSearchQuery} />
@@ -105,33 +98,31 @@ export function DashboardEquipmentManager() {
 
 function EquipmentTile({ item }: { item: EquipmentItem }) {
   return (
-    <Draggable type="equipment" item={checkOutEquipmentItem(item)}>
-      <Box
-        sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          p: 1,
-          cursor: 'grab',
-          bgcolor: 'background.paper',
-          ':hover': {
-            bgcolor: 'grey.100',
-            // Targets the child element with class 'promote-button' when Stack is hovered
-            '& .promote-button': {
-              opacity: 1,
-              visibility: 'visible',
-            },
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        p: 1,
+        cursor: 'grab',
+        bgcolor: 'background.paper',
+        ':hover': {
+          bgcolor: 'grey.100',
+          // Targets the child element with class 'promote-button' when Stack is hovered
+          '& .promote-button': {
+            opacity: 1,
+            visibility: 'visible',
           },
-        }}
-      >
-        <Stack direction="row" justifyContent="space-between">
-          <Typography variant="subtitle2">{item.name}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {item.type}
-          </Typography>
-        </Stack>
-      </Box>
-    </Draggable>
+        },
+      }}
+    >
+      <Stack direction="row" justifyContent="space-between">
+        <Typography variant="subtitle2">{item.name}</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {item.type}
+        </Typography>
+      </Stack>
+    </Box>
   );
 }
 
@@ -139,7 +130,9 @@ function EquipmentAphabetical({ items }: { items: EquipmentItem[] }) {
   return (
     <>
       {items.map((item) => (
-        <EquipmentTile key={item.id} item={item} />
+        <Draggable type="equipment" item={checkOutEquipmentItem(item)}>
+          <EquipmentTile key={item.id} item={item} />
+        </Draggable>
       ))}
     </>
   );
@@ -149,10 +142,12 @@ function EquipmentGroups({ groups }: { groups: GroupedInventory }) {
   return (
     <>
       {Object.entries(groups).map(([groupName, list]) => (
-        <DashboardBoxWithTitle key={groupName} title={groupName} sx={{ p: 1 }} collapsible>
+        <DashboardBoxWithTitle key={groupName} title={groupName} collapsible>
           <Stack spacing={0.5}>
             {list.map((item) => (
-              <EquipmentTile key={item.id} item={item} />
+              <Draggable type="equipment" item={checkOutEquipmentItem(item)}>
+                <EquipmentTile key={item.id} item={item} />
+              </Draggable>
             ))}
           </Stack>
         </DashboardBoxWithTitle>

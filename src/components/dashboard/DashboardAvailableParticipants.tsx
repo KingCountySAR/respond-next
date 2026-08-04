@@ -7,7 +7,7 @@ import { Participant } from '@respond/types/activity';
 import { ParticipantStatus } from '@respond/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';
-import { Droppable } from '../DragAndDrop/DnDComponents';
+import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 
 import DashboardParticipantCard from './DashboardParticipantCard';
 
@@ -20,19 +20,18 @@ export function DashboardAvailableParticipants() {
     return Object.values(activity.participants).filter((participant) => participant.timeline[0].status === ParticipantStatus.Available);
   }, [activity]);
 
-  const handleDrop = (participant: Participant) => {
-    if (participant.timeline[0].status !== ParticipantStatus.Available) {
-      // Update the Participant Status to Available
-      const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
-      dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
-    }
-    activity.teams.forEach((team) => {
-      if (team.assignedParticipants.includes(participant.id)) {
-        // Remove the participant from the team
-        const updatedTeam = { ...team, assignedParticipants: team.assignedParticipants.filter((id) => id !== participant.id) };
-        dispatch(ActivityActions.updateTeam(activity.id, updatedTeam));
-      }
-    });
+  const setAssigned = (participant: Participant) => {
+    const update = { time: Date.now(), status: ParticipantStatus.Assigned, organizationId: participant.organizationId };
+    dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleDrop = (participant: Participant, type: string, callback?: () => void) => {
+    if (participant.timeline[0].status === ParticipantStatus.Available) return;
+    // Update the Participant Status to Available
+    const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
+    dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
+    callback?.();
   };
 
   return (
@@ -45,7 +44,13 @@ export function DashboardAvailableParticipants() {
             </Typography>
           </Box>
         ) : (
-          availableParticipants.map((participant) => <DashboardParticipantCard key={participant.id} participant={participant} />)
+          availableParticipants.map((participant) => {
+            return (
+              <Draggable key={participant.id} type="participant" item={participant} callback={() => setAssigned(participant)}>
+                <DashboardParticipantCard key={participant.id} participant={participant} />
+              </Draggable>
+            );
+          })
         )}
       </Box>
     </Droppable>

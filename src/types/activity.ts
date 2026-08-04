@@ -4,7 +4,7 @@ import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
 import { pickSafely } from '@respond/lib/pickSafely';
 
 import { createNewLocation, Location } from './location';
-import { CommunicationsLogEntry, Place, Team } from './operations';
+import { CommunicationsLogEntry, getDefaultPlaces, Place, Team } from './operations';
 
 export enum ParticipantStatus {
   NotResponding = 0,
@@ -170,6 +170,6 @@ export function createNewActivity(): Activity {
     teams: [],
     comms: [],
     staff: {},
-    places: [],
+    places: getDefaultPlaces(),
   };
 }

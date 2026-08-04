@@ -4,6 +4,7 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import GroupsIcon from '@mui/icons-material/Groups';
 import HubIcon from '@mui/icons-material/Hub';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
+import MapIcon from '@mui/icons-material/Map';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { Box, Stack } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
@@ -18,6 +19,7 @@ import { DashboardEquipmentManager } from './DashboardEquipmentManager';
 import { DashboardEquipmentSummary } from './DashboardEquipmentSummary';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardPanel } from './DashboardPanel';
+import { DashboardPlaceManager } from './DashboardPlaceManager';
 import { DashboardResponderSummary } from './DashboardResponderSummary';
 import { DashboardRoleTile } from './DashboardRoleTile';
 import { DashboardTeamManager } from './DashboardTeamManager';
@@ -73,6 +75,9 @@ function OperationsDashboardContent() {
             </DashboardPanel>
             <DashboardPanel title="Equipment" collapse="left" icon={<Inventory2Icon />}>
               <DashboardEquipmentManager />
+            </DashboardPanel>
+            <DashboardPanel title="Places" collapse="left" icon={<MapIcon />}>
+              <DashboardPlaceManager />
             </DashboardPanel>
           </Box>
           {/* Right Side Panels */}

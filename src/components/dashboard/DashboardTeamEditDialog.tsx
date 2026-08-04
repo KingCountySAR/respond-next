@@ -91,7 +91,7 @@ export function DashboardTeamEditDialog({ team, teams, onSave, onClose }: Dashbo
 
   return (
     <DialogWithHistory fullWidth={true} open={Boolean(team)} onClose={onClose}>
-      <DialogTitle>Edit team</DialogTitle>
+      <DialogTitle>Edit Team</DialogTitle>
 
       <form onSubmit={handleSubmit(handleSave)}>
         <DialogContent>

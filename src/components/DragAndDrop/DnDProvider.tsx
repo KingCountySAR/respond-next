@@ -4,6 +4,7 @@ import React, { createContext, ReactNode, useContext, useState } from 'react';
 export interface DraggedItem<T = any> {
   type: string;
   data: T;
+  callback?: () => void;
   previewNode?: ReactNode;
 }
 

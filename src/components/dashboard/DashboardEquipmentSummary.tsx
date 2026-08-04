@@ -18,7 +18,7 @@ export function DashboardEquipmentSummary() {
   const equipmentEntries = Object.entries(equipmentCounts).sort(([leftName], [rightName]) => leftName.localeCompare(rightName));
 
   return (
-    <DashboardBoxWithTitle title="Equipment" sx={{ p: 1 }} collapsible>
+    <DashboardBoxWithTitle title="Equipment" collapsible>
       {equipmentEntries.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           No equipment assigned.

@@ -38,7 +38,8 @@ const activitySliceArgs = {
       .addCase(ActivityActions.updateTeam, BasicActivityReducers[ActivityActions.updateTeam.type])
       .addCase(ActivityActions.addComm, BasicActivityReducers[ActivityActions.addComm.type])
       .addCase(ActivityActions.updateComm, BasicActivityReducers[ActivityActions.updateComm.type])
-      .addCase(ActivityActions.updateStaff, BasicActivityReducers[ActivityActions.updateStaff.type]);
+      .addCase(ActivityActions.updateStaff, BasicActivityReducers[ActivityActions.updateStaff.type])
+      .addCase(ActivityActions.updatePlaces, BasicActivityReducers[ActivityActions.updatePlaces.type]);
   },
 };
 

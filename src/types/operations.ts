@@ -2,6 +2,8 @@ import { v4 as uuid } from 'uuid';
 
 import { pickSafely } from '@respond/lib/pickSafely';
 
+import { Activity } from './activity';
+
 export type TeamStatus = 'In Base' | 'In Transit' | 'On Assignment' | 'On Scene' | 'Returning To Base' | 'Disbanded';
 
 export type SarGar = 'green' | 'amber' | 'red';
@@ -38,7 +40,12 @@ export interface CommunicationsLogEntry {
 
 export interface Place {
   id: string;
+  name: string;
+  lat?: string;
+  lon?: string;
+  notes?: string;
   assignedEquipment: EquipmentItem[];
+  assignedParticipants: string[];
 }
 
 export function createNewTeam(name: string): Team {
@@ -52,5 +59,37 @@ export function createNewTeam(name: string): Team {
     teamLeaderParticipantId: null,
   };
 }
+
+export function createNewPlace(name: string): Place {
+  return {
+    id: uuid(),
+    name,
+    assignedEquipment: [],
+    assignedParticipants: [],
+  };
+}
+
+export const DEFAULT_PLACES = {
+  base: 'Command Post',
+  field: 'Field (Unassigned)',
+};
+
+export const isDefaultPlace = (place: Place) => {
+  return Object.values(DEFAULT_PLACES).includes(place.name);
+};
+
+export const getDefaultPlaces = (activity?: Activity): Place[] => {
+  return Object.values(DEFAULT_PLACES).reduce<Place[]>((places, defaultPlaceName) => {
+    const exists = activity?.places?.some((p) => p.name === defaultPlaceName);
+    if (!exists) {
+      return [...places, createNewPlace(defaultPlaceName)];
+    }
+    return places;
+  }, []);
+};
+
+export const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) => {
+  return left.name.localeCompare(right.name);
+};
 
 export const pickTeamProperties = pickSafely<Partial<Team>>(['id', 'name', 'gar', 'status', 'assignment', 'notes', 'assignedParticipants', 'assignedEquipment', 'teamLeaderParticipantId']);

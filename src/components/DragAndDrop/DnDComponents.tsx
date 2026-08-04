@@ -6,16 +6,17 @@ import { DraggedItem, useDnD } from './DnDProvider';
 interface DraggableProps<T> {
   type: string;
   item: T;
+  callback?: () => void;
   children: ReactNode;
 }
 
-export function Draggable<T>({ type, item, children }: DraggableProps<T>) {
+export function Draggable<T>({ type, item, callback, children }: DraggableProps<T>) {
   const { startDrag, updateDrag, endDrag } = useDnD();
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Prevents text selection during drag
     e.stopPropagation();
-    startDrag({ type, data: item, previewNode: children }, e);
+    startDrag({ type, data: item, callback, previewNode: children }, e);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -26,7 +27,7 @@ export function Draggable<T>({ type, item, children }: DraggableProps<T>) {
         droppable.dispatchEvent(
           new CustomEvent('custom-drop', {
             bubbles: true,
-            detail: { type, data: item },
+            detail: { type, data: item, callback },
           }),
         );
       }
@@ -56,7 +57,7 @@ export function Draggable<T>({ type, item, children }: DraggableProps<T>) {
 interface DroppableProps {
   accepts?: string | string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onDrop: (draggedItem: any, type: string) => void; // Accepts any dropped payload
+  onDrop: (draggedItem: any, type: string, callback?: () => void) => void; // Accepts any dropped payload
   children: ReactNode;
   grow?: boolean;
 }
@@ -79,7 +80,7 @@ export function Droppable({ accepts, onDrop, children, grow }: DroppableProps) {
       // Only handle the event if this element is the original target the event was dispatched on.
       if (e.target !== element) return;
       if (isAccepted(customEvent.detail.type)) {
-        onDrop(customEvent.detail.data, customEvent.detail.type);
+        onDrop(customEvent.detail.data, customEvent.detail.type, customEvent.detail.callback);
       }
     };
 

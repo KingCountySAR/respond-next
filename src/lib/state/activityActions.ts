@@ -1,7 +1,7 @@
 import { createAction } from '@reduxjs/toolkit';
 
 import { Activity, OrganizationStatus, ParticipantStatus, ParticipantUpdate, pickActivityProperties } from '@respond/types/activity';
-import { CommunicationsLogEntry, pickTeamProperties, Team } from '@respond/types/operations';
+import { CommunicationsLogEntry, Place, pickTeamProperties, Team } from '@respond/types/operations';
 
 import { ActivityState } from '.';
 
@@ -12,6 +12,11 @@ const reload = createAction('activities/load', (state: ActivityState) => ({
 
 const update = createAction('activity/update', (updates: Partial<Activity> & { id: string }) => ({
   payload: pickActivityProperties(updates),
+  meta: { sync: true },
+}));
+
+const updatePlaces = createAction('activity/placesUpdate', (activityId: string, places: Place[]) => ({
+  payload: { activityId, places },
   meta: { sync: true },
 }));
 
@@ -144,6 +149,7 @@ const updateTeam = createAction('team/update', (activityId: string, updates: Par
 export const ActivityActions = {
   reload,
   update,
+  updatePlaces,
   remove,
   reactivate,
   complete,

@@ -6,11 +6,11 @@ import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { Participant, ParticipantStatus } from '@respond/types/activity';
+import { Participant } from '@respond/types/activity';
 
 import { CommunicationsLogEntry, EquipmentItem, Team, TeamStatus } from '../../types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
-import { Droppable } from '../DragAndDrop/DnDComponents';
+import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';
 
 import { DashboardTeamEditDialog } from './DashboardTeamEditDialog';
@@ -52,53 +52,51 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDrop = (item: any, type: string) => {
+  const handleDrop = (item: any, type: string, callback?: () => void) => {
     if (type === 'participant') {
+      // If the item was dragged and dropped back to the same team, cancel.
+      if (team.assignedParticipants.includes(item.id)) return;
       addTeamMember(item);
-    }
-    if (type === 'equipment') {
+    } else if (type === 'equipment') {
+      // If the item was dragged and dropped back to the same place, cancel.
+      if (team.assignedEquipment.find((equipment) => item.uuid === equipment.uuid)) return;
       addEquipment(item);
+    } else {
+      return;
     }
+    callback?.();
   };
 
   const addTeamMember = (participant: Participant) => {
-    // If the item was dragged and dropped back to the same team, cancel.
     if (team.assignedParticipants.find((id) => id === participant.id)) return;
-    // Update the Participant Status to Assigned
-    if (participant.timeline[0].status !== ParticipantStatus.Assigned) {
-      const update = { time: Date.now(), status: ParticipantStatus.Assigned, organizationId: participant.organizationId };
-      dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
-    }
-    // Remove from the previous team, if any
-    // TODO: need actions to club these updates into a single activity transaction
-    activity.teams.forEach((team) => {
-      if (team.assignedParticipants.includes(participant.id)) {
-        // Remove the participant from the team
-        const updatedTeam = { ...team, assignedParticipants: team.assignedParticipants.filter((id) => id !== participant.id) };
-        dispatch(ActivityActions.updateTeam(activity.id, updatedTeam));
-      }
-    });
     // Update the Team to include the new participant
     const updatedTeam = { ...team, assignedParticipants: [...team.assignedParticipants, participant.id], teamLeaderParticipantId: team.teamLeaderParticipantId || participant.id };
-    dispatch(ActivityActions.updateTeam(activity.id, updatedTeam));
+    updateTeam(updatedTeam);
   };
+
+  const removeTeamMember = (participantId: string) => {
+    if (team.assignedParticipants.includes(participantId)) {
+      // Remove the participant from the team
+      const updatedTeam = { ...team, assignedParticipants: team.assignedParticipants.filter((id) => id !== participantId), teamLeaderParticipantId: team.teamLeaderParticipantId === participantId ? null : team.teamLeaderParticipantId };
+      updateTeam(updatedTeam);
+    }
+  }
 
   const addEquipment = (equipment: EquipmentItem) => {
     // If the item was dragged and dropped back to the same team, cancel.
     if (team.assignedEquipment.find((item) => item.uuid === equipment.uuid)) return;
-    // Remove from the previous team, if any
-    // TODO: need actions to club these updates into a single activity transaction
-    activity.teams.forEach((team) => {
-      if (team.assignedEquipment.some((item) => item.uuid === equipment.uuid)) {
-        // Remove the participant from the team
-        const updatedTeam = { ...team, assignedEquipment: team.assignedEquipment.filter((item) => item.uuid !== equipment.uuid) };
-        dispatch(ActivityActions.updateTeam(activity.id, updatedTeam));
-      }
-    });
     // Update the Team to include the new participant
     const updatedTeam = { ...team, assignedEquipment: [...team.assignedEquipment, equipment] };
-    dispatch(ActivityActions.updateTeam(activity.id, updatedTeam));
+    updateTeam(updatedTeam);
   };
+
+  const removeEquipment = (id: string) => {
+    if (team.assignedEquipment.some((item) => item.uuid === id)) {
+      // Remove the equipment from the team
+      const updatedTeam = { ...team, assignedEquipment: team.assignedEquipment.filter((item) => item.uuid !== id) };
+      updateTeam(updatedTeam);
+    }
+  }
 
   const updateTeam = (team: Team) => {
     dispatch(ActivityActions.updateTeam(activity.id, team));
@@ -150,7 +148,11 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                   <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer' }} onClick={() => setOpenTeamEditor(team)}>
                     {team.name}
                   </Typography>
-                  {teamLeader && <DashboardTeamMember key={teamLeader.id} participant={teamLeader} />}
+                  {teamLeader && (
+                    <Draggable type="participant" item={teamLeader} callback={() => removeTeamMember(teamLeader.id)}>
+                      <DashboardTeamMember key={teamLeader.id} participant={teamLeader} />
+                    </Draggable>
+                  )}
                 </Stack>
               </Stack>
               <Stack direction="row" spacing={1} alignItems="center">
@@ -179,7 +181,13 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                           None
                         </Typography>
                       ) : (
-                        teamMembers.map((participant) => <DashboardTeamMember key={participant.id} participant={participant} onPromote={() => updateTeamLeader(participant.id)} />)
+                        teamMembers.map((participant) => {
+                          return (
+                            <Draggable type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
+                              <DashboardTeamMember key={participant.id} participant={participant} onPromote={() => updateTeamLeader(participant.id)} />
+                            </Draggable>
+                          );
+                        })
                       )}
                     </Stack>
                   </Box>
@@ -202,7 +210,15 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                           None
                         </Typography>
                       ) : (
-                        sortedTeamEquipment.map((item) => <DashboardTeamEquipment key={item.uuid} item={item} />)
+                        sortedTeamEquipment.map((item) => {
+                          return (
+                            <Draggable type="equipment" item={item} callback={() => {
+                              if (item.uuid) removeEquipment(item.uuid)
+                            }}>
+                              <DashboardTeamEquipment key={item.uuid} item={item} />
+                            </Draggable>
+                          );
+                        })
                       )}
                     </Stack>
                   </Box>
