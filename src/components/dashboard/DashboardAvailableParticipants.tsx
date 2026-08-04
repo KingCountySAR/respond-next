@@ -23,11 +23,12 @@ export function DashboardAvailableParticipants() {
   const setAssigned = (participant: Participant) => {
     const update = { time: Date.now(), status: ParticipantStatus.Assigned, organizationId: participant.organizationId };
     dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
-  }
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDrop = (participant: Participant, type: string, callback?: () => void) => {
-    if (participant.timeline[0].status === ParticipantStatus.Available) return;
+    // If the participant is not in Assigned status, do not overwrite the current status.
+    if (participant.timeline[0].status !== ParticipantStatus.Assigned) return;
     // Update the Participant Status to Available
     const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
     dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));

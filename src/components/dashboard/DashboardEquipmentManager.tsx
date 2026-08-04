@@ -2,11 +2,8 @@ import { Box, Stack, Typography } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/lib/state';
 import { EquipmentItem } from '@respond/types/operations';
 
-import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
@@ -52,11 +49,8 @@ const checkOutEquipmentItem = (item: EquipmentItem): EquipmentItem => {
 type GroupedInventory = Record<string, EquipmentItem[]>;
 
 export function DashboardEquipmentManager() {
-  const dispatch = useAppDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [groupBy, setGroupBy] = useState<EquipmentGrouping>('All');
-
-  const activity = useActivityContext();
 
   const filteredEquipment = useMemo(() => {
     const q = (searchQuery || '').trim().toLowerCase();
@@ -130,8 +124,8 @@ function EquipmentAphabetical({ items }: { items: EquipmentItem[] }) {
   return (
     <>
       {items.map((item) => (
-        <Draggable type="equipment" item={checkOutEquipmentItem(item)}>
-          <EquipmentTile key={item.id} item={item} />
+        <Draggable key={item.uuid} type="equipment" item={checkOutEquipmentItem(item)}>
+          <EquipmentTile item={item} />
         </Draggable>
       ))}
     </>
@@ -145,8 +139,8 @@ function EquipmentGroups({ groups }: { groups: GroupedInventory }) {
         <DashboardBoxWithTitle key={groupName} title={groupName} collapsible>
           <Stack spacing={0.5}>
             {list.map((item) => (
-              <Draggable type="equipment" item={checkOutEquipmentItem(item)}>
-                <EquipmentTile key={item.id} item={item} />
+              <Draggable key={item.uuid} type="equipment" item={checkOutEquipmentItem(item)}>
+                <EquipmentTile item={item} />
               </Draggable>
             ))}
           </Stack>

@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
+import { Participant } from '@respond/types/activity';
 import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
@@ -14,9 +15,8 @@ import { Stack } from '../Material';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
-import { DashboardTeamMember } from './DashboardTeamMember';
-import { Participant, ParticipantStatus } from '@respond/types/activity';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
+import { DashboardTeamMember } from './DashboardTeamMember';
 
 export function DashboardPlaceManager() {
   const dispatch = useAppDispatch();
@@ -145,17 +145,17 @@ function PlaceTile({ place }: { place: Place }) {
     // Update the Place to include the new participant
     const updated: Place = { ...place, assignedParticipants: [...place.assignedParticipants, participant.id] };
     dispatchUpdate(updated);
-  }
+  };
 
   const removeTeamMember = (participantId: string) => {
     const updated: Place = { ...place, assignedParticipants: place.assignedParticipants.filter((id) => id !== participantId) };
     dispatchUpdate(updated);
-  }
+  };
 
   const addEquipment = (equipment: EquipmentItem) => {
     const updated: Place = { ...place, assignedEquipment: [...place.assignedEquipment, equipment] };
     dispatchUpdate(updated);
-  }
+  };
 
   const removeEquipment = (id: string) => {
     if (place.assignedEquipment.some((item) => item.uuid === id)) {
@@ -163,16 +163,16 @@ function PlaceTile({ place }: { place: Place }) {
       const updated = { ...place, assignedEquipment: place.assignedEquipment.filter((item) => item.uuid !== id) };
       dispatchUpdate(updated);
     }
-  }
+  };
 
   const dispatchUpdate = (updated: Place) => {
     dispatch(
       ActivityActions.updatePlaces(
         activity.id,
-        activity.places.map((p) => p.id === place.id ? updated : p),
+        activity.places.map((p) => (p.id === place.id ? updated : p)),
       ),
     );
-  }
+  };
 
   return (
     <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
@@ -190,7 +190,7 @@ function PlaceTile({ place }: { place: Place }) {
               ) : (
                 participants.map((participant) => {
                   return (
-                    <Draggable type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
+                    <Draggable key={participant.id} type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
                       <DashboardTeamMember key={participant.id} participant={participant} />
                     </Draggable>
                   );
@@ -210,9 +210,14 @@ function PlaceTile({ place }: { place: Place }) {
               ) : (
                 sortedTeamEquipment.map((item) => {
                   return (
-                    <Draggable type="equipment" item={item} callback={() => {
-                      if (item.uuid) removeEquipment(item.uuid)
-                    }}>
+                    <Draggable
+                      key={item.uuid}
+                      type="equipment"
+                      item={item}
+                      callback={() => {
+                        if (item.uuid) removeEquipment(item.uuid);
+                      }}
+                    >
                       <DashboardTeamEquipment key={item.uuid} item={item} />
                     </Draggable>
                   );

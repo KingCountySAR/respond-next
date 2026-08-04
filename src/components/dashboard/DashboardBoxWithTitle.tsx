@@ -19,9 +19,12 @@ interface DashboardBoxWithTitleAction {
 
 export function DashboardBoxWithTitle({ title, actions = [], collapsible = false, children, sx }: DashboardBoxWithTitleProps): JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <Box
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       sx={[
         {
           border: '1px solid',
@@ -44,20 +47,22 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
         sx={{ cursor: 'pointer', pb: collapsed ? 0 : 1 }}
       >
         <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
-        <Stack direction="row">
-          {actions.map((action) => (
-            <IconButton
-              key={action.id}
-              size="small"
-              sx={{ width: 24, height: 24 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                action.onClick();
-              }}
-            >
-              {action.icon}
-            </IconButton>
-          ))}
+        <Stack direction="row" alignItems="center">
+          <Stack direction="row" sx={{ visibility: hovered ? 'visible' : 'hidden' }}>
+            {actions.map((action) => (
+              <IconButton
+                key={action.id}
+                size="small"
+                sx={{ width: 24, height: 24 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  action.onClick();
+                }}
+              >
+                {action.icon}
+              </IconButton>
+            ))}
+          </Stack>
           {collapsible && (
             <IconButton size="small" sx={{ width: 24, height: 24 }}>
               {collapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}

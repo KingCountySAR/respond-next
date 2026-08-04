@@ -28,9 +28,7 @@ export function DashboardEquipmentSummary() {
 
   return (
     <DashboardBoxWithTitle title="Equipment" collapsible>
-      <Typography variant="subtitle1">
-        Assigned
-      </Typography>
+      <Typography variant="subtitle1">Assigned</Typography>
       {teamEntries.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           No equipment assigned.
@@ -42,9 +40,7 @@ export function DashboardEquipmentSummary() {
           </Typography>
         ))
       )}
-      <Typography variant="subtitle1">
-        Staged
-      </Typography>
+      <Typography variant="subtitle1">Staged</Typography>
       {placeEntries.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           No equipment assigned.

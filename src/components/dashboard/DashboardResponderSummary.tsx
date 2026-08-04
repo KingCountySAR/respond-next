@@ -27,7 +27,7 @@ export function DashboardResponderSummary() {
   );
 
   const fieldResources = Object.values(activity.teams).reduce((count, team) => {
-    if (['In Base','Disbanded'].includes(team.status)) return count;
+    if (['In Base', 'Disbanded'].includes(team.status)) return count;
     return count + team.assignedParticipants.length;
   }, 0);
 

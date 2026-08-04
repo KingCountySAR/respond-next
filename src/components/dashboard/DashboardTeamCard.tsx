@@ -80,7 +80,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
       const updatedTeam = { ...team, assignedParticipants: team.assignedParticipants.filter((id) => id !== participantId), teamLeaderParticipantId: team.teamLeaderParticipantId === participantId ? null : team.teamLeaderParticipantId };
       updateTeam(updatedTeam);
     }
-  }
+  };
 
   const addEquipment = (equipment: EquipmentItem) => {
     // If the item was dragged and dropped back to the same team, cancel.
@@ -96,7 +96,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
       const updatedTeam = { ...team, assignedEquipment: team.assignedEquipment.filter((item) => item.uuid !== id) };
       updateTeam(updatedTeam);
     }
-  }
+  };
 
   const updateTeam = (team: Team) => {
     // TODO: Reassign remaining resource to the unassigned place.
@@ -184,7 +184,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                       ) : (
                         teamMembers.map((participant) => {
                           return (
-                            <Draggable type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
+                            <Draggable key={participant.id} type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
                               <DashboardTeamMember key={participant.id} participant={participant} onPromote={() => updateTeamLeader(participant.id)} />
                             </Draggable>
                           );
@@ -213,9 +213,14 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                       ) : (
                         sortedTeamEquipment.map((item) => {
                           return (
-                            <Draggable type="equipment" item={item} callback={() => {
-                              if (item.uuid) removeEquipment(item.uuid)
-                            }}>
+                            <Draggable
+                              key={item.uuid}
+                              type="equipment"
+                              item={item}
+                              callback={() => {
+                                if (item.uuid) removeEquipment(item.uuid);
+                              }}
+                            >
                               <DashboardTeamEquipment key={item.uuid} item={item} />
                             </Draggable>
                           );
