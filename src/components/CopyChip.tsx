@@ -52,5 +52,3 @@ export const CopyChip: React.FC<CopyChipProps> = ({ value, label, timeoutDuratio
 
   return <Chip {...restProps} label={copied ? `${value} copied` : label ?? value} color={copied ? 'success' : color ?? 'default'} icon={copied ? <CheckIcon /> : <ContentCopyIcon />} onClick={handleClick} sx={[{ px: 1, mt: 1 }, ...(Array.isArray(sx) ? sx : [sx])]} clickable />;
 };
-
-export default CopyChip;

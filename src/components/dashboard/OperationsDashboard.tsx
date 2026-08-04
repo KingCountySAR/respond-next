@@ -70,13 +70,13 @@ function OperationsDashboardContent() {
         <Box sx={{ display: 'flex', flex: 1, gap: 2, minHeight: 0 }} ref={centerRef}>
           {/* Left Side Panels */}
           <Box sx={{ display: 'flex', gap: 2, minHeight: 0, mr: 'auto' }}>
-            <DashboardPanel title="Responders" collapse="left" icon={<PeopleAltIcon />} sx={{ width: 400 }}>
+            <DashboardPanel title="Responders" collapse="left" icon={<PeopleAltIcon />}>
               <DashboardAvailableParticipants />
             </DashboardPanel>
             <DashboardPanel title="Equipment" collapse="left" icon={<Inventory2Icon />}>
               <DashboardEquipmentManager />
             </DashboardPanel>
-            <DashboardPanel title="Places" collapse="left" icon={<MapIcon />} sx={{ width: 400 }}>
+            <DashboardPanel title="Places" collapse="left" icon={<MapIcon />}>
               <DashboardPlaceManager />
             </DashboardPanel>
           </Box>

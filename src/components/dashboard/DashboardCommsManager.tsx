@@ -11,7 +11,7 @@ import { ActivityActions } from '@respond/lib/state';
 import { CommunicationsLogEntry } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
-import CopyChip from '../CopyChip';
+import { CopyChip } from '../CopyChip';
 import { Stack } from '../Material';
 
 import { DashboardCommsComposer } from './DashboardCommsComposer';

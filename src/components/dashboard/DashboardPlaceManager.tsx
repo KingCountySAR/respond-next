@@ -11,6 +11,7 @@ import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefa
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
+import { CopyChip } from '../CopyChip';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { Stack } from '../Material';
 
@@ -219,12 +220,10 @@ function PlaceTile({ place }: { place: Place }) {
           </Box>
           {place.lat?.trim() && place.lon?.trim() && (
             <Box sx={{ width: '100%', mt: 1, p: 1.75, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                 Coordinates
               </Typography>
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                {`${place.lat?.trim()}, ${place.lon?.trim()}`}
-              </Typography>
+              <CopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} size="small" variant="outlined" sx={{ mt: 1 }} />
             </Box>
           )}
           {place.notes?.trim() && (
