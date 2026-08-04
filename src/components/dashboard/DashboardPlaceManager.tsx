@@ -29,12 +29,12 @@ export function DashboardPlaceManager() {
     const defaultPlaces = getDefaultPlaces(activity);
 
     if (defaultPlaces.length) {
-      dispatch(ActivityActions.updatePlaces(activity.id, [...(activity.places ?? []), ...defaultPlaces]));
+      defaultPlaces.forEach((place) => dispatch(ActivityActions.createPlace(activity.id, place)));
     }
   }, [activity, dispatch]);
 
-  const addPlace = (placeToUpsert: Place) => {
-    dispatch(ActivityActions.updatePlaces(activity.id, [...(activity.places ?? []), placeToUpsert]));
+  const addPlace = (placeToCreate: Place) => {
+    dispatch(ActivityActions.createPlace(activity.id, placeToCreate));
   };
 
   // nullish coalese for backward compatibility on inital render
@@ -82,33 +82,19 @@ function PlaceTile({ place }: { place: Place }) {
 
   const upsertPlace = (placeToUpsert: Place) => {
     const currentPlaces = activity.places ?? [];
-    let exists = false;
+    const exists = currentPlaces.some((p) => p.id === placeToUpsert.id);
 
-    // 1. Map through places: replace if ID matches
-    const updatedPlaces = currentPlaces.map((p) => {
-      if (p.id === placeToUpsert.id) {
-        exists = true;
-        return placeToUpsert; // Replace existing place
-      }
-      return p;
-    });
-
-    // 2. Fallback: if it wasn't found in the map, append it
     if (!exists) {
-      updatedPlaces.push(placeToUpsert);
+      dispatch(ActivityActions.createPlace(activity.id, placeToUpsert));
+      return;
     }
 
-    dispatch(ActivityActions.updatePlaces(activity.id, updatedPlaces));
+    dispatch(ActivityActions.updatePlace(activity.id, placeToUpsert));
   };
 
   const deletePlace = (id: string) => {
     // TODO: Reassign remaining resource to the unassigned place.
-    dispatch(
-      ActivityActions.updatePlaces(
-        activity.id,
-        activity.places.filter((p) => p.id !== id),
-      ),
-    );
+    dispatch(ActivityActions.deletePlace(activity.id, id));
   };
 
   const editAction = {
@@ -166,12 +152,7 @@ function PlaceTile({ place }: { place: Place }) {
   };
 
   const dispatchUpdate = (updated: Place) => {
-    dispatch(
-      ActivityActions.updatePlaces(
-        activity.id,
-        activity.places.map((p) => (p.id === place.id ? updated : p)),
-      ),
-    );
+    dispatch(ActivityActions.updatePlace(activity.id, updated));
   };
 
   return (

@@ -42,17 +42,29 @@ export const BasicReducers: ActivityReducers = {
     merge(target, trimmedToProps);
   },
 
-  [ActivityActions.updatePlaces.type]: (state, { payload }) => {
+  [ActivityActions.createPlace.type]: (state, { payload }) => {
     const activity = state.list.find((a) => a.id === payload.activityId);
     if (activity) {
-      activity.places = payload.places;
+      activity.places = [...(activity.places ?? []), payload.place];
       return;
     }
 
     const newActivity = createNewActivity();
     newActivity.id = payload.activityId;
-    newActivity.places = payload.places;
+    newActivity.places = [payload.place];
     state.list.push(newActivity);
+  },
+
+  [ActivityActions.updatePlace.type]: (state, { payload }) => {
+    const activity = state.list.find((a) => a.id === payload.activityId);
+    if (!activity) return;
+    activity.places = (activity.places ?? []).map((place) => (place.id === payload.place.id ? payload.place : place));
+  },
+
+  [ActivityActions.deletePlace.type]: (state, { payload }) => {
+    const activity = state.list.find((a) => a.id === payload.activityId);
+    if (!activity) return;
+    activity.places = (activity.places ?? []).filter((place) => place.id !== payload.placeId);
   },
 
   [ActivityActions.remove.type]: (state, { payload }) => {

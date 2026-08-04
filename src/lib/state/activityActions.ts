@@ -1,7 +1,7 @@
 import { createAction } from '@reduxjs/toolkit';
 
 import { Activity, OrganizationStatus, ParticipantStatus, ParticipantUpdate, pickActivityProperties } from '@respond/types/activity';
-import { CommunicationsLogEntry, Place, pickTeamProperties, Team } from '@respond/types/operations';
+import { CommunicationsLogEntry, pickTeamProperties, Place, Team } from '@respond/types/operations';
 
 import { ActivityState } from '.';
 
@@ -15,8 +15,18 @@ const update = createAction('activity/update', (updates: Partial<Activity> & { i
   meta: { sync: true },
 }));
 
-const updatePlaces = createAction('activity/placesUpdate', (activityId: string, places: Place[]) => ({
-  payload: { activityId, places },
+const createPlace = createAction('place/create', (activityId: string, place: Place) => ({
+  payload: { activityId, place },
+  meta: { sync: true },
+}));
+
+const updatePlace = createAction('place/update', (activityId: string, place: Place) => ({
+  payload: { activityId, place },
+  meta: { sync: true },
+}));
+
+const deletePlace = createAction('place/delete', (activityId: string, placeId: string) => ({
+  payload: { activityId, placeId },
   meta: { sync: true },
 }));
 
@@ -149,7 +159,9 @@ const updateTeam = createAction('team/update', (activityId: string, updates: Par
 export const ActivityActions = {
   reload,
   update,
-  updatePlaces,
+  createPlace,
+  updatePlace,
+  deletePlace,
   remove,
   reactivate,
   complete,

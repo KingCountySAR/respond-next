@@ -39,7 +39,9 @@ const activitySliceArgs = {
       .addCase(ActivityActions.addComm, BasicActivityReducers[ActivityActions.addComm.type])
       .addCase(ActivityActions.updateComm, BasicActivityReducers[ActivityActions.updateComm.type])
       .addCase(ActivityActions.updateStaff, BasicActivityReducers[ActivityActions.updateStaff.type])
-      .addCase(ActivityActions.updatePlaces, BasicActivityReducers[ActivityActions.updatePlaces.type]);
+      .addCase(ActivityActions.createPlace, BasicActivityReducers[ActivityActions.createPlace.type])
+      .addCase(ActivityActions.updatePlace, BasicActivityReducers[ActivityActions.updatePlace.type])
+      .addCase(ActivityActions.deletePlace, BasicActivityReducers[ActivityActions.deletePlace.type]);
   },
 };
 
