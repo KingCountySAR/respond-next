@@ -4,7 +4,7 @@ import { ParticipantStatus } from '@respond/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
-import { DashboardCollapsibleBox } from './DashboardCollapsibleBox';
+import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 
 export function DashboardResponderSummary() {
   const activity = useActivityContext();
@@ -33,12 +33,12 @@ export function DashboardResponderSummary() {
   ] as const;
 
   return (
-    <DashboardCollapsibleBox title="Responders" sx={{ p: 1 }}>
+    <DashboardBoxWithTitle title="Responders" sx={{ p: 1 }} collapsible>
       {summaryLines.map(([label, count]) => (
         <Typography key={label} variant="subtitle1">
           {`${label} (${count})`}
         </Typography>
       ))}
-    </DashboardCollapsibleBox>
+    </DashboardBoxWithTitle>
   );
 }

@@ -9,6 +9,7 @@ import { EquipmentItem } from '@respond/types/team';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 
+import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 import { EquipmentGrouping, EquipmentGroupToggleButton } from './DashboardEquipmentGroupToggleButton';
 import { DashboardSearchBox } from './DashboardSearchBox';
 
@@ -148,14 +149,13 @@ function EquipmentGroups({ groups }: { groups: GroupedInventory }) {
   return (
     <>
       {Object.entries(groups).map(([groupName, list]) => (
-        <Stack key={groupName} spacing={0.5}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-            {groupName}
-          </Typography>
-          {list.map((item) => (
-            <EquipmentTile key={item.id} item={item} />
-          ))}
-        </Stack>
+        <DashboardBoxWithTitle key={groupName} title={groupName} sx={{ p: 1 }} collapsible>
+          <Stack spacing={0.5}>
+            {list.map((item) => (
+              <EquipmentTile key={item.id} item={item} />
+            ))}
+          </Stack>
+        </DashboardBoxWithTitle>
       ))}
     </>
   );

@@ -5,11 +5,12 @@ import React, { useState } from 'react';
 
 interface DashboardCollapsibleBoxProps {
   title: string;
+  collapsible?: boolean;
   children: React.ReactNode;
   sx?: SxProps<Theme>;
 }
 
-export function DashboardCollapsibleBox({ title, children, sx }: DashboardCollapsibleBoxProps): JSX.Element {
+export function DashboardBoxWithTitle({ title, collapsible = false, children, sx }: DashboardCollapsibleBoxProps): JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -23,13 +24,23 @@ export function DashboardCollapsibleBox({ title, children, sx }: DashboardCollap
         },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
-      onClick={() => setCollapsed((current) => !current)}
     >
-      <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="space-between">
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        onClick={() => {
+          if (!collapsible) return;
+          setCollapsed((current) => !current);
+        }}
+        sx={{ cursor: 'pointer', pb: collapsed ? 0 : 1 }}
+      >
         <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
-        <IconButton size="small" sx={{ width: 32, height: 32 }}>
-          {collapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}
-        </IconButton>
+        {collapsible && (
+          <IconButton size="small" sx={{ width: 24, height: 24 }}>
+            {collapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}
+          </IconButton>
+        )}
       </Stack>
       {!collapsed && children}
     </Box>
