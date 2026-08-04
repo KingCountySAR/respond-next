@@ -3,11 +3,12 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, Button, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Participant } from '@respond/types/activity';
-import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/types/operations';
+import { CommunicationsLogEntry, createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
@@ -37,6 +38,11 @@ export function DashboardPlaceManager() {
 
   const addPlace = (placeToCreate: Place) => {
     dispatch(ActivityActions.createPlace(activity.id, placeToCreate));
+    const parts = [placeToCreate.name, 'established: '];
+    if (placeToCreate.lat?.trim() && placeToCreate.lon?.trim()) parts.push(`${placeToCreate.lat.trim()}, ${placeToCreate.lon.trim()}`);
+    if (placeToCreate.notes?.trim()) parts.push(placeToCreate.notes.trim());
+    const comm: CommunicationsLogEntry = { id: uuid(), from: placeToCreate.name, to: 'CP', message: parts.join(' '), timestamp: Date.now(), isAutomated: true, isDeleted: false };
+    dispatch(ActivityActions.addComm(activity.id, comm));
   };
 
   // nullish coalese for backward compatibility on inital render
@@ -102,6 +108,12 @@ function PlaceTile({ place }: { place: Place }) {
       return;
     }
     dispatch(ActivityActions.deletePlace(activity.id, id));
+    logDeleteComm();
+  };
+
+  const logDeleteComm = () => {
+    const comm: CommunicationsLogEntry = { id: uuid(), from: place.name, to: 'CP', message: `${place.name} terminated`, timestamp: Date.now(), isAutomated: true, isDeleted: false };
+    dispatch(ActivityActions.addComm(activity.id, comm));
   };
 
   const deleteAndReassign = () => {
@@ -111,6 +123,7 @@ function PlaceTile({ place }: { place: Place }) {
     const mergedEquipment = [...(fieldPlace?.assignedEquipment ?? []), ...place.assignedEquipment.filter((item) => !existingEquipmentIds.has(item.uuid))];
     const updatedFieldPlace = fieldPlace ? { ...fieldPlace, assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment } : { ...createNewPlace(DEFAULT_PLACES.field), assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment };
     dispatch(ActivityActions.batchUpdatePlaces(activity.id, [updatedFieldPlace], [place.id]));
+    logDeleteComm();
   };
 
   const editAction = {
