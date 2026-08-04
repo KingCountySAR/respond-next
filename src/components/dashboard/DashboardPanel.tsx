@@ -1,11 +1,11 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
+import { Box, IconButton, Paper, Stack, SxProps, Theme, Typography } from '@mui/material';
 import { useState } from 'react';
 
 const COLLAPSE_WIDTH = 56;
 
-export function DashboardPanel({ title, icon, collapse = 'left', grow = false, children }: { title: string; icon?: React.ReactNode; collapse: 'left' | 'right'; grow?: boolean; children: React.ReactNode }) {
+export function DashboardPanel({ title, icon, collapse = 'left', grow = false, children, sx }: { title: string; icon?: React.ReactNode; collapse: 'left' | 'right'; grow?: boolean; children: React.ReactNode; sx?: SxProps<Theme> }) {
   const [collapsed, setCollapsed] = useState(false);
   const toggle = () => {
     setCollapsed((current) => !current);
@@ -13,16 +13,19 @@ export function DashboardPanel({ title, icon, collapse = 'left', grow = false, c
   return (
     <Paper
       elevation={2}
-      sx={{
-        width: collapsed ? COLLAPSE_WIDTH : grow ? '100%' : 280,
-        minWidth: collapsed ? COLLAPSE_WIDTH : 280,
-        flex: collapsed ? 'none' : grow ? 1 : 'none',
-        transition: 'width 180ms ease',
-        display: 'flex',
-        flexDirection: 'column',
-        p: 1,
-        borderRadius: 3,
-      }}
+      sx={[
+        {
+          width: collapsed ? COLLAPSE_WIDTH : grow ? '100%' : 300,
+          minWidth: collapsed ? COLLAPSE_WIDTH : 300,
+          flex: collapsed ? 'none' : grow ? 1 : 'none',
+          transition: 'width 180ms ease',
+          display: 'flex',
+          flexDirection: 'column',
+          p: 1,
+          borderRadius: 3,
+        },
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
     >
       {collapse === 'left' ? <LeftPanelHeader title={title} icon={icon} collapsed={collapsed} onToggle={toggle} /> : <RightPanelHeader title={title} icon={icon} collapsed={collapsed} onToggle={toggle} />}
       {!collapsed && children}

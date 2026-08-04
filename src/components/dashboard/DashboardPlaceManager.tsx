@@ -10,6 +10,7 @@ import { Participant } from '@respond/types/activity';
 import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
+import ConfirmDialog from '../ConfirmDialog';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { Stack } from '../Material';
 
@@ -72,6 +73,7 @@ function PlaceTile({ place }: { place: Place }) {
   const activity = useActivityContext();
 
   const [editingPlace, setEditingPlace] = useState<Place | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const participants = (place.assignedParticipants ?? []).flatMap((id) => {
     const participant = activity.participants[id];
@@ -93,8 +95,21 @@ function PlaceTile({ place }: { place: Place }) {
   };
 
   const deletePlace = (id: string) => {
-    // TODO: Reassign remaining resource to the unassigned place.
+    const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
+    if (hasResources) {
+      setConfirmDeleteOpen(true);
+      return;
+    }
     dispatch(ActivityActions.deletePlace(activity.id, id));
+  };
+
+  const deleteAndReassign = () => {
+    const fieldPlace = activity.places?.find((p) => p.name === DEFAULT_PLACES.field);
+    const mergedParticipants = Array.from(new Set([...(fieldPlace?.assignedParticipants ?? []), ...place.assignedParticipants]));
+    const existingEquipmentIds = new Set(fieldPlace?.assignedEquipment.map((item) => item.uuid));
+    const mergedEquipment = [...(fieldPlace?.assignedEquipment ?? []), ...place.assignedEquipment.filter((item) => !existingEquipmentIds.has(item.uuid))];
+    const updatedFieldPlace = fieldPlace ? { ...fieldPlace, assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment } : { ...createNewPlace(DEFAULT_PLACES.field), assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment };
+    dispatch(ActivityActions.batchUpdatePlaces(activity.id, [updatedFieldPlace], [place.id]));
   };
 
   const editAction = {
@@ -128,26 +143,22 @@ function PlaceTile({ place }: { place: Place }) {
   };
 
   const addTeamMember = (participant: Participant) => {
-    // Update the Place to include the new participant
-    const updated: Place = { ...place, assignedParticipants: [...place.assignedParticipants, participant.id] };
-    dispatchUpdate(updated);
+    dispatchUpdate({ ...place, assignedParticipants: [...place.assignedParticipants, participant.id] });
   };
 
   const removeTeamMember = (participantId: string) => {
-    const updated: Place = { ...place, assignedParticipants: place.assignedParticipants.filter((id) => id !== participantId) };
-    dispatchUpdate(updated);
+    if (place.assignedParticipants.includes(participantId)) {
+      dispatchUpdate({ ...place, assignedParticipants: place.assignedParticipants.filter((id) => id !== participantId) });
+    }
   };
 
   const addEquipment = (equipment: EquipmentItem) => {
-    const updated: Place = { ...place, assignedEquipment: [...place.assignedEquipment, equipment] };
-    dispatchUpdate(updated);
+    dispatchUpdate({ ...place, assignedEquipment: [...place.assignedEquipment, equipment] });
   };
 
   const removeEquipment = (id: string) => {
     if (place.assignedEquipment.some((item) => item.uuid === id)) {
-      // Remove the equipment from the team
-      const updated = { ...place, assignedEquipment: place.assignedEquipment.filter((item) => item.uuid !== id) };
-      dispatchUpdate(updated);
+      dispatchUpdate({ ...place, assignedEquipment: place.assignedEquipment.filter((item) => item.uuid !== id) });
     }
   };
 
@@ -207,7 +218,7 @@ function PlaceTile({ place }: { place: Place }) {
             </Stack>
           </Box>
           {place.lat?.trim() && place.lon?.trim() && (
-            <Box sx={{ width: '100%', mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ width: '100%', mt: 1, p: 1.75, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                 Coordinates
               </Typography>
@@ -217,7 +228,7 @@ function PlaceTile({ place }: { place: Place }) {
             </Box>
           )}
           {place.notes?.trim() && (
-            <Box sx={{ width: '100%', mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ width: '100%', mt: 1, p: 1.75, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                 Notes
               </Typography>
@@ -235,6 +246,15 @@ function PlaceTile({ place }: { place: Place }) {
           setEditingPlace(null);
         }}
         onClose={() => setEditingPlace(null)}
+      />
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        prompt={`"${place.name}" still has assigned members or equipment. They will be moved to ${DEFAULT_PLACES.field}. Delete anyway?`}
+        onConfirm={() => {
+          deleteAndReassign();
+          setConfirmDeleteOpen(false);
+        }}
+        onClose={() => setConfirmDeleteOpen(false)}
       />
     </Droppable>
   );

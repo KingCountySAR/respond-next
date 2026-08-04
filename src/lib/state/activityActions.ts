@@ -30,6 +30,12 @@ const deletePlace = createAction('place/delete', (activityId: string, placeId: s
   meta: { sync: true },
 }));
 
+// upsert = create-or-update; delete by id
+const batchUpdatePlaces = createAction('place/batchUpdate', (activityId: string, upserts: Place[], deleteIds: string[]) => ({
+  payload: { activityId, upserts, deleteIds },
+  meta: { sync: true },
+}));
+
 const remove = createAction('activity/remove', (activityId: string) => ({
   payload: { id: activityId },
   meta: { sync: true },
@@ -66,6 +72,11 @@ const participantUpdate = createAction('participant/update', (activityId: string
       status,
     },
   },
+  meta: { sync: true },
+}));
+
+const bulkParticipantUpdate = createAction('participant/bulkUpdate', (activityId: string, updates: Array<{ participantId: string; update: ParticipantUpdate }>) => ({
+  payload: { activityId, updates },
   meta: { sync: true },
 }));
 
@@ -162,11 +173,13 @@ export const ActivityActions = {
   createPlace,
   updatePlace,
   deletePlace,
+  batchUpdatePlaces,
   remove,
   reactivate,
   complete,
   appendOrganizationTimeline,
   participantUpdate,
+  bulkParticipantUpdate,
   participantTimelineUpdate,
   participantTimelineAdd,
   participantMilesUpdate,

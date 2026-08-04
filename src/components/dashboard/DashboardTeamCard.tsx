@@ -2,13 +2,12 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Chip, Divider, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Participant } from '@respond/types/activity';
 
-import { CommunicationsLogEntry, EquipmentItem, Team, TeamStatus } from '../../types/operations';
+import { EquipmentItem, Team } from '../../types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';
@@ -99,29 +98,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   };
 
   const updateTeam = (team: Team) => {
-    // TODO: Reassign remaining resource to the unassigned place.
     dispatch(ActivityActions.updateTeam(activity.id, team));
-  };
-
-  const logStatusChange = (from: string, status: TeamStatus) => {
-    const messages = {
-      'In Base': 'In Base',
-      'In Transit': 'With Transportation',
-      'On Assignment': 'Starting Assignment',
-      'On Scene': 'On Scene',
-      'Returning To Base': 'RTB',
-      Disbanded: 'Disbanded',
-    };
-    const comm: CommunicationsLogEntry = {
-      id: uuid(),
-      from,
-      to: 'CP',
-      message: messages[status],
-      timestamp: Date.now(),
-      isAutomated: true,
-      isDeleted: false,
-    };
-    dispatch(ActivityActions.addComm(activity.id, comm));
   };
 
   const handleExpandClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -157,14 +134,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                 </Stack>
               </Stack>
               <Stack direction="row" spacing={1} alignItems="center">
-                <TeamStatusSelect
-                  value={team.status}
-                  onChange={(newStatus) => {
-                    console.log(newStatus);
-                    updateTeam({ ...team, status: newStatus });
-                    logStatusChange(team.name, newStatus);
-                  }}
-                />
+                <TeamStatusSelect team={team} />
                 <Chip label={`${teamParticipants.length} members`} size="small" variant="outlined" />
               </Stack>
             </Stack>

@@ -1,7 +1,14 @@
 import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
-import React from 'react';
+import React, { useState } from 'react';
+import { v4 as uuid } from 'uuid';
 
-import { TeamStatus } from '../../types/operations';
+import { useAppDispatch } from '@respond/lib/client/store';
+import { ActivityActions } from '@respond/lib/state';
+import { ParticipantStatus } from '@respond/types/activity';
+
+import { CommunicationsLogEntry, createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '../../types/operations';
+import { useActivityContext } from '../activities/ActivityProvider';
+import ConfirmDialog from '../ConfirmDialog';
 
 const TEAM_STATUSES: TeamStatus[] = ['In Base', 'In Transit', 'On Assignment', 'On Scene', 'Returning To Base', 'Disbanded'];
 
@@ -16,70 +23,205 @@ const STATUS_COLORS: Record<TeamStatus, 'default' | 'info' | 'warning' | 'succes
 };
 
 interface TeamStatusSelectProps {
-  value: TeamStatus;
-  onChange: (status: TeamStatus) => void;
+  team: Team;
   label?: string;
   fullWidth?: boolean;
   size?: 'small' | 'medium';
 }
 
-export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ value, onChange }) => {
+export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
+  const dispatch = useAppDispatch();
+  const activity = useActivityContext();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const logStatusChange = (status: TeamStatus) => {
+    const messages: Record<TeamStatus, string> = {
+      'In Base': 'In Base',
+      'In Transit': 'With Transportation',
+      'On Assignment': 'Starting Assignment',
+      'On Scene': 'On Scene',
+      'Returning To Base': 'RTB',
+      Disbanded: 'Disbanded',
+    };
+    const comm: CommunicationsLogEntry = {
+      id: uuid(),
+      from: team.name,
+      to: 'CP',
+      message: messages[status],
+      timestamp: Date.now(),
+      isAutomated: true,
+      isDeleted: false,
+    };
+    dispatch(ActivityActions.addComm(activity.id, comm));
+  };
+
+  const disbandDirectly = () => {
+    const updates = team.assignedParticipants
+      .map((participantId) => {
+        const participant = activity.participants[participantId];
+        if (!participant) {
+          return undefined;
+        }
+        return {
+          participantId,
+          update: {
+            time: Date.now(),
+            status: ParticipantStatus.Available,
+            organizationId: participant.organizationId,
+          },
+        };
+      })
+      .filter((item): item is { participantId: string; update: { time: number; status: ParticipantStatus; organizationId: string } } => Boolean(item));
+
+    if (updates.length) {
+      dispatch(ActivityActions.bulkParticipantUpdate(activity.id, updates));
+    }
+
+    dispatch(
+      ActivityActions.updateTeam(activity.id, {
+        ...team,
+        status: 'Disbanded',
+        assignedParticipants: [],
+        assignedEquipment: [],
+        teamLeaderParticipantId: null,
+      }),
+    );
+    logStatusChange('Disbanded');
+  };
+
+  const disbandWithReassign = () => {
+    const fieldPlace = activity.places?.find((place) => place.name === DEFAULT_PLACES.field);
+    const mergedParticipants = Array.from(new Set([...(fieldPlace?.assignedParticipants ?? []), ...team.assignedParticipants]));
+    const existingEquipmentIds = new Set(fieldPlace?.assignedEquipment.map((item) => item.uuid));
+    const mergedEquipment = [...(fieldPlace?.assignedEquipment ?? []), ...team.assignedEquipment.filter((item) => !existingEquipmentIds.has(item.uuid))];
+
+    const updatedFieldPlace = fieldPlace
+      ? {
+          ...fieldPlace,
+          assignedParticipants: mergedParticipants,
+          assignedEquipment: mergedEquipment,
+        }
+      : {
+          ...createNewPlace(DEFAULT_PLACES.field),
+          assignedParticipants: mergedParticipants,
+          assignedEquipment: mergedEquipment,
+        };
+
+    if (fieldPlace) {
+      dispatch(ActivityActions.updatePlace(activity.id, updatedFieldPlace));
+    } else {
+      dispatch(ActivityActions.createPlace(activity.id, updatedFieldPlace));
+    }
+
+    dispatch(
+      ActivityActions.updateTeam(activity.id, {
+        ...team,
+        status: 'Disbanded',
+        assignedParticipants: [],
+        assignedEquipment: [],
+        teamLeaderParticipantId: null,
+      }),
+    );
+    logStatusChange('Disbanded');
+  };
+
   const handleChange = (event: SelectChangeEvent<string>) => {
-    onChange(event.target.value as TeamStatus);
+    const newStatus = event.target.value as TeamStatus;
+    if (newStatus !== 'Disbanded') {
+      dispatch(ActivityActions.updateTeam(activity.id, { ...team, status: newStatus }));
+      logStatusChange(newStatus);
+      return;
+    }
+
+    if (team.status === 'Disbanded') {
+      return;
+    }
+
+    const isSafeDisband = team.status === 'In Base' || team.status === 'Returning To Base';
+    const needsConfirm = !isSafeDisband && (team.assignedParticipants.length > 0 || team.assignedEquipment.length > 0);
+
+    if (isSafeDisband) {
+      disbandDirectly();
+      return;
+    }
+
+    if (needsConfirm) {
+      setConfirmOpen(true);
+      return;
+    }
+
+    dispatch(
+      ActivityActions.updateTeam(activity.id, {
+        ...team,
+        status: 'Disbanded',
+      }),
+    );
+    logStatusChange('Disbanded');
   };
 
   return (
-    <Select
-      value={value}
-      onChange={handleChange}
-      variant="outlined"
-      size="small"
-      sx={{
-        borderRadius: '16px', // Pill shape
-        height: 28,
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        '& .MuiOutlinedInput-notchedOutline': {
-          border: 'none', // Removes the standard input border box
-        },
-        '&:hover .MuiOutlinedInput-notchedOutline': {
-          border: 'none',
-        },
-        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-          border: 'none',
-        },
-        '& .MuiSelect-select': {
-          paddingLeft: '12px',
-          paddingRight: '28px !important', // Leaves space for the arrow
-          paddingTop: '2px',
-          paddingBottom: '2px',
-          display: 'flex',
-          alignItems: 'center',
-        },
-        '& .MuiSelect-icon': {
-          right: '6px',
-          color: 'inherit', // Arrow inherits text color
-          fontSize: '1.1rem',
-        },
-      }}
-    >
-      {TEAM_STATUSES.map((status) => (
-        <MenuItem key={status} value={status}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Chip
-              label={status}
-              size="small"
-              color={STATUS_COLORS[status]}
-              sx={{
-                height: 20,
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            />
-          </Box>
-        </MenuItem>
-      ))}
-    </Select>
+    <>
+      <Select
+        value={team.status}
+        onChange={handleChange}
+        variant="outlined"
+        size="small"
+        sx={{
+          borderRadius: '16px', // Pill shape
+          height: 28,
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          '& .MuiOutlinedInput-notchedOutline': {
+            border: 'none', // Removes the standard input border box
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            border: 'none',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            border: 'none',
+          },
+          '& .MuiSelect-select': {
+            paddingLeft: '12px',
+            paddingRight: '28px !important', // Leaves space for the arrow
+            paddingTop: '2px',
+            paddingBottom: '2px',
+            display: 'flex',
+            alignItems: 'center',
+          },
+          '& .MuiSelect-icon': {
+            right: '6px',
+            color: 'inherit', // Arrow inherits text color
+            fontSize: '1.1rem',
+          },
+        }}
+      >
+        {TEAM_STATUSES.map((status) => (
+          <MenuItem key={status} value={status}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Chip
+                label={status}
+                size="small"
+                color={STATUS_COLORS[status]}
+                sx={{
+                  height: 20,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              />
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
+      <ConfirmDialog
+        open={confirmOpen}
+        prompt={`Disbanding ${team.name} will move remaining members and equipment to ${DEFAULT_PLACES.field}. Continue?`}
+        onConfirm={() => {
+          disbandWithReassign();
+          setConfirmOpen(false);
+        }}
+        onClose={() => setConfirmOpen(false)}
+      />
+    </>
   );
 };

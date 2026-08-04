@@ -67,6 +67,16 @@ export const BasicReducers: ActivityReducers = {
     activity.places = (activity.places ?? []).filter((place) => place.id !== payload.placeId);
   },
 
+  [ActivityActions.batchUpdatePlaces.type]: (state, { payload }) => {
+    const activity = state.list.find((a) => a.id === payload.activityId);
+    if (!activity) return;
+    const deleteSet = new Set(payload.deleteIds);
+    const upsertMap = new Map(payload.upserts.map((p) => [p.id, p]));
+    const kept = (activity.places ?? []).filter((p) => !deleteSet.has(p.id)).map((p) => upsertMap.get(p.id) ?? p);
+    const created = payload.upserts.filter((p) => !(activity.places ?? []).some((existing) => existing.id === p.id));
+    activity.places = [...kept, ...created];
+  },
+
   [ActivityActions.remove.type]: (state, { payload }) => {
     state.list = state.list.filter((f) => f.id !== payload.id);
   },
@@ -157,6 +167,31 @@ export const BasicReducers: ActivityReducers = {
       if (payload.update.status !== ParticipantStatus.SignedIn) {
         signOutFromOtherActivities(state, payload.activityId, payload.participant.id, payload.update.time);
       }
+    }
+  },
+
+  [ActivityActions.bulkParticipantUpdate.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) return;
+
+    for (const updateRequest of payload.updates) {
+      const participant = activity.participants[updateRequest.participantId];
+      if (!participant) continue;
+
+      BasicReducers[ActivityActions.participantUpdate.type](state, {
+        payload: {
+          activityId: payload.activityId,
+          participant: {
+            id: participant.id,
+            firstname: participant.firstname,
+            lastname: participant.lastname,
+            organizationId: updateRequest.update.organizationId,
+            miles: participant.miles,
+            eta: participant.eta,
+          },
+          update: updateRequest.update,
+        },
+      });
     }
   },
 
