@@ -3,12 +3,11 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, Button, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Participant } from '@respond/types/activity';
-import { CommunicationsLogEntry, createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/types/operations';
+import { CommunicationsLogEntry, createNewCommsEntry, createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
@@ -41,7 +40,12 @@ export function DashboardPlaceManager() {
     const parts = [placeToCreate.name, 'established: '];
     if (placeToCreate.lat?.trim() && placeToCreate.lon?.trim()) parts.push(`${placeToCreate.lat.trim()}, ${placeToCreate.lon.trim()}`);
     if (placeToCreate.notes?.trim()) parts.push(placeToCreate.notes.trim());
-    const comm: CommunicationsLogEntry = { id: uuid(), from: placeToCreate.name, to: 'CP', message: parts.join(' '), timestamp: Date.now(), isAutomated: true, isDeleted: false };
+    const comm: CommunicationsLogEntry = createNewCommsEntry({
+      from: placeToCreate.name,
+      to: 'CP',
+      message: parts.join(' '),
+      isAutomated: true,
+    });
     dispatch(ActivityActions.addComm(activity.id, comm));
   };
 
@@ -112,7 +116,12 @@ function PlaceTile({ place }: { place: Place }) {
   };
 
   const logDeleteComm = () => {
-    const comm: CommunicationsLogEntry = { id: uuid(), from: place.name, to: 'CP', message: `${place.name} terminated`, timestamp: Date.now(), isAutomated: true, isDeleted: false };
+    const comm: CommunicationsLogEntry = createNewCommsEntry({
+      from: place.name,
+      to: 'CP',
+      message: `${place.name} terminated`,
+      isAutomated: true,
+    });
     dispatch(ActivityActions.addComm(activity.id, comm));
   };
 

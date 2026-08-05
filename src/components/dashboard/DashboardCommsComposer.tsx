@@ -2,11 +2,10 @@ import { Box, Button, Stack, TextField } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { CommunicationsLogEntry } from '@respond/types/operations';
+import { CommunicationsLogEntry, createNewCommsEntry } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
@@ -37,24 +36,20 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
 
   const submit: SubmitHandler<FormValues> = (values) => {
     if (entry && entry.id) {
-      // update existing comm: only send changed fields as updates
       const updates: Partial<CommunicationsLogEntry> = {
         from: values.from,
         to: values.to,
         message: values.message,
+        isAutomated: false, // Automated messages are toggled to false when edited
       };
       dispatch(ActivityActions.updateComm(activity.id, entry.id, updates));
       onSave?.();
     } else {
-      const comm: CommunicationsLogEntry = {
-        id: uuid(),
+      const comm: CommunicationsLogEntry = createNewCommsEntry({
         from: values.from,
         to: values.to,
         message: values.message,
-        timestamp: Date.now(),
-        isAutomated: false,
-        isDeleted: false,
-      };
+      });
       dispatch(ActivityActions.addComm(activity.id, comm));
       onSave?.();
     }

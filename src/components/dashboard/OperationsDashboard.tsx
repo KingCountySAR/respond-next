@@ -13,13 +13,13 @@ import { useActivityContext } from '../activities/ActivityProvider';
 import { DnDProvider } from '../DragAndDrop/DnDProvider';
 import { ToolbarPage } from '../ToolbarPage';
 
-import { DashboardAvailableParticipants } from './DashboardAvailableParticipants';
 import { DashboardCommsManager } from './DashboardCommsManager';
 import { DashboardEquipmentManager } from './DashboardEquipmentManager';
 import { DashboardEquipmentSummary } from './DashboardEquipmentSummary';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardPanel } from './DashboardPanel';
 import { DashboardPlaceManager } from './DashboardPlaceManager';
+import { DashboardResponderManager } from './DashboardResponderManager';
 import { DashboardResponderSummary } from './DashboardResponderSummary';
 import { DashboardRoleTile } from './DashboardRoleTile';
 import { DashboardTeamManager } from './DashboardTeamManager';
@@ -71,7 +71,7 @@ function OperationsDashboardContent() {
           {/* Left Side Panels */}
           <Box sx={{ display: 'flex', gap: 2, minHeight: 0, mr: 'auto' }}>
             <DashboardPanel title="Responders" collapse="left" icon={<PeopleAltIcon />}>
-              <DashboardAvailableParticipants />
+              <DashboardResponderManager />
             </DashboardPanel>
             <DashboardPanel title="Equipment" collapse="left" icon={<Inventory2Icon />}>
               <DashboardEquipmentManager />

@@ -1,12 +1,11 @@
 import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import React, { useState } from 'react';
-import { v4 as uuid } from 'uuid';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { ParticipantStatus } from '@respond/types/activity';
 
-import { CommunicationsLogEntry, createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '../../types/operations';
+import { CommunicationsLogEntry, createNewCommsEntry, createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '../../types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
 
@@ -43,15 +42,13 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
       'Returning To Base': 'RTB',
       Disbanded: 'Disbanded',
     };
-    const comm: CommunicationsLogEntry = {
-      id: uuid(),
+    const comm: CommunicationsLogEntry = createNewCommsEntry({
       from: team.name,
       to: 'CP',
       message: messages[status],
-      timestamp: Date.now(),
       isAutomated: true,
-      isDeleted: false,
-    };
+    });
+    console.log('Logging status change:', comm); // Debugging log
     dispatch(ActivityActions.addComm(activity.id, comm));
   };
 
