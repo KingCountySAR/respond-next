@@ -9,7 +9,7 @@ node_modules
 /coverage
 
 # built SPA
-/client/dist
+/server/static
 
 # production
 /build

@@ -9,8 +9,10 @@ import { Hono } from 'hono';
 import { api } from './routes';
 import { getServices } from './services';
 import { SocketServer } from './socketManager';
+import { resolve } from 'path';
 
 const PORT = Number(process.env.PORT ?? 3000);
+const CLIENT_DIST = resolve(process.cwd(), './static')
 
 async function main() {
   const app = new Hono();
@@ -21,8 +23,8 @@ async function main() {
   // In production, serve the built client SPA from this same process (single
   // origin for static assets + API + websocket). In dev, Vite serves the client
   // and proxies /api + /socket.io here. CLIENT_DIST is relative to cwd.
-  if (process.env.NODE_ENV === 'production') {
-    const root = process.env.CLIENT_DIST ?? '../client/dist';
+  if (process.env.NODE_ENV !== 'development') {
+    const root = CLIENT_DIST;
     app.use('/*', serveStatic({ root }));
     app.get('*', serveStatic({ path: 'index.html', root })); // SPA fallback
   }

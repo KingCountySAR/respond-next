@@ -11,6 +11,10 @@ const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 // `@respond/shared` is NOT aliased here — it resolves as a real workspace package
 // (via its package.json `exports`), the same way the server consumes it.
 export default defineConfig({
+  build: {
+    outDir: '../server/static',
+    emptyOutDir: true,
+  },
   plugins: [react()],
   resolve: {
     alias: {
