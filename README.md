@@ -1,8 +1,7 @@
 ## Configure Development Environment
 
 ### Install dev/build tools
-- [Node.js] (https://nodejs.org/en) 16.x or higher
-- [Yarn](https://yarnpkg.com)
+- [Node.js] (https://nodejs.org/en) 18.x or higher (ships with npm; the project uses npm workspaces)
 
 **Windows users**:
 - Ensure git's `autocrlf` setting is set to `false` for this repository. If it's not, Git will checkout the files with CRLF line endings and the linter will throw errors.
@@ -132,36 +131,42 @@ GOOGLE_ID=<client-id>.apps.googleusercontent.com
 GOOGLE_SECRET=<client-secret>
 ```
 
+## Architecture
+
+The app is an npm-workspaces monorepo with three packages:
+- **`shared/`** (`@respond/shared`) — domain types + the isomorphic state (actions/reducers) used by both client and server.
+- **`server/`** (`@respond/server`) — a [Hono](https://hono.dev) Node server that owns the REST API, Google auth/session (iron-session), and the socket.io realtime server + in-memory `StateManager`. In **dev** it listens on **5173** (Vite proxies to it); in **production** it listens on **3000** and also serves the built client.
+- **`client/`** (`@respond/client`) — a [Vite](https://vite.dev) + React SPA (routing via [wouter](https://github.com/molefrog/wouter)). The dev server runs on **3000** (the app URL) and proxies `/api` + `/socket.io` to the server.
+
+The app URL is **http://localhost:3000** in both dev (Vite) and production (Hono).
+
 ## Start Development Server
 
-### App startup
-In a terminal window:
+Install once from the repo root (installs all workspaces):
 ```
-yarn install
-yarn dev
+npm install
 ```
 
-Most of the site should auto-compile and update when the source file is saved. One exception seems to be the socket server (code initialized by `/api/socket-keepalive`), which needs you to Ctrl-C the server and start `yarn dev` again.
+Then run the server and client in **two terminals**:
+```
+npm run dev:server   # Hono API + socket.io on http://localhost:5173
+npm run dev:client   # Vite SPA on http://localhost:3000  (the app URL)
+```
+Both hot-reload on save — the server via `tsx watch` (a full, fast process restart) and the client via Vite HMR. The old `/api/socket-keepalive` restart dance is gone; the socket server starts deterministically with the Hono process.
 
-As updates are made, the site will re-compile on demand (page load). You may notice a delay when navigating between pages.
+The client reads `RESPOND_SERVER_ORIGIN` (default `http://localhost:5173`) for its dev proxy target.
 
 ### SSL Proxy
-There are parts of the application (specifically Google authentication, possibly future geolocation) that don't work on an insecure (http://) site. To get into a secure context, we'll use an SSL proxy. HTTPS traffic on port 9001 is forwarded to an HTTP server on port 3000. If needed you can run a proxy using npx. In this case you probably need to update your OAuth client's Authorized Javascript Origins to include `https://localhost:9001` and `https://localhost` (`https://localhost` possibly not required? Shouldn't be used by the site).
-
-In another terminal window, start the proxy:
+Google authentication requires a secure (https://) context. Forward HTTPS on port 9001 to the Vite dev server on 3000:
 ```bash
 npx local-ssl-proxy --target 3000
 ```
+Add `https://localhost:9001` to your OAuth client's Authorized JavaScript Origins.
 
 ### Connect to app
-Open a web browser to http://localhost:3000 or https://localhost:9001 with the proxy.
+Open http://localhost:3000 (or https://localhost:9001 with the proxy).
 
-### Code quality / style
-
-The project is configured with ESLint and Prettier rules. Rule errors will fail the build. A GitHub action is configured to block PRs and commits to `main` that do not build successfully.
-
-Some tricks you'll probably want to know:
-  - `yarn lint` will run the linter and report results.
-  - `yarn lint --fix` will attempt to fix what it can and report the rest.
-  - Installing the ESLint extension for Visual Studio Code will surface errors in the IDE.
-  - `Shift + Alt + O` (or the Mac equivalent) in Visual Studio Code will optimize `import` statements. The rules should be at least close to matching the eslint rules.
+### Tests & type-checking
+- `npm test` — runs the Vitest suites (shared reducers/visibility, client store).
+- `npm run typecheck` — type-checks all three packages.
+- `npm run build` — production build of the client SPA (`client/dist`). The server serves this in production alongside the API + websocket.

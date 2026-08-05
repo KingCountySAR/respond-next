@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@respond/shared": ["./shared/src"],
+      "@respond/shared/*": ["./shared/src/*"],
+      "@respond/types/*": ["./shared/src/types/*"],
+      "@respond/lib/state": ["./shared/src/state"],
+      "@respond/lib/state/*": ["./shared/src/state/*"]
+    }
+  }
+}
