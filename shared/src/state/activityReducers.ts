@@ -5,6 +5,7 @@ import { createNewActivity, ParticipantStatus, pickActivityProperties } from '..
 import { pickTeamProperties } from '../types/operations';
 
 import { ActivityActions, ActivityActionsType } from './activityActions';
+import * as Mutators from './activityMutators';
 
 import { ActivityState } from '.';
 
@@ -43,38 +44,19 @@ export const BasicReducers: ActivityReducers = {
   },
 
   [ActivityActions.createPlace.type]: (state, { payload }) => {
-    const activity = state.list.find((a) => a.id === payload.activityId);
-    if (activity) {
-      activity.places = [...(activity.places ?? []), payload.place];
-      return;
-    }
-
-    const newActivity = createNewActivity();
-    newActivity.id = payload.activityId;
-    newActivity.places = [payload.place];
-    state.list.push(newActivity);
+    Mutators.createPlace(state, payload.activityId, payload.place);
   },
 
   [ActivityActions.updatePlace.type]: (state, { payload }) => {
-    const activity = state.list.find((a) => a.id === payload.activityId);
-    if (!activity) return;
-    activity.places = (activity.places ?? []).map((place) => (place.id === payload.place.id ? payload.place : place));
+    Mutators.updatePlace(state, payload.activityId, payload.place);
   },
 
   [ActivityActions.deletePlace.type]: (state, { payload }) => {
-    const activity = state.list.find((a) => a.id === payload.activityId);
-    if (!activity) return;
-    activity.places = (activity.places ?? []).filter((place) => place.id !== payload.placeId);
+    Mutators.deletePlace(state, payload.activityId, payload.placeId);
   },
 
   [ActivityActions.batchUpdatePlaces.type]: (state, { payload }) => {
-    const activity = state.list.find((a) => a.id === payload.activityId);
-    if (!activity) return;
-    const deleteSet = new Set(payload.deleteIds);
-    const upsertMap = new Map(payload.upserts.map((p) => [p.id, p]));
-    const kept = (activity.places ?? []).filter((p) => !deleteSet.has(p.id)).map((p) => upsertMap.get(p.id) ?? p);
-    const created = payload.upserts.filter((p) => !(activity.places ?? []).some((existing) => existing.id === p.id));
-    activity.places = [...kept, ...created];
+    Mutators.batchUpdatePlaces(state, payload.activityId, payload.upserts, payload.deleteIds);
   },
 
   [ActivityActions.remove.type]: (state, { payload }) => {
@@ -266,26 +248,11 @@ export const BasicReducers: ActivityReducers = {
   },
 
   [ActivityActions.addComm.type]: (state, { payload }) => {
-    const activity = state.list.find((f) => f.id === payload.activityId);
-    if (!activity) {
-      return;
-    }
-    activity.comms = activity.comms ?? [];
-    // guard against sync replay applying the same entry twice
-    if (activity.comms.some((c) => c.id === payload.comm.id)) return;
-    activity.comms.push(payload.comm);
+    Mutators.addComm(state, payload.activityId, payload.comm);
   },
 
   [ActivityActions.updateComm.type]: (state, { payload }) => {
-    const activity = state.list.find((f) => f.id === payload.activityId);
-    if (!activity || !activity.comms) {
-      return;
-    }
-    const comm = activity.comms.find((entry) => entry.id === payload.commId);
-    if (!comm) {
-      return;
-    }
-    Object.assign(comm, payload.updates);
+    Mutators.updateComm(state, payload.activityId, payload.commId, payload.updates);
   },
 
   [ActivityActions.updateStaff.type]: (state, { payload }) => {
