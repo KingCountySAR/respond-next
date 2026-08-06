@@ -1,12 +1,12 @@
 import type { Action } from '@reduxjs/toolkit';
 
+import type UserAuth from './userAuth';
+
 export interface ServerToClientEvents {
-  welcome: (id: string) => void;
   broadcastAction: (action: Action, reporterId: string) => void;
 }
 
 export interface ClientToServerEvents {
-  hello: (key: string) => void;
   reportAction: (action: Action, reporterId: string) => void;
   logout: () => void;
 }
@@ -16,6 +16,6 @@ export interface InterServerEvents {
 }
 
 export interface SocketData {
-  name: string;
-  age: number;
+  /** Set by the connection-auth middleware from the session cookie. */
+  auth: UserAuth;
 }

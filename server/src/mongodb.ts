@@ -19,10 +19,13 @@ const clientPromise: Promise<MongoClient> = client.connect();
 // Export a module-scoped MongoClient promise. By doing this in a
 // separate module, the client can be shared across functions.
 export default clientPromise.then(async (m) => {
+  // Server-side sessions live in the `sessions` collection; a TTL index on the
+  // `expires` field lets Mongo reap them once they lapse (expireAfterSeconds: 0
+  // means "delete when the indexed date is in the past").
   await m
     .db()
-    .collection('socketAuth')
-    .createIndex({ createdAt: 1 }, { expireAfterSeconds: 10 * 60 });
+    .collection('sessions')
+    .createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
   return m;
 });
 

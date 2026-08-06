@@ -149,15 +149,6 @@ api.get('/bootstrap', async (c) => {
   } satisfies BootstrapResponse);
 });
 
-// ---- Realtime socket auth key --------------------------------------------
-
-api.get('/v1/socket-key', async (c) => {
-  const auth = await getAuthFromContext(c);
-  if (!auth) return c.json({ status: 'not authenticated' }, 401);
-  const key = await (await getServices()).socketManager.getSocketKey(auth);
-  return c.json({ key });
-});
-
 // ---- Auth: Google login / logout -----------------------------------------
 
 api.post('/auth/google', async (c) => {
@@ -218,7 +209,7 @@ api.post('/auth/google', async (c) => {
   }
 });
 
-api.post('/auth/logout', (c) => {
-  clearAuth(c);
+api.post('/auth/logout', async (c) => {
+  await clearAuth(c);
   return c.json({ status: 'ok' });
 });

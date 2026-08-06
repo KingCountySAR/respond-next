@@ -3,7 +3,6 @@ import io, { Socket } from 'socket.io-client';
 
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/shared/types/syncSocket';
 
-import { apiFetch } from '../api';
 import { ActivityActions, filterInitialActivities } from '@respond/shared';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
@@ -16,12 +15,14 @@ export class ClientSync {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private dispatch: AppDispatch = undefined as any;
   private socket: Socket<ServerToClientEvents, ClientToServerEvents>;
-  private key: string = '';
 
   constructor(store: AppStore) {
     this.socket = io('/', {
       autoConnect: false,
       transports: ['websocket'],
+      // Send the same-origin session cookie on the handshake; the server
+      // authenticates the connection from it (no separate socket key).
+      withCredentials: true,
     });
 
     this.socket.on('connect', () => this.connected());
@@ -29,17 +30,14 @@ export class ClientSync {
     // The Hono server owns the socket.io server for its whole lifetime, so there is
     // nothing to "wake up" on connect_error — socket.io's own reconnection handles it.
 
-    this.socket.on('welcome', (id) => this.authenticated(id));
     this.socket.on('broadcastAction', (action, reporterId) => this.handleServerAction(action, reporterId));
     this.dispatch = store.dispatch;
   }
 
   connected(): void {
-    this.socket.emit('hello', this.key);
-  }
-
-  authenticated(id: string): void {
-    this.dispatch?.(SyncActions.connected({ id }));
+    // The connection is only established once the server has authenticated the
+    // session cookie, so reaching here means we're authenticated.
+    this.dispatch?.(SyncActions.connected({ id: this.socket.id ?? '' }));
   }
 
   disconnected(): void {
@@ -108,13 +106,9 @@ export class ClientSync {
     if (this.socket.connected) {
       this.socket.disconnect();
     }
-
-    // make sure the socket is listening, and we have an auth token for it...
-    this.key = (await apiFetch<{ key: string }>('/api/v1/socket-key')).key;
-    if (this.key) {
-      // and then connect to it.
-      this.socket.connect();
-    }
+    // Reconnect; the browser sends the current session cookie on the handshake,
+    // so a login/logout since the last connect is picked up automatically.
+    this.socket.connect();
   }
 
   handleLocalAction(action: Action) {

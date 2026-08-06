@@ -87,10 +87,6 @@ sudo npm install -g pm2
 Write the following to `.env.local`:
 ```
 GOOGLE_ID=<GOOGLE-CLIENT-ID>.apps.googleusercontent.com
-GOOGLE_SECRET=<app secret>
-AUTH_TRUST_HOST=true
-SECRET_COOKIE_PASSWORD=<secret from `openssl rand -base64 32`>
-SESSION_COOKIE_NAME=appSession
 MONGODB_URI="mongodb+srv://<username>:<password>@<my-server>.mongodb.net/<my-database>?retryWrites=true&w=majority"
 ```
 

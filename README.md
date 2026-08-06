@@ -128,7 +128,6 @@ Remember that your username/password in the connection string are for the databa
 - Add authentication information to `.env.local`:
 ```
 GOOGLE_ID=<client-id>.apps.googleusercontent.com
-GOOGLE_SECRET=<client-secret>
 ```
 
 ## Architecture

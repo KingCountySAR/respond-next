@@ -1,13 +1,11 @@
-import { ObjectId } from 'mongodb';
 import { Server as IOServer, Socket } from 'socket.io';
 
-import type { SocketAuthDoc } from '@respond/shared/types/data/socketAuthDoc';
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@respond/shared/types/syncSocket';
-import type UserAuth from '@respond/shared/types/userAuth';
 
 import { ActivityActions, LocationActions } from '@respond/shared';
 
-import mongoPromise, { getRelatedOrgIds } from './mongodb';
+import { getAuthFromCookieHeader } from './auth';
+import { getRelatedOrgIds } from './mongodb';
 import { getServices } from './services';
 
 export type SocketInterface = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -30,6 +28,20 @@ export default class SocketManager {
     }
     console.log('Socket server is initializing');
     this.io = io;
+
+    // Authenticate every connection from the shared session cookie before it is
+    // established. The socket carries the same session-id cookie as the HTTP API
+    // (same origin), so there is no separate socket key to mint or look up.
+    io.use(async (socket, next) => {
+      const auth = await getAuthFromCookieHeader(socket.handshake.headers.cookie);
+      if (!auth) {
+        next(new Error('unauthorized'));
+        return;
+      }
+      socket.data.auth = auth;
+      next();
+    });
+
     io.on('connection', (socket) => this.handleNewSocket(socket));
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const manager = this;
@@ -46,68 +58,26 @@ export default class SocketManager {
     });
   }
 
-  async handleNewSocket(socket: SocketInterface & { auth?: UserAuth }) {
+  async handleNewSocket(socket: SocketInterface) {
+    // The auth middleware guarantees socket.data.auth is set before we get here.
+    const auth = socket.data.auth;
     this.connectedSockets[socket.id] = socket;
-    let authTimeout: NodeJS.Timeout | undefined = setTimeout(() => {
-      console.log('socket did not auth in time. disconnecting');
-      socket.disconnect();
-    }, 3000);
 
     socket.on('disconnect', async () => {
       delete this.connectedSockets[socket.id];
     });
 
-    socket.on('hello', async (key) => {
-      if (authTimeout) {
-        clearTimeout(authTimeout);
-        authTimeout = undefined;
-      }
-
-      const mongo = await mongoPromise;
-      const socketAuth = await mongo
-        .db()
-        .collection<SocketAuthDoc>('socketAuth')
-        .findOne({ _id: new ObjectId(key) });
-      if (!socketAuth) {
-        console.log('couldnt find socket auth. disconnecting');
-        socket.disconnect();
-      } else {
-        const stateManager = (await getServices()).stateManager;
-        console.log(`authd socket for ${socketAuth.user.email}`);
-        socket.auth = socketAuth.user;
-        const userOrgIds = await getRelatedOrgIds(socketAuth.user.organizationId);
-        for (const orgId of userOrgIds) {
-          socket.join(`org:${orgId}`);
-        }
-        socket.emit('welcome', socket.id);
-        socket.emit('broadcastAction', ActivityActions.reload(await stateManager.getStateForUser(socketAuth.user)), '');
-        socket.emit('broadcastAction', LocationActions.reload(stateManager.getLocationState()), '');
-      }
-    });
-
     socket.on('reportAction', async (action, reporterId) => {
-      if (!socket.auth) {
-        // TODO, let user know they aren't authenticated
-        return;
-      }
-      (await getServices()).stateManager.handleIncomingAction(action, reporterId, socket.auth);
+      (await getServices()).stateManager.handleIncomingAction(action, reporterId, auth);
     });
-  }
 
-  async getSocketKey(user: UserAuth, previousKey?: string) {
-    const mongo = await mongoPromise;
-    if (!previousKey) {
-      console.log('didnt find socket session. creating one');
-      const socketAuth: SocketAuthDoc = {
-        user,
-        created: new Date(),
-      };
-      const inserted = await mongo.db().collection('socketAuth').insertOne(socketAuth);
-      return inserted.insertedId.toString();
+    const stateManager = (await getServices()).stateManager;
+    console.log(`authd socket for ${auth.email}`);
+    const userOrgIds = await getRelatedOrgIds(auth.organizationId);
+    for (const orgId of userOrgIds) {
+      socket.join(`org:${orgId}`);
     }
-
-    // TODO - validate previous key
-
-    return previousKey;
+    socket.emit('broadcastAction', ActivityActions.reload(await stateManager.getStateForUser(auth)), '');
+    socket.emit('broadcastAction', LocationActions.reload(stateManager.getLocationState()), '');
   }
 }
