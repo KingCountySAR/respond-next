@@ -1,8 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { useMemo } from 'react';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
+import { useParticipantCommands } from '@respond/lib/client/services/participants';
 import { Participant } from '@respond/shared/types/activity';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
@@ -12,7 +11,7 @@ import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import DashboardParticipantCard from './DashboardParticipantCard';
 
 export function DashboardResponderManager() {
-  const dispatch = useAppDispatch();
+  const participants = useParticipantCommands();
 
   const activity = useActivityContext();
 
@@ -27,7 +26,7 @@ export function DashboardResponderManager() {
 
   const setAssigned = (participant: Participant) => {
     const update = { time: Date.now(), status: ParticipantStatus.Assigned, organizationId: participant.organizationId };
-    dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
+    participants.addTimeline(activity.id, participant.id, update);
   };
 
   const handleDrop = (participant: Participant, type: string, callback?: () => void) => {
@@ -35,7 +34,7 @@ export function DashboardResponderManager() {
     if (participant.timeline[0].status === ParticipantStatus.Assigned) {
       // Update the Participant Status to Available
       const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
-      dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
+      participants.addTimeline(activity.id, participant.id, update);
     }
     callback?.();
   };

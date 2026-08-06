@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { usePreferences } from '@respond/components/PreferencesProvider';
+import { useParticipantCommands } from '@respond/lib/client/services/participants';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { MemberInfo } from '@respond/shared/types/member';
 import { ActivityActions } from '@respond/shared';
@@ -23,6 +24,7 @@ interface FormValues {
 
 export function useFormLogic(activity: Activity, user: UserInfo | MemberInfo, respondingOrg: Organization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
   const dispatch = useAppDispatch();
+  const participants = useParticipantCommands();
 
   const participantId = 'participantId' in user ? user.participantId : user.id;
 
@@ -80,7 +82,7 @@ export function useFormLogic(activity: Activity, user: UserInfo | MemberInfo, re
         ),
       );
     }
-    dispatch(ActivityActions.participantUpdate(activity.id, participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles, etaValue));
+    participants.update(activity.id, participantId, user.given_name ?? '', user.family_name ?? '', respondingOrg.id, time, newStatus, data.miles === '' ? undefined : data.miles, etaValue);
     onFinish();
   };
 

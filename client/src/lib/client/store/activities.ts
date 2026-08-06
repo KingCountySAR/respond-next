@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { hoursToMilliseconds } from 'date-fns';
 
 import { ActivityActions, ActivityState, BasicActivityReducers, BasicEventReducers } from '@respond/shared';
-import { CommsEvents, PlaceEvents } from '@respond/shared/events';
+import { CommsEvents, ParticipantEvents, PlaceEvents } from '@respond/shared/events';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
 
 import { ReducerBuilderStub } from '../types';
@@ -51,7 +51,14 @@ const activitySliceArgs = {
       .addCase(PlaceEvents.PlaceDeleted, BasicEventReducers[PlaceEvents.PlaceDeleted.type])
       .addCase(PlaceEvents.PlacesBatchChanged, BasicEventReducers[PlaceEvents.PlacesBatchChanged.type])
       .addCase(CommsEvents.CommLogged, BasicEventReducers[CommsEvents.CommLogged.type])
-      .addCase(CommsEvents.CommUpdated, BasicEventReducers[CommsEvents.CommUpdated.type]);
+      .addCase(CommsEvents.CommUpdated, BasicEventReducers[CommsEvents.CommUpdated.type])
+      .addCase(ParticipantEvents.ParticipantUpdated, BasicEventReducers[ParticipantEvents.ParticipantUpdated.type])
+      .addCase(ParticipantEvents.ParticipantTimelineAdded, BasicEventReducers[ParticipantEvents.ParticipantTimelineAdded.type])
+      .addCase(ParticipantEvents.ParticipantTimelineUpdated, BasicEventReducers[ParticipantEvents.ParticipantTimelineUpdated.type])
+      .addCase(ParticipantEvents.ParticipantMilesUpdated, BasicEventReducers[ParticipantEvents.ParticipantMilesUpdated.type])
+      .addCase(ParticipantEvents.ParticipantEtaUpdated, BasicEventReducers[ParticipantEvents.ParticipantEtaUpdated.type])
+      .addCase(ParticipantEvents.ParticipantsBulkUpdated, BasicEventReducers[ParticipantEvents.ParticipantsBulkUpdated.type])
+      .addCase(ParticipantEvents.ParticipantTagged, BasicEventReducers[ParticipantEvents.ParticipantTagged.type]);
   },
 };
 

@@ -1,6 +1,7 @@
 import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import React, { useState } from 'react';
 
+import { useParticipantCommands } from '@respond/lib/client/services/participants';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/shared';
 import { ParticipantStatus } from '@respond/shared/types/activity';
@@ -30,6 +31,7 @@ interface TeamStatusSelectProps {
 
 export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
   const dispatch = useAppDispatch();
+  const participants = useParticipantCommands();
   const activity = useActivityContext();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -70,7 +72,7 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
       .filter((item): item is { participantId: string; update: { time: number; status: ParticipantStatus; organizationId: string } } => Boolean(item));
 
     if (updates.length) {
-      dispatch(ActivityActions.bulkParticipantUpdate(activity.id, updates));
+      participants.bulkUpdate(activity.id, updates);
     }
 
     dispatch(

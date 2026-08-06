@@ -4,8 +4,7 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
+import { useParticipantCommands } from '@respond/lib/client/services/participants';
 import { getOrganizationName, getStatusText, Participant, ParticipantUpdate } from '@respond/shared/types/activity';
 
 import { useActivityContext } from './ActivityProvider';
@@ -17,9 +16,9 @@ interface EnrichedParticipantUpdate extends ParticipantUpdate {
 
 export default function ParticipantTimeline({ participant }: { participant: Participant }) {
   const activity = useActivityContext();
-  const dispatch = useAppDispatch();
+  const participants = useParticipantCommands();
   const updateTimeline = (update: ParticipantUpdate, index: number) => {
-    dispatch(ActivityActions.participantTimelineUpdate(activity.id, participant.id, update, index));
+    participants.updateTimeline(activity.id, participant.id, update, index);
   };
   const getEnrichedUpdate = (update: ParticipantUpdate): EnrichedParticipantUpdate => {
     return {

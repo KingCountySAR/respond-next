@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
+import { useParticipantCommands } from '@respond/lib/client/services/participants';
 import { Participant } from '@respond/shared/types/activity';
 
 import { Button, Stack } from '../Material';
@@ -9,7 +8,7 @@ import { Button, Stack } from '../Material';
 import { ParticipantMilesInput } from './ParticipantMilesInput';
 
 export function ParticipantMilesUpdater({ activityId, participant, onCancel, onSubmit }: { activityId: string; participant: Participant; onCancel: () => void; onSubmit: (miles: number) => void }) {
-  const dispatch = useAppDispatch();
+  const participants = useParticipantCommands();
 
   const [miles, setMiles] = useState(participant.miles ?? 0);
 
@@ -18,7 +17,7 @@ export function ParticipantMilesUpdater({ activityId, participant, onCancel, onS
   };
 
   const handleSubmit = () => {
-    dispatch(ActivityActions.participantMilesUpdate(activityId, participant.id, miles));
+    participants.updateMiles(activityId, participant.id, miles);
     onSubmit(miles);
   };
 

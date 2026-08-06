@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { useDebounce } from '@respond/hooks/useDebounce';
 import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
+import { ParticipantCommands } from '@respond/shared/commands';
 
 import { InlineTimeEdit } from '../InlineTimeEdit';
 import { Button, IconButton, Stack, Typography } from '../Material';
@@ -24,7 +24,7 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
   const debouncedEta = useDebounce(eta, 1000);
 
   useEffect(() => {
-    dispatch(ActivityActions.participantEtaUpdate(activityId, participantId, debouncedEta));
+    dispatch(ParticipantCommands.UpdateParticipantEta(activityId, participantId, debouncedEta));
   }, [debouncedEta, activityId, participantId, dispatch]);
 
   return (
