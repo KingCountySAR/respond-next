@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { hoursToMilliseconds } from 'date-fns';
 
-import { ActivityActions, ActivityState, BasicActivityReducers } from '@respond/shared';
+import { ActivityActions, ActivityState, BasicActivityReducers, BasicEventReducers } from '@respond/shared';
+import { CommsEvents, PlaceEvents } from '@respond/shared/events';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
 
 import { ReducerBuilderStub } from '../types';
@@ -43,7 +44,14 @@ const activitySliceArgs = {
       .addCase(ActivityActions.updatePlace, BasicActivityReducers[ActivityActions.updatePlace.type])
       .addCase(ActivityActions.deletePlace, BasicActivityReducers[ActivityActions.deletePlace.type])
       .addCase(ActivityActions.batchUpdatePlaces, BasicActivityReducers[ActivityActions.batchUpdatePlaces.type])
-      .addCase(ActivityActions.bulkParticipantUpdate, BasicActivityReducers[ActivityActions.bulkParticipantUpdate.type]);
+      .addCase(ActivityActions.bulkParticipantUpdate, BasicActivityReducers[ActivityActions.bulkParticipantUpdate.type])
+      // Phase 2 command/event path: reduce server-minted place + comm events.
+      .addCase(PlaceEvents.PlaceCreated, BasicEventReducers[PlaceEvents.PlaceCreated.type])
+      .addCase(PlaceEvents.PlaceUpdated, BasicEventReducers[PlaceEvents.PlaceUpdated.type])
+      .addCase(PlaceEvents.PlaceDeleted, BasicEventReducers[PlaceEvents.PlaceDeleted.type])
+      .addCase(PlaceEvents.PlacesBatchChanged, BasicEventReducers[PlaceEvents.PlacesBatchChanged.type])
+      .addCase(CommsEvents.CommLogged, BasicEventReducers[CommsEvents.CommLogged.type])
+      .addCase(CommsEvents.CommUpdated, BasicEventReducers[CommsEvents.CommUpdated.type]);
   },
 };
 

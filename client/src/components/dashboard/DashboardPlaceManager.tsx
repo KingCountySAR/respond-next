@@ -4,10 +4,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import { Box, Button, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
+import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/shared';
 import { Participant } from '@respond/shared/types/activity';
-import { CommunicationsLogEntry, createNewCommsEntry, createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
+import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
@@ -22,11 +23,14 @@ import { DashboardTeamMember } from './DashboardTeamMember';
 
 export function DashboardPlaceManager() {
   const dispatch = useAppDispatch();
+  const places = usePlaceCommands();
   const activity = useActivityContext();
 
   const [addingPlace, setAddingPlace] = useState<Place | null>(null);
 
-  // For backward compatibility, if the activity does not have places
+  // Backward-compat bootstrap of the default places (Command Post / Field). This
+  // stays on the legacy silent path on purpose: default places must NOT trip the
+  // place-comms reactor, and it runs on every client mount.
   useEffect(() => {
     const defaultPlaces = getDefaultPlaces(activity);
 
@@ -35,18 +39,10 @@ export function DashboardPlaceManager() {
     }
   }, [activity, dispatch]);
 
+  // The server's place-comms reactor logs the "established" comm now — the
+  // component only expresses the intent to create the place.
   const addPlace = (placeToCreate: Place) => {
-    dispatch(ActivityActions.createPlace(activity.id, placeToCreate));
-    const parts = [placeToCreate.name, 'established: '];
-    if (placeToCreate.lat?.trim() && placeToCreate.lon?.trim()) parts.push(`${placeToCreate.lat.trim()}, ${placeToCreate.lon.trim()}`);
-    if (placeToCreate.notes?.trim()) parts.push(placeToCreate.notes.trim());
-    const comm: CommunicationsLogEntry = createNewCommsEntry({
-      from: placeToCreate.name,
-      to: 'CP',
-      message: parts.join(' '),
-      isAutomated: true,
-    });
-    dispatch(ActivityActions.addComm(activity.id, comm));
+    places.createPlace(activity.id, placeToCreate);
   };
 
   // nullish coalese for backward compatibility on inital render
@@ -80,7 +76,7 @@ export function DashboardPlaceManager() {
 }
 
 function PlaceTile({ place }: { place: Place }) {
-  const dispatch = useAppDispatch();
+  const places = usePlaceCommands();
   const activity = useActivityContext();
 
   const [editingPlace, setEditingPlace] = useState<Place | null>(null);
@@ -98,31 +94,21 @@ function PlaceTile({ place }: { place: Place }) {
     const exists = currentPlaces.some((p) => p.id === placeToUpsert.id);
 
     if (!exists) {
-      dispatch(ActivityActions.createPlace(activity.id, placeToUpsert));
+      places.createPlace(activity.id, placeToUpsert);
       return;
     }
 
-    dispatch(ActivityActions.updatePlace(activity.id, placeToUpsert));
+    places.updatePlace(activity.id, placeToUpsert);
   };
 
+  // The place-comms reactor logs the "terminated" comm server-side on delete.
   const deletePlace = (id: string) => {
     const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
     if (hasResources) {
       setConfirmDeleteOpen(true);
       return;
     }
-    dispatch(ActivityActions.deletePlace(activity.id, id));
-    logDeleteComm();
-  };
-
-  const logDeleteComm = () => {
-    const comm: CommunicationsLogEntry = createNewCommsEntry({
-      from: place.name,
-      to: 'CP',
-      message: `${place.name} terminated`,
-      isAutomated: true,
-    });
-    dispatch(ActivityActions.addComm(activity.id, comm));
+    places.deletePlace(activity.id, id);
   };
 
   const deleteAndReassign = () => {
@@ -131,8 +117,7 @@ function PlaceTile({ place }: { place: Place }) {
     const existingEquipmentIds = new Set(fieldPlace?.assignedEquipment.map((item) => item.uuid));
     const mergedEquipment = [...(fieldPlace?.assignedEquipment ?? []), ...place.assignedEquipment.filter((item) => !existingEquipmentIds.has(item.uuid))];
     const updatedFieldPlace = fieldPlace ? { ...fieldPlace, assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment } : { ...createNewPlace(DEFAULT_PLACES.field), assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment };
-    dispatch(ActivityActions.batchUpdatePlaces(activity.id, [updatedFieldPlace], [place.id]));
-    logDeleteComm();
+    places.batchUpdatePlaces(activity.id, [updatedFieldPlace], [place.id]);
   };
 
   const editAction = {
@@ -186,7 +171,7 @@ function PlaceTile({ place }: { place: Place }) {
   };
 
   const dispatchUpdate = (updated: Place) => {
-    dispatch(ActivityActions.updatePlace(activity.id, updated));
+    places.updatePlace(activity.id, updated);
   };
 
   return (

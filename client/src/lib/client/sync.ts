@@ -1,6 +1,8 @@
 import { Action, isAnyOf } from '@reduxjs/toolkit';
 import io, { Socket } from 'socket.io-client';
 
+import { Command, isCommand } from '@respond/shared/commands';
+import type { StampedEvent } from '@respond/shared/events';
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/shared/types/syncSocket';
 
 import { ActivityActions, filterInitialActivities } from '@respond/shared';
@@ -31,6 +33,7 @@ export class ClientSync {
     // nothing to "wake up" on connect_error — socket.io's own reconnection handles it.
 
     this.socket.on('broadcastAction', (action, reporterId) => this.handleServerAction(action, reporterId));
+    this.socket.on('event', (event) => this.handleServerEvent(event));
     this.dispatch = store.dispatch;
   }
 
@@ -67,6 +70,17 @@ export class ClientSync {
         effect: (action, _listenerApi) => {
           console.log('ACTING ON SYNC');
           this.handleLocalAction(action);
+        },
+      }),
+    );
+
+    // Commands (intent) are forwarded to the server, never reduced locally. The
+    // authoritative event comes back over the socket and is applied then.
+    this.dispatch(
+      addAppListener({
+        predicate: (action) => isCommand(action),
+        effect: (action) => {
+          this.emitCommand(action as Command);
         },
       }),
     );
@@ -120,5 +134,15 @@ export class ClientSync {
     if (reporterId === this.socket.id) return;
     console.log('YAY handleServerAction', action);
     this.dispatch(action);
+  }
+
+  emitCommand(command: Command) {
+    this.socket.emit('command', command);
+  }
+
+  // Server-minted facts. Applied by every client, including the one that issued
+  // the command (no reporter exclusion — the client did not optimistically apply it).
+  handleServerEvent(event: StampedEvent) {
+    this.dispatch(event as unknown as Action);
   }
 }

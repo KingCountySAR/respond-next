@@ -3,9 +3,8 @@ import { alpha } from '@mui/material/styles';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
-import { CommunicationsLogEntry, createNewCommsEntry } from '@respond/shared/types/operations';
+import { useCommsCommands } from '@respond/lib/client/services/comms';
+import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
@@ -16,7 +15,7 @@ type FormValues = {
 };
 
 export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: CommunicationsLogEntry | null; onSave?: () => void; onCancel?: () => void }) {
-  const dispatch = useAppDispatch();
+  const comms = useCommsCommands();
   const activity = useActivityContext();
   const fromRef = useRef<HTMLInputElement | null>(null);
 
@@ -42,15 +41,11 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
         message: values.message,
         isAutomated: false, // Automated messages are toggled to false when edited
       };
-      dispatch(ActivityActions.updateComm(activity.id, entry.id, updates));
+      comms.updateComm(activity.id, entry.id, updates);
       onSave?.();
     } else {
-      const comm: CommunicationsLogEntry = createNewCommsEntry({
-        from: values.from,
-        to: values.to,
-        message: values.message,
-      });
-      dispatch(ActivityActions.addComm(activity.id, comm));
+      // No id/timestamp — the server stamps those when it mints CommLogged.
+      comms.logComm(activity.id, { from: values.from, to: values.to, message: values.message });
       onSave?.();
     }
 
