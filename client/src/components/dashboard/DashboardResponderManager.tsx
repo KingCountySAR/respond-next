@@ -11,13 +11,18 @@ import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 
 import DashboardParticipantCard from './DashboardParticipantCard';
 
-export function DashboardAvailableParticipants() {
+export function DashboardResponderManager() {
   const dispatch = useAppDispatch();
 
   const activity = useActivityContext();
 
   const availableParticipants = useMemo(() => {
-    return Object.values(activity.participants).filter((participant) => participant.timeline[0].status === ParticipantStatus.Available);
+    const assignedParticipants = activity.teams.flatMap((team) => team.assignedParticipants.map((id) => id));
+    return Object.values(activity.participants)
+      .filter((participant) => {
+        return participant.timeline[0].status === ParticipantStatus.Available && !assignedParticipants.includes(participant.id);
+      })
+      .sort((a, b) => a.firstname.localeCompare(b.lastname));
   }, [activity]);
 
   const setAssigned = (participant: Participant) => {
@@ -27,10 +32,11 @@ export function DashboardAvailableParticipants() {
 
   const handleDrop = (participant: Participant, type: string, callback?: () => void) => {
     // If the participant is not in Assigned status, do not overwrite the current status.
-    if (participant.timeline[0].status !== ParticipantStatus.Assigned) return;
-    // Update the Participant Status to Available
-    const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
-    dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
+    if (participant.timeline[0].status === ParticipantStatus.Assigned) {
+      // Update the Participant Status to Available
+      const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
+      dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
+    }
     callback?.();
   };
 

@@ -69,6 +69,20 @@ export function createNewPlace(name: string): Place {
   };
 }
 
+export function createNewCommsEntry(values: Partial<CommunicationsLogEntry>): CommunicationsLogEntry {
+  return {
+    id: uuid(),
+    from: '',
+    to: '',
+    message: '',
+    timestamp: Date.now(),
+    isAutomated: false,
+    isDeleted: false,
+    isFavorite: false,
+    ...values,
+  };
+}
+
 export const DEFAULT_PLACES = {
   base: 'Command Post',
   field: 'Field (Unassigned)',

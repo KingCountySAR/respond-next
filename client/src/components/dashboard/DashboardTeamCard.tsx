@@ -7,7 +7,7 @@ import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/shared';
 import { Participant } from '@respond/shared/types/activity';
 
-import { EquipmentItem, Team } from '@respond/shared/types/operations';
+import { CommunicationsLogEntry, createNewCommsEntry, EquipmentItem, Team } from '@respond/shared/types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';
@@ -98,7 +98,22 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   };
 
   const updateTeam = (team: Team) => {
+    const originalTeam = activity.teams.find((t) => t.id === team.id);
+    if (team.gar !== originalTeam?.gar) {
+      autoLog(`${team.name} GAR changed to ${team.gar.toUpperCase()}`, team.gar !== 'green');
+    }
     dispatch(ActivityActions.updateTeam(activity.id, team));
+  };
+
+  const autoLog = (message: string, isFavorite = false) => {
+    const comm: CommunicationsLogEntry = createNewCommsEntry({
+      from: team.name,
+      to: 'CP',
+      message: message,
+      isAutomated: true,
+      isFavorite,
+    });
+    dispatch(ActivityActions.addComm(activity.id, comm));
   };
 
   const handleExpandClick = (event: React.MouseEvent<HTMLButtonElement>) => {

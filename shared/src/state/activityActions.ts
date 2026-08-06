@@ -143,7 +143,7 @@ const updateComm = createAction('activity/commsUpdate', (activityId: string, com
   meta: { sync: true },
 }));
 
-const updateStaff = createAction('activity/staffUpdate', (activityId: string, staff: Record<string, string>) => ({
+const updateStaff = createAction('activity/updateStaff', (activityId: string, staff: Record<string, string>) => ({
   payload: {
     activityId,
     staff,

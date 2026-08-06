@@ -40,6 +40,10 @@ const inventory = [
   { id: 'inventory-27', type: 'Packaging', name: 'Mega Mover' },
   { id: 'inventory-28', type: 'Packaging', name: 'Foam Pad' },
   { id: 'inventory-29', type: 'Packaging', name: 'Padding' },
+  { id: 'inventory-30', type: 'Medical', name: 'Vacuum Splint: Full Body' },
+  { id: 'inventory-31', type: 'Medical', name: 'Vacuum Splint: Extremity' },
+  { id: 'inventory-32', type: 'Medical', name: 'SAM Splint' },
+  { id: 'inventory-33', type: 'General', name: 'Webbing' },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const checkOutEquipmentItem = (item: EquipmentItem): EquipmentItem => {
