@@ -3,8 +3,6 @@ import { Server as IOServer, Socket } from 'socket.io';
 import { userAuthor } from '@respond/shared/events';
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@respond/shared/types/syncSocket';
 
-import { ActivityActions, LocationActions } from '@respond/shared';
-
 import { getAuthFromCookieHeader } from './auth';
 import { getRelatedOrgIds } from './mongodb';
 import { getServices } from './services';
@@ -80,7 +78,9 @@ export default class SocketManager {
     for (const orgId of userOrgIds) {
       socket.join(`org:${orgId}`);
     }
-    socket.emit('broadcastAction', ActivityActions.reload(await stateManager.getStateForUser(auth)), '');
-    socket.emit('broadcastAction', LocationActions.reload(stateManager.getLocationState()), '');
+    socket.emit('snapshot', {
+      activities: await stateManager.getStateForUser(auth),
+      locations: stateManager.getLocationState(),
+    });
   }
 }

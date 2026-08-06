@@ -1,6 +1,6 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { BasicLocationEventReducers, BasicLocationReducers, LocationActions, LocationState } from '@respond/shared';
+import { BasicLocationEventReducers, LocationState } from '@respond/shared';
 import { LocationEvents } from '@respond/shared/events';
 
 import { ReducerBuilderStub } from '../types';
@@ -14,16 +14,20 @@ const initialState: LocationState = {
 const locationsSlice = createSlice({
   name: 'locations',
   initialState,
-  reducers: {},
+  reducers: {
+    // Full-state snapshot from the server (read-model concern, slice-local).
+    reloaded: (state: LocationState, action: PayloadAction<LocationState>) => {
+      state.list = action.payload.list;
+    },
+  },
   extraReducers: (builder: ReducerBuilderStub<LocationState>) => {
     builder //
-      // reload is the server -> client snapshot (still an action); update/remove
-      // are now command/event driven.
-      .addCase(LocationActions.reload, BasicLocationReducers[LocationActions.reload.type])
       .addCase(LocationEvents.LocationUpdated, BasicLocationEventReducers[LocationEvents.LocationUpdated.type])
       .addCase(LocationEvents.LocationRemoved, BasicLocationEventReducers[LocationEvents.LocationRemoved.type]);
   },
 });
+
+export const { reloaded: locationsReloaded } = locationsSlice.actions;
 
 export default locationsSlice.reducer;
 

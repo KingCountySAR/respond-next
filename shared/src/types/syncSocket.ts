@@ -1,14 +1,13 @@
-import type { Action } from '@reduxjs/toolkit';
-
 import type { Command } from '../commands';
 import type { StampedEvent } from '../events';
+import type { ActivityState, LocationState } from '../state';
 
 import type UserAuth from './userAuth';
 
 export interface ServerToClientEvents {
-  // Full-state snapshot pushed on connect (carries a `reload` action). Not the
-  // legacy sync path — just how initial/rehydrated state arrives.
-  broadcastAction: (action: Action, reporterId: string) => void;
+  // Full-state snapshot pushed on connect: activities scoped to the user, plus
+  // the locations catalog. Applied directly into the client read model.
+  snapshot: (payload: { activities: ActivityState; locations: LocationState }) => void;
   // Command/event path: a server-minted, authored fact. Every connected client
   // (including the one that issued the command) applies it.
   event: (event: StampedEvent) => void;

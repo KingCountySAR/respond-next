@@ -1,7 +1,7 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { hoursToMilliseconds } from 'date-fns';
 
-import { ActivityActions, ActivityState, BasicActivityReducers, BasicEventReducers } from '@respond/shared';
+import { ActivityState, BasicEventReducers } from '@respond/shared';
 import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
 
@@ -20,10 +20,15 @@ if (typeof localStorage !== 'undefined' && localStorage.activities) {
 const activitySliceArgs = {
   name: 'activities',
   initialState,
-  reducers: {},
+  reducers: {
+    // Full-state snapshot from the server (or localStorage rehydration). This is
+    // a read-model concern, not a domain action — hence slice-local.
+    reloaded: (state: ActivityState, action: PayloadAction<ActivityState>) => {
+      state.list = action.payload.list;
+    },
+  },
   extraReducers: (builder: ReducerBuilderStub<ActivityState>) => {
     builder //
-      .addCase(ActivityActions.reload, BasicActivityReducers[ActivityActions.reload.type])
       // Phase 2 command/event path: reduce server-minted place + comm events.
       .addCase(PlaceEvents.PlaceCreated, BasicEventReducers[PlaceEvents.PlaceCreated.type])
       .addCase(PlaceEvents.PlaceUpdated, BasicEventReducers[PlaceEvents.PlaceUpdated.type])
@@ -50,6 +55,8 @@ const activitySliceArgs = {
 };
 
 const activitiesSlice = createSlice(activitySliceArgs);
+
+export const { reloaded: activitiesReloaded } = activitiesSlice.actions;
 
 export default activitiesSlice.reducer;
 

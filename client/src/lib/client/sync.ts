@@ -5,10 +5,12 @@ import { Command, isCommand } from '@respond/shared/commands';
 import { ActivityEvents, type StampedEvent } from '@respond/shared/events';
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/shared/types/syncSocket';
 
-import { ActivityActions, filterInitialActivities } from '@respond/shared';
+import { type ActivityState, filterInitialActivities, type LocationState } from '@respond/shared';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
+import { activitiesReloaded } from './store/activities';
 import { AuthActions } from './store/auth';
+import { locationsReloaded } from './store/locations';
 import { Actions as SyncActions } from './store/sync';
 
 export class ClientSync {
@@ -32,7 +34,7 @@ export class ClientSync {
     // The Hono server owns the socket.io server for its whole lifetime, so there is
     // nothing to "wake up" on connect_error — socket.io's own reconnection handles it.
 
-    this.socket.on('broadcastAction', (action, reporterId) => this.handleServerAction(action, reporterId));
+    this.socket.on('snapshot', (payload) => this.handleSnapshot(payload));
     this.socket.on('event', (event) => this.handleServerEvent(event));
     this.dispatch = store.dispatch;
   }
@@ -74,7 +76,7 @@ export class ClientSync {
     // on the initial snapshot (reload) and on activity summary changes.
     this.dispatch(
       addAppListener({
-        matcher: isAnyOf(ActivityActions.reload, ActivityEvents.ActivityUpdated),
+        matcher: isAnyOf(activitiesReloaded, ActivityEvents.ActivityUpdated),
         effect: (_action, listenerApi) => {
           const activities = listenerApi.getState().activities;
           const cachedActivities = { ...activities, list: filterInitialActivities(activities.list) };
@@ -93,7 +95,7 @@ export class ClientSync {
     );
 
     if (localStorage.activities) {
-      this.dispatch(ActivityActions.reload(JSON.parse(localStorage.activities)));
+      this.dispatch(activitiesReloaded(JSON.parse(localStorage.activities)));
     }
 
     await this.restart();
@@ -109,11 +111,11 @@ export class ClientSync {
     this.socket.connect();
   }
 
-  handleServerAction(action: Action, reporterId: string) {
-    console.log('handleServerAction', reporterId, this.socket.id);
-    if (reporterId === this.socket.id) return;
-    console.log('YAY handleServerAction', action);
-    this.dispatch(action);
+  // Full-state snapshot pushed by the server on connect. Applied directly into
+  // the read model (activities scoped to this user, plus the locations catalog).
+  handleSnapshot(payload: { activities: ActivityState; locations: LocationState }) {
+    this.dispatch(activitiesReloaded(payload.activities));
+    this.dispatch(locationsReloaded(payload.locations));
   }
 
   emitCommand(command: Command) {
