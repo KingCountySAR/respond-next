@@ -1,5 +1,5 @@
-import { Command, CommsCommands, PlaceCommands } from '@respond/shared/commands';
-import { CommsEvents, DomainEvent, PlaceEvents } from '@respond/shared/events';
+import { Command, CommsCommands, ParticipantCommands, PlaceCommands } from '@respond/shared/commands';
+import { CommsEvents, DomainEvent, ParticipantEvents, PlaceEvents } from '@respond/shared/events';
 import { createNewCommsEntry } from '@respond/shared/types/operations';
 
 /**
@@ -31,6 +31,27 @@ export function produceEvents(command: Command): DomainEvent[] {
   }
   if (CommsCommands.UpdateComm.match(command)) {
     return [CommsEvents.CommUpdated(command.payload.activityId, command.payload.commId, command.payload.updates)];
+  }
+  if (ParticipantCommands.UpdateParticipant.match(command)) {
+    return [ParticipantEvents.ParticipantUpdated(command.payload.activityId, command.payload.participant, command.payload.update)];
+  }
+  if (ParticipantCommands.AddParticipantTimeline.match(command)) {
+    return [ParticipantEvents.ParticipantTimelineAdded(command.payload.activityId, command.payload.participantId, command.payload.update)];
+  }
+  if (ParticipantCommands.UpdateParticipantTimeline.match(command)) {
+    return [ParticipantEvents.ParticipantTimelineUpdated(command.payload.activityId, command.payload.participantId, command.payload.update, command.payload.index)];
+  }
+  if (ParticipantCommands.UpdateParticipantMiles.match(command)) {
+    return [ParticipantEvents.ParticipantMilesUpdated(command.payload.activityId, command.payload.participantId, command.payload.miles)];
+  }
+  if (ParticipantCommands.UpdateParticipantEta.match(command)) {
+    return [ParticipantEvents.ParticipantEtaUpdated(command.payload.activityId, command.payload.participantId, command.payload.eta)];
+  }
+  if (ParticipantCommands.BulkUpdateParticipants.match(command)) {
+    return [ParticipantEvents.ParticipantsBulkUpdated(command.payload.activityId, command.payload.updates)];
+  }
+  if (ParticipantCommands.TagParticipant.match(command)) {
+    return [ParticipantEvents.ParticipantTagged(command.payload.activityId, command.payload.participantId, command.payload.tags)];
   }
   return [];
 }

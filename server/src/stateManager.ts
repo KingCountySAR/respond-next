@@ -7,18 +7,17 @@ import { BasicActivityReducers, BasicEventReducers, BasicLocationReducers } from
 import { Command } from '@respond/shared/commands';
 import { EventAuthor, serviceAuthor, StampedEvent } from '@respond/shared/events';
 import type { Activity } from '@respond/shared/types/activity';
-import { OrganizationDoc, ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
+import { ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
 import { Location } from '@respond/shared/types/location';
 import { Organization } from '@respond/shared/types/organization';
 import type UserAuth from '@respond/shared/types/userAuth';
 
-import { ActivityAction, ActivityActions, isActivityAction, ParticipantUpdateAction } from '@respond/shared/state/activityActions';
+import { ActivityAction, isActivityAction } from '@respond/shared/state/activityActions';
 import { filterInitialActivities } from '@respond/shared/state/activityVisibility';
 import { isLocationAction, LocationAction } from '@respond/shared/state/locationActions';
 
 import { produceEvents } from './commandHandlers';
 import { defaultReactors, Reactor } from './reactors';
-import { getServices } from './services';
 
 type DatabaseActivity = Activity & { removeTime?: number };
 
@@ -138,11 +137,12 @@ export class StateManager {
 
     // Reactors run after the events are authoritative. Their follow-up commands
     // re-enter the pipeline authored as the reactor (a service), each producing
-    // its own broadcast. Terminates because no reactor observes comm events.
-    const ctx = { priorActivities };
+    // its own broadcast. Terminates because no reactor observes the events its
+    // own follow-up commands produce.
+    const ctx = { priorActivities, currentActivities: this.snapshotActivities() };
     for (const event of stamped) {
       for (const reactor of this.reactors) {
-        for (const followup of reactor.react(event, ctx)) {
+        for (const followup of await reactor.react(event, ctx)) {
           await this.handleCommand(followup, serviceAuthor(reactor.name));
         }
       }
@@ -169,10 +169,6 @@ export class StateManager {
       userId: auth.userId,
       email: auth.email,
     });
-
-    if (action.type == 'participant/update') {
-      this.loadTagsIfNewParticipant(action);
-    }
 
     return this.persistActivityChanges(oldActivities, action.type === 'activity/update');
   }
@@ -255,39 +251,6 @@ export class StateManager {
     }
 
     return [ALL_ROOMS_TAG];
-  }
-
-  private async loadTagsIfNewParticipant(action: ParticipantUpdateAction) {
-    const activity = this.activityState.list.find((f) => f.id === action.payload.activityId);
-    const isNew = activity?.participants[action.payload.participant.id].tags === undefined;
-    if (!isNew) {
-      return;
-    }
-
-    let orgTags: string[] = [];
-    const doAction = () => this.handleIncomingAction(ActivityActions.tagParticipant(action.payload.activityId, action.payload.participant.id, orgTags), 'SYSTEM', { email: 'SYSTEM', userId: 'SYSTEM' });
-
-    const mongo = await mongoPromise;
-    const organization = await mongo.db().collection<OrganizationDoc>(ORGS_COLLECTION).findOne({ id: action.payload.participant.organizationId });
-    if (!organization) {
-      await doAction();
-      return;
-    }
-
-    const memberProvider = (await getServices()).memberProviders.get(organization?.memberProvider?.provider);
-    if (!memberProvider) {
-      await doAction();
-      return;
-    }
-
-    const entry = await memberProvider.getMemberInfoById(action.payload.participant.id);
-    if (!entry) {
-      await doAction();
-      return;
-    }
-
-    orgTags = organization.tags?.filter((f) => entry.groups.find((g) => g === f.groupId)).map((f) => f.label) ?? [];
-    await doAction();
   }
 
   private async getOrgsInterestedInAction(summaryLevelUpdate: boolean, activity?: Activity): Promise<string[]> {

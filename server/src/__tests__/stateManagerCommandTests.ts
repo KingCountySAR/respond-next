@@ -1,8 +1,11 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-import { PlaceCommands } from '@respond/shared/commands';
-import { CommsEvents, PlaceEvents, StampedEvent, userAuthor } from '@respond/shared/events';
+import { ParticipantCommands, PlaceCommands } from '@respond/shared/commands';
+import { CommsEvents, ParticipantEvents, PlaceEvents, StampedEvent, userAuthor } from '@respond/shared/events';
+import { ParticipantStatus } from '@respond/shared/types/activity';
 import { createNewPlace } from '@respond/shared/types/operations';
+
+import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 
 // StateManager and mongodb are imported dynamically in beforeAll so that
 // MONGODB_URI points at the in-memory server before mongodb.ts connects.
@@ -76,5 +79,26 @@ describe('StateManager.handleCommand', () => {
     const messages = activity?.comms?.map((c) => c.message) ?? [];
     expect(messages.some((m) => m.includes('established'))).toBe(true);
     expect(messages).toContain('OP-2 terminated');
+  });
+
+  it('tags a newly signed-in participant via the tagging reactor', async () => {
+    // Stub the tag resolver so the reactor does not hit the live member provider.
+    const sm = new StateManager([createParticipantTagReactor(async () => ['Snow', 'OL'])]);
+    const captured = collect(sm);
+
+    // participantUpdate needs the activity to exist; create it via a place command first.
+    await sm.handleCommand(PlaceCommands.CreatePlace('act-3', createNewPlace('CP')), userAuthor('u1'));
+    await sm.handleCommand(ParticipantCommands.UpdateParticipant('act-3', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn), userAuthor('u1'));
+
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-3');
+    expect(activity?.participants['p1']?.tags).toEqual(['Snow', 'OL']);
+
+    const types = captured.map((e) => e.type);
+    expect(types).toContain(ParticipantEvents.ParticipantUpdated.type);
+    expect(types).toContain(ParticipantEvents.ParticipantTagged.type);
+
+    // The tag event is authored by the reactor (service), not the user.
+    const tagged = await (await mongoPromise).db().collection('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantTagged.type });
+    expect(tagged?.meta.author).toEqual({ type: 'service', id: 'participant-tag-reactor' });
   });
 });

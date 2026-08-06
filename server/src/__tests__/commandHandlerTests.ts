@@ -1,14 +1,15 @@
-import { CommsCommands, PlaceCommands } from '@respond/shared/commands';
-import { CommsEvents, PlaceEvents } from '@respond/shared/events';
-import { createNewActivity } from '@respond/shared/types/activity';
+import { CommsCommands, ParticipantCommands, PlaceCommands } from '@respond/shared/commands';
+import { CommsEvents, ParticipantEvents, PlaceEvents } from '@respond/shared/events';
+import { createNewActivity, ParticipantStatus } from '@respond/shared/types/activity';
 import { createNewPlace } from '@respond/shared/types/operations';
 
 import { produceEvents } from '../commandHandlers';
+import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { placeCommsReactor } from '../reactors/placeCommsReactor';
 import { ReactorContext } from '../reactors/reactor';
 
 const activityId = 'a1';
-const emptyCtx: ReactorContext = { priorActivities: {} };
+const emptyCtx: ReactorContext = { priorActivities: {}, currentActivities: {} };
 
 describe('produceEvents', () => {
   it('maps CreatePlace -> PlaceCreated', () => {
@@ -26,8 +27,38 @@ describe('produceEvents', () => {
     expect(event.payload.comm.message).toBe('radio check');
   });
 
+  it('maps UpdateParticipant -> ParticipantUpdated', () => {
+    const [event] = produceEvents(ParticipantCommands.UpdateParticipant(activityId, 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn));
+    expect(ParticipantEvents.ParticipantUpdated.match(event)).toBe(true);
+  });
+
   it('returns no events for an unknown command', () => {
     expect(produceEvents({ type: 'cmd/bogus', payload: {} } as never)).toEqual([]);
+  });
+});
+
+describe('participantTagReactor', () => {
+  function activityWithParticipant(tags: string[] | undefined) {
+    const activity = createNewActivity();
+    activity.id = activityId;
+    activity.participants = { p1: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1', tags, timeline: [{ time: 1, status: ParticipantStatus.SignedIn, organizationId: '1' }] } };
+    return activity;
+  }
+  const updatedEvent = ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 1, status: ParticipantStatus.SignedIn });
+
+  it('emits TagParticipant for a newly-present (untagged) participant', async () => {
+    const reactor = createParticipantTagReactor(async () => ['Snow', 'OL']);
+    const ctx: ReactorContext = { priorActivities: {}, currentActivities: { [activityId]: activityWithParticipant(undefined) } };
+    const commands = await reactor.react(updatedEvent, ctx);
+    expect(commands).toHaveLength(1);
+    if (!ParticipantCommands.TagParticipant.match(commands[0])) throw new Error('expected TagParticipant');
+    expect(commands[0].payload.tags).toEqual(['Snow', 'OL']);
+  });
+
+  it('does nothing when the participant is already tagged', async () => {
+    const reactor = createParticipantTagReactor(async () => ['Snow']);
+    const ctx: ReactorContext = { priorActivities: {}, currentActivities: { [activityId]: activityWithParticipant([]) } };
+    expect(await reactor.react(updatedEvent, ctx)).toEqual([]);
   });
 });
 
