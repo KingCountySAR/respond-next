@@ -21,5 +21,6 @@ export type { LocationAction } from './locationActions';
 export { LocationActions } from './locationActions';
 
 export { BasicReducers as BasicActivityReducers } from './activityReducers';
+export { BasicEventReducers } from './eventReducers';
 export { filterInitialActivities } from './activityVisibility';
 export { BasicReducers as BasicLocationReducers } from './locationReducers';

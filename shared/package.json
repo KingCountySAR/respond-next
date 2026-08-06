@@ -9,6 +9,8 @@
     ".": "./src/index.ts",
     "./state": "./src/state/index.ts",
     "./state/*": "./src/state/*.ts",
+    "./commands": "./src/commands/index.ts",
+    "./events": "./src/events/index.ts",
     "./types/*": "./src/types/*.ts",
     "./pickSafely": "./src/pickSafely.ts",
     "./apiErrors": "./src/apiErrors.ts"
