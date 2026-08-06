@@ -1,13 +1,16 @@
 import { CommsCommands } from './commsCommands';
+import { ParticipantCommands } from './participantCommands';
 import { PlaceCommands } from './placeCommands';
 
 export { PlaceCommands } from './placeCommands';
 export { CommsCommands, type LogCommInput } from './commsCommands';
+export { ParticipantCommands } from './participantCommands';
 
 /** All command creators, keyed by name. */
 export const Commands = {
   ...PlaceCommands,
   ...CommsCommands,
+  ...ParticipantCommands,
 };
 
 export type CommandsType = typeof Commands;

@@ -39,4 +39,32 @@ export const BasicEventReducers: EventReducers = {
   [DomainEvents.CommUpdated.type]: (state, { payload }) => {
     Mutators.updateComm(state, payload.activityId, payload.commId, payload.updates);
   },
+
+  [DomainEvents.ParticipantUpdated.type]: (state, { payload }) => {
+    Mutators.participantUpdate(state, payload.activityId, payload.participant, payload.update);
+  },
+
+  [DomainEvents.ParticipantTimelineAdded.type]: (state, { payload }) => {
+    Mutators.participantTimelineAdd(state, payload.activityId, payload.participantId, payload.update);
+  },
+
+  [DomainEvents.ParticipantTimelineUpdated.type]: (state, { payload }) => {
+    Mutators.participantTimelineUpdate(state, payload.activityId, payload.participantId, payload.update, payload.index);
+  },
+
+  [DomainEvents.ParticipantMilesUpdated.type]: (state, { payload }) => {
+    Mutators.participantMilesUpdate(state, payload.activityId, payload.participantId, payload.miles);
+  },
+
+  [DomainEvents.ParticipantEtaUpdated.type]: (state, { payload }) => {
+    Mutators.participantEtaUpdate(state, payload.activityId, payload.participantId, payload.eta);
+  },
+
+  [DomainEvents.ParticipantsBulkUpdated.type]: (state, { payload }) => {
+    Mutators.bulkParticipantUpdate(state, payload.activityId, payload.updates);
+  },
+
+  [DomainEvents.ParticipantTagged.type]: (state, { payload }) => {
+    Mutators.tagParticipant(state, payload.activityId, payload.participantId, payload.tags);
+  },
 };

@@ -1,7 +1,7 @@
 import { produce } from 'immer';
 
-import { CommsEvents, PlaceEvents } from '../../events';
-import { createNewActivity } from '../../types/activity';
+import { CommsEvents, ParticipantEvents, PlaceEvents } from '../../events';
+import { createNewActivity, ParticipantStatus } from '../../types/activity';
 import { CommunicationsLogEntry, createNewPlace } from '../../types/operations';
 
 import { ActivityState } from '..';
@@ -52,5 +52,18 @@ describe('Event Reducers', () => {
     let next = apply(stateWithActivity(activityId), CommsEvents.CommLogged(activityId, comm));
     next = apply(next, CommsEvents.CommUpdated(activityId, 'srv-1', { message: 'final' }));
     expect(next.list[0].comms?.[0].message).toBe('final');
+  });
+
+  it('ParticipantUpdated creates a new participant with an undefined tags (so tagging can fire)', () => {
+    const next = apply(stateWithActivity(activityId), ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 100, status: ParticipantStatus.SignedIn }));
+    const person = next.list[0].participants['p1'];
+    expect(person.timeline[0].status).toBe(ParticipantStatus.SignedIn);
+    expect(person.tags).toBeUndefined();
+  });
+
+  it('ParticipantTagged sets tags on an existing participant', () => {
+    let next = apply(stateWithActivity(activityId), ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 100, status: ParticipantStatus.SignedIn }));
+    next = apply(next, ParticipantEvents.ParticipantTagged(activityId, 'p1', ['Snow', 'OL']));
+    expect(next.list[0].participants['p1'].tags).toEqual(['Snow', 'OL']);
   });
 });
