@@ -5,6 +5,7 @@ import { getServices } from '../services';
 
 import { createParticipantTagReactor, ResolveOrgTags } from './participantTagReactor';
 import { placeCommsReactor } from './placeCommsReactor';
+import { teamCommsReactor } from './teamCommsReactor';
 
 export type { Reactor, ReactorContext } from './reactor';
 
@@ -28,4 +29,4 @@ const resolveOrgTags: ResolveOrgTags = async (organizationId, participantId) => 
 };
 
 /** The production reactor registry, run in order for every minted event. */
-export const defaultReactors = [placeCommsReactor, createParticipantTagReactor(resolveOrgTags)];
+export const defaultReactors = [placeCommsReactor, teamCommsReactor, createParticipantTagReactor(resolveOrgTags)];

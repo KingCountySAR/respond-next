@@ -1,6 +1,7 @@
 import { CommsEvents } from './commsEvents';
 import { ParticipantEvents } from './participantEvents';
 import { PlaceEvents } from './placeEvents';
+import { TeamEvents } from './teamEvents';
 
 import type { EventMeta } from './author';
 
@@ -8,12 +9,14 @@ export * from './author';
 export { PlaceEvents } from './placeEvents';
 export { CommsEvents } from './commsEvents';
 export { ParticipantEvents } from './participantEvents';
+export { TeamEvents } from './teamEvents';
 
 /** All domain event creators, keyed by name. */
 export const DomainEvents = {
   ...PlaceEvents,
   ...CommsEvents,
   ...ParticipantEvents,
+  ...TeamEvents,
 };
 
 export type DomainEventsType = typeof DomainEvents;

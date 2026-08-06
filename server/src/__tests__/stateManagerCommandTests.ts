@@ -1,11 +1,12 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-import { ParticipantCommands, PlaceCommands } from '@respond/shared/commands';
+import { ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
 import { CommsEvents, ParticipantEvents, PlaceEvents, StampedEvent, userAuthor } from '@respond/shared/events';
 import { ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace } from '@respond/shared/types/operations';
+import { createNewPlace, createNewTeam } from '@respond/shared/types/operations';
 
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
+import { teamCommsReactor } from '../reactors/teamCommsReactor';
 
 // StateManager and mongodb are imported dynamically in beforeAll so that
 // MONGODB_URI points at the in-memory server before mongodb.ts connects.
@@ -100,5 +101,21 @@ describe('StateManager.handleCommand', () => {
     // The tag event is authored by the reactor (service), not the user.
     const tagged = await (await mongoPromise).db().collection('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantTagged.type });
     expect(tagged?.meta.author).toEqual({ type: 'service', id: 'participant-tag-reactor' });
+  });
+
+  it('logs a team status-change comm via the team-comms reactor', async () => {
+    const sm = new StateManager([teamCommsReactor]);
+    collect(sm);
+
+    await sm.handleCommand(PlaceCommands.CreatePlace('act-4', createNewPlace('CP')), userAuthor('u1')); // create the activity
+    const team = createNewTeam('Alpha');
+    await sm.handleCommand(TeamCommands.CreateTeam('act-4', team), userAuthor('u1'));
+    // The UI always sends the full team object (pickTeamProperties copies all listed
+    // keys, so a partial update would wipe omitted fields).
+    await sm.handleCommand(TeamCommands.UpdateTeam('act-4', { ...team, status: 'On Assignment' }), userAuthor('u1'));
+
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-4');
+    expect(activity?.teams.find((t) => t.id === team.id)?.status).toBe('On Assignment');
+    expect(activity?.comms?.map((c) => c.message)).toContain('Starting Assignment');
   });
 });

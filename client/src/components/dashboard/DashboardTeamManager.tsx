@@ -2,8 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
+import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { createNewTeam, Team } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
@@ -60,14 +59,14 @@ const sortTeams = (left: Team, right: Team) => {
 };
 
 export function DashboardTeamManager() {
-  const dispatch = useAppDispatch();
+  const teams = useTeamCommands();
 
   const activity = useActivityContext();
   const [expandedAll, setExpandedAll] = useState(false);
 
   const addTeam = () => {
     const nextTeamNumber = getNextTeamNumber(activity.teams);
-    dispatch(ActivityActions.createTeam(activity.id, createNewTeam(`Team ${nextTeamNumber}`)));
+    teams.createTeam(activity.id, createNewTeam(`Team ${nextTeamNumber}`));
   };
 
   const toggleAll = () => {

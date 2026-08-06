@@ -1,12 +1,13 @@
 import { CommsCommands, ParticipantCommands, PlaceCommands } from '@respond/shared/commands';
-import { CommsEvents, ParticipantEvents, PlaceEvents } from '@respond/shared/events';
+import { CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
 import { createNewActivity, ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace } from '@respond/shared/types/operations';
+import { createNewPlace, createNewTeam } from '@respond/shared/types/operations';
 
 import { produceEvents } from '../commandHandlers';
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { placeCommsReactor } from '../reactors/placeCommsReactor';
 import { ReactorContext } from '../reactors/reactor';
+import { teamCommsReactor } from '../reactors/teamCommsReactor';
 
 const activityId = 'a1';
 const emptyCtx: ReactorContext = { priorActivities: {}, currentActivities: {} };
@@ -59,6 +60,55 @@ describe('participantTagReactor', () => {
     const reactor = createParticipantTagReactor(async () => ['Snow']);
     const ctx: ReactorContext = { priorActivities: {}, currentActivities: { [activityId]: activityWithParticipant([]) } };
     expect(await reactor.react(updatedEvent, ctx)).toEqual([]);
+  });
+});
+
+describe('teamCommsReactor', () => {
+  function withTeam(gar: 'green' | 'amber' | 'red', status: 'In Base' | 'On Assignment') {
+    const activity = createNewActivity();
+    activity.id = activityId;
+    const team = { ...createNewTeam('Alpha'), gar, status } as const;
+    activity.teams = [team];
+    return { activity, teamId: team.id };
+  }
+
+  it('logs a status comm and a GAR comm when both change', async () => {
+    const before = withTeam('green', 'In Base');
+    const after = withTeam('red', 'On Assignment');
+    after.activity.teams[0].id = before.teamId; // same team id across snapshots
+    const ctx: ReactorContext = { priorActivities: { [activityId]: before.activity }, currentActivities: { [activityId]: after.activity } };
+
+    const commands = await teamCommsReactor.react(TeamEvents.TeamUpdated(activityId, { id: before.teamId, gar: 'red', status: 'On Assignment' }), ctx);
+    const messages = commands.map((c) => (CommsCommands.LogComm.match(c) ? c.payload.entry.message : ''));
+    expect(messages).toContain('Starting Assignment');
+    expect(messages).toContain('Alpha GAR changed to RED');
+    // GAR comm is favorited when not green
+    const garComm = commands.find((c) => CommsCommands.LogComm.match(c) && c.payload.entry.message.includes('GAR'));
+    expect(garComm && CommsCommands.LogComm.match(garComm) && garComm.payload.entry.isFavorite).toBe(true);
+  });
+
+  it('emits nothing when neither status nor gar changed', async () => {
+    const before = withTeam('green', 'In Base');
+    const after = withTeam('green', 'In Base');
+    after.activity.teams[0].id = before.teamId;
+    const ctx: ReactorContext = { priorActivities: { [activityId]: before.activity }, currentActivities: { [activityId]: after.activity } };
+    expect(await teamCommsReactor.react(TeamEvents.TeamUpdated(activityId, { id: before.teamId, notes: 'x' }), ctx)).toEqual([]);
+  });
+
+  it('logs assign/unassign staff comms with the participant name', async () => {
+    const activity = createNewActivity();
+    activity.id = activityId;
+    activity.participants = { p1: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1', timeline: [] } };
+    activity.staff = { 'Rescue Group': 'p1' };
+    const prior = createNewActivity();
+    prior.id = activityId;
+    prior.staff = {};
+
+    const assign = await teamCommsReactor.react(TeamEvents.StaffUpdated(activityId, { 'Rescue Group': 'p1' }), { priorActivities: { [activityId]: prior }, currentActivities: { [activityId]: activity } });
+    expect(assign.map((c) => (CommsCommands.LogComm.match(c) ? c.payload.entry.message : ''))).toEqual(['Ann Lee assuming Rescue Group']);
+
+    const unassign = await teamCommsReactor.react(TeamEvents.StaffUpdated(activityId, { 'Rescue Group': '' }), { priorActivities: { [activityId]: activity }, currentActivities: { [activityId]: { ...activity, staff: { 'Rescue Group': '' } } } });
+    expect(unassign.map((c) => (CommsCommands.LogComm.match(c) ? c.payload.entry.message : ''))).toEqual(['Rescue Group unassigned']);
   });
 });
 

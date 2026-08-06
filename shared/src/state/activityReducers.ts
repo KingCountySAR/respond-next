@@ -2,7 +2,6 @@ import type { Draft } from '@reduxjs/toolkit';
 import merge from 'lodash.merge';
 
 import { createNewActivity, ParticipantStatus, pickActivityProperties } from '../types/activity';
-import { pickTeamProperties } from '../types/operations';
 
 import { ActivityActions, ActivityActionsType } from './activityActions';
 import * as Mutators from './activityMutators';
@@ -118,12 +117,7 @@ export const BasicReducers: ActivityReducers = {
   },
 
   [ActivityActions.createTeam.type]: (state, { payload }) => {
-    const activity = state.list.find((f) => f.id === payload.activityId);
-    if (!activity) {
-      return;
-    }
-    activity.teams = activity.teams ?? [];
-    activity.teams.push(payload.team);
+    Mutators.createTeam(state, payload.activityId, payload.team);
   },
 
   [ActivityActions.addComm.type]: (state, { payload }) => {
@@ -135,26 +129,10 @@ export const BasicReducers: ActivityReducers = {
   },
 
   [ActivityActions.updateStaff.type]: (state, { payload }) => {
-    const activity = state.list.find((f) => f.id === payload.activityId);
-    if (!activity) {
-      return;
-    }
-    activity.staff = {
-      ...(activity.staff ?? {}),
-      ...payload.staff,
-    };
+    Mutators.updateStaff(state, payload.activityId, payload.staff);
   },
 
   [ActivityActions.updateTeam.type]: (state, { payload }) => {
-    const activity = state.list.find((f) => f.id === payload.activityId);
-    if (!activity || !activity.teams) {
-      return;
-    }
-    const team = activity.teams.find((t) => t.id === payload.updates.id);
-    if (!team) {
-      return;
-    }
-    const trimmedUpdates = pickTeamProperties(payload.updates);
-    Object.assign(team, trimmedUpdates);
+    Mutators.updateTeam(state, payload.activityId, payload.updates);
   },
 };

@@ -1,43 +1,31 @@
 import ClearIcon from '@mui/icons-material/Clear';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
+import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { Participant } from '@respond/shared/types/activity';
-import { CommunicationsLogEntry, createNewCommsEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Droppable } from '../DragAndDrop/DnDComponents';
 
 export function DashboardRoleTile({ title, id }: { title: string; id?: string }) {
-  const dispatch = useAppDispatch();
+  const teams = useTeamCommands();
   const activity = useActivityContext();
 
   const selectedId = activity.staff?.[title] ?? id;
   const participant = selectedId ? activity.participants[selectedId] : undefined;
   const name = participant ? `${participant.firstname} ${participant.lastname}` : 'Unassigned';
 
+  // The team-comms reactor logs the "assuming"/"unassigned" comm server-side.
   const handleDrop = (p: Participant | null) => {
     if (p && activity && activity.id) {
-      dispatch(ActivityActions.updateStaff(activity.id, { [title]: p.id }));
-      autoLog(`${p.firstname} ${p.lastname} assuming ${title}`);
+      teams.updateStaff(activity.id, { [title]: p.id });
     }
   };
 
   const handleDelete = (): void => {
     if (activity && activity.id) {
-      dispatch(ActivityActions.updateStaff(activity.id, { [title]: '' }));
-      autoLog(`${title} unassigned`);
+      teams.updateStaff(activity.id, { [title]: '' });
     }
-  };
-
-  const autoLog = (message: string) => {
-    const comm: CommunicationsLogEntry = createNewCommsEntry({
-      from: 'CP',
-      message: message,
-      isAutomated: true,
-    });
-    dispatch(ActivityActions.addComm(activity.id, comm));
   };
 
   return (

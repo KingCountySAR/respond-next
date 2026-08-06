@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { hoursToMilliseconds } from 'date-fns';
 
 import { ActivityActions, ActivityState, BasicActivityReducers, BasicEventReducers } from '@respond/shared';
-import { CommsEvents, ParticipantEvents, PlaceEvents } from '@respond/shared/events';
+import { CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
 
 import { ReducerBuilderStub } from '../types';
@@ -58,7 +58,10 @@ const activitySliceArgs = {
       .addCase(ParticipantEvents.ParticipantMilesUpdated, BasicEventReducers[ParticipantEvents.ParticipantMilesUpdated.type])
       .addCase(ParticipantEvents.ParticipantEtaUpdated, BasicEventReducers[ParticipantEvents.ParticipantEtaUpdated.type])
       .addCase(ParticipantEvents.ParticipantsBulkUpdated, BasicEventReducers[ParticipantEvents.ParticipantsBulkUpdated.type])
-      .addCase(ParticipantEvents.ParticipantTagged, BasicEventReducers[ParticipantEvents.ParticipantTagged.type]);
+      .addCase(ParticipantEvents.ParticipantTagged, BasicEventReducers[ParticipantEvents.ParticipantTagged.type])
+      .addCase(TeamEvents.TeamCreated, BasicEventReducers[TeamEvents.TeamCreated.type])
+      .addCase(TeamEvents.TeamUpdated, BasicEventReducers[TeamEvents.TeamUpdated.type])
+      .addCase(TeamEvents.StaffUpdated, BasicEventReducers[TeamEvents.StaffUpdated.type]);
   },
 };
 

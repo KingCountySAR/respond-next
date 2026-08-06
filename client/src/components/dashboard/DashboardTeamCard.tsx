@@ -3,11 +3,10 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Chip, Divider, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
+import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { Participant } from '@respond/shared/types/activity';
 
-import { CommunicationsLogEntry, createNewCommsEntry, EquipmentItem, Team } from '@respond/shared/types/operations';
+import { EquipmentItem, Team } from '@respond/shared/types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';
@@ -26,7 +25,7 @@ const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) 
 };
 
 export default function DashboardTeamCard({ team, defaultExpanded }: { team: Team; defaultExpanded?: boolean }) {
-  const dispatch = useAppDispatch();
+  const teams = useTeamCommands();
 
   const activity = useActivityContext();
 
@@ -47,7 +46,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   const sortedTeamEquipment = [...team.assignedEquipment].sort(sortEquipmentAlphabetically);
 
   const updateTeamLeader = (newLeaderId: string) => {
-    dispatch(ActivityActions.updateTeam(activity.id, { ...team, teamLeaderParticipantId: newLeaderId }));
+    teams.updateTeam(activity.id, { ...team, teamLeaderParticipantId: newLeaderId });
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,23 +96,9 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
     }
   };
 
+  // The team-comms reactor logs the GAR-change comm server-side.
   const updateTeam = (team: Team) => {
-    const originalTeam = activity.teams.find((t) => t.id === team.id);
-    if (team.gar !== originalTeam?.gar) {
-      autoLog(`${team.name} GAR changed to ${team.gar.toUpperCase()}`, team.gar !== 'green');
-    }
-    dispatch(ActivityActions.updateTeam(activity.id, team));
-  };
-
-  const autoLog = (message: string, isFavorite = false) => {
-    const comm: CommunicationsLogEntry = createNewCommsEntry({
-      from: team.name,
-      to: 'CP',
-      message: message,
-      isAutomated: true,
-      isFavorite,
-    });
-    dispatch(ActivityActions.addComm(activity.id, comm));
+    teams.updateTeam(activity.id, team);
   };
 
   const handleExpandClick = (event: React.MouseEvent<HTMLButtonElement>) => {

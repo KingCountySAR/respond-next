@@ -2,11 +2,12 @@ import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import React, { useState } from 'react';
 
 import { useParticipantCommands } from '@respond/lib/client/services/participants';
+import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/shared';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
-import { CommunicationsLogEntry, createNewCommsEntry, createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '@respond/shared/types/operations';
+import { createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '@respond/shared/types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
 
@@ -32,26 +33,11 @@ interface TeamStatusSelectProps {
 export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
   const dispatch = useAppDispatch();
   const participants = useParticipantCommands();
+  const teams = useTeamCommands();
   const activity = useActivityContext();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const logStatusChange = (status: TeamStatus) => {
-    const messages: Record<TeamStatus, string> = {
-      'In Base': 'In Base',
-      'In Transit': 'With Transportation',
-      'On Assignment': 'Starting Assignment',
-      'On Scene': 'On Scene',
-      'Returning To Base': 'RTB',
-      Disbanded: 'Disbanded',
-    };
-    const comm: CommunicationsLogEntry = createNewCommsEntry({
-      from: team.name,
-      to: 'CP',
-      message: messages[status],
-      isAutomated: true,
-    });
-    dispatch(ActivityActions.addComm(activity.id, comm));
-  };
+  // Status-change comms are logged server-side by the team-comms reactor.
 
   const disbandDirectly = () => {
     const updates = team.assignedParticipants
@@ -75,16 +61,13 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
       participants.bulkUpdate(activity.id, updates);
     }
 
-    dispatch(
-      ActivityActions.updateTeam(activity.id, {
-        ...team,
-        status: 'Disbanded',
-        assignedParticipants: [],
-        assignedEquipment: [],
-        teamLeaderParticipantId: null,
-      }),
-    );
-    logStatusChange('Disbanded');
+    teams.updateTeam(activity.id, {
+      ...team,
+      status: 'Disbanded',
+      assignedParticipants: [],
+      assignedEquipment: [],
+      teamLeaderParticipantId: null,
+    });
   };
 
   const disbandWithReassign = () => {
@@ -105,29 +88,27 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
           assignedEquipment: mergedEquipment,
         };
 
+    // Place reassignment stays on the legacy action path so it does not trip the
+    // place-comms reactor (moving the field place should not log a comm).
     if (fieldPlace) {
       dispatch(ActivityActions.updatePlace(activity.id, updatedFieldPlace));
     } else {
       dispatch(ActivityActions.createPlace(activity.id, updatedFieldPlace));
     }
 
-    dispatch(
-      ActivityActions.updateTeam(activity.id, {
-        ...team,
-        status: 'Disbanded',
-        assignedParticipants: [],
-        assignedEquipment: [],
-        teamLeaderParticipantId: null,
-      }),
-    );
-    logStatusChange('Disbanded');
+    teams.updateTeam(activity.id, {
+      ...team,
+      status: 'Disbanded',
+      assignedParticipants: [],
+      assignedEquipment: [],
+      teamLeaderParticipantId: null,
+    });
   };
 
   const handleChange = (event: SelectChangeEvent<string>) => {
     const newStatus = event.target.value as TeamStatus;
     if (newStatus !== 'Disbanded') {
-      dispatch(ActivityActions.updateTeam(activity.id, { ...team, status: newStatus }));
-      logStatusChange(newStatus);
+      teams.updateTeam(activity.id, { ...team, status: newStatus });
       return;
     }
 
@@ -148,13 +129,10 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
       return;
     }
 
-    dispatch(
-      ActivityActions.updateTeam(activity.id, {
-        ...team,
-        status: 'Disbanded',
-      }),
-    );
-    logStatusChange('Disbanded');
+    teams.updateTeam(activity.id, {
+      ...team,
+      status: 'Disbanded',
+    });
   };
 
   return (

@@ -67,4 +67,16 @@ export const BasicEventReducers: EventReducers = {
   [DomainEvents.ParticipantTagged.type]: (state, { payload }) => {
     Mutators.tagParticipant(state, payload.activityId, payload.participantId, payload.tags);
   },
+
+  [DomainEvents.TeamCreated.type]: (state, { payload }) => {
+    Mutators.createTeam(state, payload.activityId, payload.team);
+  },
+
+  [DomainEvents.TeamUpdated.type]: (state, { payload }) => {
+    Mutators.updateTeam(state, payload.activityId, payload.updates);
+  },
+
+  [DomainEvents.StaffUpdated.type]: (state, { payload }) => {
+    Mutators.updateStaff(state, payload.activityId, payload.staff);
+  },
 };

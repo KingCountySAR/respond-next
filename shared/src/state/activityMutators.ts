@@ -1,7 +1,7 @@
 import type { Draft } from '@reduxjs/toolkit';
 
 import { createNewActivity, ParticipantStatus, ParticipantUpdate } from '../types/activity';
-import { CommunicationsLogEntry, Place } from '../types/operations';
+import { CommunicationsLogEntry, pickTeamProperties, Place, Team } from '../types/operations';
 
 import { ActivityState } from '.';
 
@@ -57,8 +57,8 @@ export function addComm(state: Draft<ActivityState>, activityId: string, comm: C
   const activity = state.list.find((a) => a.id === activityId);
   if (!activity) return;
   activity.comms = activity.comms ?? [];
-  // guard against sync replay applying the same entry twice
-  if (activity.comms.some((c) => c.id === comm.id)) return;
+  // No dedupe guard needed: comms are server-authored with unique ids and each
+  // CommLogged event is applied exactly once per client (no optimistic add).
   activity.comms.push(comm);
 }
 
@@ -201,4 +201,30 @@ export function tagParticipant(state: Draft<ActivityState>, activityId: string, 
   const person = activity.participants[participantId];
   if (!person) return;
   person.tags = tags;
+}
+
+// ---- Teams + staff ---------------------------------------------------------
+
+export function createTeam(state: Draft<ActivityState>, activityId: string, team: Team): void {
+  const activity = state.list.find((f) => f.id === activityId);
+  if (!activity) return;
+  activity.teams = activity.teams ?? [];
+  activity.teams.push(team);
+}
+
+export function updateTeam(state: Draft<ActivityState>, activityId: string, updates: Partial<Team>): void {
+  const activity = state.list.find((f) => f.id === activityId);
+  if (!activity || !activity.teams) return;
+  const team = activity.teams.find((t) => t.id === updates.id);
+  if (!team) return;
+  Object.assign(team, pickTeamProperties(updates));
+}
+
+export function updateStaff(state: Draft<ActivityState>, activityId: string, staff: Record<string, string>): void {
+  const activity = state.list.find((f) => f.id === activityId);
+  if (!activity) return;
+  activity.staff = {
+    ...(activity.staff ?? {}),
+    ...staff,
+  };
 }

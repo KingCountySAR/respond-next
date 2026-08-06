@@ -1,8 +1,8 @@
 import { produce } from 'immer';
 
-import { CommsEvents, ParticipantEvents, PlaceEvents } from '../../events';
+import { CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '../../events';
 import { createNewActivity, ParticipantStatus } from '../../types/activity';
-import { CommunicationsLogEntry, createNewPlace } from '../../types/operations';
+import { CommunicationsLogEntry, createNewPlace, createNewTeam } from '../../types/operations';
 
 import { ActivityState } from '..';
 import { BasicEventReducers } from '../eventReducers';
@@ -40,11 +40,10 @@ describe('Event Reducers', () => {
     expect(next.list[0].comms).toEqual([comm]);
   });
 
-  it('CommLogged is idempotent on replay (same id applied twice)', () => {
-    const comm: CommunicationsLogEntry = { id: 'srv-1', from: 'CP', message: 'once', timestamp: 111 };
-    let next = apply(stateWithActivity(activityId), CommsEvents.CommLogged(activityId, comm));
-    next = apply(next, CommsEvents.CommLogged(activityId, comm));
-    expect(next.list[0].comms).toHaveLength(1);
+  it('CommLogged appends each server-authored entry (distinct ids)', () => {
+    let next = apply(stateWithActivity(activityId), CommsEvents.CommLogged(activityId, { id: 'srv-1', from: 'CP', message: 'one', timestamp: 111 }));
+    next = apply(next, CommsEvents.CommLogged(activityId, { id: 'srv-2', from: 'CP', message: 'two', timestamp: 112 }));
+    expect(next.list[0].comms?.map((c) => c.id)).toEqual(['srv-1', 'srv-2']);
   });
 
   it('CommUpdated merges fields into an existing entry', () => {
@@ -65,5 +64,20 @@ describe('Event Reducers', () => {
     let next = apply(stateWithActivity(activityId), ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 100, status: ParticipantStatus.SignedIn }));
     next = apply(next, ParticipantEvents.ParticipantTagged(activityId, 'p1', ['Snow', 'OL']));
     expect(next.list[0].participants['p1'].tags).toEqual(['Snow', 'OL']);
+  });
+
+  it('TeamCreated then TeamUpdated changes the team status/gar', () => {
+    const team = createNewTeam('Team 1');
+    let next = apply(stateWithActivity(activityId), TeamEvents.TeamCreated(activityId, team));
+    expect(next.list[0].teams.map((t) => t.name)).toEqual(['Team 1']);
+    next = apply(next, TeamEvents.TeamUpdated(activityId, { id: team.id, gar: 'red', status: 'On Assignment' }));
+    expect(next.list[0].teams[0].gar).toBe('red');
+    expect(next.list[0].teams[0].status).toBe('On Assignment');
+  });
+
+  it('StaffUpdated merges the role assignment map', () => {
+    let next = apply(stateWithActivity(activityId), TeamEvents.StaffUpdated(activityId, { 'Rescue Group': 'p1' }));
+    next = apply(next, TeamEvents.StaffUpdated(activityId, { 'Medical Group': 'p2' }));
+    expect(next.list[0].staff).toEqual({ 'Rescue Group': 'p1', 'Medical Group': 'p2' });
   });
 });
