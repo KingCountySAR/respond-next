@@ -1,5 +1,6 @@
 import { Server as IOServer, Socket } from 'socket.io';
 
+import { userAuthor } from '@respond/shared/events';
 import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@respond/shared/types/syncSocket';
 
 import { ActivityActions, LocationActions } from '@respond/shared';
@@ -55,6 +56,16 @@ export default class SocketManager {
         const emitter = toRooms ? manager.io.to(toRooms) : manager.io;
         emitter.emit('broadcastAction', action, reporterId);
       },
+      broadcastEvent(events, toRooms) {
+        if (!manager.io) {
+          return;
+        }
+
+        const emitter = toRooms ? manager.io.to(toRooms) : manager.io;
+        for (const event of events) {
+          emitter.emit('event', event);
+        }
+      },
     });
   }
 
@@ -69,6 +80,10 @@ export default class SocketManager {
 
     socket.on('reportAction', async (action, reporterId) => {
       (await getServices()).stateManager.handleIncomingAction(action, reporterId, auth);
+    });
+
+    socket.on('command', async (command) => {
+      await (await getServices()).stateManager.handleCommand(command, userAuthor(auth.userId, auth.name ?? auth.email));
     });
 
     const stateManager = (await getServices()).stateManager;

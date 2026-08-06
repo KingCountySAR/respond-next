@@ -17,6 +17,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['shared/**/__tests__/**/*.ts', 'client/**/__tests__/**/*.ts'],
+    include: ['shared/**/__tests__/**/*.ts', 'client/**/__tests__/**/*.ts', 'server/**/__tests__/**/*.ts'],
+    // mongodb-memory-server downloads/spins up a real mongod on first server-test run.
+    testTimeout: 30000,
+    hookTimeout: 60000,
   },
 });

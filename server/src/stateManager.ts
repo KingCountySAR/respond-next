@@ -3,7 +3,9 @@ import { produce } from 'immer';
 
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import type { ActivityState, LocationState, OrganizationState } from '@respond/shared';
-import { BasicActivityReducers, BasicLocationReducers } from '@respond/shared';
+import { BasicActivityReducers, BasicEventReducers, BasicLocationReducers } from '@respond/shared';
+import { Command } from '@respond/shared/commands';
+import { EventAuthor, serviceAuthor, StampedEvent } from '@respond/shared/events';
 import type { Activity } from '@respond/shared/types/activity';
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
 import { Location } from '@respond/shared/types/location';
@@ -14,12 +16,15 @@ import { ActivityAction, ActivityActions, isActivityAction, ParticipantUpdateAct
 import { filterInitialActivities } from '@respond/shared/state/activityVisibility';
 import { isLocationAction, LocationAction } from '@respond/shared/state/locationActions';
 
+import { produceEvents } from './commandHandlers';
+import { defaultReactors, Reactor } from './reactors';
 import { getServices } from './services';
 
 type DatabaseActivity = Activity & { removeTime?: number };
 
 export interface ActionListener {
   broadcastAction(action: Action, toRooms: string[] | undefined, reporterId: string): void;
+  broadcastEvent(events: StampedEvent[], toRooms: string[] | undefined): void;
 }
 
 const LOCATION_COLLECTION_NAME = 'locations';
@@ -30,6 +35,8 @@ export class StateManager {
   private activityState: ActivityState = { list: [] };
   private locationsState: LocationState = { list: [] };
   private organizationsState: OrganizationState = { list: [] };
+
+  constructor(private readonly reactors: Reactor[] = defaultReactors) {}
 
   addClient(listener: ActionListener) {
     this.listeners = [...this.listeners, listener];
@@ -98,10 +105,54 @@ export class StateManager {
     }
   }
 
+  /**
+   * Command/event pipeline (Phase 2). Validate a command into event(s), stamp
+   * author + timestamp, reduce into memory, append to the `events` audit log,
+   * persist the changed activity snapshot, broadcast the events, then run
+   * reactors whose follow-up commands re-enter this same pipeline.
+   */
+  async handleCommand(command: Command, author: EventAuthor): Promise<void> {
+    const events = produceEvents(command);
+    if (!events.length) return;
+
+    const priorActivities = this.snapshotActivities();
+    const stamped: StampedEvent[] = events.map((event) => ({ ...event, meta: { author, timestamp: Date.now() } }));
+
+    this.activityState = produce(this.activityState, (draft) => {
+      for (const event of stamped) {
+        BasicEventReducers[event.type as keyof typeof BasicEventReducers](draft, event as never);
+      }
+    });
+
+    const mongo = await mongoPromise;
+    await mongo
+      .db()
+      .collection('events')
+      .insertMany(stamped.map((event) => ({ ...event, activityId: (event.payload as { activityId: string }).activityId })));
+
+    const rooms = await this.persistActivityChanges(priorActivities, false);
+
+    for (const listener of this.listeners) {
+      listener.broadcastEvent(stamped, rooms);
+    }
+
+    // Reactors run after the events are authoritative. Their follow-up commands
+    // re-enter the pipeline authored as the reactor (a service), each producing
+    // its own broadcast. Terminates because no reactor observes comm events.
+    const ctx = { priorActivities };
+    for (const event of stamped) {
+      for (const reactor of this.reactors) {
+        for (const followup of reactor.react(event, ctx)) {
+          await this.handleCommand(followup, serviceAuthor(reactor.name));
+        }
+      }
+    }
+  }
+
   private async handleActivityAction(action: ActivityAction, auth: { userId: string; email: string }) {
     // If everything checks out, play the action into our store.
 
-    const oldActivities: Record<string, Activity> = this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
+    const oldActivities = this.snapshotActivities();
 
     const nextState = produce(this.activityState, (draft) => {
       BasicActivityReducers[action.type](draft, action as never);
@@ -123,11 +174,21 @@ export class StateManager {
       this.loadTagsIfNewParticipant(action);
     }
 
+    return this.persistActivityChanges(oldActivities, action.type === 'activity/update');
+  }
+
+  /**
+   * Diff the current in-memory activities against a pre-reduce snapshot, persist
+   * every changed/removed activity to Mongo (soft-delete via `removeTime`), and
+   * return the `org:<id>` rooms that should receive the resulting broadcast.
+   * Shared by the legacy action path and the new command/event pipeline.
+   */
+  private async persistActivityChanges(oldActivities: Record<string, Activity>, isSummaryLevelUpdate: boolean): Promise<string[]> {
+    const mongo = await mongoPromise;
     const affectedOrgs = new Set<string>();
     const currentActivities: Record<string, Activity> = this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
     for (const updatedId of Object.keys(currentActivities).filter((k) => oldActivities[k] !== currentActivities[k])) {
       console.log('MONGO update activity', updatedId);
-      const isSummaryLevelUpdate = action.type === 'activity/update';
 
       (await this.getOrgsInterestedInAction(isSummaryLevelUpdate, oldActivities[updatedId])).forEach((o) => affectedOrgs.add(o));
       (await this.getOrgsInterestedInAction(isSummaryLevelUpdate, currentActivities[updatedId])).forEach((o) => affectedOrgs.add(o));
@@ -153,8 +214,11 @@ export class StateManager {
       });
     }
 
-    const toRooms = Array.from(affectedOrgs).map((o) => `org:${o}`);
-    return toRooms;
+    return Array.from(affectedOrgs).map((o) => `org:${o}`);
+  }
+
+  private snapshotActivities(): Record<string, Activity> {
+    return this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
   }
 
   private async handleLocationAction(action: LocationAction, auth: { userId: string; email: string }) {
