@@ -1,6 +1,7 @@
 import type { Draft } from '@reduxjs/toolkit';
+import merge from 'lodash.merge';
 
-import { createNewActivity, ParticipantStatus, ParticipantUpdate } from '../types/activity';
+import { Activity, createNewActivity, OrganizationStatus, ParticipantStatus, ParticipantUpdate, pickActivityProperties } from '../types/activity';
 import { CommunicationsLogEntry, pickTeamProperties, Place, Team } from '../types/operations';
 
 import { ActivityState } from '.';
@@ -227,4 +228,54 @@ export function updateStaff(state: Draft<ActivityState>, activityId: string, sta
     ...(activity.staff ?? {}),
     ...staff,
   };
+}
+
+// ---- Activity lifecycle ----------------------------------------------------
+
+export function updateActivity(state: Draft<ActivityState>, updates: Partial<Activity>): void {
+  let target = state.list.find((a) => a.id === updates.id);
+  if (!target) {
+    target = createNewActivity();
+    state.list.push(target);
+  }
+  merge(target, pickActivityProperties(updates));
+}
+
+export function removeActivity(state: Draft<ActivityState>, activityId: string): void {
+  state.list = state.list.filter((f) => f.id !== activityId);
+}
+
+export function reactivateActivity(state: Draft<ActivityState>, activityId: string): void {
+  const activity = state.list.find((f) => f.id === activityId);
+  if (activity) activity.endTime = undefined;
+}
+
+export function completeActivity(state: Draft<ActivityState>, activityId: string, endTime: number): void {
+  const activity = state.list.find((f) => f.id === activityId);
+  if (!activity) return;
+  activity.endTime = endTime;
+  // Sign every participant out at the end time.
+  for (const pId in activity.participants) {
+    const participant = activity.participants[pId];
+    participantUpdate(
+      state,
+      activity.id,
+      {
+        id: participant.id,
+        firstname: participant.firstname,
+        lastname: participant.lastname,
+        organizationId: participant.organizationId,
+        miles: participant.miles,
+        eta: participant.eta,
+      },
+      { time: endTime, status: ParticipantStatus.SignedOut },
+    );
+  }
+}
+
+export function appendOrganizationTimeline(state: Draft<ActivityState>, activityId: string, orgId: string, org: { id: string; title: string; rosterName?: string }, status: { time: number; status: OrganizationStatus }): void {
+  const activity = state.list.find((f) => f.id === activityId);
+  if (!activity) return;
+  activity.organizations[orgId] = Object.assign(activity.organizations[orgId] ?? { timeline: [] }, org);
+  activity.organizations[orgId].timeline.unshift(status);
 }

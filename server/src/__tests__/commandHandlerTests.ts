@@ -145,6 +145,11 @@ describe('placeCommsReactor', () => {
     expect(placeCommsReactor.react(PlaceEvents.PlaceDeleted(activityId, 'gone'), emptyCtx)).toEqual([]);
   });
 
+  it('stays silent for default places (Command Post / Field)', () => {
+    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, createNewPlace('Command Post')), emptyCtx)).toEqual([]);
+    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, createNewPlace('Field (Unassigned)')), emptyCtx)).toEqual([]);
+  });
+
   it('ignores comm events (no infinite loop)', () => {
     expect(placeCommsReactor.react(CommsEvents.CommLogged(activityId, { id: 'c1', message: 'x', timestamp: 1 }), emptyCtx)).toEqual([]);
   });

@@ -6,8 +6,7 @@ import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
+import { useCommsCommands } from '@respond/lib/client/services/comms';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
@@ -41,7 +40,7 @@ const parseValues = (value: string): string[] => {
 };
 
 export function DashboardCommsManager() {
-  const dispatch = useAppDispatch();
+  const comms = useCommsCommands();
   const activity = useActivityContext();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -64,17 +63,11 @@ export function DashboardCommsManager() {
   }, [visibleCommunications, searchQuery]);
 
   const toggleFavorite = (entry: CommunicationsLogEntry) => {
-    const updates: Partial<CommunicationsLogEntry> = {
-      isFavorite: !entry.isFavorite,
-    };
-    dispatch(ActivityActions.updateComm(activity.id, entry.id, updates));
+    comms.updateComm(activity.id, entry.id, { isFavorite: !entry.isFavorite });
   };
 
   const deleteEntry = (id: string) => {
-    const updates: Partial<CommunicationsLogEntry> = {
-      isDeleted: true,
-    };
-    dispatch(ActivityActions.updateComm(activity.id, id, updates));
+    comms.updateComm(activity.id, id, { isDeleted: true });
   };
 
   return (

@@ -2,7 +2,7 @@ import { Action, isAnyOf } from '@reduxjs/toolkit';
 import io, { Socket } from 'socket.io-client';
 
 import { Command, isCommand } from '@respond/shared/commands';
-import type { StampedEvent } from '@respond/shared/events';
+import { ActivityEvents, type StampedEvent } from '@respond/shared/events';
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/shared/types/syncSocket';
 
 import { ActivityActions, filterInitialActivities } from '@respond/shared';
@@ -59,21 +59,6 @@ export class ClientSync {
       }),
     );
 
-    // Listen for actions that should have copies sent to the server.
-    this.dispatch(
-      addAppListener({
-        predicate: (action, _currentState, _previousState) => {
-          const meta = (action as { meta?: { sync?: boolean } }).meta;
-          console.log('SEND SYNC', action, meta?.sync ?? false);
-          return meta?.sync ?? false;
-        },
-        effect: (action, _listenerApi) => {
-          console.log('ACTING ON SYNC');
-          this.handleLocalAction(action);
-        },
-      }),
-    );
-
     // Commands (intent) are forwarded to the server, never reduced locally. The
     // authoritative event comes back over the socket and is applied then.
     this.dispatch(
@@ -85,15 +70,14 @@ export class ClientSync {
       }),
     );
 
-    // Listen for actions that update the activities list. We want to save a copy so we
-    // can use it when we reload.
+    // Cache the activities list to localStorage so a reload can render immediately,
+    // on the initial snapshot (reload) and on activity summary changes.
     this.dispatch(
       addAppListener({
-        matcher: isAnyOf(ActivityActions.reload, ActivityActions.update),
+        matcher: isAnyOf(ActivityActions.reload, ActivityEvents.ActivityUpdated),
         effect: (_action, listenerApi) => {
           const activities = listenerApi.getState().activities;
           const cachedActivities = { ...activities, list: filterInitialActivities(activities.list) };
-          console.log('SHOULD SAVE TO LOCALSTORAGE', cachedActivities);
           try {
             const serializedActivities = JSON.stringify(cachedActivities);
 
@@ -123,10 +107,6 @@ export class ClientSync {
     // Reconnect; the browser sends the current session cookie on the handshake,
     // so a login/logout since the last connect is picked up automatically.
     this.socket.connect();
-  }
-
-  handleLocalAction(action: Action) {
-    this.socket.emit('reportAction', action, this.socket.id ?? '');
   }
 
   handleServerAction(action: Action, reporterId: string) {

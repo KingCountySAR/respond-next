@@ -5,9 +5,9 @@ import { Link, useLocation } from 'wouter';
 import { useEffect, useState } from 'react';
 
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, DialogWithHistory, IconButton, Stack } from '@respond/components/Material';
-import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
+import { useActivityCommands } from '@respond/lib/client/services/activity';
+import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
-import { ActivityActions } from '@respond/shared';
 
 import { useActivityContext } from './ActivityProvider';
 import { DesktopActivityPage } from './DesktopActivityPage';
@@ -29,18 +29,22 @@ export const ActivityPage = () => {
 };
 
 export function ActivityActionsBar() {
-  const dispatch = useAppDispatch();
+  const activityCommands = useActivityCommands();
   const [, navigate] = useLocation();
   const activity = useActivityContext();
   const isActivityActive = isActive(activity);
 
   const handleRemove = () => {
-    dispatch(ActivityActions.remove(activity.id));
+    activityCommands.remove(activity.id);
     navigate('/', { replace: true });
   };
 
   const toggleStatus = () => {
-    dispatch(isActivityActive ? ActivityActions.complete(activity.id, new Date().getTime()) : ActivityActions.reactivate(activity.id));
+    if (isActivityActive) {
+      activityCommands.complete(activity.id, new Date().getTime());
+    } else {
+      activityCommands.reactivate(activity.id);
+    }
   };
 
   return (

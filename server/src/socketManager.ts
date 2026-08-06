@@ -48,14 +48,6 @@ export default class SocketManager {
     const manager = this;
 
     (await getServices()).stateManager.addClient({
-      broadcastAction(action, toRooms, reporterId) {
-        if (!manager.io) {
-          return;
-        }
-
-        const emitter = toRooms ? manager.io.to(toRooms) : manager.io;
-        emitter.emit('broadcastAction', action, reporterId);
-      },
       broadcastEvent(events, toRooms) {
         if (!manager.io) {
           return;
@@ -76,10 +68,6 @@ export default class SocketManager {
 
     socket.on('disconnect', async () => {
       delete this.connectedSockets[socket.id];
-    });
-
-    socket.on('reportAction', async (action, reporterId) => {
-      (await getServices()).stateManager.handleIncomingAction(action, reporterId, auth);
     });
 
     socket.on('command', async (command) => {

@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { hoursToMilliseconds } from 'date-fns';
 
 import { ActivityActions, ActivityState, BasicActivityReducers, BasicEventReducers } from '@respond/shared';
-import { CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
+import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
 
 import { ReducerBuilderStub } from '../types';
@@ -24,27 +24,6 @@ const activitySliceArgs = {
   extraReducers: (builder: ReducerBuilderStub<ActivityState>) => {
     builder //
       .addCase(ActivityActions.reload, BasicActivityReducers[ActivityActions.reload.type])
-      .addCase(ActivityActions.update, BasicActivityReducers[ActivityActions.update.type])
-      .addCase(ActivityActions.remove, BasicActivityReducers[ActivityActions.remove.type])
-      .addCase(ActivityActions.reactivate, BasicActivityReducers[ActivityActions.reactivate.type])
-      .addCase(ActivityActions.complete, BasicActivityReducers[ActivityActions.complete.type])
-      .addCase(ActivityActions.appendOrganizationTimeline, BasicActivityReducers[ActivityActions.appendOrganizationTimeline.type])
-      .addCase(ActivityActions.participantTimelineUpdate, BasicActivityReducers[ActivityActions.participantTimelineUpdate.type])
-      .addCase(ActivityActions.participantTimelineAdd, BasicActivityReducers[ActivityActions.participantTimelineAdd.type])
-      .addCase(ActivityActions.participantMilesUpdate, BasicActivityReducers[ActivityActions.participantMilesUpdate.type])
-      .addCase(ActivityActions.participantEtaUpdate, BasicActivityReducers[ActivityActions.participantEtaUpdate.type])
-      .addCase(ActivityActions.participantUpdate, BasicActivityReducers[ActivityActions.participantUpdate.type])
-      .addCase(ActivityActions.tagParticipant, BasicActivityReducers[ActivityActions.tagParticipant.type])
-      .addCase(ActivityActions.createTeam, BasicActivityReducers[ActivityActions.createTeam.type])
-      .addCase(ActivityActions.updateTeam, BasicActivityReducers[ActivityActions.updateTeam.type])
-      .addCase(ActivityActions.addComm, BasicActivityReducers[ActivityActions.addComm.type])
-      .addCase(ActivityActions.updateComm, BasicActivityReducers[ActivityActions.updateComm.type])
-      .addCase(ActivityActions.updateStaff, BasicActivityReducers[ActivityActions.updateStaff.type])
-      .addCase(ActivityActions.createPlace, BasicActivityReducers[ActivityActions.createPlace.type])
-      .addCase(ActivityActions.updatePlace, BasicActivityReducers[ActivityActions.updatePlace.type])
-      .addCase(ActivityActions.deletePlace, BasicActivityReducers[ActivityActions.deletePlace.type])
-      .addCase(ActivityActions.batchUpdatePlaces, BasicActivityReducers[ActivityActions.batchUpdatePlaces.type])
-      .addCase(ActivityActions.bulkParticipantUpdate, BasicActivityReducers[ActivityActions.bulkParticipantUpdate.type])
       // Phase 2 command/event path: reduce server-minted place + comm events.
       .addCase(PlaceEvents.PlaceCreated, BasicEventReducers[PlaceEvents.PlaceCreated.type])
       .addCase(PlaceEvents.PlaceUpdated, BasicEventReducers[PlaceEvents.PlaceUpdated.type])
@@ -61,7 +40,12 @@ const activitySliceArgs = {
       .addCase(ParticipantEvents.ParticipantTagged, BasicEventReducers[ParticipantEvents.ParticipantTagged.type])
       .addCase(TeamEvents.TeamCreated, BasicEventReducers[TeamEvents.TeamCreated.type])
       .addCase(TeamEvents.TeamUpdated, BasicEventReducers[TeamEvents.TeamUpdated.type])
-      .addCase(TeamEvents.StaffUpdated, BasicEventReducers[TeamEvents.StaffUpdated.type]);
+      .addCase(TeamEvents.StaffUpdated, BasicEventReducers[TeamEvents.StaffUpdated.type])
+      .addCase(ActivityEvents.ActivityUpdated, BasicEventReducers[ActivityEvents.ActivityUpdated.type])
+      .addCase(ActivityEvents.ActivityRemoved, BasicEventReducers[ActivityEvents.ActivityRemoved.type])
+      .addCase(ActivityEvents.ActivityCompleted, BasicEventReducers[ActivityEvents.ActivityCompleted.type])
+      .addCase(ActivityEvents.ActivityReactivated, BasicEventReducers[ActivityEvents.ActivityReactivated.type])
+      .addCase(ActivityEvents.OrganizationTimelineAppended, BasicEventReducers[ActivityEvents.OrganizationTimelineAppended.type]);
   },
 };
 

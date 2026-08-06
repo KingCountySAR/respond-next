@@ -8,9 +8,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
+import { useActivityCommands } from '@respond/lib/client/services/activity';
+import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
-import { ActivityActions } from '@respond/shared';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/shared/types/activity';
 
 import { LocationAutocomplete } from '../locations/LocationAutocomplete';
@@ -56,7 +56,7 @@ const resolver: Resolver<Activity> = async (values) => {
  *
  */
 export const ActivityEditPage = ({ activityType, activityId }: { activityType: ActivityType; activityId?: string }) => {
-  const dispatch = useAppDispatch();
+  const activityCommands = useActivityCommands();
   const [, navigate] = useLocation();
   const org = useAppSelector((state) => state.organization.mine);
   const selectedActivity = useAppSelector(buildActivitySelector(activityId));
@@ -142,36 +142,32 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     const time = new Date().getTime();
     const updated = { ...data, startTime: new Date(data.startTime).getTime() };
 
-    dispatch(ActivityActions.update(updated));
+    activityCommands.update(updated);
 
     function addOwnerOrg() {
       if (org && activity?.organizations[updated.ownerOrgId] === undefined) {
         const ownerOrg = updated.ownerOrgId === org.id ? org : org.partners.find((f) => f.id === updated.ownerOrgId)!;
         const status = org.id === updated.ownerOrgId ? (updated.startTime <= time ? OrganizationStatus.Responding : OrganizationStatus.Standby) : OrganizationStatus.Unknown;
-        dispatch(
-          ActivityActions.appendOrganizationTimeline(
-            updated.id,
-            {
-              id: ownerOrg.id,
-              title: ownerOrg.title,
-              rosterName: ownerOrg.rosterName,
-            },
-            { status, time },
-          ),
+        activityCommands.appendOrganizationTimeline(
+          updated.id,
+          {
+            id: ownerOrg.id,
+            title: ownerOrg.title,
+            rosterName: ownerOrg.rosterName,
+          },
+          { status, time },
         );
       }
     }
 
     if (isNew) {
-      dispatch(
-        ActivityActions.appendOrganizationTimeline(
-          updated.id,
-          { id: org.id, title: org.title, rosterName: org.rosterName },
-          {
-            status: updated.startTime <= time ? OrganizationStatus.Responding : OrganizationStatus.Standby,
-            time,
-          },
-        ),
+      activityCommands.appendOrganizationTimeline(
+        updated.id,
+        { id: org.id, title: org.title, rosterName: org.rosterName },
+        {
+          status: updated.startTime <= time ? OrganizationStatus.Responding : OrganizationStatus.Standby,
+          time,
+        },
       );
       if (updated.ownerOrgId !== org.id) {
         addOwnerOrg();

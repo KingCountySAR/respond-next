@@ -2,9 +2,8 @@ import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import React, { useState } from 'react';
 
 import { useParticipantCommands } from '@respond/lib/client/services/participants';
+import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { useTeamCommands } from '@respond/lib/client/services/teams';
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '@respond/shared/types/operations';
@@ -31,8 +30,8 @@ interface TeamStatusSelectProps {
 }
 
 export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
-  const dispatch = useAppDispatch();
   const participants = useParticipantCommands();
+  const places = usePlaceCommands();
   const teams = useTeamCommands();
   const activity = useActivityContext();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -88,12 +87,12 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
           assignedEquipment: mergedEquipment,
         };
 
-    // Place reassignment stays on the legacy action path so it does not trip the
-    // place-comms reactor (moving the field place should not log a comm).
+    // The field place is a default place, so the place-comms reactor skips it —
+    // moving resources into it logs no comm.
     if (fieldPlace) {
-      dispatch(ActivityActions.updatePlace(activity.id, updatedFieldPlace));
+      places.updatePlace(activity.id, updatedFieldPlace);
     } else {
-      dispatch(ActivityActions.createPlace(activity.id, updatedFieldPlace));
+      places.createPlace(activity.id, updatedFieldPlace);
     }
 
     teams.updateTeam(activity.id, {

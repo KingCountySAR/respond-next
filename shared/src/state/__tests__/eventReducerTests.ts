@@ -1,6 +1,6 @@
 import { produce } from 'immer';
 
-import { CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '../../events';
+import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '../../events';
 import { createNewActivity, ParticipantStatus } from '../../types/activity';
 import { CommunicationsLogEntry, createNewPlace, createNewTeam } from '../../types/operations';
 
@@ -79,5 +79,11 @@ describe('Event Reducers', () => {
     let next = apply(stateWithActivity(activityId), TeamEvents.StaffUpdated(activityId, { 'Rescue Group': 'p1' }));
     next = apply(next, TeamEvents.StaffUpdated(activityId, { 'Medical Group': 'p2' }));
     expect(next.list[0].staff).toEqual({ 'Rescue Group': 'p1', 'Medical Group': 'p2' });
+  });
+
+  it('ActivityUpdated merges summary fields (create-or-update)', () => {
+    const next = apply(stateWithActivity(activityId), ActivityEvents.ActivityUpdated({ id: activityId, isMission: true, asMission: true }));
+    expect(next.list[0].isMission).toBe(true);
+    expect(next.list[0].asMission).toBe(true);
   });
 });

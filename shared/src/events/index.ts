@@ -1,3 +1,4 @@
+import { ActivityEvents } from './activityEvents';
 import { CommsEvents } from './commsEvents';
 import { LocationEvents } from './locationEvents';
 import { ParticipantEvents } from './participantEvents';
@@ -12,6 +13,7 @@ export { CommsEvents } from './commsEvents';
 export { ParticipantEvents } from './participantEvents';
 export { TeamEvents } from './teamEvents';
 export { LocationEvents } from './locationEvents';
+export { ActivityEvents } from './activityEvents';
 
 /** Event creators reduced into ActivityState (everything except Locations). */
 export const ActivityDomainEvents = {
@@ -19,6 +21,7 @@ export const ActivityDomainEvents = {
   ...CommsEvents,
   ...ParticipantEvents,
   ...TeamEvents,
+  ...ActivityEvents,
 };
 
 export type ActivityDomainEventsType = typeof ActivityDomainEvents;

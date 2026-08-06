@@ -1,3 +1,4 @@
+import { ActivityCommands } from './activityCommands';
 import { CommsCommands } from './commsCommands';
 import { LocationCommands } from './locationCommands';
 import { ParticipantCommands } from './participantCommands';
@@ -9,6 +10,7 @@ export { CommsCommands, type LogCommInput } from './commsCommands';
 export { ParticipantCommands } from './participantCommands';
 export { TeamCommands } from './teamCommands';
 export { LocationCommands } from './locationCommands';
+export { ActivityCommands } from './activityCommands';
 
 /** All command creators, keyed by name. */
 export const Commands = {
@@ -17,6 +19,7 @@ export const Commands = {
   ...ParticipantCommands,
   ...TeamCommands,
   ...LocationCommands,
+  ...ActivityCommands,
 };
 
 export type CommandsType = typeof Commands;

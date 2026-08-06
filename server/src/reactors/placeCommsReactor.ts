@@ -1,6 +1,6 @@
 import { CommsCommands, LogCommInput } from '@respond/shared/commands';
 import { PlaceEvents } from '@respond/shared/events';
-import { Place } from '@respond/shared/types/operations';
+import { isDefaultPlace, Place } from '@respond/shared/types/operations';
 
 import { Reactor, ReactorContext } from './reactor';
 
@@ -26,6 +26,9 @@ export const placeCommsReactor: Reactor = {
 
   react(event, ctx: ReactorContext) {
     if (PlaceEvents.PlaceCreated.match(event)) {
+      // Default places (Command Post / Field) are created silently by the
+      // bootstrap + team-disband reassign — they get no "established" comm.
+      if (isDefaultPlace(event.payload.place)) return [];
       return [CommsCommands.LogComm(event.payload.activityId, establishedEntry(event.payload.place))];
     }
 

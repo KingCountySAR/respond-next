@@ -1,7 +1,6 @@
 import type { Draft } from '@reduxjs/toolkit';
 
 import { LocationActions, LocationActionsType } from './locationActions';
-import * as Mutators from './locationMutators';
 
 import { LocationState } from '.';
 
@@ -12,13 +11,5 @@ type LocationReducers = {
 export const BasicReducers: LocationReducers = {
   [LocationActions.reload.type]: (state, { payload }) => {
     state.list = payload.list;
-  },
-
-  [LocationActions.update.type]: (state, { payload }) => {
-    Mutators.updateLocation(state, payload);
-  },
-
-  [LocationActions.remove.type]: (state, { payload }) => {
-    Mutators.removeLocation(state, payload.id);
   },
 };

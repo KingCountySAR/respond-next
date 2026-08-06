@@ -5,8 +5,6 @@ import { Box, Button, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
 import { usePlaceCommands } from '@respond/lib/client/services/places';
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ActivityActions } from '@respond/shared';
 import { Participant } from '@respond/shared/types/activity';
 import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
@@ -22,22 +20,21 @@ import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
 
 export function DashboardPlaceManager() {
-  const dispatch = useAppDispatch();
   const places = usePlaceCommands();
   const activity = useActivityContext();
 
   const [addingPlace, setAddingPlace] = useState<Place | null>(null);
 
-  // Backward-compat bootstrap of the default places (Command Post / Field). This
-  // stays on the legacy silent path on purpose: default places must NOT trip the
-  // place-comms reactor, and it runs on every client mount.
+  // Backward-compat bootstrap of the default places (Command Post / Field). The
+  // place-comms reactor skips default-place names, so these creates are silent.
   useEffect(() => {
     const defaultPlaces = getDefaultPlaces(activity);
 
     if (defaultPlaces.length) {
-      defaultPlaces.forEach((place) => dispatch(ActivityActions.createPlace(activity.id, place)));
+      defaultPlaces.forEach((place) => places.createPlace(activity.id, place));
     }
-  }, [activity, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity]);
 
   // The server's place-comms reactor logs the "established" comm now — the
   // component only expresses the intent to create the place.

@@ -1,9 +1,8 @@
-import type { Action } from '@reduxjs/toolkit';
 import { produce } from 'immer';
 
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import type { ActivityState, LocationState, OrganizationState } from '@respond/shared';
-import { BasicActivityReducers, BasicEventReducers, BasicLocationEventReducers, BasicLocationReducers } from '@respond/shared';
+import { BasicEventReducers, BasicLocationEventReducers } from '@respond/shared';
 import { Command } from '@respond/shared/commands';
 import { EventAuthor, isLocationEvent, serviceAuthor, StampedEvent } from '@respond/shared/events';
 import type { Activity } from '@respond/shared/types/activity';
@@ -12,9 +11,7 @@ import { Location } from '@respond/shared/types/location';
 import { Organization } from '@respond/shared/types/organization';
 import type UserAuth from '@respond/shared/types/userAuth';
 
-import { ActivityAction, isActivityAction } from '@respond/shared/state/activityActions';
 import { filterInitialActivities } from '@respond/shared/state/activityVisibility';
-import { isLocationAction, LocationAction } from '@respond/shared/state/locationActions';
 
 import { produceEvents } from './commandHandlers';
 import { defaultReactors, Reactor } from './reactors';
@@ -22,7 +19,6 @@ import { defaultReactors, Reactor } from './reactors';
 type DatabaseActivity = Activity & { removeTime?: number };
 
 export interface ActionListener {
-  broadcastAction(action: Action, toRooms: string[] | undefined, reporterId: string): void;
   broadcastEvent(events: StampedEvent[], toRooms: string[] | undefined): void;
 }
 
@@ -81,27 +77,6 @@ export class StateManager {
 
   async getAllActivities() {
     return this.activityState.list;
-  }
-
-  async handleIncomingAction(action: Action, reporterId: string, auth: { userId: string; email: string }) {
-    const toRooms: Record<string, boolean> = {};
-
-    console.log('handleIncomingAction', reporterId, JSON.stringify(auth));
-    if (isActivityAction(action)) {
-      (await this.handleActivityAction(action, auth)).reduce((accum, cur) => ({ ...accum, [cur]: true }), toRooms);
-    }
-
-    if (isLocationAction(action)) {
-      (await this.handleLocationAction(action, auth)).reduce((accum, cur) => ({ ...accum, [cur]: true }), toRooms);
-    }
-
-    if (isSyncAction(action)) {
-      action.meta.sync = false;
-    }
-
-    for (const listener of this.listeners) {
-      listener.broadcastAction(action, toRooms[ALL_ROOMS_TAG] ? undefined : Object.keys(toRooms), reporterId);
-    }
   }
 
   /**
@@ -167,30 +142,6 @@ export class StateManager {
         listener.broadcastEvent(locationEvents, undefined); // locations are broadcast to all clients
       }
     }
-  }
-
-  private async handleActivityAction(action: ActivityAction, auth: { userId: string; email: string }) {
-    // If everything checks out, play the action into our store.
-
-    const oldActivities = this.snapshotActivities();
-
-    const nextState = produce(this.activityState, (draft) => {
-      BasicActivityReducers[action.type](draft, action as never);
-    });
-
-    // TODO: Validate nextState
-    this.activityState = nextState;
-
-    const mongo = await mongoPromise;
-
-    await mongo.db().collection('history').insertOne({
-      action: action,
-      time: new Date(),
-      userId: auth.userId,
-      email: auth.email,
-    });
-
-    return this.persistActivityChanges(oldActivities, action.type === 'activity/update');
   }
 
   /**
@@ -262,27 +213,6 @@ export class StateManager {
     }
   }
 
-  private async handleLocationAction(action: LocationAction, auth: { userId: string; email: string }) {
-    console.log('stateManager reportAction', action);
-
-    const oldLocations = this.snapshotLocations();
-
-    this.locationsState = produce(this.locationsState, (draft) => {
-      BasicLocationReducers[action.type](draft, action as never);
-    });
-
-    const mongo = await mongoPromise;
-    await mongo.db().collection('history').insertOne({
-      action: action,
-      time: new Date(),
-      userId: auth.userId,
-      email: auth.email,
-    });
-
-    await this.persistLocationChanges(oldLocations);
-    return [ALL_ROOMS_TAG];
-  }
-
   private async getOrgsInterestedInAction(summaryLevelUpdate: boolean, activity?: Activity): Promise<string[]> {
     if (!activity) {
       return [];
@@ -292,13 +222,4 @@ export class StateManager {
     const interestedIds = Array.from(new Set([/*...partnerOrgs,*/ ...participatingOrgs]));
     return interestedIds;
   }
-}
-
-function isSyncAction(object: object): object is { meta: { sync: boolean } } {
-  if ('meta' in object) {
-    if ('sync' in (object as { meta: object }).meta) {
-      return true;
-    }
-  }
-  return false;
 }

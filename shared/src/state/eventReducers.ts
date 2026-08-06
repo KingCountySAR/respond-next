@@ -80,4 +80,24 @@ export const BasicEventReducers: EventReducers = {
   [DomainEvents.StaffUpdated.type]: (state, { payload }) => {
     Mutators.updateStaff(state, payload.activityId, payload.staff);
   },
+
+  [DomainEvents.ActivityUpdated.type]: (state, { payload }) => {
+    Mutators.updateActivity(state, payload.updates);
+  },
+
+  [DomainEvents.ActivityRemoved.type]: (state, { payload }) => {
+    Mutators.removeActivity(state, payload.activityId);
+  },
+
+  [DomainEvents.ActivityCompleted.type]: (state, { payload }) => {
+    Mutators.completeActivity(state, payload.activityId, payload.endTime);
+  },
+
+  [DomainEvents.ActivityReactivated.type]: (state, { payload }) => {
+    Mutators.reactivateActivity(state, payload.activityId);
+  },
+
+  [DomainEvents.OrganizationTimelineAppended.type]: (state, { payload }) => {
+    Mutators.appendOrganizationTimeline(state, payload.activityId, payload.orgId, payload.org, payload.status);
+  },
 };

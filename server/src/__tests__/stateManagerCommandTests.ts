@@ -20,7 +20,6 @@ let mongoPromise: typeof import('../mongodb').default;
 function collect(sm: InstanceType<StateManagerCtor>): StampedEvent[] {
   const captured: StampedEvent[] = [];
   sm.addClient({
-    broadcastAction() {},
     broadcastEvent(events) {
       captured.push(...events);
     },

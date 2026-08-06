@@ -14,10 +14,7 @@ export interface LocationState {
   list: Location[];
 }
 
-export type { ActivityAction } from './activityActions';
 export { ActivityActions } from './activityActions';
-
-export type { LocationAction } from './locationActions';
 export { LocationActions } from './locationActions';
 
 export { BasicReducers as BasicActivityReducers } from './activityReducers';

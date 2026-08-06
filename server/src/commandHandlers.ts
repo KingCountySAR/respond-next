@@ -1,5 +1,5 @@
-import { Command, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
-import { CommsEvents, DomainEvent, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
+import { ActivityCommands, Command, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
+import { ActivityEvents, CommsEvents, DomainEvent, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
 import { createNewCommsEntry } from '@respond/shared/types/operations';
 
 /**
@@ -67,6 +67,21 @@ export function produceEvents(command: Command): DomainEvent[] {
   }
   if (LocationCommands.RemoveLocation.match(command)) {
     return [LocationEvents.LocationRemoved(command.payload.locationId)];
+  }
+  if (ActivityCommands.UpdateActivity.match(command)) {
+    return [ActivityEvents.ActivityUpdated(command.payload.updates)];
+  }
+  if (ActivityCommands.RemoveActivity.match(command)) {
+    return [ActivityEvents.ActivityRemoved(command.payload.activityId)];
+  }
+  if (ActivityCommands.CompleteActivity.match(command)) {
+    return [ActivityEvents.ActivityCompleted(command.payload.activityId, command.payload.endTime)];
+  }
+  if (ActivityCommands.ReactivateActivity.match(command)) {
+    return [ActivityEvents.ActivityReactivated(command.payload.activityId)];
+  }
+  if (ActivityCommands.AppendOrganizationTimeline.match(command)) {
+    return [ActivityEvents.OrganizationTimelineAppended(command.payload.activityId, command.payload.orgId, command.payload.org, command.payload.status)];
   }
   return [];
 }
