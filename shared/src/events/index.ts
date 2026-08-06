@@ -1,4 +1,5 @@
 import { CommsEvents } from './commsEvents';
+import { LocationEvents } from './locationEvents';
 import { ParticipantEvents } from './participantEvents';
 import { PlaceEvents } from './placeEvents';
 import { TeamEvents } from './teamEvents';
@@ -10,14 +11,28 @@ export { PlaceEvents } from './placeEvents';
 export { CommsEvents } from './commsEvents';
 export { ParticipantEvents } from './participantEvents';
 export { TeamEvents } from './teamEvents';
+export { LocationEvents } from './locationEvents';
 
-/** All domain event creators, keyed by name. */
-export const DomainEvents = {
+/** Event creators reduced into ActivityState (everything except Locations). */
+export const ActivityDomainEvents = {
   ...PlaceEvents,
   ...CommsEvents,
   ...ParticipantEvents,
   ...TeamEvents,
 };
+
+export type ActivityDomainEventsType = typeof ActivityDomainEvents;
+
+/** All domain event creators, keyed by name (activity + location). */
+export const DomainEvents = {
+  ...ActivityDomainEvents,
+  ...LocationEvents,
+};
+
+/** True for events reduced into the Locations slice (not ActivityState). */
+export function isLocationEvent(object: { type: string }): boolean {
+  return Object.values(LocationEvents).some((e) => e.type === object.type);
+}
 
 export type DomainEventsType = typeof DomainEvents;
 

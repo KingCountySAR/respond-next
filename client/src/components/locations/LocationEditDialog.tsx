@@ -1,17 +1,16 @@
 import { Box, DialogContent, DialogTitle } from '@mui/material';
 
 import { DialogWithHistory } from '@respond/components/Material';
-import { useAppDispatch } from '@respond/lib/client/store';
-import { LocationActions } from '@respond/shared';
+import { useLocationCommands } from '@respond/lib/client/services/locations';
 import { createNewLocation, Location } from '@respond/shared/types/location';
 
 import { LocationEditForm } from './LocationEditForm';
 
 export function LocationEditDialog({ location = createNewLocation(), open, onSubmit, onClose }: { location?: Location; open: boolean; onSubmit: (location: Location) => void; onClose: () => void }) {
-  const dispatch = useAppDispatch();
+  const locations = useLocationCommands();
   const handleSubmit = (location: Location) => {
     if (location.toSaved) {
-      dispatch(LocationActions.update(location));
+      locations.updateLocation(location);
     }
     onSubmit(location);
     onClose();

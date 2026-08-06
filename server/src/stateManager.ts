@@ -3,9 +3,9 @@ import { produce } from 'immer';
 
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import type { ActivityState, LocationState, OrganizationState } from '@respond/shared';
-import { BasicActivityReducers, BasicEventReducers, BasicLocationReducers } from '@respond/shared';
+import { BasicActivityReducers, BasicEventReducers, BasicLocationEventReducers, BasicLocationReducers } from '@respond/shared';
 import { Command } from '@respond/shared/commands';
-import { EventAuthor, serviceAuthor, StampedEvent } from '@respond/shared/events';
+import { EventAuthor, isLocationEvent, serviceAuthor, StampedEvent } from '@respond/shared/events';
 import type { Activity } from '@respond/shared/types/activity';
 import { ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
 import { Location } from '@respond/shared/types/location';
@@ -114,37 +114,57 @@ export class StateManager {
     const events = produceEvents(command);
     if (!events.length) return;
 
-    const priorActivities = this.snapshotActivities();
     const stamped: StampedEvent[] = events.map((event) => ({ ...event, meta: { author, timestamp: Date.now() } }));
 
-    this.activityState = produce(this.activityState, (draft) => {
-      for (const event of stamped) {
-        BasicEventReducers[event.type as keyof typeof BasicEventReducers](draft, event as never);
-      }
-    });
-
+    // Append every event to the audit log (both domains).
     const mongo = await mongoPromise;
     await mongo
       .db()
       .collection('events')
-      .insertMany(stamped.map((event) => ({ ...event, activityId: (event.payload as { activityId: string }).activityId })));
+      .insertMany(stamped.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
 
-    const rooms = await this.persistActivityChanges(priorActivities, false);
+    // A command is single-domain, but partition defensively: activity events
+    // reduce into ActivityState (org-scoped broadcast + reactors); location
+    // events reduce into LocationState (broadcast to all, no reactors).
+    const locationEvents = stamped.filter((event) => isLocationEvent(event));
+    const activityEvents = stamped.filter((event) => !isLocationEvent(event));
 
-    for (const listener of this.listeners) {
-      listener.broadcastEvent(stamped, rooms);
+    if (activityEvents.length) {
+      const priorActivities = this.snapshotActivities();
+      this.activityState = produce(this.activityState, (draft) => {
+        for (const event of activityEvents) {
+          BasicEventReducers[event.type as keyof typeof BasicEventReducers](draft, event as never);
+        }
+      });
+
+      const rooms = await this.persistActivityChanges(priorActivities, false);
+      for (const listener of this.listeners) {
+        listener.broadcastEvent(activityEvents, rooms);
+      }
+
+      // Reactors observe activity events; follow-up commands re-enter the
+      // pipeline authored as the reactor (a service).
+      const ctx = { priorActivities, currentActivities: this.snapshotActivities() };
+      for (const event of activityEvents) {
+        for (const reactor of this.reactors) {
+          for (const followup of await reactor.react(event, ctx)) {
+            await this.handleCommand(followup, serviceAuthor(reactor.name));
+          }
+        }
+      }
     }
 
-    // Reactors run after the events are authoritative. Their follow-up commands
-    // re-enter the pipeline authored as the reactor (a service), each producing
-    // its own broadcast. Terminates because no reactor observes the events its
-    // own follow-up commands produce.
-    const ctx = { priorActivities, currentActivities: this.snapshotActivities() };
-    for (const event of stamped) {
-      for (const reactor of this.reactors) {
-        for (const followup of await reactor.react(event, ctx)) {
-          await this.handleCommand(followup, serviceAuthor(reactor.name));
+    if (locationEvents.length) {
+      const priorLocations = this.snapshotLocations();
+      this.locationsState = produce(this.locationsState, (draft) => {
+        for (const event of locationEvents) {
+          BasicLocationEventReducers[event.type as keyof typeof BasicLocationEventReducers](draft, event as never);
         }
+      });
+
+      await this.persistLocationChanges(priorLocations);
+      for (const listener of this.listeners) {
+        listener.broadcastEvent(locationEvents, undefined); // locations are broadcast to all clients
       }
     }
   }
@@ -217,29 +237,20 @@ export class StateManager {
     return this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
   }
 
-  private async handleLocationAction(action: LocationAction, auth: { userId: string; email: string }) {
-    console.log('stateManager reportAction', action);
+  private snapshotLocations(): Record<string, Location> {
+    return this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
+  }
 
-    const oldLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
-
-    const nextState = produce(this.locationsState, (draft) => {
-      BasicLocationReducers[action.type](draft, action as never);
-    });
-    this.locationsState = nextState;
-
+  /**
+   * Diff the current locations against a pre-reduce snapshot and persist changed
+   * (upsert) / removed (delete) locations to Mongo. Shared by the legacy action
+   * path and the command/event pipeline.
+   */
+  private async persistLocationChanges(oldLocations: Record<string, Location>): Promise<void> {
     const mongo = await mongoPromise;
-
-    await mongo.db().collection('history').insertOne({
-      action: action,
-      time: new Date(),
-      userId: auth.userId,
-      email: auth.email,
-    });
-
-    const currentLocations: Record<string, Location> = this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
+    const currentLocations = this.snapshotLocations();
     for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
       console.log('MONGO update location', updatedId);
-      //if (!currentLocations[updatedId].isSaved) continue;
       await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).replaceOne({ id: updatedId }, currentLocations[updatedId], {
         upsert: true,
       });
@@ -249,7 +260,26 @@ export class StateManager {
       console.log('MONGO remove location', removedId);
       await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).deleteOne({ id: removedId });
     }
+  }
 
+  private async handleLocationAction(action: LocationAction, auth: { userId: string; email: string }) {
+    console.log('stateManager reportAction', action);
+
+    const oldLocations = this.snapshotLocations();
+
+    this.locationsState = produce(this.locationsState, (draft) => {
+      BasicLocationReducers[action.type](draft, action as never);
+    });
+
+    const mongo = await mongoPromise;
+    await mongo.db().collection('history').insertOne({
+      action: action,
+      time: new Date(),
+      userId: auth.userId,
+      email: auth.email,
+    });
+
+    await this.persistLocationChanges(oldLocations);
     return [ALL_ROOMS_TAG];
   }
 

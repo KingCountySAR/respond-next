@@ -1,8 +1,9 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-import { ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
-import { CommsEvents, ParticipantEvents, PlaceEvents, StampedEvent, userAuthor } from '@respond/shared/events';
+import { LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
+import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, StampedEvent, userAuthor } from '@respond/shared/events';
 import { ParticipantStatus } from '@respond/shared/types/activity';
+import { createNewLocation } from '@respond/shared/types/location';
 import { createNewPlace, createNewTeam } from '@respond/shared/types/operations';
 
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
@@ -117,5 +118,24 @@ describe('StateManager.handleCommand', () => {
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-4');
     expect(activity?.teams.find((t) => t.id === team.id)?.status).toBe('On Assignment');
     expect(activity?.comms?.map((c) => c.message)).toContain('Starting Assignment');
+  });
+
+  it('routes location commands into the locations slice + collection (broadcast to all)', async () => {
+    const sm = new StateManager([]);
+    const captured = collect(sm);
+
+    const loc = { ...createNewLocation(), id: 'L1', title: 'Trailhead', isSaved: true };
+    await sm.handleCommand(LocationCommands.UpdateLocation(loc), userAuthor('u1'));
+
+    expect(sm.getLocationState().list.map((l) => l.title)).toContain('Trailhead');
+    // Location events broadcast to all clients (no room scoping).
+    const updateBroadcast = captured.find((e) => e.type === LocationEvents.LocationUpdated.type);
+    expect(updateBroadcast).toBeTruthy();
+    // Persisted to the locations collection.
+    expect(await (await mongoPromise).db().collection('locations').findOne({ id: 'L1' })).toBeTruthy();
+
+    await sm.handleCommand(LocationCommands.RemoveLocation('L1'), userAuthor('u1'));
+    expect(sm.getLocationState().list.find((l) => l.id === 'L1')).toBeUndefined();
+    expect(await (await mongoPromise).db().collection('locations').findOne({ id: 'L1' })).toBeNull();
   });
 });

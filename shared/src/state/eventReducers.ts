@@ -1,6 +1,6 @@
 import type { Draft } from '@reduxjs/toolkit';
 
-import { DomainEvents, DomainEventsType } from '../events';
+import { ActivityDomainEvents, ActivityDomainEventsType, DomainEvents } from '../events';
 
 import * as Mutators from './activityMutators';
 
@@ -9,10 +9,11 @@ import { ActivityState } from '.';
 /**
  * Pure event-appliers keyed by event type. Unlike the legacy action reducers,
  * these only ever run on server-minted events, so they need no client/server
- * branching. They reuse the same domain mutators as the action path.
+ * branching. They reuse the same domain mutators as the action path. Location
+ * events are reduced separately (BasicLocationEventReducers) into LocationState.
  */
 type EventReducers = {
-  [K in keyof DomainEventsType as DomainEventsType[K]['type']]: (state: Draft<ActivityState>, event: { payload: ReturnType<DomainEventsType[K]>['payload'] }) => void;
+  [K in keyof ActivityDomainEventsType as ActivityDomainEventsType[K]['type']]: (state: Draft<ActivityState>, event: { payload: ReturnType<ActivityDomainEventsType[K]>['payload'] }) => void;
 };
 
 export const BasicEventReducers: EventReducers = {

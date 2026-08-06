@@ -1,5 +1,5 @@
-import { CommsCommands, ParticipantCommands, PlaceCommands } from '@respond/shared/commands';
-import { CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
+import { CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands } from '@respond/shared/commands';
+import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
 import { createNewActivity, ParticipantStatus } from '@respond/shared/types/activity';
 import { createNewPlace, createNewTeam } from '@respond/shared/types/operations';
 
@@ -31,6 +31,11 @@ describe('produceEvents', () => {
   it('maps UpdateParticipant -> ParticipantUpdated', () => {
     const [event] = produceEvents(ParticipantCommands.UpdateParticipant(activityId, 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn));
     expect(ParticipantEvents.ParticipantUpdated.match(event)).toBe(true);
+  });
+
+  it('maps location commands -> location events', () => {
+    expect(LocationEvents.LocationUpdated.match(produceEvents(LocationCommands.UpdateLocation({ id: 'L1', title: 'x' }))[0])).toBe(true);
+    expect(LocationEvents.LocationRemoved.match(produceEvents(LocationCommands.RemoveLocation('L1'))[0])).toBe(true);
   });
 
   it('returns no events for an unknown command', () => {

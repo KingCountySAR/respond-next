@@ -1,9 +1,7 @@
 import type { Draft } from '@reduxjs/toolkit';
-import merge from 'lodash.merge';
-
-import { createNewLocation, pickLocationProperties } from '../types/location';
 
 import { LocationActions, LocationActionsType } from './locationActions';
+import * as Mutators from './locationMutators';
 
 import { LocationState } from '.';
 
@@ -17,16 +15,10 @@ export const BasicReducers: LocationReducers = {
   },
 
   [LocationActions.update.type]: (state, { payload }) => {
-    let target = state.list.find((f) => f.id && f.id === payload.id);
-    if (!target) {
-      target = createNewLocation();
-      state.list.push(target);
-    }
-    const props = pickLocationProperties(payload);
-    merge(target, props);
+    Mutators.updateLocation(state, payload);
   },
 
   [LocationActions.remove.type]: (state, { payload }) => {
-    state.list = state.list.filter((f) => f.id !== payload.id);
+    Mutators.removeLocation(state, payload.id);
   },
 };

@@ -1,8 +1,7 @@
 import { Box } from '@mui/material';
 import { useState } from 'react';
 
-import { useAppDispatch } from '@respond/lib/client/store';
-import { LocationActions } from '@respond/shared';
+import { useLocationCommands } from '@respond/lib/client/services/locations';
 import { createNewLocation, Location } from '@respond/shared/types/location';
 
 import { Button, Paper, Stack, Typography } from '../Material';
@@ -12,7 +11,7 @@ import { LocationAutocomplete } from './LocationAutocomplete';
 import { LocationEditForm } from './LocationEditForm';
 
 export const LocationManager = () => {
-  const dispatch = useAppDispatch();
+  const locations = useLocationCommands();
   const [selected, setSelected] = useState<Location>();
 
   const handleSelection = (location: Location | null) => {
@@ -21,9 +20,9 @@ export const LocationManager = () => {
 
   const handleFormSubmit = (location: Location) => {
     if (location.isSaved) {
-      dispatch(LocationActions.update(location));
+      locations.updateLocation(location);
     } else {
-      dispatch(LocationActions.remove(location));
+      locations.removeLocation(location.id);
     }
   };
 

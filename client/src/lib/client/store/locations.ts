@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-import { BasicLocationReducers, LocationActions, LocationState } from '@respond/shared';
+import { BasicLocationEventReducers, BasicLocationReducers, LocationActions, LocationState } from '@respond/shared';
+import { LocationEvents } from '@respond/shared/events';
 
 import { ReducerBuilderStub } from '../types';
 
@@ -16,9 +17,11 @@ const locationsSlice = createSlice({
   reducers: {},
   extraReducers: (builder: ReducerBuilderStub<LocationState>) => {
     builder //
+      // reload is the server -> client snapshot (still an action); update/remove
+      // are now command/event driven.
       .addCase(LocationActions.reload, BasicLocationReducers[LocationActions.reload.type])
-      .addCase(LocationActions.update, BasicLocationReducers[LocationActions.update.type])
-      .addCase(LocationActions.remove, BasicLocationReducers[LocationActions.remove.type]);
+      .addCase(LocationEvents.LocationUpdated, BasicLocationEventReducers[LocationEvents.LocationUpdated.type])
+      .addCase(LocationEvents.LocationRemoved, BasicLocationEventReducers[LocationEvents.LocationRemoved.type]);
   },
 });
 

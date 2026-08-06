@@ -1,5 +1,5 @@
-import { Command, CommsCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
-import { CommsEvents, DomainEvent, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
+import { Command, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
+import { CommsEvents, DomainEvent, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
 import { createNewCommsEntry } from '@respond/shared/types/operations';
 
 /**
@@ -61,6 +61,12 @@ export function produceEvents(command: Command): DomainEvent[] {
   }
   if (TeamCommands.UpdateStaff.match(command)) {
     return [TeamEvents.StaffUpdated(command.payload.activityId, command.payload.staff)];
+  }
+  if (LocationCommands.UpdateLocation.match(command)) {
+    return [LocationEvents.LocationUpdated(command.payload.location)];
+  }
+  if (LocationCommands.RemoveLocation.match(command)) {
+    return [LocationEvents.LocationRemoved(command.payload.locationId)];
   }
   return [];
 }
