@@ -6,7 +6,8 @@ import { DraggedItem, useDnD } from './DnDProvider';
 interface DraggableProps<T> {
   type: string;
   item: T;
-  callback?: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  callback?: (...args: any[]) => void;
   children: ReactNode;
 }
 

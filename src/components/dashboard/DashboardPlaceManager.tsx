@@ -193,37 +193,30 @@ function PlaceTile({ place }: { place: Place }) {
     <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
       <DashboardBoxWithTitle title={place.name} actions={actions} collapsible>
         <Stack spacing={1}>
-          <Box sx={{ flex: 1, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-              Personnel
-            </Typography>
-            <Stack spacing={0.75} sx={{ mt: 0.5 }}>
-              {place.assignedParticipants.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
-                  None
-                </Typography>
-              ) : (
-                participants.map((participant) => {
-                  return (
-                    <Draggable key={participant.id} type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
-                      <DashboardTeamMember key={participant.id} participant={participant} />
-                    </Draggable>
-                  );
-                })
-              )}
+          {!!place.assignedParticipants.length && (
+            <Stack spacing={0.75} sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
+                Personnel
+              </Typography>
+              <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+                {!!place.assignedParticipants.length &&
+                  participants.map((participant) => {
+                    return (
+                      <Draggable key={participant.id} type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
+                        <DashboardTeamMember key={participant.id} participant={participant} />
+                      </Draggable>
+                    );
+                  })}
+              </Stack>
             </Stack>
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-              Equipment
-            </Typography>
-            <Stack spacing={0.75} sx={{ mt: 0.5 }}>
-              {sortedTeamEquipment.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
-                  None
-                </Typography>
-              ) : (
-                sortedTeamEquipment.map((item) => {
+          )}
+          {!!sortedTeamEquipment.length && (
+            <Stack spacing={0.75} sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
+                Equipment
+              </Typography>
+              <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+                {sortedTeamEquipment.map((item) => {
                   return (
                     <Draggable
                       key={item.uuid}
@@ -236,10 +229,10 @@ function PlaceTile({ place }: { place: Place }) {
                       <DashboardTeamEquipment key={item.uuid} item={item} />
                     </Draggable>
                   );
-                })
-              )}
+                })}
+              </Stack>
             </Stack>
-          </Box>
+          )}
           {place.lat?.trim() && place.lon?.trim() && (
             <Box sx={{ width: '100%', mt: 1, p: 1.75, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>

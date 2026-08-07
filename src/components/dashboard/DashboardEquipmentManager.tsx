@@ -7,6 +7,7 @@ import { EquipmentItem } from '@respond/types/operations';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
+import { DashboardDraggableContainer } from './DashboardDraggableContainer';
 import { EquipmentGrouping, EquipmentGroupToggleButton } from './DashboardEquipmentGroupToggleButton';
 import { DashboardSearchBox } from './DashboardSearchBox';
 
@@ -98,31 +99,14 @@ export function DashboardEquipmentManager() {
 
 function EquipmentTile({ item }: { item: EquipmentItem }) {
   return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        p: 1,
-        cursor: 'grab',
-        bgcolor: 'background.paper',
-        ':hover': {
-          bgcolor: 'grey.100',
-          // Targets the child element with class 'promote-button' when Stack is hovered
-          '& .promote-button': {
-            opacity: 1,
-            visibility: 'visible',
-          },
-        },
-      }}
-    >
+    <DashboardDraggableContainer variant="compact">
       <Stack direction="row" justifyContent="space-between">
         <Typography variant="subtitle2">{item.name}</Typography>
         <Typography variant="caption" color="text.secondary">
           {item.type}
         </Typography>
       </Stack>
-    </Box>
+    </DashboardDraggableContainer>
   );
 }
 
