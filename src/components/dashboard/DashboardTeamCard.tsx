@@ -51,12 +51,16 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDrop = (item: any, type: string, callback?: () => void) => {
+  const handleDrop = (item: any, type: string, callback?: (...args: any[]) => void) => {
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same team, cancel.
       if (team.assignedParticipants.includes(item.id)) return;
       addTeamMember(item);
     } else if (type === 'equipment') {
+      if (!!callback && item.type === 'Custom' && item.name === 'Custom Item') {
+        callback({ item, onSave: (newItem: EquipmentItem) => addEquipment(newItem) });
+        return;
+      }
       // If the item was dragged and dropped back to the same place, cancel.
       if (team.assignedEquipment.find((equipment) => item.uuid === equipment.uuid)) return;
       addEquipment(item);

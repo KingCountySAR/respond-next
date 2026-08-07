@@ -8,10 +8,12 @@ import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 import { DashboardDraggableContainer } from './DashboardDraggableContainer';
+import { DashboardEquipmentCreateDialog } from './DashboardEquipmentCreateDialog';
 import { EquipmentGrouping, EquipmentGroupToggleButton } from './DashboardEquipmentGroupToggleButton';
 import { DashboardSearchBox } from './DashboardSearchBox';
 
 const inventory = [
+  { id: 'inventory-0', type: 'Custom', name: 'Custom Item' },
   { id: 'inventory-1', type: 'Rigging', name: 'Anchor Rope (150)' },
   { id: 'inventory-2', type: 'Medical', name: 'Body Bag' },
   { id: 'inventory-3', type: 'Rigging', name: 'Climbing Rack' },
@@ -57,9 +59,15 @@ const checkOutEquipmentItem = (item: EquipmentItem): EquipmentItem => {
 
 type GroupedInventory = Record<string, EquipmentItem[]>;
 
+type EditingState = {
+  item: EquipmentItem;
+  onSave: (item: EquipmentItem) => void;
+};
+
 export function DashboardEquipmentManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [groupBy, setGroupBy] = useState<EquipmentGrouping>('Type');
+  const [editingState, setEditingState] = useState<EditingState | null>(null);
 
   const filteredEquipment = useMemo(() => {
     const q = (searchQuery || '').trim().toLowerCase();
@@ -86,16 +94,65 @@ export function DashboardEquipmentManager() {
     callback?.();
   };
 
+  const initializeCustomItem = (editingState: EditingState | undefined) => {
+    if (!editingState) return;
+    setEditingState(editingState);
+  };
+
+  const handleSaveEdit = (name: string) => {
+    editingState?.onSave({ ...editingState.item, name });
+    setEditingState(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingState(null);
+  };
+
+  function EquipmentAphabetical({ items }: { items: EquipmentItem[] }) {
+    return (
+      <>
+        {items.map((item) => (
+          <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)} callback={initializeCustomItem}>
+            <EquipmentTile item={item} />
+          </Draggable>
+        ))}
+      </>
+    );
+  }
+
+  function EquipmentGroups({ groups }: { groups: GroupedInventory }) {
+    return (
+      <>
+        {Object.entries(groups)
+          .sort(([leftGroupName], [rightGroupName]) => leftGroupName.localeCompare(rightGroupName))
+          .map(([groupName, list]) => (
+            <DashboardBoxWithTitle key={groupName} title={groupName} collapsible>
+              <Stack spacing={0.5}>
+                {list.map((item) => (
+                  <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)} callback={initializeCustomItem}>
+                    <EquipmentTile item={item} />
+                  </Draggable>
+                ))}
+              </Stack>
+            </DashboardBoxWithTitle>
+          ))}
+      </>
+    );
+  }
+
   return (
-    <Droppable accepts="equipment" onDrop={handleDrop} grow>
-      <Stack spacing={2} sx={{ overflow: 'auto' }}>
-        <Stack direction="row" spacing={1}>
-          <DashboardSearchBox onChange={setSearchQuery} />
-          <EquipmentGroupToggleButton onChange={(value) => setGroupBy(value)} />
+    <>
+      <Droppable accepts="equipment" onDrop={handleDrop} grow>
+        <Stack spacing={2} sx={{ overflow: 'auto' }}>
+          <Stack direction="row" spacing={1}>
+            <DashboardSearchBox onChange={setSearchQuery} />
+            <EquipmentGroupToggleButton onChange={(value) => setGroupBy(value)} />
+          </Stack>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pr: 0.5 }}>{groupBy === 'All' ? <EquipmentAphabetical items={filteredEquipment} /> : <EquipmentGroups groups={groupedEquipment} />}</Box>
         </Stack>
-        <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pr: 0.5 }}>{groupBy === 'All' ? <EquipmentAphabetical items={filteredEquipment} /> : <EquipmentGroups groups={groupedEquipment} />}</Box>
-      </Stack>
-    </Droppable>
+      </Droppable>
+      {!!editingState?.item && <DashboardEquipmentCreateDialog onSave={handleSaveEdit} onCancel={handleCancelEdit} />}
+    </>
   );
 }
 
@@ -109,35 +166,5 @@ function EquipmentTile({ item }: { item: EquipmentItem }) {
         </Typography>
       </Stack>
     </DashboardDraggableContainer>
-  );
-}
-
-function EquipmentAphabetical({ items }: { items: EquipmentItem[] }) {
-  return (
-    <>
-      {items.map((item) => (
-        <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)}>
-          <EquipmentTile item={item} />
-        </Draggable>
-      ))}
-    </>
-  );
-}
-
-function EquipmentGroups({ groups }: { groups: GroupedInventory }) {
-  return (
-    <>
-      {Object.entries(groups).map(([groupName, list]) => (
-        <DashboardBoxWithTitle key={groupName} title={groupName} collapsible>
-          <Stack spacing={0.5}>
-            {list.map((item) => (
-              <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)}>
-                <EquipmentTile item={item} />
-              </Draggable>
-            ))}
-          </Stack>
-        </DashboardBoxWithTitle>
-      ))}
-    </>
   );
 }
