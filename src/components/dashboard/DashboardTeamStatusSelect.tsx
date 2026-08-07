@@ -28,25 +28,29 @@ interface TeamStatusSelectProps {
   size?: 'small' | 'medium';
 }
 
+type CommsLogTeamStatus = TeamStatus | 'Subject Located';
+
 export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
   const dispatch = useAppDispatch();
   const activity = useActivityContext();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const logStatusChange = (status: TeamStatus) => {
-    const messages: Record<TeamStatus, string> = {
+  const logStatusChange = (status: CommsLogTeamStatus) => {
+    const messages: Record<CommsLogTeamStatus, string> = {
       'In Base': 'In Base',
-      'In Transit': 'With Transportation',
+      'In Transit': 'In Transit',
       'On Assignment': 'Starting Assignment',
       'On Scene': 'On Scene',
       'Returning To Base': 'RTB',
+      'Subject Located': 'Subject Located',
       Disbanded: 'Disbanded',
     };
     const comm: CommunicationsLogEntry = createNewCommsEntry({
       from: team.name,
       to: 'CP',
-      message: messages[status],
+      message: messages[status] ?? status,
       isAutomated: true,
+      isFavorite: status === 'Subject Located',
     });
     console.log('Logging status change:', comm); // Debugging log
     dispatch(ActivityActions.addComm(activity.id, comm));
@@ -125,8 +129,12 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
   const handleChange = (event: SelectChangeEvent<string>) => {
     const newStatus = event.target.value as TeamStatus;
     if (newStatus !== 'Disbanded') {
+      if (newStatus === 'On Scene' && !activity.teams.some((t) => t.status === 'On Scene')) {
+        logStatusChange('Subject Located');
+      } else {
+        logStatusChange(newStatus);
+      }
       dispatch(ActivityActions.updateTeam(activity.id, { ...team, status: newStatus }));
-      logStatusChange(newStatus);
       return;
     }
 
