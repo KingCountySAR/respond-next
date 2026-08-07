@@ -25,19 +25,20 @@ export function DashboardResponderManager() {
       .sort((a, b) => a.firstname.localeCompare(b.lastname));
   }, [activity]);
 
-  const setAssigned = (participant: Participant) => {
+  const setAssigned = (isSelf: boolean, participant: Participant) => {
+    if (isSelf) return; // If the participant is dragged from the Responders list to the Responders list, cancel.
     const update = { time: Date.now(), status: ParticipantStatus.Assigned, organizationId: participant.organizationId };
     dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
   };
 
-  const handleDrop = (participant: Participant, type: string, callback?: () => void) => {
+  const handleDrop = (participant: Participant, type: string, callback?: (isSelf: boolean) => void) => {
     // If the participant is not in Assigned status, do not overwrite the current status.
     if (participant.timeline[0].status === ParticipantStatus.Assigned) {
       // Update the Participant Status to Available
       const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
       dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
     }
-    callback?.();
+    callback?.(true);
   };
 
   return (
@@ -52,7 +53,7 @@ export function DashboardResponderManager() {
         ) : (
           availableParticipants.map((participant) => {
             return (
-              <Draggable key={participant.id} type="participant" item={participant} callback={() => setAssigned(participant)}>
+              <Draggable key={participant.id} type="participant" item={participant} callback={(isSelf: boolean) => setAssigned(isSelf, participant)}>
                 <DashboardParticipantCard key={participant.id} participant={participant} />
               </Draggable>
             );
