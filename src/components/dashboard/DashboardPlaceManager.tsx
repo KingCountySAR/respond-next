@@ -19,6 +19,7 @@ import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
+import { DashboardDividedSection } from './DashboardDividedSection';
 
 export function DashboardPlaceManager() {
   const dispatch = useAppDispatch();
@@ -194,11 +195,8 @@ function PlaceTile({ place }: { place: Place }) {
       <DashboardBoxWithTitle title={place.name} actions={actions} collapsible>
         <Stack spacing={1}>
           {!!place.assignedParticipants.length && (
-            <Stack spacing={0.75} sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-                Personnel
-              </Typography>
-              <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+            <DashboardDividedSection title="Personnel">
+              <Stack spacing={0.75}>
                 {!!place.assignedParticipants.length &&
                   participants.map((participant) => {
                     return (
@@ -208,14 +206,11 @@ function PlaceTile({ place }: { place: Place }) {
                     );
                   })}
               </Stack>
-            </Stack>
+            </DashboardDividedSection>
           )}
           {!!sortedTeamEquipment.length && (
-            <Stack spacing={0.75} sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-                Equipment
-              </Typography>
-              <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+            <DashboardDividedSection title="Equipment">
+              <Stack spacing={0.75}>
                 {sortedTeamEquipment.map((item) => {
                   return (
                     <Draggable
@@ -231,25 +226,19 @@ function PlaceTile({ place }: { place: Place }) {
                   );
                 })}
               </Stack>
-            </Stack>
+            </DashboardDividedSection>
           )}
           {place.lat?.trim() && place.lon?.trim() && (
-            <Box sx={{ width: '100%', mt: 1, px: 1.75, py: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                Coordinates
-              </Typography>
+            <DashboardDividedSection title="Coordinates">
               <DashboardCopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} />
-            </Box>
+            </DashboardDividedSection>
           )}
           {place.notes?.trim() && (
-            <Box sx={{ width: '100%', mt: 1, px: 1.75, py: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                Notes
-              </Typography>
+            <DashboardDividedSection title="Notes">
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                 {place.notes.trim()}
               </Typography>
-            </Box>
+            </DashboardDividedSection>
           )}
         </Stack>
       </DashboardBoxWithTitle>

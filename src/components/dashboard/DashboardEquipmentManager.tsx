@@ -46,7 +46,8 @@ const inventory = [
   { id: 'inventory-32', type: 'Medical', name: 'SAM Splint' },
   { id: 'inventory-33', type: 'General', name: 'Webbing' },
   { id: 'inventory-34', type: 'Medical', name: 'A.E.D - Basic' },
-  { id: 'inventory-34', type: 'Medical', name: 'A.E.D - EMT' },
+  { id: 'inventory-35', type: 'Medical', name: 'A.E.D - EMT' },
+  { id: 'inventory-36', type: 'Medical', name: 'Backboard' },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const checkOutEquipmentItem = (item: EquipmentItem): EquipmentItem => {
