@@ -11,11 +11,11 @@ import { CommunicationsLogEntry, createNewCommsEntry, createNewPlace, DEFAULT_PL
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
-import { CopyChip } from '../CopyChip';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { Stack } from '../Material';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
+import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
@@ -234,15 +234,15 @@ function PlaceTile({ place }: { place: Place }) {
             </Stack>
           )}
           {place.lat?.trim() && place.lon?.trim() && (
-            <Box sx={{ width: '100%', mt: 1, p: 1.75, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ width: '100%', mt: 1, px: 1.75, py: 1, borderTop: '1px solid', borderColor: 'divider' }}>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                 Coordinates
               </Typography>
-              <CopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} size="small" variant="outlined" sx={{ mt: 1 }} />
+              <DashboardCopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} />
             </Box>
           )}
           {place.notes?.trim() && (
-            <Box sx={{ width: '100%', mt: 1, p: 1.75, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ width: '100%', mt: 1, px: 1.75, py: 1, borderTop: '1px solid', borderColor: 'divider' }}>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                 Notes
               </Typography>
