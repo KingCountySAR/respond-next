@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
-export default function DashboardActivityDetails() {
+export function DashboardActivityDetails() {
   const activity = useActivityContext();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
