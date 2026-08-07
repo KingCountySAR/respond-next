@@ -31,10 +31,6 @@ export const { reloaded: locationsReloaded } = locationsSlice.actions;
 
 export default locationsSlice.reducer;
 
-export function buildLocationSelector(id?: string) {
-  return (state: RootState) => (id ? state.locations.list.find((a) => a.id === id) : undefined);
-}
-
 export function buildLocationsSelector() {
   return (state: RootState) => state.locations.list;
 }
