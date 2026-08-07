@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
-export default function DashboardClock() {
+export function DashboardClock() {
   const [clock, setClock] = useState(() => new Date());
 
   useEffect(() => {

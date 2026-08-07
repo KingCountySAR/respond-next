@@ -7,7 +7,7 @@ import { Reactor, ReactorContext } from './reactor';
 // The comms text that used to be hand-dispatched from DashboardTeamStatusSelect.
 const STATUS_MESSAGES: Record<TeamStatus, string> = {
   'In Base': 'In Base',
-  'In Transit': 'With Transportation',
+  'In Transit': 'In Transit',
   'On Assignment': 'Starting Assignment',
   'On Scene': 'On Scene',
   'Returning To Base': 'RTB',
@@ -33,7 +33,13 @@ export const teamCommsReactor: Reactor = {
 
       const comms: LogCommInput[] = [];
       if (prior?.status !== current.status) {
-        comms.push({ from: current.name, to: 'CP', message: STATUS_MESSAGES[current.status], isAutomated: true });
+        // The first team to reach On Scene is logged as "Subject Located" (favorited).
+        const teamsOnScene = ctx.currentActivities[activityId]?.teams?.filter((t) => t.status === 'On Scene').length ?? 0;
+        if (current.status === 'On Scene' && teamsOnScene === 1) {
+          comms.push({ from: current.name, to: 'CP', message: 'Subject Located', isAutomated: true, isFavorite: true });
+        } else {
+          comms.push({ from: current.name, to: 'CP', message: STATUS_MESSAGES[current.status], isAutomated: true });
+        }
       }
       if (prior?.gar !== current.gar) {
         comms.push({ from: current.name, to: 'CP', message: `${current.name} GAR changed to ${current.gar.toUpperCase()}`, isAutomated: true, isFavorite: current.gar !== 'green' });

@@ -42,7 +42,7 @@ export function DashboardResponderSummary() {
     <DashboardBoxWithTitle title="Responders" collapsible>
       {summaryLines.map(([label, count]) => (
         <Typography key={label} variant="subtitle1">
-          {`${label} (${count})`}
+          {`${count} - ${label}`}
         </Typography>
       ))}
     </DashboardBoxWithTitle>

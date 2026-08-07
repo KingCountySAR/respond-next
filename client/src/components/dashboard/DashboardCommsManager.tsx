@@ -10,12 +10,12 @@ import { useCommsCommands } from '@respond/lib/client/services/comms';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
-import { CopyChip } from '../CopyChip';
 import { Stack } from '../Material';
 
 import { CommsAutomatedToggleButton } from './DashboardCommsAutomatedToggleButton';
 import { DashboardCommsComposer } from './DashboardCommsComposer';
 import { CommsFavoriteToggleButton } from './DashboardCommsFavoriteToggleButton';
+import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardSearchBox } from './DashboardSearchBox';
 
 function format24HourTime(value: number) {
@@ -129,7 +129,7 @@ function DashboardCommsEntry({ entry, onEdit, onFavorite, onDelete }: { entry: C
       <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
         {entry.message}
       </Typography>
-      {!!copyValues.length && copyValues.map((value) => <CopyChip key={value} value={value} size="small" variant="outlined" sx={{ mt: 1 }} />)}
+      {!!copyValues.length && copyValues.map((value) => <DashboardCopyChip key={value} value={value} />)}
     </Box>
   );
 }

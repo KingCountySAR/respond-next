@@ -10,11 +10,12 @@ import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefa
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
-import { CopyChip } from '../CopyChip';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { Stack } from '../Material';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
+import { DashboardCopyChip } from './DashboardCopyChip';
+import { DashboardDividedSection } from './DashboardDividedSection';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
@@ -132,12 +133,16 @@ function PlaceTile({ place }: { place: Place }) {
   const actions = isDefaultPlace(place) ? [editAction] : [editAction, deleteAction];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDrop = (item: any, type: string, callback?: () => void) => {
+  const handleDrop = (item: any, type: string, callback?: (...args: any[]) => void) => {
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same place, cancel.
       if (place.assignedParticipants.includes(item.id)) return;
       addTeamMember(item);
     } else if (type === 'equipment') {
+      if (!!callback && item.type === 'Custom' && item.name === 'Custom Item') {
+        callback({ item, onSave: (newItem: EquipmentItem) => addEquipment(newItem) });
+        return;
+      }
       // If the item was dragged and dropped back to the same place, cancel.
       if (place.assignedEquipment.find((equipment) => item.uuid === equipment.uuid)) return;
       addEquipment(item);
@@ -175,37 +180,23 @@ function PlaceTile({ place }: { place: Place }) {
     <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
       <DashboardBoxWithTitle title={place.name} actions={actions} collapsible>
         <Stack spacing={1}>
-          <Box sx={{ flex: 1, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-              Personnel
-            </Typography>
-            <Stack spacing={0.75} sx={{ mt: 0.5 }}>
-              {place.assignedParticipants.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
-                  None
-                </Typography>
-              ) : (
-                participants.map((participant) => {
+          {!!place.assignedParticipants.length && (
+            <DashboardDividedSection title="Personnel">
+              <Stack spacing={0.75}>
+                {participants.map((participant) => {
                   return (
                     <Draggable key={participant.id} type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
                       <DashboardTeamMember key={participant.id} participant={participant} />
                     </Draggable>
                   );
-                })
-              )}
-            </Stack>
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-              Equipment
-            </Typography>
-            <Stack spacing={0.75} sx={{ mt: 0.5 }}>
-              {sortedTeamEquipment.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
-                  None
-                </Typography>
-              ) : (
-                sortedTeamEquipment.map((item) => {
+                })}
+              </Stack>
+            </DashboardDividedSection>
+          )}
+          {!!sortedTeamEquipment.length && (
+            <DashboardDividedSection title="Equipment">
+              <Stack spacing={0.75}>
+                {sortedTeamEquipment.map((item) => {
                   return (
                     <Draggable
                       key={item.uuid}
@@ -218,27 +209,21 @@ function PlaceTile({ place }: { place: Place }) {
                       <DashboardTeamEquipment key={item.uuid} item={item} />
                     </Draggable>
                   );
-                })
-              )}
-            </Stack>
-          </Box>
+                })}
+              </Stack>
+            </DashboardDividedSection>
+          )}
           {place.lat?.trim() && place.lon?.trim() && (
-            <Box sx={{ width: '100%', mt: 1, p: 1.75, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                Coordinates
-              </Typography>
-              <CopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} size="small" variant="outlined" sx={{ mt: 1 }} />
-            </Box>
+            <DashboardDividedSection title="Coordinates">
+              <DashboardCopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} />
+            </DashboardDividedSection>
           )}
           {place.notes?.trim() && (
-            <Box sx={{ width: '100%', mt: 1, p: 1.75, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                Notes
-              </Typography>
+            <DashboardDividedSection title="Notes">
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                 {place.notes.trim()}
               </Typography>
-            </Box>
+            </DashboardDividedSection>
           )}
         </Stack>
       </DashboardBoxWithTitle>

@@ -4,7 +4,8 @@ import React, { createContext, ReactNode, useContext, useState } from 'react';
 export interface DraggedItem<T = any> {
   type: string;
   data: T;
-  callback?: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  callback?: (...args: any[]) => void;
   previewNode?: ReactNode;
 }
 

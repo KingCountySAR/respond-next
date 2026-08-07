@@ -92,6 +92,19 @@ describe('teamCommsReactor', () => {
     expect(garComm && CommsCommands.LogComm.match(garComm) && garComm.payload.entry.isFavorite).toBe(true);
   });
 
+  it('logs "Subject Located" (favorited) for the first team to reach On Scene', async () => {
+    const before = withTeam('green', 'In Base');
+    const after = withTeam('green', 'On Assignment');
+    after.activity.teams[0].id = before.teamId;
+    after.activity.teams[0].status = 'On Scene'; // first (only) team on scene
+    const ctx: ReactorContext = { priorActivities: { [activityId]: before.activity }, currentActivities: { [activityId]: after.activity } };
+
+    const [command] = await teamCommsReactor.react(TeamEvents.TeamUpdated(activityId, { id: before.teamId, status: 'On Scene' }), ctx);
+    if (!CommsCommands.LogComm.match(command)) throw new Error('expected LogComm');
+    expect(command.payload.entry.message).toBe('Subject Located');
+    expect(command.payload.entry.isFavorite).toBe(true);
+  });
+
   it('emits nothing when neither status nor gar changed', async () => {
     const before = withTeam('green', 'In Base');
     const after = withTeam('green', 'In Base');
