@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 export type EquipmentGrouping = 'All' | 'Type';
 
 export function EquipmentGroupToggleButton({ onChange }: { onChange: (grouping: EquipmentGrouping) => void }): JSX.Element {
-  const [selected, setSelected] = useState<EquipmentGrouping>('All');
+  const [selected, setSelected] = useState<EquipmentGrouping>('Type');
 
   const handleToggle = (): void => {
     const nextValue: EquipmentGrouping = selected === 'All' ? 'Type' : 'All';

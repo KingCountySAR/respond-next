@@ -48,6 +48,7 @@ const inventory = [
   { id: 'inventory-34', type: 'Medical', name: 'A.E.D - Basic' },
   { id: 'inventory-35', type: 'Medical', name: 'A.E.D - EMT' },
   { id: 'inventory-36', type: 'Medical', name: 'Backboard' },
+  { id: 'inventory-37', type: 'Rigging', name: 'Bolt Kit' },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const checkOutEquipmentItem = (item: EquipmentItem): EquipmentItem => {
@@ -58,7 +59,7 @@ type GroupedInventory = Record<string, EquipmentItem[]>;
 
 export function DashboardEquipmentManager() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [groupBy, setGroupBy] = useState<EquipmentGrouping>('All');
+  const [groupBy, setGroupBy] = useState<EquipmentGrouping>('Type');
 
   const filteredEquipment = useMemo(() => {
     const q = (searchQuery || '').trim().toLowerCase();

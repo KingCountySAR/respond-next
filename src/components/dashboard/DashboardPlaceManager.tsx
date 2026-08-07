@@ -16,10 +16,10 @@ import { Stack } from '../Material';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 import { DashboardCopyChip } from './DashboardCopyChip';
+import { DashboardDividedSection } from './DashboardDividedSection';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
-import { DashboardDividedSection } from './DashboardDividedSection';
 
 export function DashboardPlaceManager() {
   const dispatch = useAppDispatch();
