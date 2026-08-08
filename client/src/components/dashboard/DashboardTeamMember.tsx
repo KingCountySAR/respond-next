@@ -15,9 +15,13 @@ export function DashboardTeamMember({ participant, onPromote }: { participant: P
     <DashboardDraggableContainer variant="compact" sx={{ bgcolor: participantStatus !== ParticipantStatus.Assigned ? '#f0bcbc' : 'background.paper' }}>
       <Stack
         direction="row"
+        justifyContent="space-between"
         alignItems="center"
         spacing={1}
         sx={{
+          flex: 1,
+          minWidth: 0,
+          width: '100%',
           ':hover': {
             // Targets the child element with class 'promote-button' when Stack is hovered
             '& .promote-button': {

@@ -160,7 +160,7 @@ export function DashboardEquipmentManager() {
 function EquipmentTile({ item }: { item: EquipmentItem }) {
   return (
     <DashboardDraggableContainer variant="compact">
-      <Stack direction="row" justifyContent="space-between">
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ flex: 1, minWidth: 0, width: '100%' }}>
         <Typography variant="subtitle2">{item.name}</Typography>
         <Typography variant="caption" color="text.secondary">
           {item.type}

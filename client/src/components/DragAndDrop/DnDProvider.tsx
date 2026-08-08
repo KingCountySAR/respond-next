@@ -7,6 +7,7 @@ export interface DraggedItem<T = any> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   callback?: (...args: any[]) => void;
   previewNode?: ReactNode;
+  previewOffset?: Position;
 }
 
 export interface Position {
@@ -32,8 +33,22 @@ export const DnDProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Locks pointer events to this element even if pointer moves outside it
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
+    const currentTarget = e.currentTarget as HTMLElement;
+    const containerRect = currentTarget.getBoundingClientRect();
+    const handle = currentTarget.querySelector<HTMLElement>('.drag-handle');
+    const handleRect = handle?.getBoundingClientRect();
+    const previewOffset = handleRect
+      ? {
+          x: handleRect.left + handleRect.width / 2 - containerRect.left,
+          y: handleRect.top + handleRect.height / 2 - containerRect.top,
+        }
+      : {
+          x: containerRect.width / 2,
+          y: containerRect.height / 2,
+        };
+
     setActiveItem(item);
-    setPosition({ x: e.clientX, y: e.clientY });
+    setPosition({ x: e.clientX - previewOffset.x, y: e.clientY - previewOffset.y });
   };
 
   const updateDrag = (e: React.PointerEvent<HTMLElement>) => {
@@ -67,7 +82,7 @@ export const DnDProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             position: 'fixed',
             top: 0,
             left: 0,
-            transform: `translate3d(${position.x - 20}px, ${position.y - 20}px, 0)`,
+            transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
             pointerEvents: 'none',
             zIndex: 9999,
             opacity: 0.9,

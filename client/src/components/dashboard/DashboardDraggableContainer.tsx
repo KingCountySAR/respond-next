@@ -1,5 +1,5 @@
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import { Box, SxProps, Theme } from '@mui/material';
+import { Box, Stack, SxProps, Theme } from '@mui/material';
 import { ReactNode } from 'react';
 
 type DashboardDraggableContainerProps = {
@@ -13,16 +13,19 @@ export function DashboardDraggableContainer({ children, sx, showHandle = true, v
   const isCompact = variant === 'compact';
 
   return (
-    <Box
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="flex-start"
+      spacing={isCompact ? 0.5 : 1}
       sx={[
         {
-          position: 'relative',
+          width: '100%',
+          minWidth: 0,
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: 2,
-          py: isCompact ? 0.75 : 1,
-          pr: 1,
-          pl: showHandle ? (isCompact ? 3 : 3.25) : 1,
+          p: isCompact ? 0.5 : 1,
           cursor: 'grab',
           bgcolor: 'background.paper',
           boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
@@ -37,14 +40,14 @@ export function DashboardDraggableContainer({ children, sx, showHandle = true, v
           },
           ':active': {
             cursor: 'grabbing',
-            transform: 'scale(0.995)',
+            transform: 'scale(0.9)',
           },
         },
         ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}
     >
-      {showHandle && <DragIndicatorIcon className="drag-handle" sx={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: isCompact ? 14 : 16, color: 'text.secondary', opacity: 0.55 }} />}
+      {showHandle && <DragIndicatorIcon className="drag-handle" sx={{ fontSize: isCompact ? 14 : 16, color: 'text.secondary', opacity: 0.55 }} />}
       {children}
-    </Box>
+    </Stack>
   );
 }
