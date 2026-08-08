@@ -57,9 +57,9 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
   };
 
   return (
-    <Box sx={{ borderColor: 'divider', p: entry ? 2 : 1, mt: entry ? 0 : 2, flexShrink: 0, bgcolor: entry ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined }}>
+    <Box sx={{ borderColor: 'divider', p: 0.5, mt: entry ? 0 : 0.5, flexShrink: 0, bgcolor: entry ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined }}>
       <form onSubmit={handleSubmit(submit)}>
-        <Stack spacing={2}>
+        <Stack spacing={1}>
           <Stack direction={{ xl: 'row' }} alignItems={{ xs: 'stretch', xl: 'center' }} gap={2}>
             <TextField label="From" size="small" inputRef={fromRef} {...register('from')} />
             <TextField label="To" size="small" {...register('to')} />
