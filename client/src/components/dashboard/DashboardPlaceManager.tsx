@@ -51,7 +51,7 @@ export function DashboardPlaceManager() {
       <Stack spacing={1} sx={{ overflow: 'auto' }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
           <Box />
-          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAddingPlace(createNewPlace('New Place'))}>
+          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAddingPlace(createNewPlace(''))}>
             Add
           </Button>
         </Stack>
