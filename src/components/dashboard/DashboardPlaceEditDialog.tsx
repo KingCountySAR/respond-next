@@ -35,7 +35,7 @@ const createResolver = (activity: Activity, placeId: string): Resolver<FormValue
       errors.name = { type: 'required', message: 'Name is required' };
     }
 
-    const hasDuplicate = activity.places.some((place) => place.id !== placeId && place.name.trim().toLowerCase() === normalizedValues.name.toLowerCase());
+    const hasDuplicate = (activity.places ?? []).some((place) => place.id !== placeId && place.name.trim().toLowerCase() === normalizedValues.name.toLowerCase());
     if (hasDuplicate) {
       errors.name = { type: 'duplicate', message: 'Place name already exists' };
     }

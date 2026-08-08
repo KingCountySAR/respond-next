@@ -64,9 +64,10 @@ export function DashboardTeamManager() {
 
   const activity = useActivityContext();
   const [expandedAll, setExpandedAll] = useState(false);
+  const teams = activity.teams ?? [];
 
   const addTeam = () => {
-    const nextTeamNumber = getNextTeamNumber(activity.teams);
+    const nextTeamNumber = getNextTeamNumber(teams);
     dispatch(ActivityActions.createTeam(activity.id, createNewTeam(`Team ${nextTeamNumber}`)));
   };
 
@@ -86,8 +87,8 @@ export function DashboardTeamManager() {
       </Stack>
       <Box sx={{ flex: 1, width: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
         <Stack direction="column" spacing={1} sx={{ minHeight: 0, flex: 1 }}>
-          {activity.teams?.length ? (
-            [...activity.teams].sort(sortTeams).map((team) => {
+          {teams.length ? (
+            [...teams].sort(sortTeams).map((team) => {
               return <DashboardTeamCard key={team.id} team={team} defaultExpanded={expandedAll} />;
             })
           ) : (

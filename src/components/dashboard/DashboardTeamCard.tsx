@@ -102,7 +102,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   };
 
   const updateTeam = (team: Team) => {
-    const originalTeam = activity.teams.find((t) => t.id === team.id);
+    const originalTeam = (activity.teams ?? []).find((t) => t.id === team.id);
     if (team.gar !== originalTeam?.gar) {
       autoLog(`${team.name} GAR changed to ${team.gar.toUpperCase()}`, team.gar !== 'green');
     }
@@ -235,7 +235,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
       </Droppable>
       <DashboardTeamEditDialog
         team={openTeamEditor}
-        teams={activity.teams}
+        teams={activity.teams ?? []}
         onSave={(team) => {
           updateTeam(team);
           setOpenTeamEditor(null);

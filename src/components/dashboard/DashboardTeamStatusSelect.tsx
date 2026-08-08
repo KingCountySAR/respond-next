@@ -93,7 +93,7 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
   const disbandWithReassign = () => {
     const fieldPlace = activity.places?.find((place) => place.name === DEFAULT_PLACES.field);
     const mergedParticipants = Array.from(new Set([...(fieldPlace?.assignedParticipants ?? []), ...team.assignedParticipants]));
-    const existingEquipmentIds = new Set(fieldPlace?.assignedEquipment.map((item) => item.uuid));
+    const existingEquipmentIds = new Set((fieldPlace?.assignedEquipment ?? []).map((item) => item.uuid));
     const mergedEquipment = [...(fieldPlace?.assignedEquipment ?? []), ...team.assignedEquipment.filter((item) => !existingEquipmentIds.has(item.uuid))];
 
     const updatedFieldPlace = fieldPlace
@@ -129,7 +129,7 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
   const handleChange = (event: SelectChangeEvent<string>) => {
     const newStatus = event.target.value as TeamStatus;
     if (newStatus !== 'Disbanded') {
-      if (newStatus === 'On Scene' && !activity.teams.some((t) => t.status === 'On Scene')) {
+      if (newStatus === 'On Scene' && !(activity.teams ?? []).some((t) => t.status === 'On Scene')) {
         logStatusChange('Subject Located');
       } else {
         logStatusChange(newStatus);
