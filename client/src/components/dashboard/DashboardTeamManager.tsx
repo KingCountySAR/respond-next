@@ -59,7 +59,7 @@ const sortTeams = (left: Team, right: Team) => {
 };
 
 export function DashboardTeamManager() {
-  const teams = useTeamCommands();
+  const teamCommands = useTeamCommands();
 
   const activity = useActivityContext();
   const [expandedAll, setExpandedAll] = useState(false);
@@ -67,7 +67,7 @@ export function DashboardTeamManager() {
 
   const addTeam = () => {
     const nextTeamNumber = getNextTeamNumber(teams);
-    teams.createTeam(activity.id, createNewTeam(`Team ${nextTeamNumber}`));
+    teamCommands.createTeam(activity.id, createNewTeam(`Team ${nextTeamNumber}`));
   };
 
   const toggleAll = () => {
