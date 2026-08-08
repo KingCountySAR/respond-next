@@ -16,14 +16,18 @@ export function DashboardResponderManager() {
 
   const activity = useActivityContext();
 
+  const teams = useMemo(() => {
+    return Object.values(activity.teams ?? []).filter((team) => team.status !== 'Disbanded');
+  }, [activity]);
+
   const availableParticipants = useMemo(() => {
-    const assignedParticipants = activity.teams.flatMap((team) => team.assignedParticipants.map((id) => id));
+    const assignedParticipants = teams.flatMap((team) => team.assignedParticipants.map((id) => id));
     return Object.values(activity.participants)
       .filter((participant) => {
         return participant.timeline[0].status === ParticipantStatus.Available && !assignedParticipants.includes(participant.id);
       })
       .sort((a, b) => a.firstname.localeCompare(b.lastname));
-  }, [activity]);
+  }, [activity, teams]);
 
   const setAssigned = (isSelf: boolean, participant: Participant) => {
     if (isSelf) return; // If the participant is dragged from the Responders list to the Responders list, cancel.
