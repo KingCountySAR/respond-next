@@ -44,7 +44,7 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
           if (!collapsible) return;
           setCollapsed((current) => !current);
         }}
-        sx={{ cursor: 'pointer', pb: collapsed ? 0 : 1 }}
+        sx={{ cursor: 'pointer', pb: !collapsible || collapsed ? 0 : 1 }}
       >
         <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
         <Stack direction="row" alignItems="center">

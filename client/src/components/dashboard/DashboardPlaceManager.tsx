@@ -176,13 +176,20 @@ function PlaceTile({ place }: { place: Place }) {
     places.updatePlace(activity.id, updated);
   };
 
+  const hasContent = (
+    place.assignedParticipants.length > 0 ||
+    place.assignedEquipment.length > 0 ||
+    (place.lat?.trim() && place.lon?.trim()) ||
+    (place.notes?.trim() && place.notes.trim().length > 0)
+  );
+
   return (
     <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
-      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible>
+      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible={!!hasContent}>
         <Stack spacing={1}>
           {!!place.assignedParticipants.length && (
             <DashboardDividedSection title="Personnel">
-              <Stack spacing={0.75}>
+              <Stack spacing={0.5}>
                 {participants.map((participant) => {
                   return (
                     <Draggable key={participant.id} type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
@@ -195,7 +202,7 @@ function PlaceTile({ place }: { place: Place }) {
           )}
           {!!sortedTeamEquipment.length && (
             <DashboardDividedSection title="Equipment">
-              <Stack spacing={0.75}>
+              <Stack spacing={0.5}>
                 {sortedTeamEquipment.map((item) => {
                   return (
                     <Draggable
