@@ -19,6 +19,8 @@ export class ClientSync {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private dispatch: AppDispatch = undefined as any;
   private socket: Socket<ServerToClientEvents, ClientToServerEvents>;
+  private started = false;
+  private unsubscribeListeners: Array<() => void> = [];
 
   constructor(store: AppStore) {
     this.socket = io('/', {
@@ -50,9 +52,14 @@ export class ClientSync {
   }
 
   async start() {
+    if (this.started) {
+      return;
+    }
+    this.started = true;
+
     console.log('starting sync');
     // When we log in/out, we should restart the socket connection.
-    this.dispatch(
+    const authListener = this.dispatch(
       addAppListener({
         matcher: isAnyOf(AuthActions.set, AuthActions.logout.fulfilled),
         effect: () => {
@@ -60,10 +67,11 @@ export class ClientSync {
         },
       }),
     );
+    this.unsubscribeListeners.push(authListener as unknown as () => void);
 
     // Commands (intent) are forwarded to the server, never reduced locally. The
     // authoritative event comes back over the socket and is applied then.
-    this.dispatch(
+    const commandListener = this.dispatch(
       addAppListener({
         predicate: (action) => isCommand(action),
         effect: (action) => {
@@ -71,10 +79,11 @@ export class ClientSync {
         },
       }),
     );
+    this.unsubscribeListeners.push(commandListener as unknown as () => void);
 
     // Cache the activities list to localStorage so a reload can render immediately,
     // on the initial snapshot (reload) and on activity summary changes.
-    this.dispatch(
+    const cacheListener = this.dispatch(
       addAppListener({
         matcher: isAnyOf(activitiesReloaded, ActivityEvents.ActivityUpdated),
         effect: (_action, listenerApi) => {
@@ -93,12 +102,30 @@ export class ClientSync {
         },
       }),
     );
+    this.unsubscribeListeners.push(cacheListener as unknown as () => void);
 
     if (localStorage.activities) {
       this.dispatch(activitiesReloaded(JSON.parse(localStorage.activities)));
     }
 
     await this.restart();
+  }
+
+  stop() {
+    if (!this.started) {
+      return;
+    }
+
+    this.started = false;
+
+    for (const unsubscribe of this.unsubscribeListeners) {
+      unsubscribe();
+    }
+    this.unsubscribeListeners = [];
+
+    if (this.socket.connected) {
+      this.socket.disconnect();
+    }
   }
 
   async restart() {

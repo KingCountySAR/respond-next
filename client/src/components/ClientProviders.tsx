@@ -29,6 +29,10 @@ export default function ClientProviders({ googleClient, config, user, myOrg, chi
   useEffect(() => {
     console.log('ClientProviders mounting ...');
     sync.start();
+
+    return () => {
+      sync.stop();
+    };
   }, [sync]);
 
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
