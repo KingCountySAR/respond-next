@@ -4,7 +4,7 @@ import { Box, Chip, Divider, IconButton, Stack, Typography } from '@mui/material
 import { useEffect, useState } from 'react';
 
 import { useTeamCommands } from '@respond/lib/client/services/teams';
-import { Participant } from '@respond/shared/types/activity';
+import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { EquipmentItem, Team } from '@respond/shared/types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
@@ -15,6 +15,7 @@ import { DashboardTeamEditDialog } from './DashboardTeamEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
 import { TeamStatusSelect } from './DashboardTeamStatusSelect';
+import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 
 const sortParicipantsAlphabetically = (left: Participant, right: Participant) => {
   return `${left.firstname} ${left.lastname}`.localeCompare(`${right.firstname} ${right.lastname}`);
@@ -48,6 +49,8 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   const updateTeamLeader = (newLeaderId: string) => {
     teams.updateTeam(activity.id, { ...team, teamLeaderParticipantId: newLeaderId });
   };
+
+  const hasTeamMemberError = teamParticipants.some((participant) => participant.timeline?.[0]?.status !== ParticipantStatus.Assigned);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDrop = (item: any, type: string, callback?: (...args: any[]) => void) => {
@@ -130,6 +133,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                   <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer' }} onClick={() => setOpenTeamEditor(team)}>
                     {team.name}
                   </Typography>
+                  <DashboardErrorIndicator message={hasTeamMemberError ? 'One or more team members are not assigned to the activity.' : undefined} size={16} />
                   {teamLeader && (
                     <Draggable type="participant" item={teamLeader} callback={() => removeTeamMember(teamLeader.id)}>
                       <DashboardTeamMember key={teamLeader.id} participant={teamLeader} />

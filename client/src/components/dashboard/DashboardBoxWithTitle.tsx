@@ -2,12 +2,14 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, IconButton, Stack, SxProps, Theme, Typography } from '@mui/material';
 import React, { useState } from 'react';
+import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 
 interface DashboardBoxWithTitleProps {
   title: string;
   actions?: DashboardBoxWithTitleAction[];
   collapsible?: boolean;
   children: React.ReactNode;
+  adornment?: React.ReactNode;
   sx?: SxProps<Theme>;
 }
 
@@ -17,7 +19,7 @@ interface DashboardBoxWithTitleAction {
   onClick: () => void;
 }
 
-export function DashboardBoxWithTitle({ title, actions = [], collapsible = false, children, sx }: DashboardBoxWithTitleProps): JSX.Element {
+export function DashboardBoxWithTitle({ title, actions = [], collapsible = false, children, adornment, sx }: DashboardBoxWithTitleProps): JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -46,7 +48,10 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
         }}
         sx={{ cursor: 'pointer', pb: !collapsible || collapsed ? 0 : 1 }}
       >
-        <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
+          {adornment}
+        </Stack>
         <Stack direction="row" alignItems="center">
           <Stack direction="row" sx={{ visibility: hovered ? 'visible' : 'hidden' }}>
             {actions.map((action) => (
