@@ -120,7 +120,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
     <>
       <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
         <StatusContainer color={team.status === 'Disbanded' ? 'grey' : statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1.5, bgcolor: 'background.paper', height: '100%' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Stack direction="row" alignItems="center">
                 <IconButton onClick={handleExpandClick} size="small" sx={{ width: 32, height: 32 }}>
