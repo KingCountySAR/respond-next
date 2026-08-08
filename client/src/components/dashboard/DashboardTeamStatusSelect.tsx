@@ -72,7 +72,7 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
   const disbandWithReassign = () => {
     const fieldPlace = activity.places?.find((place) => place.name === DEFAULT_PLACES.field);
     const mergedParticipants = Array.from(new Set([...(fieldPlace?.assignedParticipants ?? []), ...team.assignedParticipants]));
-    const existingEquipmentIds = new Set(fieldPlace?.assignedEquipment.map((item) => item.uuid));
+    const existingEquipmentIds = new Set((fieldPlace?.assignedEquipment ?? []).map((item) => item.uuid));
     const mergedEquipment = [...(fieldPlace?.assignedEquipment ?? []), ...team.assignedEquipment.filter((item) => !existingEquipmentIds.has(item.uuid))];
 
     const updatedFieldPlace = fieldPlace

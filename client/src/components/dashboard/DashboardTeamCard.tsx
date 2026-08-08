@@ -220,7 +220,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
       </Droppable>
       <DashboardTeamEditDialog
         team={openTeamEditor}
-        teams={activity.teams}
+        teams={activity.teams ?? []}
         onSave={(team) => {
           updateTeam(team);
           setOpenTeamEditor(null);
