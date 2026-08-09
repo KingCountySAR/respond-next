@@ -1,7 +1,7 @@
-import { Participant } from '@respond/shared/types/activity';
 import { useState } from 'react';
 
 import { useParticipantCommands } from '@respond/lib/client/services/participants';
+import { Participant } from '@respond/shared/types/activity';
 
 import { Button, Stack } from '../Material';
 

@@ -2,11 +2,11 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, Button, Typography } from '@mui/material';
-import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 import React, { useEffect, useState } from 'react';
 
 import { usePlaceCommands } from '@respond/lib/client/services/places';
+import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
+import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';

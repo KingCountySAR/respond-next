@@ -50,6 +50,14 @@ export default tseslint.config(
         'error',
         {
           groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'unknown'],
+          // The @respond/* workspaces are internal to this repo (never published
+          // separately), so group them all in `internal` rather than letting
+          // @respond/shared fall into `external` beside node_modules like react.
+          pathGroups: [{ pattern: '@respond/**', group: 'internal', position: 'before' }],
+          // @respond/shared resolves via a node_modules symlink (import type
+          // `external`), so it must be exempted from the default exclusion for
+          // the pathGroup above to take effect.
+          pathGroupsExcludedImportTypes: ['builtin', 'object'],
           'newlines-between': 'always',
           alphabetize: {
             order: 'asc',

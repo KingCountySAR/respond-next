@@ -2,7 +2,6 @@ import AnnouncementIcon from '@mui/icons-material/Announcement';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
-import { getStatusText, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/shared/types/activity';
 import { format as formatDate } from 'date-fns';
 import { ReactNode, useState } from 'react';
 
@@ -11,6 +10,7 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
+import { getStatusText, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/shared/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 

@@ -1,8 +1,8 @@
 import { Box } from '@mui/material';
-import { createNewLocation, Location } from '@respond/shared/types/location';
 import { useState } from 'react';
 
 import { useLocationCommands } from '@respond/lib/client/services/locations';
+import { createNewLocation, Location } from '@respond/shared/types/location';
 
 import { Button, Paper, Stack, Typography } from '../Material';
 import { ToolbarPage } from '../ToolbarPage';

@@ -3,7 +3,6 @@ import AddLocation from '@mui/icons-material/AddLocation';
 import Edit from '@mui/icons-material/Edit';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
-import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/shared/types/activity';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 import { useLocation } from 'wouter';
@@ -12,6 +11,7 @@ import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useActivityCommands } from '@respond/lib/client/services/activity';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
+import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/shared/types/activity';
 
 import { LocationAutocomplete } from '../locations/LocationAutocomplete';
 import { LocationEditDialog } from '../locations/LocationEditDialog';

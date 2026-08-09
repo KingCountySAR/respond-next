@@ -1,12 +1,12 @@
 import AccessTime from '@mui/icons-material/AccessTime';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-import { ParticipantCommands } from '@respond/shared/commands';
 import { format as formatDate } from 'date-fns';
 import { useEffect, useState } from 'react';
 
 import { useDebounce } from '@respond/hooks/useDebounce';
 import { useAppDispatch } from '@respond/lib/client/store';
+import { ParticipantCommands } from '@respond/shared/commands';
 
 import { InlineTimeEdit } from '../InlineTimeEdit';
 import { Button, IconButton, Stack, Typography } from '../Material';

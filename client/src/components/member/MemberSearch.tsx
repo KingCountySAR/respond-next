@@ -1,12 +1,12 @@
 import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import TextField from '@mui/material/TextField';
-import { MemberInfo } from '@respond/shared/types/member';
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 
 import { useDebounce } from '@respond/hooks/useDebounce';
 import { apiFetch } from '@respond/lib/api';
+import { MemberInfo } from '@respond/shared/types/member';
 
 type TextFieldVariant = 'filled' | 'outlined' | 'standard';
 

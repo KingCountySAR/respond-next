@@ -1,4 +1,5 @@
 import { Typography } from '@mui/material';
+
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';

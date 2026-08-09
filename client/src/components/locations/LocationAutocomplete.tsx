@@ -1,9 +1,9 @@
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
-import { Location } from '@respond/shared/types/location';
 import { useEffect, useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildLocationsSelector } from '@respond/lib/client/store/locations';
+import { Location } from '@respond/shared/types/location';
 
 type TextFieldVariant = 'filled' | 'outlined' | 'standard';
 

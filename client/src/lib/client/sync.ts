@@ -1,9 +1,10 @@
 import { Action, isAnyOf } from '@reduxjs/toolkit';
+import io, { Socket } from 'socket.io-client';
+
 import { type ActivityState, filterInitialActivities, type LocationState } from '@respond/shared';
 import { Command, isCommand } from '@respond/shared/commands';
 import { ActivityEvents, type StampedEvent } from '@respond/shared/events';
 import type { ClientToServerEvents, ServerToClientEvents } from '@respond/shared/types/syncSocket';
-import io, { Socket } from 'socket.io-client';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
 import { activitiesReloaded } from './store/activities';

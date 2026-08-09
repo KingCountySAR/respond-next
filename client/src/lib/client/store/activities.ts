@@ -1,8 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { hoursToMilliseconds } from 'date-fns';
+
 import { ActivityState, BasicEventReducers } from '@respond/shared';
 import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
 import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
-import { hoursToMilliseconds } from 'date-fns';
 
 import { ReducerBuilderStub } from '../types';
 

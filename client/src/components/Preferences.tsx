@@ -1,8 +1,8 @@
 import { Button, DialogContent, DialogTitle, FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack, TextField } from '@mui/material';
-import { NavigationApp, PerferencesState } from '@respond/shared/types/preferences';
 import { Controller, useForm } from 'react-hook-form';
 
 import { DialogWithHistory } from '@respond/components/Material';
+import { NavigationApp, PerferencesState } from '@respond/shared/types/preferences';
 
 import { MobilePageId } from './activities/MobileActivityPage';
 import { usePreferences, useSetPreferences } from './PreferencesProvider';

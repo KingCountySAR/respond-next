@@ -4,10 +4,10 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 import { useMemo, useState } from 'react';
 
 import { useCommsCommands } from '@respond/lib/client/services/comms';
+import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Stack } from '../Material';

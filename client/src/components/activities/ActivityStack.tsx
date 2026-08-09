@@ -1,9 +1,9 @@
 import { Box, Stack, Typography } from '@mui/material';
-import { Activity, ActivityType, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { ActivityTile } from '@respond/components/activities/ActivityTile';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { getActiveParticipants, getActivityStatus, isFuture } from '@respond/lib/client/store/activities';
+import { Activity, ActivityType, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { RelativeStyle } from '../RelativeTimeText';
 

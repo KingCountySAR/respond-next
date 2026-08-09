@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
 import { BasicLocationEventReducers, LocationState } from '@respond/shared';
 import { LocationEvents } from '@respond/shared/events';
 

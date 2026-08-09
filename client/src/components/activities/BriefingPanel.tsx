@@ -1,9 +1,9 @@
 import { SxProps } from '@mui/material/styles';
-import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { Paper } from '@respond/components/Material';
 import { OutputForm, OutputLink, OutputLinkified, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { getActivityStatus } from '@respond/lib/client/store/activities';
+import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { RelativeStyle } from '../RelativeTimeText';
 

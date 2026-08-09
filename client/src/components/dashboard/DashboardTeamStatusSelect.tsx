@@ -1,11 +1,11 @@
 import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
-import { ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '@respond/shared/types/operations';
 import React, { useState } from 'react';
 
 import { useParticipantCommands } from '@respond/lib/client/services/participants';
 import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { ParticipantStatus } from '@respond/shared/types/activity';
+import { createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';

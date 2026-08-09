@@ -1,9 +1,10 @@
+import { Hono } from 'hono';
+
 import { AuthError } from '@respond/shared/apiErrors';
 import type { ActivityType } from '@respond/shared/types/activity';
 import type { AuthResponse } from '@respond/shared/types/authResponse';
 import type { BootstrapResponse } from '@respond/shared/types/bootstrap';
 import type { MyOrganization } from '@respond/shared/types/organization';
-import { Hono } from 'hono';
 
 import { clearAuth, getAuthFromContext, saveAuthToContext, userFromAuth } from './auth';
 import * as Mongo from './mongodb';

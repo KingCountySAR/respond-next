@@ -1,8 +1,8 @@
 import ClearIcon from '@mui/icons-material/Clear';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
-import { Participant } from '@respond/shared/types/activity';
 
 import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { Participant } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Droppable } from '../DragAndDrop/DnDComponents';

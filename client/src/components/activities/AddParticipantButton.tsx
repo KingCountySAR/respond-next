@@ -1,10 +1,10 @@
 import { Box, Button, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
-import { Activity, Participant } from '@respond/shared/types/activity';
-import { MemberInfo } from '@respond/shared/types/member';
-import { Organization } from '@respond/shared/types/organization';
 import * as React from 'react';
 
 import { DialogWithHistory } from '@respond/components/Material';
+import { Activity, Participant } from '@respond/shared/types/activity';
+import { MemberInfo } from '@respond/shared/types/member';
+import { Organization } from '@respond/shared/types/organization';
 
 import MemberSearch from '../member/MemberSearch';
 import OrganizationSelect from '../organization/OrganizationSelect';

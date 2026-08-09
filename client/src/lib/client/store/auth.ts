@@ -1,5 +1,6 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+
 import type { UserInfo } from '@respond/shared/types/userInfo';
 
 export interface AuthState {

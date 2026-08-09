@@ -1,5 +1,6 @@
-import { Activity } from '@respond/shared/types/activity';
 import { createContext, useContext } from 'react';
+
+import { Activity } from '@respond/shared/types/activity';
 
 const ActivityContext = createContext<Activity | null>(null);
 

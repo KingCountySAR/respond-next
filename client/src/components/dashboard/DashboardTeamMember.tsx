@@ -1,5 +1,6 @@
 import KeyboardDoubleArrowUpIcon from '@mui/icons-material/KeyboardDoubleArrowUp';
 import { IconButton, Stack, Tooltip, Typography } from '@mui/material';
+
 import { getOrganizationName, Participant, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';

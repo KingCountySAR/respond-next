@@ -1,8 +1,8 @@
 import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
-import { Organization } from '@respond/shared/types/organization';
 import * as React from 'react';
 
 import useOrganizations from '@respond/hooks/useOrganizations';
+import { Organization } from '@respond/shared/types/organization';
 
 export default function OrganizationSelect({ onChange }: { onChange: (organization: Organization | undefined) => void }) {
   const { organizations, isLoading, isError } = useOrganizations();

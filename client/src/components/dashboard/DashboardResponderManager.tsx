@@ -1,9 +1,9 @@
 import { Box, Typography } from '@mui/material';
-import { Participant } from '@respond/shared/types/activity';
-import { ParticipantStatus } from '@respond/shared/types/activity';
 import { useMemo } from 'react';
 
 import { useParticipantCommands } from '@respond/lib/client/services/participants';
+import { Participant } from '@respond/shared/types/activity';
+import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';

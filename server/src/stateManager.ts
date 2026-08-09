@@ -1,3 +1,5 @@
+import { produce } from 'immer';
+
 import type { ActivityState, LocationState, OrganizationState } from '@respond/shared';
 import { BasicEventReducers, BasicLocationEventReducers } from '@respond/shared';
 import { Command } from '@respond/shared/commands';
@@ -8,7 +10,6 @@ import { ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
 import { Location } from '@respond/shared/types/location';
 import { Organization } from '@respond/shared/types/organization';
 import type UserAuth from '@respond/shared/types/userAuth';
-import { produce } from 'immer';
 
 import { produceEvents } from './commandHandlers';
 import mongoPromise, { getRelatedOrgIds } from './mongodb';

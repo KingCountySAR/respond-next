@@ -1,7 +1,8 @@
 'use client';
 
-import { defaultPreferences, PerferencesState } from '@respond/shared/types/preferences';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+
+import { defaultPreferences, PerferencesState } from '@respond/shared/types/preferences';
 
 type PreferencesContextValue = {
   preferences: PerferencesState;

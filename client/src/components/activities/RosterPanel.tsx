@@ -5,12 +5,12 @@ import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
-import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/shared/types/activity';
-import { MemberInfo } from '@respond/shared/types/member';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, DialogContent, DialogTitle, DialogWithHistory, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
 import { apiFetch } from '@respond/lib/api';
+import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/shared/types/activity';
+import { MemberInfo } from '@respond/shared/types/member';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 

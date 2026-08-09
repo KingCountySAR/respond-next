@@ -3,9 +3,6 @@
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import type { SiteConfig } from '@respond/shared/types/bootstrap';
-import { MyOrganization } from '@respond/shared/types/organization';
-import { UserInfo } from '@respond/shared/types/userInfo';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
@@ -16,6 +13,9 @@ import { AuthActions } from '@respond/lib/client/store/auth';
 import { ConfigActions } from '@respond/lib/client/store/config';
 import { OrgActions } from '@respond/lib/client/store/organization';
 import { ClientSync } from '@respond/lib/client/sync';
+import type { SiteConfig } from '@respond/shared/types/bootstrap';
+import { MyOrganization } from '@respond/shared/types/organization';
+import { UserInfo } from '@respond/shared/types/userInfo';
 
 import PreferencesProvider from './PreferencesProvider';
 

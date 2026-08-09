@@ -1,4 +1,5 @@
 import { Stack, Typography } from '@mui/material';
+
 import { EquipmentItem } from '@respond/shared/types/operations';
 
 import { DashboardDraggableContainer } from './DashboardDraggableContainer';

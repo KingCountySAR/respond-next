@@ -1,4 +1,5 @@
 import { Stack, Typography } from '@mui/material';
+
 import { getOrganizationName, Participant } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';
