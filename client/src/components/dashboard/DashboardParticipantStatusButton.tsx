@@ -5,7 +5,7 @@ import { type MouseEvent, useState } from 'react';
 import { Chip } from '@mui/material';
 import ConfirmDialog from '../ConfirmDialog';
 
-export function DashboardParticipantStatusButton({ participant, status, onClick }: { participant: Participant; status: ParticipantStatus; onClick?: () => void }) {
+export function DashboardParticipantStatusButton({ participant, status }: { participant: Participant; status: ParticipantStatus }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const participants = useParticipantCommands();
   const activity = useActivityContext();
@@ -20,9 +20,9 @@ export function DashboardParticipantStatusButton({ participant, status, onClick 
   };
 
   const updateParticipantStatus = () => {
+    setConfirmOpen(false);
     const update = { time: Date.now(), status, organizationId: participant.organizationId };
     participants.addTimeline(activity.id, participant.id, update);
-    onClick?.();
   };
   
   return (
