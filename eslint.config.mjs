@@ -24,7 +24,7 @@ export default tseslint.config(
     settings: {
       'import-x/resolver': {
         typescript: {
-          project: ['shared/tsconfig.json', 'client/tsconfig.json', 'server/tsconfig.json'],
+          project: ['shared/tsconfig.json', 'client/tsconfig.json', 'server/tsconfig.json', 'shared/tsconfig.test.json', 'client/tsconfig.test.json', 'server/tsconfig.test.json'],
         },
       },
     },

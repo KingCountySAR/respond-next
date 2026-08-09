@@ -131,9 +131,9 @@ describe('teamCommsReactor', () => {
 });
 
 describe('placeCommsReactor', () => {
-  it('emits an established LogComm on PlaceCreated', () => {
+  it('emits an established LogComm on PlaceCreated', async () => {
     const place = { ...createNewPlace('OP1'), lat: '47.1', lon: '-121.2', notes: 'ridge' };
-    const commands = placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, place), emptyCtx);
+    const commands = await placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, place), emptyCtx);
     expect(commands).toHaveLength(1);
     expect(CommsCommands.LogComm.match(commands[0])).toBe(true);
     if (!CommsCommands.LogComm.match(commands[0])) throw new Error('expected LogComm');
@@ -141,14 +141,14 @@ describe('placeCommsReactor', () => {
     expect(commands[0].payload.entry.isAutomated).toBe(true);
   });
 
-  it('emits a terminated LogComm on PlaceDeleted, resolving the name from prior state', () => {
+  it('emits a terminated LogComm on PlaceDeleted, resolving the name from prior state', async () => {
     const place = createNewPlace('OP1');
     const activity = createNewActivity();
     activity.id = activityId;
     activity.places = [place];
-    const ctx: ReactorContext = { priorActivities: { [activityId]: activity } };
+    const ctx: ReactorContext = { priorActivities: { [activityId]: activity }, currentActivities: {} };
 
-    const commands = placeCommsReactor.react(PlaceEvents.PlaceDeleted(activityId, place.id), ctx);
+    const commands = await placeCommsReactor.react(PlaceEvents.PlaceDeleted(activityId, place.id), ctx);
     expect(commands).toHaveLength(1);
     if (!CommsCommands.LogComm.match(commands[0])) throw new Error('expected LogComm');
     expect(commands[0].payload.entry.message).toBe('OP1 terminated');
