@@ -20,9 +20,6 @@ export class ClientSync {
   private socket: Socket<ServerToClientEvents, ClientToServerEvents>;
   private started = false;
   private unsubscribeListeners: Array<() => void> = [];
-  private seenEventKeys = new Map<string, number>();
-
-  private static readonly EVENT_DEDUPE_WINDOW_MS = 10_000;
 
   constructor(store: AppStore) {
     this.socket = io('/', {
@@ -63,19 +60,7 @@ export class ClientSync {
     // When we log in/out, we should restart the socket connection.
     const authListener = this.dispatch(
       addAppListener({
-        predicate: (action, currentState, previousState) => {
-          if (action.type === AuthActions.logout.fulfilled.type) {
-            return true;
-          }
-
-          if (action.type !== AuthActions.set.type) {
-            return false;
-          }
-
-          const currentUser = currentState.auth.userInfo;
-          const previousUser = previousState.auth.userInfo;
-          return JSON.stringify(currentUser) !== JSON.stringify(previousUser);
-        },
+        matcher: isAnyOf(AuthActions.set, AuthActions.logout.fulfilled),
         effect: () => {
           this.restart();
         },
@@ -166,30 +151,6 @@ export class ClientSync {
   // Server-minted facts. Applied by every client, including the one that issued
   // the command (no reporter exclusion — the client did not optimistically apply it).
   handleServerEvent(event: StampedEvent) {
-    const now = Date.now();
-    const eventKey = this.getEventKey(event);
-    const lastSeen = this.seenEventKeys.get(eventKey);
-    if (lastSeen && now - lastSeen < ClientSync.EVENT_DEDUPE_WINDOW_MS) {
-      return;
-    }
-
-    this.seenEventKeys.set(eventKey, now);
-    this.evictOldSeenEventKeys(now);
     this.dispatch(event as unknown as Action);
-  }
-
-  private getEventKey(event: StampedEvent): string {
-    const authorType = event.meta?.author?.type ?? 'unknown';
-    const authorId = event.meta?.author?.id ?? 'unknown';
-    const timestamp = event.meta?.timestamp ?? 0;
-    return `${event.type}|${authorType}|${authorId}|${timestamp}|${JSON.stringify(event.payload)}`;
-  }
-
-  private evictOldSeenEventKeys(now: number): void {
-    for (const [key, seenAt] of this.seenEventKeys) {
-      if (now - seenAt > ClientSync.EVENT_DEDUPE_WINDOW_MS) {
-        this.seenEventKeys.delete(key);
-      }
-    }
   }
 }
