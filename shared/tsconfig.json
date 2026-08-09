@@ -4,8 +4,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
-    "types": []
+    "types": ["vitest/globals"]
   },
-  "include": ["src"],
-  "exclude": ["src/**/__tests__/**"]
+  "include": ["src"]
 }

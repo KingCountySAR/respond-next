@@ -4,11 +4,14 @@ import { defineConfig } from 'vitest/config';
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
-// Unit tests for the shared package and the client store. `@respond/shared`
-// resolves as a workspace package; client-internal aliases mirror vite.config.ts.
+// Unit tests across all three modules. vitest resolves via vite `resolve.alias`,
+// so every path alias used in source must be mirrored here: `@shared`/`@server`
+// for the server module, and the client-internal aliases (mirroring vite.config.ts).
 export default defineConfig({
   resolve: {
     alias: {
+      '@shared': r('shared/src'),
+      '@server': r('server/src'),
       '@respond/components': r('client/src/components'),
       '@respond/hooks': r('client/src/hooks'),
       '@respond/lib': r('client/src/lib'),

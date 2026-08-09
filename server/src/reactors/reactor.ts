@@ -1,6 +1,6 @@
-import { Command } from '@respond/shared/commands';
-import { DomainEvent } from '@respond/shared/events';
-import { Activity } from '@respond/shared/types/activity';
+import { Command } from '@shared/commands';
+import { DomainEvent } from '@shared/events';
+import { Activity } from '@shared/types/activity';
 
 /** Read-only context handed to reactors when an event fires. */
 export interface ReactorContext {

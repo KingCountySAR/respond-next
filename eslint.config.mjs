@@ -24,7 +24,7 @@ export default tseslint.config(
     settings: {
       'import-x/resolver': {
         typescript: {
-          project: ['shared/tsconfig.json', 'client/tsconfig.json', 'server/tsconfig.json', 'shared/tsconfig.test.json', 'client/tsconfig.test.json', 'server/tsconfig.test.json'],
+          project: ['shared/tsconfig.json', 'client/tsconfig.json', 'server/tsconfig.json'],
         },
       },
     },
@@ -53,7 +53,10 @@ export default tseslint.config(
           // The @respond/* workspaces are internal to this repo (never published
           // separately), so group them all in `internal` rather than letting
           // @respond/shared fall into `external` beside node_modules like react.
-          pathGroups: [{ pattern: '@respond/**', group: 'internal', position: 'before' }],
+          pathGroups: [
+            { pattern: '@respond/**', group: 'internal', position: 'before' },
+            { pattern: '@shared/**', group: 'internal', position: 'before' },
+          ],
           // @respond/shared resolves via a node_modules symlink (import type
           // `external`), so it must be exempted from the default exclusion for
           // the pathGroup above to take effect.

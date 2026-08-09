@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
 import { useCommsCommands } from '@respond/lib/client/services/comms';
+import { Activity } from '@respond/shared/types/activity';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
@@ -19,7 +20,6 @@ import { DashboardCommsComposer } from './DashboardCommsComposer';
 import { CommsFavoriteToggleButton } from './DashboardCommsFavoriteToggleButton';
 import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardSearchBox } from './DashboardSearchBox';
-import { Activity } from '@respond/shared/types/activity';
 
 function format24HourTime(value: number) {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(value);
@@ -101,7 +101,7 @@ export function DashboardCommsManager() {
         <DashboardSearchBox onChange={setSearchQuery} placeholder="Search messages, to, or from..." sx={{ flex: 1 }} />
         <CommsAutomatedToggleButton onChange={setHideAutomated} />
         <CommsFavoriteToggleButton onChange={(isSelected) => setShowFavorites(isSelected)} />
-        <Tooltip title={"Print communications log"}>
+        <Tooltip title={'Print communications log'}>
           <IconButton
             onClick={handlePrint}
             sx={{
@@ -110,8 +110,9 @@ export function DashboardCommsManager() {
               borderRadius: 1,
               border: '1px solid',
               borderColor: 'divider',
-            }}>
-              <PrintIcon fontSize="small" />
+            }}
+          >
+            <PrintIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       </Stack>

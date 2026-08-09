@@ -1,4 +1,4 @@
-import { OrganizationDoc, ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
+import { OrganizationDoc, ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
 
 import mongoPromise from '../mongodb';
 import { getServices } from '../services';

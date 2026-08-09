@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-import type UserAuth from '@respond/shared/types/userAuth';
+import type UserAuth from '@shared/types/userAuth';
 
 import mongoPromise from './mongodb';
 

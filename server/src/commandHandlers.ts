@@ -1,6 +1,6 @@
-import { ActivityCommands, Command, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
-import { ActivityEvents, CommsEvents, DomainEvent, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
-import { createNewCommsEntry } from '@respond/shared/types/operations';
+import { ActivityCommands, Command, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
+import { ActivityEvents, CommsEvents, DomainEvent, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
+import { createNewCommsEntry } from '@shared/types/operations';
 
 /**
  * The command handler: validate a command and produce the resulting domain

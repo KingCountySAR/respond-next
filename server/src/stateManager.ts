@@ -1,15 +1,15 @@
 import { produce } from 'immer';
 
-import type { ActivityState, LocationState, OrganizationState } from '@respond/shared';
-import { BasicEventReducers, BasicLocationEventReducers } from '@respond/shared';
-import { Command } from '@respond/shared/commands';
-import { EventAuthor, isLocationEvent, serviceAuthor, StampedEvent } from '@respond/shared/events';
-import { filterInitialActivities } from '@respond/shared/state/activityVisibility';
-import type { Activity } from '@respond/shared/types/activity';
-import { ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
-import { Location } from '@respond/shared/types/location';
-import { Organization } from '@respond/shared/types/organization';
-import type UserAuth from '@respond/shared/types/userAuth';
+import { Command } from '@shared/commands';
+import { EventAuthor, isLocationEvent, serviceAuthor, StampedEvent } from '@shared/events';
+import { BasicEventReducers, BasicLocationEventReducers } from '@shared/state';
+import type { ActivityState, LocationState, OrganizationState } from '@shared/state';
+import { filterInitialActivities } from '@shared/state/activityVisibility';
+import type { Activity } from '@shared/types/activity';
+import { ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
+import { Location } from '@shared/types/location';
+import { Organization } from '@shared/types/organization';
+import type UserAuth from '@shared/types/userAuth';
 
 import { produceEvents } from './commandHandlers';
 import mongoPromise, { getRelatedOrgIds } from './mongodb';

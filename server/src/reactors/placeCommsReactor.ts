@@ -1,6 +1,6 @@
-import { CommsCommands, LogCommInput } from '@respond/shared/commands';
-import { PlaceEvents } from '@respond/shared/events';
-import { isDefaultPlace, Place } from '@respond/shared/types/operations';
+import { CommsCommands, LogCommInput } from '@shared/commands';
+import { PlaceEvents } from '@shared/events';
+import { isDefaultPlace, Place } from '@shared/types/operations';
 
 import { Reactor, ReactorContext } from './reactor';
 

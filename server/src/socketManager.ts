@@ -1,7 +1,7 @@
 import { Server as IOServer, Socket } from 'socket.io';
 
-import { userAuthor } from '@respond/shared/events';
-import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@respond/shared/types/syncSocket';
+import { userAuthor } from '@shared/events';
+import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@shared/types/syncSocket';
 
 import { getAuthFromCookieHeader } from './auth';
 import { getRelatedOrgIds } from './mongodb';

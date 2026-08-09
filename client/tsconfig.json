@@ -4,7 +4,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "moduleResolution": "node",
-    "types": ["vite/client"],
+    "types": ["vite/client", "vitest/globals"],
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
@@ -15,6 +15,5 @@
       "@respond/hooks/*": ["./src/hooks/*"]
     }
   },
-  "include": ["src"],
-  "exclude": ["src/**/__tests__/**"]
+  "include": ["src"]
 }

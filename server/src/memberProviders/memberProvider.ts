@@ -1,5 +1,5 @@
-import { MemberProviderType } from '@respond/shared/types/data/MemberProviderType';
-import type { MemberAuthInfo, MemberInfo } from '@respond/shared/types/member';
+import { MemberProviderType } from '@shared/types/data/MemberProviderType';
+import type { MemberAuthInfo, MemberInfo } from '@shared/types/member';
 
 export type { MemberAuthInfo, MemberInfo };
 

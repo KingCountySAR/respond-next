@@ -1,5 +1,5 @@
-import { ParticipantCommands } from '@respond/shared/commands';
-import { ParticipantEvents } from '@respond/shared/events';
+import { ParticipantCommands } from '@shared/commands';
+import { ParticipantEvents } from '@shared/events';
 
 import { Reactor, ReactorContext } from './reactor';
 

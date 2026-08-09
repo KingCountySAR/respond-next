@@ -1,6 +1,6 @@
-import { CommsCommands, LogCommInput } from '@respond/shared/commands';
-import { TeamEvents } from '@respond/shared/events';
-import { TeamStatus } from '@respond/shared/types/operations';
+import { CommsCommands, LogCommInput } from '@shared/commands';
+import { TeamEvents } from '@shared/events';
+import { TeamStatus } from '@shared/types/operations';
 
 import { Reactor, ReactorContext } from './reactor';
 

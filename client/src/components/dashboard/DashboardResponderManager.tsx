@@ -36,33 +36,35 @@ export function DashboardResponderManager() {
 
   const signedInParticipants = useMemo(() => {
     const assignedParticipants = teams.flatMap((team) => team.assignedParticipants.map((id) => id));
-    return Object.values(activity.participants)
-      .filter((participant) => {
-        return participant.timeline[0].status === ParticipantStatus.SignedIn && !assignedParticipants.includes(participant.id);
-      })
-      // Signed-in responders are ordered by earliest ETA first; unknown ETA entries sort last and are alphabetized.
-      .sort((left, right) => {
-        const leftEta = left.eta;
-        const rightEta = right.eta;
+    return (
+      Object.values(activity.participants)
+        .filter((participant) => {
+          return participant.timeline[0].status === ParticipantStatus.SignedIn && !assignedParticipants.includes(participant.id);
+        })
+        // Signed-in responders are ordered by earliest ETA first; unknown ETA entries sort last and are alphabetized.
+        .sort((left, right) => {
+          const leftEta = left.eta;
+          const rightEta = right.eta;
 
-        if (leftEta == null && rightEta == null) {
+          if (leftEta == null && rightEta == null) {
+            return sortParticipantsAlphabetically(left, right);
+          }
+
+          if (leftEta == null) {
+            return 1;
+          }
+
+          if (rightEta == null) {
+            return -1;
+          }
+
+          if (leftEta !== rightEta) {
+            return leftEta - rightEta;
+          }
+
           return sortParticipantsAlphabetically(left, right);
-        }
-
-        if (leftEta == null) {
-          return 1;
-        }
-
-        if (rightEta == null) {
-          return -1;
-        }
-
-        if (leftEta !== rightEta) {
-          return leftEta - rightEta;
-        }
-
-        return sortParticipantsAlphabetically(left, right);
-      });
+        })
+    );
   }, [activity, teams]);
 
   const setAssigned = (isSelf: boolean, participant: Participant) => {
@@ -99,7 +101,9 @@ export function DashboardResponderManager() {
                 </Draggable>
               );
             })}
-            {signedInParticipants.map((participant) => <DashboardParticipantCard key={participant.id} participant={participant} />)}
+            {signedInParticipants.map((participant) => (
+              <DashboardParticipantCard key={participant.id} participant={participant} />
+            ))}
           </>
         )}
       </Box>

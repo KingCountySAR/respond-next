@@ -36,9 +36,7 @@ export function DashboardTeamMember({ participant, onPromote }: { participant: P
         <Typography variant="body2" sx={{ flexGrow: 1 }}>
           {participant.firstname} {participant.lastname} ({organizationName})
         </Typography>
-        {!isAssigned && (
-          <DashboardParticipantStatusButton participant={participant} status={ParticipantStatus.Assigned} />
-        )}
+        {!isAssigned && <DashboardParticipantStatusButton participant={participant} status={ParticipantStatus.Assigned} />}
         {isAssigned && !!onPromote && (
           <Tooltip title={'Promote to Team Leader'}>
             <IconButton

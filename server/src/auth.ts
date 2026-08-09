@@ -2,8 +2,8 @@ import type { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { parse } from 'hono/utils/cookie';
 
-import type UserAuth from '@respond/shared/types/userAuth';
-import { UserInfo } from '@respond/shared/types/userInfo';
+import type UserAuth from '@shared/types/userAuth';
+import { UserInfo } from '@shared/types/userInfo';
 
 import { createSession, deleteSession, getSession, SESSION_TTL_SECONDS } from './sessions';
 

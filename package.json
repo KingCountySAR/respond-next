@@ -13,7 +13,7 @@
     "dev": "run-p -rl dev:server dev:client",
     "build": "npm --workspace @respond/client run build",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p shared/tsconfig.json && tsc --noEmit -p server/tsconfig.json && tsc --noEmit -p client/tsconfig.json && tsc --noEmit -p shared/tsconfig.test.json && tsc --noEmit -p server/tsconfig.test.json && tsc --noEmit -p client/tsconfig.test.json",
+    "typecheck": "tsc --noEmit -p shared/tsconfig.json && tsc --noEmit -p server/tsconfig.json && tsc --noEmit -p client/tsconfig.json",
     "format": "prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -1,7 +1,7 @@
-import { CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands } from '@respond/shared/commands';
-import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
-import { createNewActivity, ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace, createNewTeam } from '@respond/shared/types/operations';
+import { CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands } from '@shared/commands';
+import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
+import { createNewActivity, ParticipantStatus } from '@shared/types/activity';
+import { createNewPlace, createNewTeam } from '@shared/types/operations';
 
 import { produceEvents } from '../commandHandlers';
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';

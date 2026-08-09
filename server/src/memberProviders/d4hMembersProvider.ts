@@ -1,4 +1,4 @@
-import { MemberProviderConfig, OrganizationDoc, ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
+import { MemberProviderConfig, OrganizationDoc, ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
 
 import mongoPromise from '../mongodb';
 
