@@ -5,7 +5,7 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { Box, IconButton, Paper, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
 import { useCommsCommands } from '@respond/lib/client/services/comms';
@@ -46,6 +46,8 @@ export function DashboardCommsManager() {
   const comms = useCommsCommands();
   const activity = useActivityContext();
   const printable = useRef<HTMLDivElement>(null);
+  const commsListRef = useRef<HTMLDivElement>(null);
+  const pendingManualEntryScrollRef = useRef(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -79,6 +81,20 @@ export function DashboardCommsManager() {
     documentTitle: `${activity.title || 'activity'}-comms-log`,
   });
 
+  useEffect(() => {
+    if (!pendingManualEntryScrollRef.current || editingId) {
+      return;
+    }
+
+    const target = commsListRef.current;
+    if (!target) {
+      return;
+    }
+
+    target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' });
+    pendingManualEntryScrollRef.current = false;
+  }, [filteredCommunications, editingId]);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
@@ -99,7 +115,7 @@ export function DashboardCommsManager() {
           </IconButton>
         </Tooltip>
       </Stack>
-      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
+      <Box ref={commsListRef} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
         {filteredCommunications.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography variant="body2" color="text.secondary" textAlign="center">
@@ -117,7 +133,11 @@ export function DashboardCommsManager() {
       <Box ref={printable} sx={{ display: 'none', '@media print': { display: 'block' } }}>
         <DashboardCommsPrintView activity={activity} communications={filteredCommunications} />
       </Box>
-      <DashboardCommsComposer />
+      <DashboardCommsComposer
+        onManualEntryAdded={() => {
+          pendingManualEntryScrollRef.current = true;
+        }}
+      />
     </Box>
   );
 }

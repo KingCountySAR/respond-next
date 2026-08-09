@@ -14,7 +14,7 @@ type FormValues = {
   message: string;
 };
 
-export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: CommunicationsLogEntry | null; onSave?: () => void; onCancel?: () => void }) {
+export function DashboardCommsComposer({ entry, onSave, onCancel, onManualEntryAdded }: { entry?: CommunicationsLogEntry | null; onSave?: () => void; onCancel?: () => void; onManualEntryAdded?: () => void }) {
   const comms = useCommsCommands();
   const activity = useActivityContext();
   const fromRef = useRef<HTMLInputElement | null>(null);
@@ -46,6 +46,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
     } else {
       // No id/timestamp — the server stamps those when it mints CommLogged.
       comms.logComm(activity.id, { from: values.from, to: values.to, message: values.message });
+      onManualEntryAdded?.();
       onSave?.();
     }
 
