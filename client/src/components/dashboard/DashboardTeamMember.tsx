@@ -6,13 +6,15 @@ import { getOrganizationName, Participant, ParticipantStatus } from '@respond/sh
 import { useActivityContext } from '../activities/ActivityProvider';
 
 import { DashboardDraggableContainer } from './DashboardDraggableContainer';
+import { DashboardParticipantStatusButton } from './DashboardParticipantStatusButton';
 
 export function DashboardTeamMember({ participant, onPromote }: { participant: Participant; onPromote?: () => void }) {
   const activity = useActivityContext();
   const participantStatus: ParticipantStatus = participant.timeline?.[0]?.status;
   const organizationName = getOrganizationName(activity, participant.organizationId);
+  const isAssigned = participantStatus === ParticipantStatus.Assigned;
   return (
-    <DashboardDraggableContainer variant="compact" sx={{ bgcolor: participantStatus !== ParticipantStatus.Assigned ? '#f0bcbc' : 'background.paper' }}>
+    <DashboardDraggableContainer variant="compact" sx={{ bgcolor: !isAssigned ? '#f0bcbc' : 'background.paper' }}>
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -34,8 +36,10 @@ export function DashboardTeamMember({ participant, onPromote }: { participant: P
         <Typography variant="body2" sx={{ flexGrow: 1 }}>
           {participant.firstname} {participant.lastname} ({organizationName})
         </Typography>
-
-        {!!onPromote && (
+        {!isAssigned && (
+          <DashboardParticipantStatusButton participant={participant} status={ParticipantStatus.Assigned} />
+        )}
+        {isAssigned && !!onPromote && (
           <Tooltip title={'Promote to Team Leader'}>
             <IconButton
               className="promote-button"
