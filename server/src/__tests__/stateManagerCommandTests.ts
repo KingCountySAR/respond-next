@@ -1,10 +1,9 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
-
 import { LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
 import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, StampedEvent, userAuthor } from '@respond/shared/events';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 import { createNewLocation } from '@respond/shared/types/location';
 import { createNewPlace, createNewTeam } from '@respond/shared/types/operations';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';

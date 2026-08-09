@@ -1,12 +1,12 @@
 import { Breadcrumbs, Paper, Typography } from '@mui/material';
 import { DataGrid, GridColDef, GridToolbarContainer, GridToolbarFilterButton } from '@mui/x-data-grid';
-import { Link } from 'wouter';
+import { Activity, ActivityType } from '@respond/shared/types/activity';
 import { useEffect, useState } from 'react';
+import { Link } from 'wouter';
 
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { apiFetch } from '@respond/lib/api';
 import { getActivityPath } from '@respond/lib/client/store/activities';
-import { Activity, ActivityType } from '@respond/shared/types/activity';
 
 import { RelativeTimeText } from '../RelativeTimeText';
 

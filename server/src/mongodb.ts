@@ -1,7 +1,6 @@
 // SEE https://github.com/vercel/next.js/tree/canary/examples/with-mongodb
-import { MongoClient } from 'mongodb';
-
 import { OrganizationDoc, ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
+import { MongoClient } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
   throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
@@ -22,10 +21,7 @@ export default clientPromise.then(async (m) => {
   // Server-side sessions live in the `sessions` collection; a TTL index on the
   // `expires` field lets Mongo reap them once they lapse (expireAfterSeconds: 0
   // means "delete when the indexed date is in the past").
-  await m
-    .db()
-    .collection('sessions')
-    .createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+  await m.db().collection('sessions').createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
   return m;
 });
 

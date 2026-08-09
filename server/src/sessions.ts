@@ -36,7 +36,9 @@ async function sessions() {
 export async function createSession(auth: UserAuth): Promise<string> {
   const id = randomBytes(32).toString('hex');
   const now = new Date();
-  await (await sessions()).insertOne({
+  await (
+    await sessions()
+  ).insertOne({
     _id: id,
     auth,
     created: now,

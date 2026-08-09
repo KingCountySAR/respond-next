@@ -54,7 +54,7 @@ export function Draggable<T>({ type, item, callback, children }: DraggableProps<
 }
 
 // --- <Droppable /> ---
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 interface DroppableProps {
   accepts?: string | string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

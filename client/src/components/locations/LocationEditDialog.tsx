@@ -1,8 +1,8 @@
 import { Box, DialogContent, DialogTitle } from '@mui/material';
+import { createNewLocation, Location } from '@respond/shared/types/location';
 
 import { DialogWithHistory } from '@respond/components/Material';
 import { useLocationCommands } from '@respond/lib/client/services/locations';
-import { createNewLocation, Location } from '@respond/shared/types/location';
 
 import { LocationEditForm } from './LocationEditForm';
 

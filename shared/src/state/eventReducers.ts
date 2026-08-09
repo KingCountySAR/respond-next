@@ -1,6 +1,6 @@
 import type { Draft } from '@reduxjs/toolkit';
 
-import { ActivityDomainEvents, ActivityDomainEventsType, DomainEvents } from '../events';
+import { ActivityDomainEventsType, DomainEvents } from '../events';
 
 import * as Mutators from './activityMutators';
 

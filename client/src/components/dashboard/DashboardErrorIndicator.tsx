@@ -1,7 +1,7 @@
-import React from 'react';
+import ErrorIcon from '@mui/icons-material/Error';
 import Box from '@mui/material/Box';
 import Tooltip from '@mui/material/Tooltip';
-import ErrorIcon from '@mui/icons-material/Error';
+import React from 'react';
 
 interface DashboardErrorIndicatorProps {
   /** Optional error message displayed in a hover tooltip */
@@ -10,10 +10,7 @@ interface DashboardErrorIndicatorProps {
   size?: number | string;
 }
 
-export const DashboardErrorIndicator: React.FC<DashboardErrorIndicatorProps> = ({
-  message,
-  size = 20,
-}) => {
+export const DashboardErrorIndicator: React.FC<DashboardErrorIndicatorProps> = ({ message, size = 20 }) => {
   if (message) {
     return (
       <Tooltip title={message} arrow placement="top">

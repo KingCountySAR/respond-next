@@ -1,4 +1,5 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
+import { Activity, isActive as isParticipantStatusActive } from '@respond/shared/types/activity';
 import addDays from 'date-fns/addDays';
 import { useEffect } from 'react';
 import { Link } from 'wouter';
@@ -10,7 +11,6 @@ import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivityTypeSelector, buildMyActivitySelector, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
 import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { Activity, isActive as isParticipantStatusActive } from '@respond/shared/types/activity';
 
 function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible: number, oldestVisible: number) {
   // Most recent first

@@ -1,19 +1,17 @@
-import { produce } from 'immer';
-
-import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import type { ActivityState, LocationState, OrganizationState } from '@respond/shared';
 import { BasicEventReducers, BasicLocationEventReducers } from '@respond/shared';
 import { Command } from '@respond/shared/commands';
 import { EventAuthor, isLocationEvent, serviceAuthor, StampedEvent } from '@respond/shared/events';
+import { filterInitialActivities } from '@respond/shared/state/activityVisibility';
 import type { Activity } from '@respond/shared/types/activity';
 import { ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
 import { Location } from '@respond/shared/types/location';
 import { Organization } from '@respond/shared/types/organization';
 import type UserAuth from '@respond/shared/types/userAuth';
-
-import { filterInitialActivities } from '@respond/shared/state/activityVisibility';
+import { produce } from 'immer';
 
 import { produceEvents } from './commandHandlers';
+import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import { defaultReactors, Reactor } from './reactors';
 
 type DatabaseActivity = Activity & { removeTime?: number };
@@ -23,7 +21,6 @@ export interface ActionListener {
 }
 
 const LOCATION_COLLECTION_NAME = 'locations';
-const ALL_ROOMS_TAG = '3496260fa6f74124a7b7abae014a4f67';
 
 export class StateManager {
   private listeners: ActionListener[] = [];

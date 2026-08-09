@@ -1,10 +1,10 @@
 import { Box, Button, Stack, TextField } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
 import { useCommsCommands } from '@respond/lib/client/services/comms';
-import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 

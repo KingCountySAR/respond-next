@@ -1,10 +1,10 @@
+import type { BootstrapResponse } from '@respond/shared/types/bootstrap';
 import { useEffect, useState } from 'react';
 
 import ClientProviders from '@respond/components/ClientProviders';
 import LoginPanel from '@respond/components/LoginPanel';
 import { apiFetch } from '@respond/lib/api';
 import { useAppSelector } from '@respond/lib/client/store';
-import type { BootstrapResponse } from '@respond/shared/types/bootstrap';
 
 import { AppRoutes } from './routes';
 

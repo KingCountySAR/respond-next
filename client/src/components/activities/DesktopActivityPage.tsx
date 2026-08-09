@@ -1,4 +1,5 @@
 import { Button, Divider, Typography } from '@mui/material';
+import { getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/shared/types/activity';
 import { format as formatDate } from 'date-fns';
 import { ReactNode, useState } from 'react';
 
@@ -7,7 +8,6 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { isActive } from '@respond/lib/client/store/activities';
-import { getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/shared/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 

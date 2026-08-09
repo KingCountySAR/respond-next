@@ -1,10 +1,9 @@
-import { Hono } from 'hono';
-
 import { AuthError } from '@respond/shared/apiErrors';
 import type { ActivityType } from '@respond/shared/types/activity';
 import type { AuthResponse } from '@respond/shared/types/authResponse';
 import type { BootstrapResponse } from '@respond/shared/types/bootstrap';
 import type { MyOrganization } from '@respond/shared/types/organization';
+import { Hono } from 'hono';
 
 import { clearAuth, getAuthFromContext, saveAuthToContext, userFromAuth } from './auth';
 import * as Mongo from './mongodb';
@@ -15,9 +14,7 @@ export const api = new Hono();
 // ---- Activities -----------------------------------------------------------
 
 async function activitiesList(activityType: ActivityType) {
-  const list = (await (await getServices()).stateManager.getAllActivities())
-    .filter((a) => a.isMission === (activityType === 'missions'))
-    .sort((a, b) => (a.startTime > b.startTime ? 1 : a.startTime < b.startTime ? -1 : 0));
+  const list = (await (await getServices()).stateManager.getAllActivities()).filter((a) => a.isMission === (activityType === 'missions')).sort((a, b) => (a.startTime > b.startTime ? 1 : a.startTime < b.startTime ? -1 : 0));
   return { status: 'ok', data: list };
 }
 

@@ -1,5 +1,6 @@
-import mongoPromise from '../mongodb';
 import { MemberProviderConfig, OrganizationDoc, ORGS_COLLECTION } from '@respond/shared/types/data/organizationDoc';
+
+import mongoPromise from '../mongodb';
 
 import { MemberAuthInfo, MemberInfo, MemberProvider } from './memberProvider';
 
@@ -50,6 +51,12 @@ interface FetchForTokenEntry {
 
 interface D4HCacheDoc extends FetchForTokenEntry {
   token: string;
+}
+
+interface Chunked<T> {
+  totalSize: number;
+  page: number;
+  results: T[];
 }
 
 function buildMemberInfo(member: D4HMemberResponse, groups: string[] = []): MemberInfo {
@@ -164,7 +171,7 @@ export default class D4HMembersProvider implements MemberProvider {
       throw new Error(`D4H API error: ${response.statusText}`);
     }
 
-    const data: any = await response.json();
+    const data = (await response.json()) as { results: D4HMemberResponse[] };
     const results = (data.results || []).map((member: D4HMemberResponse) => buildMemberInfo(member)) as MemberInfo[];
 
     console.log(results);
@@ -248,13 +255,13 @@ export default class D4HMembersProvider implements MemberProvider {
 
     let customFieldDefs: CustomFieldDef[] = [];
     do {
-      const chunk: any = await (
+      const chunk = (await (
         await fetch(`https://api.team-manager.us.d4h.com/v3/team/${teamId}/custom-fields?size=${D4H_FETCH_LIMIT}&page=${page}`, {
           headers: {
             Authorization: `Bearer ${v3Token}`,
           },
         })
-      ).json();
+      ).json()) as Chunked<CustomFieldDef>;
 
       totalSize = chunk.totalSize;
       customFieldDefs = customFieldDefs.concat(chunk.results);
@@ -265,13 +272,13 @@ export default class D4HMembersProvider implements MemberProvider {
     let groupRows: Group[] = [];
     page = 0;
     do {
-      const chunk: any = await (
+      const chunk = (await (
         await fetch(`https://api.team-manager.us.d4h.com/v3/team/${teamId}/member-groups?size=${D4H_FETCH_LIMIT}&page=${page}`, {
           headers: {
             Authorization: `Bearer ${v3Token}`,
           },
         })
-      ).json();
+      ).json()) as Chunked<Group>;
 
       totalSize = chunk.totalSize;
       groupRows = groupRows.concat(chunk.results);
@@ -284,13 +291,13 @@ export default class D4HMembersProvider implements MemberProvider {
     page = 0;
     do {
       const url = `https://api.team-manager.us.d4h.com/v3/team/${teamId}/members?size=${D4H_FETCH_LIMIT}&page=${page}`;
-      const chunk: any = await (
+      const chunk = (await (
         await fetch(url, {
           headers: {
             Authorization: `Bearer ${v3Token}`,
           },
         })
-      ).json();
+      ).json()) as Chunked<D4HMemberResponse>;
       totalSize = chunk.totalSize;
       rows = rows.concat(chunk.results);
       page = chunk.page + 1;
@@ -302,13 +309,13 @@ export default class D4HMembersProvider implements MemberProvider {
     page = 0;
     do {
       const url = `https://api.team-manager.us.d4h.com/v3/team/${teamId}/member-group-memberships?size=${D4H_FETCH_LIMIT}&page=${page}`;
-      const chunk: any = await (
+      const chunk = (await (
         await fetch(url, {
           headers: {
             Authorization: `Bearer ${v3Token}`,
           },
         })
-      ).json();
+      ).json()) as Chunked<D4HGroupMembership>;
 
       totalSize = chunk.totalSize;
       memberships = memberships.concat(chunk.results);

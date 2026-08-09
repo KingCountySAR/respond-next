@@ -1,9 +1,8 @@
 import { Button, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
-import { useEffect, useMemo } from 'react';
-import { FieldErrors, Resolver, useForm } from 'react-hook-form';
-
 import { Activity } from '@respond/shared/types/activity';
 import { isDefaultPlace, Place } from '@respond/shared/types/operations';
+import { useEffect, useMemo } from 'react';
+import { FieldErrors, Resolver, useForm } from 'react-hook-form';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import DialogWithHistory from '../DialogWithHistory';

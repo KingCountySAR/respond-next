@@ -1,9 +1,8 @@
 import { produce } from 'immer';
 
+import { LocationState } from '..';
 import { LocationEvents } from '../../events/locationEvents';
 import { createNewLocation } from '../../types/location';
-
-import { LocationState } from '..';
 import { BasicLocationEventReducers } from '../locationEventReducers';
 
 function apply<E extends { type: string; payload: unknown }>(state: LocationState, event: E): LocationState {

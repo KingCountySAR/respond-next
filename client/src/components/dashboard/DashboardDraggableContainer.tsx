@@ -1,5 +1,5 @@
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import { Box, Stack, SxProps, Theme } from '@mui/material';
+import { Stack, SxProps, Theme } from '@mui/material';
 import { ReactNode } from 'react';
 
 type DashboardDraggableContainerProps = {

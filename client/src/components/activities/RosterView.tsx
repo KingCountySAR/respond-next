@@ -1,5 +1,6 @@
 import { Box, Button, Divider, FormControlLabel, FormGroup, Paper, Stack, Switch, Table, TableBody, TableCell, TableClasses, TableHead, TableRow, Typography } from '@mui/material';
 import { tableCellClasses } from '@mui/material/TableCell';
+import { Activity, getOrganizationName, Participant, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
 import { differenceInCalendarDays, format as formatDate } from 'date-fns';
 import { forwardRef, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
@@ -7,7 +8,6 @@ import { useReactToPrint } from 'react-to-print';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
-import { Activity, getOrganizationName, Participant, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
 
 import { OutputForm, OutputText, OutputTime } from '../OutputForm';
 

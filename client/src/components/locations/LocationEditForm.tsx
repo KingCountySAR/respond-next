@@ -1,9 +1,8 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Button, FormControl, FormHelperText, Grid, IconButton, Stack, Switch, TextField } from '@mui/material';
+import { createNewLocation, Location } from '@respond/shared/types/location';
 import { useState } from 'react';
 import { Controller, Resolver, ResolverResult, useForm } from 'react-hook-form';
-
-import { createNewLocation, Location } from '@respond/shared/types/location';
 
 import ConfirmDialog from '../ConfirmDialog';
 import { GoogleMapEmbed } from '../GoogleMapEmbed';

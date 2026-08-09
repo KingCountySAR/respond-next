@@ -1,6 +1,7 @@
 import './env'; // must be first: populate process.env before mongodb.ts reads it
 
 import type { Server as HTTPServer } from 'http';
+import { resolve } from 'path';
 
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -9,10 +10,9 @@ import { Hono } from 'hono';
 import { api } from './routes';
 import { getServices } from './services';
 import { SocketServer } from './socketManager';
-import { resolve } from 'path';
 
 const PORT = Number(process.env.PORT ?? 3000);
-const CLIENT_DIST = resolve(process.cwd(), './static')
+const CLIENT_DIST = resolve(process.cwd(), './static');
 
 async function main() {
   const app = new Hono();

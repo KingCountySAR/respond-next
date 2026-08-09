@@ -1,5 +1,4 @@
 import { createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
-
 import { MyOrganization } from '@respond/shared/types/organization';
 
 import { logoutUser } from './auth';

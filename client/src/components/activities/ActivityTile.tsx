@@ -1,13 +1,13 @@
 import { NearMe } from '@mui/icons-material';
 import { Box, Card, CardActions, Grid, IconButton, Link, Typography } from '@mui/material';
+import { Activity, ParticipantStatus } from '@respond/shared/types/activity';
+import { NavigationApp } from '@respond/shared/types/preferences';
 import { ReactNode } from 'react';
 
 import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusChip } from '@respond/components/StatusChip';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { getActivityPath, isActive } from '@respond/lib/client/store/activities';
-import { Activity, ParticipantStatus } from '@respond/shared/types/activity';
-import { NavigationApp } from '@respond/shared/types/preferences';
 
 import { ActivityProvider } from './ActivityProvider';
 

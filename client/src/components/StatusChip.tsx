@@ -1,6 +1,5 @@
 import { Circle } from '@mui/icons-material';
 import { Chip } from '@mui/material';
-
 import { getStatusMuiColor, getStatusText, ParticipantStatus } from '@respond/shared/types/activity';
 
 export const StatusChip = ({ status }: { status: ParticipantStatus }) => {

@@ -2,16 +2,16 @@
 
 import { Alert, AlertTitle } from '@mui/material';
 import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
+import { AuthError } from '@respond/shared/apiErrors';
+import { AuthResponse } from '@respond/shared/types/authResponse';
+import { MemberProviderName } from '@respond/shared/types/data/MemberProviderType';
 import { useState } from 'react';
 
 import { Box, Button, Stack } from '@respond/components/Material';
 import Api from '@respond/lib/api';
-import { AuthError } from '@respond/shared/apiErrors';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { AuthActions } from '@respond/lib/client/store/auth';
 import { OrgActions } from '@respond/lib/client/store/organization';
-import { AuthResponse } from '@respond/shared/types/authResponse';
-import { MemberProviderName } from '@respond/shared/types/data/MemberProviderType';
 
 export default function LoginPanel() {
   const { noExternalNetwork } = useAppSelector((state) => state.config.dev);

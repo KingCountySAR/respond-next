@@ -2,7 +2,6 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, IconButton, Stack, SxProps, Theme, Typography } from '@mui/material';
 import React, { useState } from 'react';
-import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 
 interface DashboardBoxWithTitleProps {
   title: string;

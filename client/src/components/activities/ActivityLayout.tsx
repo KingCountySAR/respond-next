@@ -1,11 +1,11 @@
 'use client';
 
+import type { Activity } from '@respond/shared/types/activity';
 import { useEffect, useState } from 'react';
 
 import { apiFetch } from '@respond/lib/api';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
-import type { Activity } from '@respond/shared/types/activity';
 
 import { ActivityProvider } from './ActivityProvider';
 

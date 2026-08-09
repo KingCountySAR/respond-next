@@ -1,8 +1,8 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { Link, useLocation } from 'wouter';
 import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'wouter';
 
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, DialogWithHistory, IconButton, Stack } from '@respond/components/Material';
 import { useActivityCommands } from '@respond/lib/client/services/activity';

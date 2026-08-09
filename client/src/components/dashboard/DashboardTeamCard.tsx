@@ -1,21 +1,21 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Chip, Divider, IconButton, Stack, Typography } from '@mui/material';
+import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
+import { EquipmentItem, Team } from '@respond/shared/types/operations';
 import { useEffect, useState } from 'react';
 
 import { useTeamCommands } from '@respond/lib/client/services/teams';
-import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
 
-import { EquipmentItem, Team } from '@respond/shared/types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';
 
+import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 import { DashboardTeamEditDialog } from './DashboardTeamEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
 import { TeamStatusSelect } from './DashboardTeamStatusSelect';
-import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 
 const sortParicipantsAlphabetically = (left: Participant, right: Participant) => {
   return `${left.firstname} ${left.lastname}`.localeCompare(`${right.firstname} ${right.lastname}`);

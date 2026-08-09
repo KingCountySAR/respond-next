@@ -1,11 +1,11 @@
 import { Close } from '@mui/icons-material';
 import { Box, ButtonBase, IconButton, Stack, Typography } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
+import { getOrganizationName, getStatusText, Participant, ParticipantUpdate } from '@respond/shared/types/activity';
 import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
 
 import { useParticipantCommands } from '@respond/lib/client/services/participants';
-import { getOrganizationName, getStatusText, Participant, ParticipantUpdate } from '@respond/shared/types/activity';
 
 import { useActivityContext } from './ActivityProvider';
 

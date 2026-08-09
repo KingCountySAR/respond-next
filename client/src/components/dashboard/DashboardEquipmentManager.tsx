@@ -1,8 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material';
+import { EquipmentItem } from '@respond/shared/types/operations';
 import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
-
-import { EquipmentItem } from '@respond/shared/types/operations';
 
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 

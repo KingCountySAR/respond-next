@@ -1,6 +1,5 @@
-import { OAuth2Client } from 'google-auth-library';
-
 import { MemberProviderType } from '@respond/shared/types/data/MemberProviderType';
+import { OAuth2Client } from 'google-auth-library';
 
 import D4HMembersProvider from './memberProviders/d4hMembersProvider';
 import { MemberProviderRegistry } from './memberProviders/memberProvider';

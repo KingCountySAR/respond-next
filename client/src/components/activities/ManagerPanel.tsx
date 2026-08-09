@@ -1,9 +1,9 @@
 import { SxProps } from '@mui/material/styles';
+import { isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { Paper } from '@respond/components/Material';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { getActivityStatus } from '@respond/lib/client/store/activities';
-import { isActive as isParticpantActive, isCheckedIn as isParticpantCheckedIn, Participant, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { RelativeStyle } from '../RelativeTimeText';
 

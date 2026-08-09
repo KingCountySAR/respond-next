@@ -1,11 +1,11 @@
+import { getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/shared/types/activity';
+import { MemberInfo } from '@respond/shared/types/member';
+import { Organization } from '@respond/shared/types/organization';
+import { UserInfo } from '@respond/shared/types/userInfo';
 import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
 import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { MemberInfo } from '@respond/shared/types/member';
-import { getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/shared/types/activity';
-import { Organization } from '@respond/shared/types/organization';
-import { UserInfo } from '@respond/shared/types/userInfo';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Alert, Button, DialogActions, DialogContent, DialogTitle, DialogWithHistory } from '../Material';

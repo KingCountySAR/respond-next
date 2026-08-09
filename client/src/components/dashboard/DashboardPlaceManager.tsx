@@ -2,11 +2,11 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, Button, Typography } from '@mui/material';
+import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
+import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 import React, { useEffect, useState } from 'react';
 
 import { usePlaceCommands } from '@respond/lib/client/services/places';
-import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
@@ -16,10 +16,10 @@ import { Stack } from '../Material';
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardDividedSection } from './DashboardDividedSection';
+import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
-import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 
 export function DashboardPlaceManager() {
   const places = usePlaceCommands();
@@ -177,18 +177,13 @@ function PlaceTile({ place }: { place: Place }) {
     places.updatePlace(activity.id, updated);
   };
 
-  const hasContent = (
-    place.assignedParticipants.length > 0 ||
-    place.assignedEquipment.length > 0 ||
-    (place.lat?.trim() && place.lon?.trim()) ||
-    (place.notes?.trim() && place.notes.trim().length > 0)
-  );
+  const hasContent = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0 || (place.lat?.trim() && place.lon?.trim()) || (place.notes?.trim() && place.notes.trim().length > 0);
 
   const hasPersonnelError = place.assignedParticipants.some((id) => activity.participants[id].timeline[0].status !== ParticipantStatus.Assigned);
 
   return (
     <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
-      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible={!!hasContent} adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined} >
+      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible={!!hasContent} adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined}>
         <Stack spacing={1}>
           {!!place.assignedParticipants.length && (
             <DashboardDividedSection title="Personnel">

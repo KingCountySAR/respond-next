@@ -1,4 +1,4 @@
-import type { Action, Middleware, PayloadAction, ThunkAction } from '@reduxjs/toolkit';
+import type { Action, Middleware, ThunkAction } from '@reduxjs/toolkit';
 import { addListener, combineReducers, configureStore, createListenerMiddleware, TypedAddListener, TypedStartListening } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 

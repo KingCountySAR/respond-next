@@ -1,9 +1,9 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Typography } from '@mui/material';
+import { createNewTeam, Team } from '@respond/shared/types/operations';
 import { useState } from 'react';
 
 import { useTeamCommands } from '@respond/lib/client/services/teams';
-import { createNewTeam, Team } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Stack } from '../Material';

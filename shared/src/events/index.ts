@@ -1,11 +1,10 @@
 import { ActivityEvents } from './activityEvents';
+import type { EventMeta } from './author';
 import { CommsEvents } from './commsEvents';
 import { LocationEvents } from './locationEvents';
 import { ParticipantEvents } from './participantEvents';
 import { PlaceEvents } from './placeEvents';
 import { TeamEvents } from './teamEvents';
-
-import type { EventMeta } from './author';
 
 export * from './author';
 export { PlaceEvents } from './placeEvents';

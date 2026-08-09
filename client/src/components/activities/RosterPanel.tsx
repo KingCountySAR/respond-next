@@ -5,12 +5,12 @@ import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
+import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/shared/types/activity';
+import { MemberInfo } from '@respond/shared/types/member';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, DialogContent, DialogTitle, DialogWithHistory, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
 import { apiFetch } from '@respond/lib/api';
-import { MemberInfo } from '@respond/shared/types/member';
-import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/shared/types/activity';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
@@ -151,7 +151,11 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
               style={{ width: '8rem', minHeight: '10rem', border: 'solid 1px #777', borderRadius: '4px' }}
             />
             <Typography fontWeight={600}>{getOrganizationName(activity, participant.organizationId)}</Typography>
-            <Box>{participant.tags?.map((t) => <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />)}</Box>
+            <Box>
+              {participant.tags?.map((t) => (
+                <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />
+              ))}
+            </Box>
             {memberInfo?.mobilephone &&
               (isMobile ? (
                 <Button fullWidth component="a" href={`tel:${normalizePhoneNumber(memberInfo.mobilephone)}`} variant="contained" size="small" startIcon={<PhoneIcon />} sx={{ textTransform: 'none', my: 1 }}>

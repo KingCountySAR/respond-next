@@ -1,10 +1,9 @@
 import { produce } from 'immer';
 
+import { ActivityState } from '..';
 import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '../../events';
 import { createNewActivity, ParticipantStatus } from '../../types/activity';
 import { CommunicationsLogEntry, createNewPlace, createNewTeam } from '../../types/operations';
-
-import { ActivityState } from '..';
 import { BasicEventReducers } from '../eventReducers';
 
 function stateWithActivity(activityId: string): ActivityState {

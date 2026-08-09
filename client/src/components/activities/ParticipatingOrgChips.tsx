@@ -1,8 +1,8 @@
 import { Chip } from '@mui/material';
 import { BoxProps } from '@mui/material/Box';
+import { isActive, OrganizationStatus, ParticipatingOrg } from '@respond/shared/types/activity';
 
 import { Box } from '@respond/components/Material';
-import { isActive, OrganizationStatus, ParticipatingOrg } from '@respond/shared/types/activity';
 
 import { useActivityContext } from './ActivityProvider';
 

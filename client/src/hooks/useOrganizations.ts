@@ -1,7 +1,7 @@
+import { Organization } from '@respond/shared/types/organization';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiFetch } from '@respond/lib/api';
-import { Organization } from '@respond/shared/types/organization';
 
 const ORGANIZATIONS_QUERY_KEY = ['organizations'] as const;
 
