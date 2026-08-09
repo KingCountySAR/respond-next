@@ -29,10 +29,21 @@ const activitySliceArgs = {
       .addCase(ActivityActions.complete, BasicActivityReducers[ActivityActions.complete.type])
       .addCase(ActivityActions.appendOrganizationTimeline, BasicActivityReducers[ActivityActions.appendOrganizationTimeline.type])
       .addCase(ActivityActions.participantTimelineUpdate, BasicActivityReducers[ActivityActions.participantTimelineUpdate.type])
+      .addCase(ActivityActions.participantTimelineAdd, BasicActivityReducers[ActivityActions.participantTimelineAdd.type])
       .addCase(ActivityActions.participantMilesUpdate, BasicActivityReducers[ActivityActions.participantMilesUpdate.type])
       .addCase(ActivityActions.participantEtaUpdate, BasicActivityReducers[ActivityActions.participantEtaUpdate.type])
       .addCase(ActivityActions.participantUpdate, BasicActivityReducers[ActivityActions.participantUpdate.type])
-      .addCase(ActivityActions.tagParticipant, BasicActivityReducers[ActivityActions.tagParticipant.type]);
+      .addCase(ActivityActions.tagParticipant, BasicActivityReducers[ActivityActions.tagParticipant.type])
+      .addCase(ActivityActions.createTeam, BasicActivityReducers[ActivityActions.createTeam.type])
+      .addCase(ActivityActions.updateTeam, BasicActivityReducers[ActivityActions.updateTeam.type])
+      .addCase(ActivityActions.addComm, BasicActivityReducers[ActivityActions.addComm.type])
+      .addCase(ActivityActions.updateComm, BasicActivityReducers[ActivityActions.updateComm.type])
+      .addCase(ActivityActions.updateStaff, BasicActivityReducers[ActivityActions.updateStaff.type])
+      .addCase(ActivityActions.createPlace, BasicActivityReducers[ActivityActions.createPlace.type])
+      .addCase(ActivityActions.updatePlace, BasicActivityReducers[ActivityActions.updatePlace.type])
+      .addCase(ActivityActions.deletePlace, BasicActivityReducers[ActivityActions.deletePlace.type])
+      .addCase(ActivityActions.batchUpdatePlaces, BasicActivityReducers[ActivityActions.batchUpdatePlaces.type])
+      .addCase(ActivityActions.bulkParticipantUpdate, BasicActivityReducers[ActivityActions.bulkParticipantUpdate.type]);
   },
 };
 

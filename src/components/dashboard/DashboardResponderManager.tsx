@@ -1,0 +1,69 @@
+import { Box, Typography } from '@mui/material';
+import { useMemo } from 'react';
+
+import { useAppDispatch } from '@respond/lib/client/store';
+import { ActivityActions } from '@respond/lib/state';
+import { Participant } from '@respond/types/activity';
+import { ParticipantStatus } from '@respond/types/activity';
+
+import { useActivityContext } from '../activities/ActivityProvider';
+import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
+
+import DashboardParticipantCard from './DashboardParticipantCard';
+
+export function DashboardResponderManager() {
+  const dispatch = useAppDispatch();
+
+  const activity = useActivityContext();
+
+  const teams = useMemo(() => {
+    return Object.values(activity.teams ?? []).filter((team) => team.status !== 'Disbanded');
+  }, [activity]);
+
+  const availableParticipants = useMemo(() => {
+    const assignedParticipants = teams.flatMap((team) => team.assignedParticipants.map((id) => id));
+    return Object.values(activity.participants)
+      .filter((participant) => {
+        return participant.timeline[0].status === ParticipantStatus.Available && !assignedParticipants.includes(participant.id);
+      })
+      .sort((a, b) => a.firstname.localeCompare(b.lastname));
+  }, [activity, teams]);
+
+  const setAssigned = (isSelf: boolean, participant: Participant) => {
+    if (isSelf) return; // If the participant is dragged from the Responders list to the Responders list, cancel.
+    const update = { time: Date.now(), status: ParticipantStatus.Assigned, organizationId: participant.organizationId };
+    dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
+  };
+
+  const handleDrop = (participant: Participant, type: string, callback?: (isSelf: boolean) => void) => {
+    // If the participant is not in Assigned status, do not overwrite the current status.
+    if (participant.timeline[0].status === ParticipantStatus.Assigned) {
+      // Update the Participant Status to Available
+      const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
+      dispatch(ActivityActions.participantTimelineAdd(activity.id, participant.id, update));
+    }
+    callback?.(true);
+  };
+
+  return (
+    <Droppable accepts="participant" onDrop={handleDrop} grow>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {availableParticipants.length === 0 ? (
+          <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              All responders are assigned.
+            </Typography>
+          </Box>
+        ) : (
+          availableParticipants.map((participant) => {
+            return (
+              <Draggable key={participant.id} type="participant" item={participant} callback={(isSelf: boolean) => setAssigned(isSelf, participant)}>
+                <DashboardParticipantCard key={participant.id} participant={participant} />
+              </Draggable>
+            );
+          })
+        )}
+      </Box>
+    </Droppable>
+  );
+}

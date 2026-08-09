@@ -158,6 +158,11 @@ const StatusUpdaterProtected = ({ fullWidth, user, thisOrg }: { user: UserInfo |
           <DialogTitle id="status-update-dialog-title">{confirmTitle}</DialogTitle>
           <DialogContent>
             <>
+              {current === ParticipantStatus.Assigned && (
+                <Alert sx={{ mb: 1 }} severity="error">
+                  You are currently assigned to a Team or Place on the Operations Dashboard. Changing your status may cause a discrepancy.
+                </Alert>
+              )}
               {!activity.organizations[thisOrg.id] && (
                 <Alert sx={{ mb: 1 }} severity="warning">
                   You are the first responder for {thisOrg.rosterName}. Make sure you are authorized to commit {thisOrg.rosterName} to this {activity.isMission ? 'mission' : 'event'}.

@@ -4,6 +4,7 @@ import { defaultEarlySigninWindow } from '@respond/lib/client/store/activities';
 import { pickSafely } from '@respond/lib/pickSafely';
 
 import { createNewLocation, Location } from './location';
+import { CommunicationsLogEntry, getDefaultPlaces, Place, Team } from './operations';
 
 export enum ParticipantStatus {
   NotResponding = 0,
@@ -134,9 +135,15 @@ export interface Activity {
 
   participants: Record<string, Participant>;
   organizations: Record<string, ParticipatingOrg>;
+
+  // Operations
+  teams: Team[];
+  comms: CommunicationsLogEntry[];
+  staff: Record<string, string>;
+  places: Place[];
 }
 
-export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'forceStandbyOnly', 'startTime', 'endTime', 'earlySignInWindow']);
+export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'forceStandbyOnly', 'startTime', 'endTime', 'earlySignInWindow', 'comms', 'staff', 'places']);
 
 export type ActivityType = 'missions' | 'events';
 
@@ -160,5 +167,9 @@ export function createNewActivity(): Activity {
     ownerOrgId: '',
     participants: {},
     organizations: {},
+    teams: [],
+    comms: [],
+    staff: {},
+    places: getDefaultPlaces(),
   };
 }

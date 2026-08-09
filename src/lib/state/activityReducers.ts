@@ -2,10 +2,26 @@ import { Draft } from '@reduxjs/toolkit';
 import merge from 'lodash.merge';
 
 import { createNewActivity, ParticipantStatus, pickActivityProperties } from '@respond/types/activity';
+import { pickTeamProperties } from '@respond/types/operations';
 
 import { ActivityActions, ActivityActionsType } from './activityActions';
 
 import { ActivityState } from '.';
+
+function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: string, participantId: string, time: number) {
+  state.list
+    .filter((f) => f.id !== activityId && f.participants[participantId])
+    .forEach((otherActivity) => {
+      const timeline = otherActivity.participants[participantId].timeline;
+      if (timeline[0].status === ParticipantStatus.SignedIn) {
+        timeline.unshift({
+          time,
+          status: ParticipantStatus.SignedOut,
+          organizationId: timeline[0].organizationId,
+        });
+      }
+    });
+}
 
 type ActivityReducers = {
   [K in keyof ActivityActionsType as ActivityActionsType[K]['type']]: (state: Draft<ActivityState>, action: { payload: ReturnType<ActivityActionsType[K]>['payload'] }) => void;
@@ -24,6 +40,41 @@ export const BasicReducers: ActivityReducers = {
     }
     const trimmedToProps = pickActivityProperties(payload);
     merge(target, trimmedToProps);
+  },
+
+  [ActivityActions.createPlace.type]: (state, { payload }) => {
+    const activity = state.list.find((a) => a.id === payload.activityId);
+    if (activity) {
+      activity.places = [...(activity.places ?? []), payload.place];
+      return;
+    }
+
+    const newActivity = createNewActivity();
+    newActivity.id = payload.activityId;
+    newActivity.places = [payload.place];
+    state.list.push(newActivity);
+  },
+
+  [ActivityActions.updatePlace.type]: (state, { payload }) => {
+    const activity = state.list.find((a) => a.id === payload.activityId);
+    if (!activity) return;
+    activity.places = (activity.places ?? []).map((place) => (place.id === payload.place.id ? payload.place : place));
+  },
+
+  [ActivityActions.deletePlace.type]: (state, { payload }) => {
+    const activity = state.list.find((a) => a.id === payload.activityId);
+    if (!activity) return;
+    activity.places = (activity.places ?? []).filter((place) => place.id !== payload.placeId);
+  },
+
+  [ActivityActions.batchUpdatePlaces.type]: (state, { payload }) => {
+    const activity = state.list.find((a) => a.id === payload.activityId);
+    if (!activity) return;
+    const deleteSet = new Set(payload.deleteIds);
+    const upsertMap = new Map(payload.upserts.map((p) => [p.id, p]));
+    const kept = (activity.places ?? []).filter((p) => !deleteSet.has(p.id)).map((p) => upsertMap.get(p.id) ?? p);
+    const created = payload.upserts.filter((p) => !(activity.places ?? []).some((existing) => existing.id === p.id));
+    activity.places = [...kept, ...created];
   },
 
   [ActivityActions.remove.type]: (state, { payload }) => {
@@ -112,24 +163,35 @@ export const BasicReducers: ActivityReducers = {
         organizationId: payload.participant.organizationId,
       });
 
-      // If this is not a sign-in, then we are done.
-      if (payload.update.status !== ParticipantStatus.SignedIn) {
-        return;
-      }
-
       // If this is a sign-in and the user is already signed into another activity, sign them out of the other activity.
-      state.list
-        .filter((f) => f.id !== payload.activityId && f.participants[payload.participant.id])
-        .forEach((otherActivity) => {
-          const timeline = otherActivity.participants[payload.participant.id].timeline;
-          if (timeline[0].status === ParticipantStatus.SignedIn) {
-            timeline.unshift({
-              time: payload.update.time,
-              status: ParticipantStatus.SignedOut,
-              organizationId: timeline[0].organizationId,
-            });
-          }
-        });
+      if (payload.update.status !== ParticipantStatus.SignedIn) {
+        signOutFromOtherActivities(state, payload.activityId, payload.participant.id, payload.update.time);
+      }
+    }
+  },
+
+  [ActivityActions.bulkParticipantUpdate.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) return;
+
+    for (const updateRequest of payload.updates) {
+      const participant = activity.participants[updateRequest.participantId];
+      if (!participant) continue;
+
+      BasicReducers[ActivityActions.participantUpdate.type](state, {
+        payload: {
+          activityId: payload.activityId,
+          participant: {
+            id: participant.id,
+            firstname: participant.firstname,
+            lastname: participant.lastname,
+            organizationId: updateRequest.update.organizationId,
+            miles: participant.miles,
+            eta: participant.eta,
+          },
+          update: updateRequest.update,
+        },
+      });
     }
   },
 
@@ -143,6 +205,20 @@ export const BasicReducers: ActivityReducers = {
       return;
     }
     person.timeline[payload.index] = payload.update;
+  },
+
+  [ActivityActions.participantTimelineAdd.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) return;
+    const person = activity.participants[payload.participantId];
+    if (!person) return;
+
+    person.timeline.unshift(payload.update);
+
+    // If this is a sign-in and the user is already signed into another activity, sign them out of the other activity.
+    if (payload.update.status === ParticipantStatus.SignedIn) {
+      signOutFromOtherActivities(state, payload.activityId, payload.participantId, payload.update.time);
+    }
   },
 
   [ActivityActions.participantMilesUpdate.type]: (state, { payload }) => {
@@ -178,5 +254,61 @@ export const BasicReducers: ActivityReducers = {
         person.tags = payload.tags;
       }
     }
+  },
+
+  [ActivityActions.createTeam.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) {
+      return;
+    }
+    activity.teams = activity.teams ?? [];
+    activity.teams.push(payload.team);
+  },
+
+  [ActivityActions.addComm.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) {
+      return;
+    }
+    activity.comms = activity.comms ?? [];
+    // guard against sync replay applying the same entry twice
+    if (activity.comms.some((c) => c.id === payload.comm.id)) return;
+    activity.comms.push(payload.comm);
+  },
+
+  [ActivityActions.updateComm.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity || !activity.comms) {
+      return;
+    }
+    const comm = activity.comms.find((entry) => entry.id === payload.commId);
+    if (!comm) {
+      return;
+    }
+    Object.assign(comm, payload.updates);
+  },
+
+  [ActivityActions.updateStaff.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity) {
+      return;
+    }
+    activity.staff = {
+      ...(activity.staff ?? {}),
+      ...payload.staff,
+    };
+  },
+
+  [ActivityActions.updateTeam.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity || !activity.teams) {
+      return;
+    }
+    const team = activity.teams.find((t) => t.id === payload.updates.id);
+    if (!team) {
+      return;
+    }
+    const trimmedUpdates = pickTeamProperties(payload.updates);
+    Object.assign(team, trimmedUpdates);
   },
 };
