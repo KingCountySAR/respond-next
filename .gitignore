@@ -11,6 +11,9 @@ node_modules
 # built SPA
 /server/static
 
+# bundled server
+/server/dist
+
 # production
 /build
 
