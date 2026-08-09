@@ -1,6 +1,7 @@
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
 import { ReactNode, useState } from 'react';
+import { Link } from 'wouter';
 
 import { Box, Paper, Stack } from '@respond/components/Material';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
@@ -45,7 +46,7 @@ export function DesktopActivityPage() {
             <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} display="flex" flexDirection="row" />
             <Stack direction="row" spacing={1} alignItems="center">
               <AddParticipantButton activity={activity} />
-              <Button href={`/roster/${activity.id}`} variant="outlined" size="small">
+              <Button component={Link} href={`/roster/${activity.id}`} variant="outlined" size="small">
                 View Roster
               </Button>
             </Stack>
