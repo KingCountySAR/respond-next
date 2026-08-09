@@ -1,6 +1,6 @@
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { Stack, SxProps, Theme } from '@mui/material';
 import { ReactNode } from 'react';
+import { DragHandle } from '../DragAndDrop/DnDComponents';
 
 type DashboardDraggableContainerProps = {
   children: ReactNode;
@@ -50,7 +50,7 @@ export function DashboardDraggableContainer({ children, sx, showHandle = true, v
 
   return (
     <Stack direction="row" alignItems="center" justifyContent="flex-start" spacing={isCompact ? 0.5 : 1} sx={[disabled ? disabledStyles : draggableStyles, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}>
-      {showHandle && <DragIndicatorIcon className="drag-handle" sx={{ fontSize: isCompact ? 14 : 16, color: 'text.secondary', opacity: 0.55 }} />}
+      {showHandle && <DragHandle />}
       {children}
     </Stack>
   );

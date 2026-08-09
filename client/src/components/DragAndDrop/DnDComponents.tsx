@@ -1,4 +1,7 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import { SxProps, Theme } from '@mui/material';
+
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 
 import { DraggedItem, useDnD } from './DnDProvider';
 
@@ -13,14 +16,17 @@ interface DraggableProps<T> {
 
 export function Draggable<T>({ type, item, callback, children }: DraggableProps<T>) {
   const { startDrag, updateDrag, endDrag } = useDnD();
+  const [isDraggingPointer, setIsDraggingPointer] = useState(false);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Prevents text selection during drag
     e.stopPropagation();
+    setIsDraggingPointer(true);
     startDrag({ type, data: item, callback, previewNode: children }, e);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDraggingPointer(false);
     endDrag(e, (targetElement) => {
       // Finds closest droppable ancestor and dispatches a synthetic drop event
       const droppable = targetElement.closest<HTMLElement>('[data-droppable]');
@@ -43,13 +49,23 @@ export function Draggable<T>({ type, item, callback, children }: DraggableProps<
       onPointerCancel={handlePointerUp}
       style={{
         touchAction: 'none', // Critical: prevents mobile browser scrolling while dragging
-        cursor: 'grab',
+        cursor: isDraggingPointer ? 'grabbing' : 'grab',
         userSelect: 'none',
         WebkitUserSelect: 'none',
       }}
     >
       {children}
     </div>
+  );
+}
+
+export function DragHandle({ sx }: { sx?: SxProps<Theme> }) {
+  const baseSx: SxProps<Theme> = { fontSize: 16, color: 'text.secondary', opacity: 0.55 };
+  return (
+    <DragIndicatorIcon
+      className="drag-handle"
+      sx={[baseSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
+    />
   );
 }
 
