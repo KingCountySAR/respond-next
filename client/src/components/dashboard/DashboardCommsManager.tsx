@@ -1,10 +1,12 @@
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
+import PrintIcon from '@mui/icons-material/Print';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import { Box, IconButton, Paper, Typography } from '@mui/material';
+import { Box, IconButton, Paper, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useReactToPrint } from 'react-to-print';
 
 import { useCommsCommands } from '@respond/lib/client/services/comms';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
@@ -17,6 +19,7 @@ import { DashboardCommsComposer } from './DashboardCommsComposer';
 import { CommsFavoriteToggleButton } from './DashboardCommsFavoriteToggleButton';
 import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardSearchBox } from './DashboardSearchBox';
+import { Activity } from '@respond/shared/types/activity';
 
 function format24HourTime(value: number) {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(value);
@@ -42,6 +45,7 @@ const parseValues = (value: string): string[] => {
 export function DashboardCommsManager() {
   const comms = useCommsCommands();
   const activity = useActivityContext();
+  const printable = useRef<HTMLDivElement>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -70,12 +74,30 @@ export function DashboardCommsManager() {
     comms.updateComm(activity.id, id, { isDeleted: true });
   };
 
+  const handlePrint = useReactToPrint({
+    content: () => printable.current,
+    documentTitle: `${activity.title || 'activity'}-comms-log`,
+  });
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         <DashboardSearchBox onChange={setSearchQuery} placeholder="Search messages, to, or from..." sx={{ flex: 1 }} />
         <CommsAutomatedToggleButton onChange={setHideAutomated} />
         <CommsFavoriteToggleButton onChange={(isSelected) => setShowFavorites(isSelected)} />
+        <Tooltip title={"Print communications log"}>
+          <IconButton
+            onClick={handlePrint}
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}>
+              <PrintIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </Stack>
       <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
         {filteredCommunications.length === 0 ? (
@@ -92,7 +114,65 @@ export function DashboardCommsManager() {
           ))
         )}
       </Box>
+      <Box ref={printable} sx={{ display: 'none', '@media print': { display: 'block' } }}>
+        <DashboardCommsPrintView activity={activity} communications={filteredCommunications} />
+      </Box>
       <DashboardCommsComposer />
+    </Box>
+  );
+}
+
+function DashboardCommsPrintView({ activity, communications }: { activity: Activity | undefined; communications: Array<CommunicationsLogEntry> }) {
+  const { title, startTime, endTime, idNumber } = activity || {};
+  const startTimeValue = startTime ? new Date(startTime) : undefined;
+  const endTimeValue = endTime ? new Date(endTime) : undefined;
+  const generatedAt = new Date();
+  return (
+    <Box sx={{ p: 2 }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell colSpan={4}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.5 }}>
+                <Stack>
+                  <Typography variant="body2">{title}</Typography>
+                  <Typography variant="body2">State #: {idNumber ?? '_____________'}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Communications Log
+                  </Typography>
+                </Stack>
+                <Stack alignItems="flex-end">
+                  <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                    Start Time: {startTimeValue ? `${startTimeValue.toLocaleDateString('en-US')} ${format24HourTime(startTimeValue.getTime())}` : '_____________'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                    End Time: {endTimeValue ? `${endTimeValue.toLocaleDateString('en-US')} ${format24HourTime(endTimeValue.getTime())}` : '_____________'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Printed: {generatedAt.toLocaleDateString('en-US')} {format24HourTime(generatedAt.getTime())}
+                  </Typography>
+                </Stack>
+              </Stack>
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 700, width: 80 }}>Time</TableCell>
+            <TableCell sx={{ fontWeight: 700, width: 120 }}>From</TableCell>
+            <TableCell sx={{ fontWeight: 700, width: 120 }}>To</TableCell>
+            <TableCell sx={{ fontWeight: 700 }}>Message</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {communications.map((entry) => (
+            <TableRow key={entry.id}>
+              <TableCell>{format24HourTime(entry.timestamp)}</TableCell>
+              <TableCell>{entry.from}</TableCell>
+              <TableCell>{entry.to}</TableCell>
+              <TableCell sx={{ whiteSpace: 'pre-wrap' }}>{entry.message}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </Box>
   );
 }
