@@ -79,7 +79,7 @@ describe('StateManager.handleCommand', () => {
 
     const messages = activity?.comms?.map((c) => c.message) ?? [];
     expect(messages.some((m) => m.includes('established'))).toBe(true);
-    expect(messages).toContain('OP-2 terminated');
+    expect(messages).toContain('OP-2 location terminated');
   });
 
   it('tags a newly signed-in participant via the tagging reactor', async () => {
