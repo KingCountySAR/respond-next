@@ -137,7 +137,7 @@ describe('placeCommsReactor', () => {
     expect(commands).toHaveLength(1);
     expect(CommsCommands.LogComm.match(commands[0])).toBe(true);
     if (!CommsCommands.LogComm.match(commands[0])) throw new Error('expected LogComm');
-    expect(commands[0].payload.entry.message).toBe('OP1 established: 47.1, -121.2 ridge');
+    expect(commands[0].payload.entry.message).toBe('OP1 established 47.1, -121.2 ridge');
     expect(commands[0].payload.entry.isAutomated).toBe(true);
   });
 
@@ -151,7 +151,7 @@ describe('placeCommsReactor', () => {
     const commands = await placeCommsReactor.react(PlaceEvents.PlaceDeleted(activityId, place.id), ctx);
     expect(commands).toHaveLength(1);
     if (!CommsCommands.LogComm.match(commands[0])) throw new Error('expected LogComm');
-    expect(commands[0].payload.entry.message).toBe('OP1 terminated');
+    expect(commands[0].payload.entry.message).toBe('OP1 location terminated');
   });
 
   it('does nothing for a deleted place it cannot resolve', () => {
