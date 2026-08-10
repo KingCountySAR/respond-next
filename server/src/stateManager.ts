@@ -85,7 +85,6 @@ export class StateManager {
    */
   async handleCommand(command: Command, author: EventAuthor): Promise<void> {
     const events = produceEvents(command);
-    console.log('PROCESSING COMMAND', command.type, events.map((e) => e.type));
     if (!events.length) return;
 
     const stamped: StampedEvent[] = events.map((event) => ({ ...event, meta: { author, timestamp: Date.now() } }));
