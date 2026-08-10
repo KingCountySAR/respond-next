@@ -1,6 +1,7 @@
 import { NearMe } from '@mui/icons-material';
 import { Box, Card, CardActions, Grid, IconButton, Link, Typography } from '@mui/material';
 import { ReactNode } from 'react';
+import { Link as RouterLink } from 'wouter';
 
 import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusChip } from '@respond/components/StatusChip';
@@ -18,7 +19,7 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
         <Box padding={1}>
           <Box sx={{ pb: 2, display: 'flex', flexDirection: 'row' }} alignItems="center">
             <Box sx={{ flexGrow: 1 }}>
-              <Link href={getActivityPath(activity)} color="textPrimary" underline="hover">
+              <Link component={RouterLink} href={getActivityPath(activity)} color="textPrimary" underline="hover">
                 <Typography sx={{ fontWeight: 'bold' }} variant="h6">
                   {activity.title}
                 </Typography>
