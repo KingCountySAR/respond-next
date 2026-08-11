@@ -13,6 +13,7 @@ import { Activity } from '@respond/shared/types/activity';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
+import ConfirmDialog from '../ConfirmDialog';
 import { Stack } from '../Material';
 
 import { CommsAutomatedToggleButton } from './DashboardCommsAutomatedToggleButton';
@@ -50,12 +51,22 @@ export function DashboardCommsManager() {
   const pendingManualEntryScrollRef = useRef(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [entryPendingDelete, setEntryPendingDelete] = useState<CommunicationsLogEntry | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showFavorites, setShowFavorites] = useState(false);
   const [hideAutomated, setHideAutomated] = useState(false);
 
-  const visibleCommunications = useMemo(() => (activity.comms ?? []).filter((entry) => !entry.isDeleted && (!showFavorites || entry.isFavorite) && (!hideAutomated || !entry.isAutomated)), [activity, showFavorites, hideAutomated]);
+  const visibleCommunications = useMemo(() => {
+    const filtered = (activity.comms ?? []).filter((entry) => !entry.isDeleted && (!showFavorites || entry.isFavorite) && (!hideAutomated || !entry.isAutomated));
+    return [...filtered].sort((left, right) => {
+      const timestampDiff = (left.timestamp ?? 0) - (right.timestamp ?? 0);
+      if (timestampDiff !== 0) {
+        return timestampDiff;
+      }
+      return (left.id ?? '').localeCompare(right.id ?? '');
+    });
+  }, [activity, showFavorites, hideAutomated]);
 
   const filteredCommunications = useMemo(() => {
     const q = (searchQuery || '').trim().toLowerCase();
@@ -74,6 +85,17 @@ export function DashboardCommsManager() {
 
   const deleteEntry = (id: string) => {
     comms.updateComm(activity.id, id, { isDeleted: true });
+  };
+
+  const requestDeleteEntry = (entry: CommunicationsLogEntry) => {
+    setEntryPendingDelete(entry);
+  };
+
+  const confirmDeleteEntry = () => {
+    if (entryPendingDelete) {
+      deleteEntry(entryPendingDelete.id);
+    }
+    setEntryPendingDelete(null);
   };
 
   const handlePrint = useReactToPrint({
@@ -125,9 +147,13 @@ export function DashboardCommsManager() {
           </Box>
         ) : (
           filteredCommunications.map((entry) => (
-            <Paper key={entry.id} variant="outlined" sx={{ p: 1, bgcolor: entry.isFavorite ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined }}>
-              {editingId === entry.id ? <DashboardCommsComposer entry={entry} onSave={() => setEditingId(null)} onCancel={() => setEditingId(null)} /> : <DashboardCommsEntry entry={entry} onEdit={() => setEditingId(entry.id)} onFavorite={() => toggleFavorite(entry)} onDelete={() => deleteEntry(entry.id)} />}
-            </Paper>
+            <DashboardCommsItemWrapper key={entry.id} entry={entry} isEditing={editingId === entry.id}>
+              {editingId === entry.id ? (
+                <DashboardCommsComposer entry={entry} onSave={() => setEditingId(null)} onCancel={() => setEditingId(null)} />
+              ) : (
+                <DashboardCommsEntry entry={entry} onEdit={() => setEditingId(entry.id)} onFavorite={() => toggleFavorite(entry)} onDelete={() => requestDeleteEntry(entry)} />
+              )}
+            </DashboardCommsItemWrapper>
           ))
         )}
       </Box>
@@ -138,6 +164,18 @@ export function DashboardCommsManager() {
         onManualEntryAdded={() => {
           pendingManualEntryScrollRef.current = true;
         }}
+      />
+      <ConfirmDialog
+        open={Boolean(entryPendingDelete)}
+        prompt={
+          entryPendingDelete
+            ? `Delete communication from ${entryPendingDelete.from} to ${entryPendingDelete.to} at ${format24HourTime(entryPendingDelete.timestamp)}?`
+            : 'Delete this communication?'
+        }
+        destructive={true}
+        label="Delete"
+        onConfirm={confirmDeleteEntry}
+        onClose={() => setEntryPendingDelete(null)}
       />
     </Box>
   );
@@ -234,3 +272,21 @@ function DashboardCommsEntry({ entry, onEdit, onFavorite, onDelete }: { entry: C
     </Box>
   );
 }
+
+function DashboardCommsItemWrapper({ entry, isEditing = false, children }: { entry: CommunicationsLogEntry; isEditing: boolean, children: React.ReactNode }) {
+  return (
+    <Paper
+      key={entry.id}
+      variant="outlined"
+      sx={{
+        p: 1,
+        bgcolor: entry.isFavorite && !isEditing ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined,
+        borderWidth: isEditing ? 2 : 1,
+        borderStyle: 'solid',
+        borderColor: isEditing ? 'primary.main' : 'divider',
+      }}
+    >
+      {children}
+    </Paper>
+  );
+};
