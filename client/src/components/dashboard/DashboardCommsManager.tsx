@@ -148,11 +148,7 @@ export function DashboardCommsManager() {
         ) : (
           filteredCommunications.map((entry) => (
             <DashboardCommsItemWrapper key={entry.id} entry={entry} isEditing={editingId === entry.id}>
-              {editingId === entry.id ? (
-                <DashboardCommsComposer entry={entry} onSave={() => setEditingId(null)} onCancel={() => setEditingId(null)} />
-              ) : (
-                <DashboardCommsEntry entry={entry} onEdit={() => setEditingId(entry.id)} onFavorite={() => toggleFavorite(entry)} onDelete={() => requestDeleteEntry(entry)} />
-              )}
+              {editingId === entry.id ? <DashboardCommsComposer entry={entry} onSave={() => setEditingId(null)} onCancel={() => setEditingId(null)} /> : <DashboardCommsEntry entry={entry} onEdit={() => setEditingId(entry.id)} onFavorite={() => toggleFavorite(entry)} onDelete={() => requestDeleteEntry(entry)} />}
             </DashboardCommsItemWrapper>
           ))
         )}
@@ -165,18 +161,7 @@ export function DashboardCommsManager() {
           pendingManualEntryScrollRef.current = true;
         }}
       />
-      <ConfirmDialog
-        open={Boolean(entryPendingDelete)}
-        prompt={
-          entryPendingDelete
-            ? `Delete communication from ${entryPendingDelete.from} to ${entryPendingDelete.to} at ${format24HourTime(entryPendingDelete.timestamp)}?`
-            : 'Delete this communication?'
-        }
-        destructive={true}
-        label="Delete"
-        onConfirm={confirmDeleteEntry}
-        onClose={() => setEntryPendingDelete(null)}
-      />
+      <ConfirmDialog open={Boolean(entryPendingDelete)} prompt={entryPendingDelete ? `Delete communication from ${entryPendingDelete.from} to ${entryPendingDelete.to} at ${format24HourTime(entryPendingDelete.timestamp)}?` : 'Delete this communication?'} destructive={true} label="Delete" onConfirm={confirmDeleteEntry} onClose={() => setEntryPendingDelete(null)} />
     </Box>
   );
 }
@@ -273,7 +258,7 @@ function DashboardCommsEntry({ entry, onEdit, onFavorite, onDelete }: { entry: C
   );
 }
 
-function DashboardCommsItemWrapper({ entry, isEditing = false, children }: { entry: CommunicationsLogEntry; isEditing: boolean, children: React.ReactNode }) {
+function DashboardCommsItemWrapper({ entry, isEditing = false, children }: { entry: CommunicationsLogEntry; isEditing: boolean; children: React.ReactNode }) {
   return (
     <Paper
       key={entry.id}
@@ -289,4 +274,4 @@ function DashboardCommsItemWrapper({ entry, isEditing = false, children }: { ent
       {children}
     </Paper>
   );
-};
+}
