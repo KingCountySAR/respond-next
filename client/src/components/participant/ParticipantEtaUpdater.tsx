@@ -28,7 +28,7 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
   }, [debouncedEta, activityId, participantId, dispatch]);
 
   return (
-    <Stack direction={'row'} spacing={2} alignItems={'center'} justifyContent={'space-between'}>
+    <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
       {editing && (
         <InlineTimeEdit
           label="ETA"
@@ -57,7 +57,7 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
       {!editing && !eta && (
         <>
           <Typography variant="h6">ETA</Typography>
-          <Stack direction={'row'} spacing={2} alignItems={'center'} justifyContent={'space-between'}>
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
             <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset1))}>{etaPreset1}</IconButton>
             <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset2))}>{etaPreset2}</IconButton>
             <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset3))}>{etaPreset3}</IconButton>

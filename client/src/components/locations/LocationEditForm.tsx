@@ -82,8 +82,8 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
   return (
     <>
       <form onSubmit={handleSubmit(handleFormSubmit)}>
-        <Grid container spacing={2} justifyItems="center">
-          <Grid item xs={12}>
+        <Grid container spacing={2} sx={{ justifyItems: 'center' }}>
+          <Grid size={12}>
             <Controller
               name="title"
               control={control}
@@ -95,7 +95,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               )}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Controller
               name="address"
               control={control}
@@ -107,7 +107,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="lat"
               control={control}
@@ -119,7 +119,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               )}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="lon"
               control={control}
@@ -131,7 +131,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               )}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Controller
               name="description"
               control={control}
@@ -144,7 +144,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
             />
           </Grid>
           {enableTemporary && (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="toSaved"
                 control={control}
@@ -157,8 +157,8 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               />
             </Grid>
           )}
-          <Grid item xs={12}>
-            <Stack direction="row" alignItems={'center'} justifyContent={enableDelete ? 'space-between' : 'flex-end'}>
+          <Grid size={12}>
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: enableDelete ? 'space-between' : 'flex-end' }}>
               {enableDelete && (
                 <IconButton color="danger" onClick={handleFormDelete}>
                   <DeleteIcon />
@@ -172,7 +172,7 @@ export function LocationEditForm({ location, enableTemporary, variant = 'filled'
               </Stack>
             </Stack>
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <GoogleMapEmbed lat={lat} lon={lon} address={address} />
           </Grid>
         </Grid>

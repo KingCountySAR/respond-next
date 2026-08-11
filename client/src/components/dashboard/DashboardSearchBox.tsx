@@ -17,14 +17,16 @@ export function DashboardSearchBox({ placeholder, onChange, sx }: { placeholder?
         value={searchQuery}
         onChange={(e) => handleChange(e.target.value)}
         sx={{ '& .MuiInputBase-root': { height: 32 } }}
-        InputProps={{
-          endAdornment: searchQuery ? (
-            <InputAdornment position="end">
-              <IconButton size="small" onClick={() => handleChange('')} aria-label="clear search">
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </InputAdornment>
-          ) : undefined,
+        slotProps={{
+          input: {
+            endAdornment: searchQuery ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => handleChange('')} aria-label="clear search">
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </InputAdornment>
+            ) : undefined,
+          },
         }}
       />
     </Box>

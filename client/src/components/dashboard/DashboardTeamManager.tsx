@@ -76,7 +76,7 @@ export function DashboardTeamManager() {
 
   return (
     <>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}>
         <Button size="small" variant="outlined" onClick={toggleAll}>
           {expandedAll ? 'Collapse all' : 'Expand all'}
         </Button>
@@ -92,7 +92,7 @@ export function DashboardTeamManager() {
             })
           ) : (
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Typography variant="body2" color="text.secondary" textAlign="center">
+              <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
                 There are no active teams.
               </Typography>
             </Box>

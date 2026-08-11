@@ -47,20 +47,20 @@ function ParticipantUpdateTile({ record, onChange }: { record: EnrichedParticipa
   return (
     <Box>
       {edit ? (
-        <Stack flexGrow={1} direction="row" justifyContent="space-between">
-          <DateTimePicker value={initialTime} label={`${record.organizationName} - ${record.statusText}`} format="MM/dd HH:mm" onChange={handleAccept} onAccept={handleAccept} onClose={handleClose} />
+        <Stack direction="row" sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
+          <DateTimePicker value={new Date(initialTime)} label={`${record.organizationName} - ${record.statusText}`} format="MM/dd HH:mm" onChange={(d) => handleAccept(d ? d.getTime() : null)} onAccept={(d) => handleAccept(d ? d.getTime() : null)} onClose={handleClose} />
           <IconButton disableRipple onClick={handleClose}>
             <Close />
           </IconButton>
         </Stack>
       ) : (
         <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
-          <Stack flexGrow={1} direction="row" justifyContent="space-between">
-            <Stack alignItems="flex-start">
+          <Stack direction="row" sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
+            <Stack sx={{ alignItems: 'flex-start' }}>
               <Typography variant="h6">{record.statusText}</Typography>
               <Typography variant="caption">{record.organizationName}</Typography>
             </Stack>
-            <Stack alignItems="flex-end">
+            <Stack sx={{ alignItems: 'flex-end' }}>
               <Typography sx={{ ml: 2 }} variant="h6">
                 {formatDate(time, 'HHmm')}
               </Typography>

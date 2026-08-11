@@ -88,7 +88,7 @@ export function DashboardResponderManager() {
       <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
         {availableParticipants.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography variant="body2" color="text.secondary" textAlign="center">
+            <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
               All responders are assigned.
             </Typography>
           </Box>

@@ -1,5 +1,5 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
-import addDays from 'date-fns/addDays';
+import { addDays } from 'date-fns/addDays';
 import { useEffect } from 'react';
 import { Link } from 'wouter';
 

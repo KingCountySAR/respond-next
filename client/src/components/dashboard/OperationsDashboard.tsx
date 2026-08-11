@@ -1,6 +1,6 @@
 'use client';
 
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlined';
 import GroupsIcon from '@mui/icons-material/Groups';
 import HubIcon from '@mui/icons-material/Hub';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
@@ -88,7 +88,7 @@ function OperationsDashboardContent() {
             <DashboardCommsManager />
           </DashboardPanel>
           <DashboardPanel title="Operations" collapse="right" icon={<HubIcon />}>
-            <Stack direction="column" spacing={1} overflow="auto" sx={{ flex: 1, minHeight: 0, p: 0.5 }}>
+            <Stack direction="column" spacing={1} sx={{ overflow: 'auto', flex: 1, minHeight: 0, p: 0.5 }}>
               <DashboardRoleTile title="Rescue Group" id={activity.staff?.['Rescue Group']} />
               <DashboardRoleTile title="Medical Group" id={activity.staff?.['Medical Group']} />
               <DashboardRoleTile title="Rigging Group" id={activity.staff?.['Rigging Group']} />

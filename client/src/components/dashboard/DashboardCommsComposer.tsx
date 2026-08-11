@@ -64,7 +64,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel, onManualEntryA
     <Box sx={{ borderColor: 'divider', p: 0.5, mt: entry ? 0 : 0.5, flexShrink: 0 }}>
       <form onSubmit={handleSubmit(submit)}>
         <Stack spacing={1}>
-          <Stack direction={{ xl: 'row' }} alignItems={{ xs: 'stretch', xl: 'center' }} gap={2}>
+          <Stack direction={{ xl: 'row' }} sx={{ alignItems: { xs: 'stretch', xl: 'center' }, gap: 2 }}>
             <TextField label="From" size="small" inputRef={fromRef} {...register('from')} />
             <TextField label="To" size="small" {...register('to')} />
             {entry && (
@@ -102,7 +102,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel, onManualEntryA
               }
             }}
           />
-          <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
             {entry && (
               <Button
                 onClick={() => {

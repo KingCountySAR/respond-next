@@ -16,8 +16,8 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
   return (
     <ActivityProvider activity={activity}>
       <Card>
-        <Box padding={1}>
-          <Box sx={{ pb: 2, display: 'flex', flexDirection: 'row' }} alignItems="center">
+        <Box sx={{ padding: 1 }}>
+          <Box sx={{ alignItems: 'center', pb: 2, display: 'flex', flexDirection: 'row' }}>
             <Box sx={{ flexGrow: 1 }}>
               <Link component={RouterLink} href={getActivityPath(activity)} color="textPrimary" underline="hover">
                 <Typography sx={{ fontWeight: 'bold' }} variant="h6">
@@ -32,8 +32,8 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
 
         {isActive(activity) && (
           <CardActions>
-            <Grid container justifyContent="space-between" alignItems="center">
-              <Grid item>
+            <Grid container sx={{ flexGrow: 1, justifyContent: 'space-between', alignItems: 'center' }}>
+              <Grid>
                 {activity.mapId && (
                   <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
                     <img src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
@@ -41,7 +41,7 @@ export const ActivityTile = ({ activity, status, children }: { activity: Activit
                 )}
                 <NavigationButton lat={activity.location.lat} lon={activity.location.lon} />
               </Grid>
-              <Grid item>
+              <Grid>
                 <StatusUpdater />
               </Grid>
             </Grid>

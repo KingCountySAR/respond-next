@@ -145,7 +145,7 @@ export function DashboardEquipmentManager() {
     <>
       <Droppable accepts="equipment" onDrop={handleDrop} grow>
         <Stack spacing={2} sx={{ overflow: 'auto' }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <DashboardSearchBox onChange={setSearchQuery} sx={{ flex: 1 }} />
             <EquipmentGroupToggleButton onChange={(value) => setGroupBy(value)} />
           </Stack>
@@ -160,9 +160,9 @@ export function DashboardEquipmentManager() {
 function EquipmentTile({ item }: { item: EquipmentItem }) {
   return (
     <DashboardDraggableContainer variant="compact">
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ flex: 1, minWidth: 0, width: '100%' }}>
+      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', flex: 1, minWidth: 0, width: '100%' }}>
         <Typography variant="subtitle2">{item.name}</Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           {item.type}
         </Typography>
       </Stack>

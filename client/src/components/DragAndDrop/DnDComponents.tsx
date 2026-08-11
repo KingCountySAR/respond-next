@@ -1,6 +1,5 @@
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { SxProps, Theme } from '@mui/material';
-
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
 
 import { DraggedItem, useDnD } from './DnDProvider';
@@ -61,12 +60,7 @@ export function Draggable<T>({ type, item, callback, children }: DraggableProps<
 
 export function DragHandle({ sx }: { sx?: SxProps<Theme> }) {
   const baseSx: SxProps<Theme> = { fontSize: 16, color: 'text.secondary', opacity: 0.55 };
-  return (
-    <DragIndicatorIcon
-      className="drag-handle"
-      sx={[baseSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
-    />
-  );
+  return <DragIndicatorIcon className="drag-handle" sx={[baseSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} />;
 }
 
 // --- <Droppable /> ---

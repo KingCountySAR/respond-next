@@ -51,14 +51,17 @@ export function LocationAutocomplete({ required, value, variant = 'filled', onCh
           variant={variant}
           label="Location"
           required={required}
-          InputProps={{
-            ...params.InputProps,
-            endAdornment: (
-              <>
-                {loadingLocations ? <CircularProgress color="inherit" size={20} /> : null}
-                {params.InputProps.endAdornment}
-              </>
-            ),
+          slotProps={{
+            ...params.slotProps,
+            input: {
+              ...params.slotProps.input,
+              endAdornment: (
+                <>
+                  {loadingLocations ? <CircularProgress color="inherit" size={20} /> : null}
+                  {params.slotProps.input.endAdornment}
+                </>
+              ),
+            },
           }}
         />
       )}

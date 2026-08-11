@@ -96,7 +96,7 @@ export function ActivityListPage({ activityType }: { activityType: ActivityType 
       <Paper sx={{ p: 2 }}>
         <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
           <Link href="/">Home</Link>
-          <Typography color="text.primary">{pageTitle}</Typography>
+          <Typography sx={{ color: 'text.primary' }}>{pageTitle}</Typography>
         </Breadcrumbs>
         <ActivityList activities={sortedActivities} loading={loading} />
       </Paper>

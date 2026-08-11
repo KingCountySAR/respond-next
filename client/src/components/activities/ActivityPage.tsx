@@ -48,7 +48,7 @@ export function ActivityActionsBar() {
   };
 
   return (
-    <Stack direction="row" spacing={1} alignItems="center">
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
       <EditActivityButton href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/edit`} />
       <UpdateActivityStatusButton label={isActivityActive ? 'Complete' : 'Reactivate'} onClick={toggleStatus} />
       <RemoveActivityButton onClick={handleRemove} />

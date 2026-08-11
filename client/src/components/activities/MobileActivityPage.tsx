@@ -51,7 +51,7 @@ export function MobileActivityPage() {
       <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
         {showParticipantOptions && (
-          <Stack spacing={2} p={2}>
+          <Stack spacing={2} sx={{ p: 2 }}>
             {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
             <StatusUpdater fullWidth={true} />
           </Stack>
@@ -84,7 +84,7 @@ function MobileRosterScreen() {
   return (
     <>
       <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} />
-      <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} flex="1 1 auto">
+      <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} sx={{ flex: '1 1 auto' }}>
         <RosterPanel //
           filter={orgFilter}
           participantContainerComponent={RosterContainer}
@@ -103,16 +103,16 @@ function MobileRosterScreen() {
 function RosterRow({ participant, orgs, onClick }: { participant: Participant; orgs: Record<string, ParticipatingOrg>; onClick?: () => void }) {
   return (
     <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
-      <Stack direction="row" sx={{ m: '5px', ml: '8px' }} justifyContent="space-between" flexGrow={1}>
+      <Stack direction="row" sx={{ justifyContent: 'space-between', flexGrow: 1, m: '5px', ml: '8px' }}>
         <Stack>
-          <Typography variant="body1" fontWeight={600}>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>
             {participant.firstname} {participant.lastname}
           </Typography>
           <Typography variant="body2">
             {orgs[participant.organizationId]?.rosterName ?? orgs[participant.organizationId]?.title} {participant.tags?.join(', ')}
           </Typography>
         </Stack>
-        <Stack textAlign={'right'} justifyContent={'space-between'}>
+        <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
           <Typography variant="body2">{getStatusText(participant.timeline[0].status)}</Typography>
           <Typography variant="body2">{isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
         </Stack>

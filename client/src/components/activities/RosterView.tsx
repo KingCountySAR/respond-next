@@ -64,11 +64,11 @@ export function RosterReview({ activityId }: { activityId: string }) {
   return (
     <ActivityProvider activity={activity}>
       <ToolbarPage maxWidth="lg">
-        <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
-          <Box display="flex" flex="1 1 auto" flexDirection="column">
+        <Stack direction="row" spacing={1} divider={<Divider orientation="vertical" flexItem />} sx={{ flex: '1 1 auto' }}>
+          <Box sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column' }}>
             <Paper>{activity ? <Roster ref={printable} rosterEntries={rosterEntries} styles={showColumnBorders ? columnBordersStyle : undefined} /> : <ActivityNotFound />}</Paper>
           </Box>
-          <Stack alignItems="stretch" spacing={2}>
+          <Stack spacing={2} sx={{ alignItems: 'stretch' }}>
             <FormGroup>
               <FormControlLabel control={<Switch />} label="Include Standby" onChange={() => setShowStandby(!showStandby)} />
               <FormControlLabel control={<Switch />} label="Show Column Borders" onChange={() => setShowColumnBorders(!showColumnBorders)} />
@@ -131,7 +131,7 @@ function ActivityNotFound() {
   return (
     <ToolbarPage maxWidth="lg">
       <Paper>
-        <Box padding={2}>
+        <Box sx={{ padding: 2 }}>
           <Typography>Activity Not Found</Typography>
         </Box>
       </Paper>

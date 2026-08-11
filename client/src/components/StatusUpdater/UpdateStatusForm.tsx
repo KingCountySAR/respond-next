@@ -105,13 +105,13 @@ export const StatusTimeInput = ({ form: { control, errors } }: { form: FormLogic
         <FormControl error={!!errors.statusTime?.message}>
           <DateTimePicker
             label="Status Time"
-            value={field.value}
+            value={field.value ? new Date(field.value) : null}
             inputRef={field.ref}
             onChange={(date) => {
-              field.onChange(date);
+              field.onChange(date ? date.getTime() : null);
             }}
             onAccept={(date) => {
-              field.onChange(date);
+              field.onChange(date ? date.getTime() : null);
             }}
             format="MM/dd HH:mm"
           />
@@ -141,7 +141,7 @@ export const UpdateStatusForm = ({ form }: { form: FormLogic }) => {
   }, [isInitialized, form, participant?.miles, participant?.eta]);
 
   return (
-    <Stack flexGrow={1} spacing={2} justifyContent="space-between">
+    <Stack spacing={2} sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
       <DialogContentText id="status-update-dialog-description">Change your status for {activity.title}?</DialogContentText>
       <StatusTimeInput form={form} />
       {isEnrouteOrStandby(newStatus) ? <EtaInput form={form} /> : undefined}
@@ -178,38 +178,40 @@ const EtaInput = ({ form: { control, errors } }: { form: FormLogic }) => {
         <FormControl error={!!errors.eta?.message}>
           <DateTimePicker
             label="ETA"
-            value={field.value}
+            value={field.value ? new Date(field.value) : null}
             inputRef={field.ref}
             onChange={(date) => {
-              field.onChange(date);
+              field.onChange(date ? date.getTime() : null);
             }}
             onAccept={(date) => {
-              field.onChange(date);
+              field.onChange(date ? date.getTime() : null);
             }}
             format="MM/dd HH:mm"
             slotProps={{
               textField: {
-                InputProps: field.value
-                  ? {
-                      endAdornment: (
-                        <Stack direction={'row'} spacing={1} alignItems={'center'} justifyContent={'end'} fontSize={8} marginRight={-1.5}>
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              field.onChange(null);
-                            }}
-                          >
-                            <CloseIcon />
-                          </IconButton>
-                        </Stack>
-                      ),
-                    }
-                  : undefined,
+                slotProps: {
+                  input: field.value
+                    ? {
+                        endAdornment: (
+                          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'end', fontSize: 8, marginRight: -1.5 }}>
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                field.onChange(null);
+                              }}
+                            >
+                              <CloseIcon />
+                            </IconButton>
+                          </Stack>
+                        ),
+                      }
+                    : undefined,
+                },
               },
             }}
           />
           <>
-            <Stack direction={'row'} spacing={1} alignItems={'center'} justifyContent={'end'} fontSize={8}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'end', fontSize: 8 }}>
               <IconButton onClick={() => field.onChange(new Date().getTime() + toMilliseconds(etaPreset1))}>{etaPreset1}</IconButton>
               <IconButton onClick={() => field.onChange(new Date().getTime() + toMilliseconds(etaPreset2))}>{etaPreset2}</IconButton>
               <IconButton onClick={() => field.onChange(new Date().getTime() + toMilliseconds(etaPreset3))}>{etaPreset3}</IconButton>

@@ -49,7 +49,7 @@ function AddParticipantDialog({ open, activity, onClose }: { open: boolean; acti
 
   return (
     <DialogWithHistory fullWidth={true} open={open} onClose={onClose}>
-      <DialogTitle alignItems="center" justifyContent="space-between" display="flex">
+      <DialogTitle sx={{ alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
         <Box>{getTitle(activity)}</Box>
       </DialogTitle>
       <DialogContent>

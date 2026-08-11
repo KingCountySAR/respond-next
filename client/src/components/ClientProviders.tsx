@@ -47,7 +47,7 @@ export default function ClientProviders({ googleClient, config, user, myOrg, chi
         primary: {
           main: (prefersDarkMode ? config.theme.primaryDark : config.theme.primary) ?? config.theme.primary,
         },
-        danger: { main: 'rgb(192,0,0)', contrastText: 'white' },
+        danger: { main: 'rgb(192,0,0)', contrastText: '#fff' },
       },
     };
     return createTheme(theme);

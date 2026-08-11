@@ -19,7 +19,7 @@ export function DashboardHeader() {
           width: '100%',
         }}
       >
-        <Stack direction="row" alignItems="stretch" spacing={2}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'stretch' }}>
           <DashboardClock />
           <DashboardActivityDetails />
         </Stack>

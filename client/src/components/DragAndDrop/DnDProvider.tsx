@@ -38,16 +38,17 @@ export const DnDProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const containerRect = currentTarget.getBoundingClientRect();
     const handle = currentTarget.querySelector<HTMLElement>('.drag-handle');
     const handleRect = handle?.getBoundingClientRect();
-    const previewOffset = item.previewOffset ??
+    const previewOffset =
+      item.previewOffset ??
       (handleRect
-      ? {
-          x: handleRect.left + handleRect.width / 2 - containerRect.left,
-          y: handleRect.top + handleRect.height / 2 - containerRect.top,
-        }
-      : {
-          x: containerRect.width / 2,
-          y: containerRect.height / 2,
-        });
+        ? {
+            x: handleRect.left + handleRect.width / 2 - containerRect.left,
+            y: handleRect.top + handleRect.height / 2 - containerRect.top,
+          }
+        : {
+            x: containerRect.width / 2,
+            y: containerRect.height / 2,
+          });
 
     setActiveItem(item);
     setDragOffset(previewOffset);

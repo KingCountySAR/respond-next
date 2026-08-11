@@ -34,17 +34,17 @@ export function DesktopActivityPage() {
 
   return (
     <ToolbarPage maxWidth="lg">
-      <Stack direction="row" sx={{ mb: 1 }} alignItems="start" spacing={2}>
-        <Typography variant="h4" flex="1 1 auto">
+      <Stack direction="row" sx={{ mb: 1, alignItems: 'start' }} spacing={2}>
+        <Typography variant="h4" sx={{ flex: '1 1 auto' }}>
           {activity.idNumber} {activity.title}
         </Typography>
         <ActivityActionsBar />
       </Stack>
-      <Stack direction="row" flex="1 1 auto" spacing={1} divider={<Divider orientation="vertical" flexItem />}>
-        <Box display="flex" flex="1 1 auto" flexDirection="column">
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} display="flex" flexDirection="row" />
-            <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" spacing={1} divider={<Divider orientation="vertical" flexItem />} sx={{ flex: '1 1 auto' }}>
+        <Box sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column' }}>
+          <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} sx={{ display: 'flex', flexDirection: 'row' }} />
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <AddParticipantButton activity={activity} />
               <Button component={Link} href={`/roster/${activity.id}`} variant="outlined" size="small">
                 View Roster
@@ -61,7 +61,7 @@ export function DesktopActivityPage() {
             }}
           />
         </Box>
-        <Stack alignItems="stretch" sx={{ width: 400 }}>
+        <Stack sx={{ width: 400, alignItems: 'stretch' }}>
           <BriefingPanel sx={{ px: 3 }} />
           {showEta && (
             <Paper sx={{ mt: 2, p: 2 }}>
@@ -69,7 +69,7 @@ export function DesktopActivityPage() {
             </Paper>
           )}
           {isActivityActive && (
-            <Box sx={{ my: 2 }} display="flex" justifyContent="end">
+            <Box sx={{ my: 2, display: 'flex', justifyContent: 'end' }}>
               <StatusUpdater />
             </Box>
           )}
@@ -84,17 +84,17 @@ export function DesktopActivityPage() {
 function RosterRow({ participant, orgs, onClick }: { participant: Participant; orgs: Record<string, ParticipatingOrg>; onClick?: () => void }) {
   return (
     <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
-      <Stack direction="column" sx={{ m: '5px', ml: '8px' }} flexGrow={1}>
-        <Stack direction="row" spacing={2} justifyContent={'space-between'}>
+      <Stack direction="column" sx={{ m: '5px', ml: '8px', flexGrow: 1 }}>
+        <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
           <Stack>
-            <Typography variant="body1" fontWeight={600}>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
               {participant.firstname} {participant.lastname}
             </Typography>
             <Typography variant="body2">
               {orgs[participant.organizationId]?.rosterName ?? orgs[participant.organizationId]?.title} {participant.tags?.join(', ')}
             </Typography>
           </Stack>
-          <Stack textAlign={'right'} justifyContent={'space-between'}>
+          <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
             <Typography variant="body2">{getStatusText(participant.timeline[0].status)}</Typography>
             <Typography variant="body2">{isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
           </Stack>

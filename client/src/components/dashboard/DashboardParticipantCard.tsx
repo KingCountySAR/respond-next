@@ -19,16 +19,16 @@ export default function DashboardParticipantCard({ participant }: { participant:
   return (
     <DashboardDraggableContainer variant="compact" disabled={!isAvailable}>
       <Stack direction="column" spacing={0.25} sx={{ width: '100%' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="subtitle2">
             {participant.firstname} {participant.lastname}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             {!isAvailable && participant.eta ? `ETA: ${format24HourTime(participant.eta)}` : ''}
           </Typography>
         </Stack>
-        <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="space-between">
-          <Typography variant="caption" color="text.secondary">
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             {organizationName} {participant.tags?.join(', ')}
           </Typography>
           {!isAvailable && <DashboardParticipantStatusButton participant={participant} status={ParticipantStatus.Available} />}

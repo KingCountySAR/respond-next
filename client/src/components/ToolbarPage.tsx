@@ -26,7 +26,7 @@ export function ToolbarPage({ children, maxWidth }: { children: React.ReactNode;
   return (
     <Container maxWidth={maxWidth ?? 'md'} sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
       <CssBaseline />
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, position: 'fixed' }}>
         <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             <Link href="/" style={{ textDecoration: 'inherit', color: 'inherit' }}>
@@ -49,7 +49,7 @@ export function ToolbarPage({ children, maxWidth }: { children: React.ReactNode;
         </Toolbar>
       </AppBar>
       <Box className="toolbar-filler" sx={{ height: { xs: 56, sm: 64 }, flexShrink: 0 }} />
-      <Box component="main" sx={{ py: 2, flex: '1 1 auto', minHeight: 0 }} display="flex" flexDirection="column">
+      <Box component="main" sx={{ display: 'flex', flexDirection: 'column', py: 2, flex: '1 1 auto', minHeight: 0 }}>
         {children}
       </Box>
     </Container>

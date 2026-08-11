@@ -13,7 +13,7 @@ export const OutputForm = ({ children, columns }: { children: ReactNode; columns
 
   const outputFields = childrenArray.map((child, index) => {
     return (
-      <Grid key={index} item xs={12} sm={12 / (columns ?? 1)}>
+      <Grid key={index} size={{ xs: 12, sm: 12 / (columns ?? 1) }}>
         {child}
       </Grid>
     );
@@ -33,13 +33,13 @@ const OutputField = ({ label, multiline, children }: { label: string; multiline?
   return (
     <Box
       sx={{
+        borderBottom: 1,
         display: 'flex',
         flexDirection: { flexDirection },
         alignItems: { alignItems },
         justifyContent: 'space-between',
         borderColor: 'grey.200',
       }}
-      borderBottom={1}
     >
       <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: '2em', mr: { xs: 2, md: 5 } }}>
         {label}

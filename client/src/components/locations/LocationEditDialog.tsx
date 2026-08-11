@@ -17,7 +17,7 @@ export function LocationEditDialog({ location = createNewLocation(), open, onSub
   };
   return (
     <DialogWithHistory open={open} onClose={onClose}>
-      <DialogTitle alignItems="center" justifyContent="space-between" display="flex">
+      <DialogTitle sx={{ alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
         <Box>{location.title ? `Update ${location.title}` : 'Create New Location'}</Box>
       </DialogTitle>
       <DialogContent>

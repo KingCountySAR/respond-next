@@ -124,12 +124,12 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
       <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
         <StatusContainer color={team.status === 'Disbanded' ? 'grey' : statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Stack direction="row" alignItems="center">
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+              <Stack direction="row" sx={{ alignItems: 'center' }}>
                 <IconButton onClick={handleExpandClick} size="small" sx={{ width: 32, height: 32 }}>
                   {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
                 </IconButton>
-                <Stack direction="row" spacing={2} alignItems="center">
+                <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer' }} onClick={() => setOpenTeamEditor(team)}>
                     {team.name}
                   </Typography>
@@ -141,7 +141,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                   )}
                 </Stack>
               </Stack>
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <TeamStatusSelect team={team} />
                 <Chip label={`${teamParticipants.length} members`} size="small" variant="outlined" />
               </Stack>
@@ -151,12 +151,12 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                 <Divider sx={{ my: 1 }} />
                 <Stack direction="row" spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', pl: 1 }}>
                       Team Members
                     </Typography>
                     <Stack spacing={0.75} sx={{ mt: 0.5 }}>
                       {teamMembers.length === 0 ? (
-                        <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', pl: 1 }}>
                           None
                         </Typography>
                       ) : (
@@ -171,7 +171,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                     </Stack>
                   </Box>
                   <Box sx={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       Details
                     </Typography>
                     <Stack spacing={0.75} sx={{ mt: 0.5 }}>
@@ -180,12 +180,12 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                     </Stack>
                   </Box>
                   <Box sx={{ textAlign: 'right', flex: 1, minWidth: 0 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ pr: 1 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', pr: 1 }}>
                       Equipment
                     </Typography>
                     <Stack spacing={0.75} sx={{ mt: 0.5 }}>
                       {sortedTeamEquipment.length === 0 ? (
-                        <Typography variant="body2" color="text.secondary" sx={{ pr: 1 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', pr: 1 }}>
                           None
                         </Typography>
                       ) : (
@@ -209,7 +209,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                 </Stack>
                 {team.notes?.trim() && (
                   <Box sx={{ width: '100%', mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
                       Notes
                     </Typography>
                     <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>

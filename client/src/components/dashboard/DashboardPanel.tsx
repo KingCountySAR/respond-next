@@ -35,7 +35,7 @@ export function DashboardPanel({ title, icon, collapse = 'left', grow = false, c
 
 function LeftPanelHeader({ title, icon, collapsed, onToggle }: { title: string; icon?: React.ReactNode; collapsed: boolean; onToggle: () => void }) {
   const open = (
-    <Stack direction="row" alignItems="center" sx={{ mb: 1, gap: 1, width: '100%' }} justifyContent="space-between">
+    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1, gap: 1, width: '100%' }}>
       <Box sx={{ width: 32, height: 32 }} /> {/* Placeholder to balance the layout when the button is on the right */}
       <DashboardPanelTitle title={title} icon={icon} />
       <IconButton onClick={onToggle} size="small" sx={{ width: 32, height: 32 }}>
@@ -45,7 +45,7 @@ function LeftPanelHeader({ title, icon, collapsed, onToggle }: { title: string; 
   );
 
   const closed = (
-    <Stack direction="column" alignItems="center" sx={{ gap: 2, width: '100%' }} justifyContent="flex-start">
+    <Stack direction="column" sx={{ alignItems: 'center', justifyContent: 'flex-start', gap: 2, width: '100%' }}>
       <IconButton onClick={onToggle} size="small" sx={{ width: 32, height: 32 }}>
         {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
       </IconButton>
@@ -58,7 +58,7 @@ function LeftPanelHeader({ title, icon, collapsed, onToggle }: { title: string; 
 
 function RightPanelHeader({ title, icon, collapsed, onToggle }: { title: string; icon?: React.ReactNode; collapsed: boolean; onToggle: () => void }) {
   const open = (
-    <Stack direction="row" alignItems="center" sx={{ mb: 1, gap: 1, width: '100%' }} justifyContent="space-between">
+    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1, gap: 1, width: '100%' }}>
       <IconButton onClick={onToggle} size="small" sx={{ width: 32, height: 32 }}>
         {collapsed ? <ChevronLeftIcon /> : <ChevronRightIcon />}
       </IconButton>
@@ -68,7 +68,7 @@ function RightPanelHeader({ title, icon, collapsed, onToggle }: { title: string;
   );
 
   const closed = (
-    <Stack direction="column" alignItems="center" sx={{ gap: 2, width: '100%' }} justifyContent="flex-start">
+    <Stack direction="column" sx={{ alignItems: 'center', justifyContent: 'flex-start', gap: 2, width: '100%' }}>
       <IconButton onClick={onToggle} size="small" sx={{ width: 32, height: 32 }}>
         {collapsed ? <ChevronLeftIcon /> : <ChevronRightIcon />}
       </IconButton>
@@ -81,7 +81,7 @@ function RightPanelHeader({ title, icon, collapsed, onToggle }: { title: string;
 
 function DashboardPanelTitle({ title, rotate = false, icon }: { title: string; rotate?: boolean; icon?: React.ReactNode }) {
   return (
-    <Stack direction={rotate ? 'column' : 'row'} spacing={1} alignItems="center">
+    <Stack direction={rotate ? 'column' : 'row'} spacing={1} sx={{ alignItems: 'center' }}>
       {icon}
       <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center', writingMode: rotate ? 'vertical-rl' : 'unset' }}>{title}</Typography>
     </Stack>

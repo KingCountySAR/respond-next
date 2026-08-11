@@ -87,8 +87,8 @@ export function RosterPanel({ filter, participantContainerComponent: Participant
   }
 
   return (
-    <Box flex="1 1 auto">
-      <Stack direction="row" spacing={1} alignItems="center" justifyContent={'right'}>
+    <Box sx={{ flex: '1 1 auto' }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'right' }}>
         <Typography>Sort By: Name</Typography>
         <Switch value={sortOnStatus} onChange={(event) => setSortOnStatus(event.target.checked)} color="primary" />
         <Typography>Status</Typography>
@@ -100,7 +100,7 @@ export function RosterPanel({ filter, participantContainerComponent: Participant
 
 export function RosterRowCard({ status, children, onClick, ...props }: PaperProps & { status: ParticipantStatus; children: ReactNode; onClick?: () => void }) {
   let cardContent = (
-    <Stack direction="row" minHeight="3rem">
+    <Stack direction="row" sx={{ minHeight: '3rem' }}>
       <Paper elevation={2} sx={{ width: 8, bgcolor: getStatusCssColor(status) ?? 'transparent', borderBottomRightRadius: 0, borderTopRightRadius: 0 }} />
       {children}
     </Stack>
@@ -138,7 +138,7 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
   const name = `${participant.firstname} ${participant.lastname}`;
   return (
     <DialogWithHistory fullWidth open={open} onClose={onClose}>
-      <DialogTitle style={{ borderBottom: 'solid 4px ' + getStatusCssColor(participant.timeline[0].status) }} alignItems="center" justifyContent="space-between" display="flex">
+      <DialogTitle style={{ borderBottom: 'solid 4px ' + getStatusCssColor(participant.timeline[0].status) }} sx={{ alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
         <Box>{name}</Box>
         <Typography style={{ color: getStatusCssColor(participant.timeline[0].status) }}>{getStatusText(participant.timeline[0].status)}</Typography>
       </DialogTitle>
@@ -150,7 +150,7 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
               alt={`Photo of ${name}`}
               style={{ width: '8rem', minHeight: '10rem', border: 'solid 1px #777', borderRadius: '4px' }}
             />
-            <Typography fontWeight={600}>{getOrganizationName(activity, participant.organizationId)}</Typography>
+            <Typography sx={{ fontWeight: 600 }}>{getOrganizationName(activity, participant.organizationId)}</Typography>
             <Box>
               {participant.tags?.map((t) => (
                 <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />
@@ -170,10 +170,10 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
               </Typography>
             )}
           </Box>
-          <Stack spacing={2} flexGrow={1}>
+          <Stack spacing={2} sx={{ flexGrow: 1 }}>
             <ParticipantHoursText participant={participant} />
             <ParticipantMiles activityId={activity.id} participant={participant} />
-            <Typography borderBottom={1} variant="h6">
+            <Typography variant="h6" sx={{ borderBottom: 1 }}>
               Timeline
             </Typography>
             <ParticipantTimeline participant={participant} />
@@ -224,9 +224,9 @@ function ParticipantHoursText({ participant }: { participant: Participant }) {
 
   // Round to the nearest quarter hour.
   return (
-    <Stack direction={'row'} spacing={2} justifyContent={'space-between'}>
+    <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
       <Typography variant="h6">Total Hours:</Typography>
-      <Typography variant="h6" flexGrow={1} align={'right'}>
+      <Typography variant="h6" align={'right'} sx={{ flexGrow: 1 }}>
         {Math.round(timeOnClock / 1000 / 60 / 15) / 4}
       </Typography>
     </Stack>
@@ -240,9 +240,9 @@ function ParticipantMiles({ activityId, participant }: { activityId: string; par
     <>
       {!edit && (
         <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
-          <Stack sx={{ width: '100%' }} direction={'row'} spacing={2} justifyContent={'space-between'}>
+          <Stack sx={{ width: '100%', justifyContent: 'space-between' }} direction="row" spacing={2}>
             <Typography variant="h6">Total Miles:</Typography>
-            <Typography variant="h6" flexGrow={1} align={'right'}>
+            <Typography variant="h6" align="right" sx={{ flexGrow: 1 }}>
               {miles}
             </Typography>
           </Stack>

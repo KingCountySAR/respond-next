@@ -31,7 +31,7 @@ export function DashboardEquipmentSummary() {
       <Stack spacing={1}>
         <DashboardBoxWithTitle title="On Scene" collapsible>
           {onSceneEntries.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               No equipment on scene.
             </Typography>
           ) : (
@@ -44,7 +44,7 @@ export function DashboardEquipmentSummary() {
         </DashboardBoxWithTitle>
         <DashboardBoxWithTitle title="Assigned" collapsible>
           {assignedEntries.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               No equipment assigned.
             </Typography>
           ) : (
@@ -57,7 +57,7 @@ export function DashboardEquipmentSummary() {
         </DashboardBoxWithTitle>
         <DashboardBoxWithTitle title="Staged" collapsible>
           {placesWithEquipment.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               No equipment staged.
             </Typography>
           ) : (
@@ -69,7 +69,7 @@ export function DashboardEquipmentSummary() {
               const entries = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
               return (
                 <div key={place.id}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  <Typography variant="subtitle2" sx={{ color: 'text.secondary', mt: 0.5 }}>
                     {place.name}
                   </Typography>
                   {entries.map(([name, count]) => (

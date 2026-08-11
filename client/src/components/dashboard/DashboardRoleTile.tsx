@@ -35,7 +35,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
           <Typography component="div" variant="subtitle1" sx={{ fontWeight: 700 }}>
             {title}
           </Typography>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography component="div" sx={{ color: 'text.secondary' }}>
               {name}
             </Typography>

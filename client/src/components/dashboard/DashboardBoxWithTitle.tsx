@@ -39,19 +39,17 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
     >
       <Stack
         direction="row"
-        alignItems="center"
-        justifyContent="space-between"
         onClick={() => {
           if (!collapsible) return;
           setCollapsed((current) => !current);
         }}
-        sx={{ cursor: 'pointer', pb: !collapsible || collapsed ? 0 : 1 }}
+        sx={{ alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', pb: !collapsible || collapsed ? 0 : 1 }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
           {adornment}
         </Stack>
-        <Stack direction="row" alignItems="center">
+        <Stack direction="row" sx={{ alignItems: 'center' }}>
           <Stack direction="row" sx={{ visibility: hovered ? 'visible' : 'hidden' }}>
             {actions.map((action) => (
               <IconButton

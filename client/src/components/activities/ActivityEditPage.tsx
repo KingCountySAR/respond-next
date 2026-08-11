@@ -185,8 +185,8 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     <ToolbarPage>
       <Paper>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <Grid container padding={2} spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6}>
+          <Grid container spacing={2} sx={{ padding: 2, alignItems: 'center' }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="title"
                 control={control}
@@ -199,7 +199,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="isMission"
                 control={control}
@@ -215,8 +215,8 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12}>
-              <Stack direction={'row'} spacing={2} alignItems={'center'}>
+            <Grid size={12}>
+              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                 <Controller
                   name="location"
                   control={control}
@@ -227,7 +227,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                     </FormControl>
                   )}
                 />
-                <Box paddingRight={2}>
+                <Box sx={{ paddingRight: 2 }}>
                   <IconButton color="default" onClick={() => setShowLocationEditDialog(true)}>
                     {watchLocation?.title ? <Edit /> : <AddLocation />}
                   </IconButton>
@@ -235,7 +235,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               </Stack>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="mapId"
                 control={control}
@@ -248,7 +248,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="idNumber"
                 control={control}
@@ -261,7 +261,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="ownerOrgId"
                 control={control}
@@ -280,7 +280,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="earlySignInWindow"
                 control={control}
@@ -299,7 +299,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="startTime"
                 control={control}
@@ -307,13 +307,13 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                   <FormControl fullWidth error={!!errors.startTime?.message}>
                     <DateTimePicker
                       label="Start Time"
-                      value={field.value}
+                      value={field.value ? new Date(field.value) : null}
                       inputRef={field.ref}
                       onChange={(date) => {
-                        field.onChange(date);
+                        field.onChange(date ? date.getTime() : null);
                       }}
                       onAccept={(date) => {
-                        field.onChange(date);
+                        field.onChange(date ? date.getTime() : null);
                       }}
                       format="MM/dd/yy HH:mm"
                     />
@@ -323,7 +323,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="description"
                 control={control}
@@ -336,31 +336,31 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
               />
             </Grid>
 
-            <Grid container item xs={12} spacing={1} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={6}>
+            <Grid container size={12} spacing={1} sx={{ mt: 1 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 {/* {activityType === 'missions' ? null : (
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <FormGroup>
                       <Controller name="asMission" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Run as mock mission" />} />
                     </FormGroup>
                   </Grid>
                 )} */}
 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <FormGroup>
                     <Controller name="forceStandbyOnly" control={control} render={({ field }) => <FormControlLabel control={<Switch {...field} checked={field.value} color="primary" />} label="Standby Only" />} />
                   </FormGroup>
                 </Grid>
 
                 {isNew && (
-                  <Grid item xs={12} sx={{ my: 1 }}>
+                  <Grid size={12} sx={{ my: 1 }}>
                     <Box>{org.title} will start as a participating unit.</Box>
                   </Grid>
                 )}
               </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <Stack direction="row" justifyContent="flex-end" spacing={1}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
                   <Button onClick={() => window.history.back()}>Cancel</Button>
                   <Button type="submit" variant="contained">
                     Save {selectedType === 'missions' ? 'Mission' : 'Event'}

@@ -40,7 +40,7 @@ function PreferencesForm({ onCancel, onSubmit }: { onCancel: () => void; onSubmi
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={2} marginTop={1}>
+      <Stack spacing={2} sx={{ marginTop: 1 }}>
         <Controller
           name="defaultMobileView"
           control={control}

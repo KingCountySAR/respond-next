@@ -1,4 +1,4 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import PrintIcon from '@mui/icons-material/Print';
 import StarIcon from '@mui/icons-material/Star';
@@ -123,7 +123,7 @@ export function DashboardCommsManager() {
         <DashboardSearchBox onChange={setSearchQuery} placeholder="Search messages, to, or from..." sx={{ flex: 1 }} />
         <CommsAutomatedToggleButton onChange={setHideAutomated} />
         <CommsFavoriteToggleButton onChange={(isSelected) => setShowFavorites(isSelected)} />
-        <Tooltip title={'Print communications log'}>
+        <Tooltip title="Print communications log">
           <IconButton
             onClick={handlePrint}
             sx={{
@@ -141,7 +141,7 @@ export function DashboardCommsManager() {
       <Box ref={commsListRef} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
         {filteredCommunications.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography variant="body2" color="text.secondary" textAlign="center">
+            <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
               No communications logged yet.
             </Typography>
           </Box>
@@ -177,22 +177,22 @@ function DashboardCommsPrintView({ activity, communications }: { activity: Activ
         <TableHead>
           <TableRow>
             <TableCell colSpan={4}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.5 }}>
+              <Stack direction="row" sx={{ mb: 1.5, justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Stack>
                   <Typography variant="body2">{title}</Typography>
                   <Typography variant="body2">State #: {idNumber ?? '_____________'}</Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     Communications Log
                   </Typography>
                 </Stack>
-                <Stack alignItems="flex-end">
+                <Stack sx={{ alignItems: 'flex-end' }}>
                   <Typography variant="body2" sx={{ textAlign: 'right' }}>
                     Start Time: {startTimeValue ? `${startTimeValue.toLocaleDateString('en-US')} ${format24HourTime(startTimeValue.getTime())}` : '_____________'}
                   </Typography>
                   <Typography variant="body2" sx={{ textAlign: 'right' }}>
                     End Time: {endTimeValue ? `${endTimeValue.toLocaleDateString('en-US')} ${format24HourTime(endTimeValue.getTime())}` : '_____________'}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     Printed: {generatedAt.toLocaleDateString('en-US')} {format24HourTime(generatedAt.getTime())}
                   </Typography>
                 </Stack>
@@ -225,11 +225,11 @@ function DashboardCommsEntry({ entry, onEdit, onFavorite, onDelete }: { entry: C
   const copyValues = parseValues(entry.message);
   return (
     <Box sx={{ '&:hover .comm-action': { opacity: 1, visibility: 'visible' } }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="subtitle2">
           {entry.from} → {entry.to}
         </Typography>
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           {entry.isFavorite ? (
             <IconButton className="comm-action" onClick={onFavorite} size="small" aria-label="edit communication" sx={{ opacity: 0, visibility: 'hidden', transition: 'opacity 180ms ease' }}>
               <StarIcon sx={{ fontSize: 16, color: '#d89e00' }} />
@@ -245,7 +245,7 @@ function DashboardCommsEntry({ entry, onEdit, onFavorite, onDelete }: { entry: C
           <IconButton className="comm-action" onClick={onDelete} size="small" aria-label="delete communication" sx={{ opacity: 0, visibility: 'hidden', transition: 'opacity 180ms ease' }}>
             <DeleteOutlineIcon sx={{ fontSize: 16, color: 'darkred' }} />
           </IconButton>
-          <Typography variant="caption" color="text.secondary" sx={{ px: 0.5 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', px: 0.5 }}>
             {format24HourTime(entry.timestamp)}
           </Typography>
         </Stack>

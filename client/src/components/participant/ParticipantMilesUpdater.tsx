@@ -24,11 +24,11 @@ export function ParticipantMilesUpdater({ activityId, participant, onCancel, onS
   return (
     <Stack spacing={1}>
       <ParticipantMilesInput currentMiles={participant.miles ?? 0} value={miles} onChange={handleChange} />
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={'right'} spacing={2}>
-        <Button variant={'outlined'} onClick={onCancel}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ justifyContent: 'right' }}>
+        <Button variant="outlined" onClick={onCancel}>
           Cancel
         </Button>
-        <Button variant={'contained'} onClick={handleSubmit} disabled={participant.miles === miles}>
+        <Button variant="contained" onClick={handleSubmit} disabled={participant.miles === miles}>
           Update
         </Button>
       </Stack>

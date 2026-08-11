@@ -66,7 +66,7 @@ export function ParticipantMilesInput({ value, currentMiles, onChange }: { value
       <TextField
         label={state.mode === MilesMode.SetTotal ? 'Round-Trip Miles' : 'Leg Miles'}
         value={state.newMiles}
-        type={'number'}
+        type="number"
         onChange={(e) => {
           const value = e.target.value;
           dispatch(updateMiles(value === '' ? value : Math.max(0, Number(value))));

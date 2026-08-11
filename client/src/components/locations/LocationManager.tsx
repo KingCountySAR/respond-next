@@ -33,7 +33,7 @@ export const LocationManager = () => {
   return (
     <ToolbarPage>
       <Paper sx={{ p: 2 }}>
-        <Stack sx={{ mb: 2 }} direction="row" spacing={2} alignItems={'center'} justifyContent={'space-between'}>
+        <Stack sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }} direction="row" spacing={2}>
           <Typography variant="h4">Locations</Typography>
           <Box>
             <Button disabled={!!selected} variant="outlined" onClick={() => setSelected(createNewLocation(true))}>
