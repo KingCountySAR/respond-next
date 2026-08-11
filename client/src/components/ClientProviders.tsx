@@ -4,11 +4,11 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo } from 'react';
 import { Provider } from 'react-redux';
 
 import { createTheme, ThemeOptions, ThemeProvider, useMediaQuery } from '@respond/components/Material';
-import { AppStore, buildClientStore } from '@respond/lib/client/store';
+import { buildClientStore } from '@respond/lib/client/store';
 import { AuthActions } from '@respond/lib/client/store/auth';
 import { ConfigActions } from '@respond/lib/client/store/config';
 import { OrgActions } from '@respond/lib/client/store/organization';
@@ -22,18 +22,21 @@ import PreferencesProvider from './PreferencesProvider';
 export type { SiteConfig };
 
 export default function ClientProviders({ googleClient, config, user, myOrg, children }: { googleClient: string; config: SiteConfig; user?: UserInfo; myOrg?: MyOrganization; children: ReactNode }) {
-  const [store] = useState<AppStore>(buildClientStore([]));
-  const [sync] = useState<ClientSync>(new ClientSync(store));
-  const [queryClient] = useState(() => new QueryClient());
+  const store = useMemo(() => buildClientStore([]), []);
+  const sync = useMemo(() => new ClientSync(store), [store]);
+  const queryClient = useMemo(() => new QueryClient(), []);
 
   useEffect(() => {
     console.log('ClientProviders mounting ...');
     sync.start();
+    store.dispatch(ConfigActions.set({ organization: config.organization, dev: config.dev }));
+    store.dispatch(AuthActions.set({ userInfo: user }));
+    store.dispatch(OrgActions.set({ mine: myOrg }));
 
     return () => {
       sync.stop();
     };
-  }, [sync]);
+  }, [sync, config, user, myOrg, store]);
 
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const hydratedTheme = useMemo(() => {
@@ -56,10 +59,6 @@ export default function ClientProviders({ googleClient, config, user, myOrg, chi
   if (!store) {
     return <>Loading ...</>;
   }
-
-  store.dispatch(ConfigActions.set({ organization: config.organization, dev: config.dev }));
-  store.dispatch(AuthActions.set({ userInfo: user }));
-  store.dispatch(OrgActions.set({ mine: myOrg }));
 
   let inner = children;
   if (!config.dev.noExternalNetwork) {
