@@ -115,7 +115,9 @@ function PlaceTile({ place }: { place: Place }) {
     const mergedParticipants = Array.from(new Set([...(fieldPlace?.assignedParticipants ?? []), ...place.assignedParticipants]));
     const existingEquipmentIds = new Set(fieldPlace?.assignedEquipment.map((item) => item.uuid));
     const mergedEquipment = [...(fieldPlace?.assignedEquipment ?? []), ...place.assignedEquipment.filter((item) => !existingEquipmentIds.has(item.uuid))];
-    const updatedFieldPlace = fieldPlace ? { ...fieldPlace, assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment } : { ...createNewPlace(DEFAULT_PLACES.field), assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment };
+    const updatedFieldPlace = fieldPlace
+      ? { ...fieldPlace, assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment }
+      : { ...createNewPlace(DEFAULT_PLACES.field), assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment };
     places.batchUpdatePlaces(activity.id, [updatedFieldPlace], [place.id]);
   };
 
@@ -183,7 +185,12 @@ function PlaceTile({ place }: { place: Place }) {
 
   return (
     <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
-      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible={!!hasContent} adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined}>
+      <DashboardBoxWithTitle
+        title={place.name}
+        actions={actions}
+        collapsible={!!hasContent}
+        adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined}
+      >
         <Stack spacing={1}>
           {!!place.assignedParticipants.length && (
             <DashboardDividedSection title="Personnel">

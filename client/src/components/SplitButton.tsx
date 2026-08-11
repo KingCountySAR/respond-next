@@ -50,7 +50,15 @@ export function SplitButton<K extends string | number | EnumMember, T extends Id
       <ButtonGroup fullWidth={fullWidth} variant="contained" ref={anchorRef} aria-label="split button">
         <Button onClick={handleClick}>{options[selectedIndex].text}</Button>
         {!!menuOptions.length && (
-          <Button fullWidth={fullWidth ? false : undefined} size="small" aria-controls={open ? 'split-button-menu' + buttonId : undefined} aria-expanded={open ? 'true' : undefined} aria-label="select merge strategy" aria-haspopup="menu" onClick={handleToggle}>
+          <Button
+            fullWidth={fullWidth ? false : undefined}
+            size="small"
+            aria-controls={open ? 'split-button-menu' + buttonId : undefined}
+            aria-expanded={open ? 'true' : undefined}
+            aria-label="select merge strategy"
+            aria-haspopup="menu"
+            onClick={handleToggle}
+          >
             <ArrowDropDownIcon />
           </Button>
         )}

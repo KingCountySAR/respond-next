@@ -15,6 +15,7 @@ export function useActivityCommands() {
     remove: (activityId: string) => dispatch(ActivityCommands.RemoveActivity(activityId)),
     complete: (activityId: string, endTime: number) => dispatch(ActivityCommands.CompleteActivity(activityId, endTime)),
     reactivate: (activityId: string) => dispatch(ActivityCommands.ReactivateActivity(activityId)),
-    appendOrganizationTimeline: (activityId: string, org: { id: string; title: string; rosterName?: string }, status: { time: number; status: OrganizationStatus }) => dispatch(ActivityCommands.AppendOrganizationTimeline(activityId, org, status)),
+    appendOrganizationTimeline: (activityId: string, org: { id: string; title: string; rosterName?: string }, status: { time: number; status: OrganizationStatus }) =>
+      dispatch(ActivityCommands.AppendOrganizationTimeline(activityId, org, status)),
   };
 }

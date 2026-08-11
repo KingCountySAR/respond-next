@@ -21,7 +21,15 @@ interface FormValues {
   statusTime: number;
 }
 
-export function useFormLogic(activity: Activity, user: UserInfo | MemberInfo, respondingOrg: Organization, participant: Participant | undefined, currentStatus: ParticipantStatus | undefined, newStatus: ParticipantStatus, onFinish: () => void) {
+export function useFormLogic(
+  activity: Activity,
+  user: UserInfo | MemberInfo,
+  respondingOrg: Organization,
+  participant: Participant | undefined,
+  currentStatus: ParticipantStatus | undefined,
+  newStatus: ParticipantStatus,
+  onFinish: () => void,
+) {
   const activityCommands = useActivityCommands();
   const participants = useParticipantCommands();
 

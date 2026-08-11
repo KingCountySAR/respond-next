@@ -20,9 +20,12 @@ const ActivityReactivated = createAction('evt/activity/reactivated', (activityId
   payload: { activityId },
 }));
 
-const OrganizationTimelineAppended = createAction('evt/activity/orgAppended', (activityId: string, orgId: string, org: { id: string; title: string; rosterName?: string }, status: { time: number; status: OrganizationStatus }) => ({
-  payload: { activityId, orgId, org, status },
-}));
+const OrganizationTimelineAppended = createAction(
+  'evt/activity/orgAppended',
+  (activityId: string, orgId: string, org: { id: string; title: string; rosterName?: string }, status: { time: number; status: OrganizationStatus }) => ({
+    payload: { activityId, orgId, org, status },
+  }),
+);
 
 export const ActivityEvents = {
   ActivityUpdated,

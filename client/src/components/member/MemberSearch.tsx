@@ -10,7 +10,17 @@ import { MemberInfo } from '@respond/shared/types/member';
 
 type TextFieldVariant = 'filled' | 'outlined' | 'standard';
 
-export default function MemberSearch({ organizationId, label = 'Member', variant = 'outlined', onChange }: { organizationId: string | undefined; label?: string; variant?: TextFieldVariant; onChange: (member: MemberInfo | undefined) => void }) {
+export default function MemberSearch({
+  organizationId,
+  label = 'Member',
+  variant = 'outlined',
+  onChange,
+}: {
+  organizationId: string | undefined;
+  label?: string;
+  variant?: TextFieldVariant;
+  onChange: (member: MemberInfo | undefined) => void;
+}) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const debouncedSearch = useDebounce(search, 500);

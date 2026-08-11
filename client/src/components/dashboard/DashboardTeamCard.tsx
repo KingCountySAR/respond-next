@@ -82,7 +82,11 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   const removeTeamMember = (participantId: string) => {
     if (team.assignedParticipants.includes(participantId)) {
       // Remove the participant from the team
-      const updatedTeam = { ...team, assignedParticipants: team.assignedParticipants.filter((id) => id !== participantId), teamLeaderParticipantId: team.teamLeaderParticipantId === participantId ? null : team.teamLeaderParticipantId };
+      const updatedTeam = {
+        ...team,
+        assignedParticipants: team.assignedParticipants.filter((id) => id !== participantId),
+        teamLeaderParticipantId: team.teamLeaderParticipantId === participantId ? null : team.teamLeaderParticipantId,
+      };
       updateTeam(updatedTeam);
     }
   };

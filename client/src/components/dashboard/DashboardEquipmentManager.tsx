@@ -149,7 +149,9 @@ export function DashboardEquipmentManager() {
             <DashboardSearchBox onChange={setSearchQuery} sx={{ flex: 1 }} />
             <EquipmentGroupToggleButton onChange={(value) => setGroupBy(value)} />
           </Stack>
-          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pr: 0.5 }}>{groupBy === 'All' ? <EquipmentAphabetical items={filteredEquipment} /> : <EquipmentGroups groups={groupedEquipment} />}</Box>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pr: 0.5 }}>
+            {groupBy === 'All' ? <EquipmentAphabetical items={filteredEquipment} /> : <EquipmentGroups groups={groupedEquipment} />}
+          </Box>
         </Stack>
       </Droppable>
       {!!editingState?.item && <DashboardEquipmentCreateDialog onSave={handleSaveEdit} onCancel={handleCancelEdit} />}

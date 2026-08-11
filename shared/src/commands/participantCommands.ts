@@ -6,13 +6,16 @@ import { ParticipantStatus, ParticipantUpdate } from '../types/activity';
 // which the participant-tag reactor emits server-side). Signatures mirror the
 // legacy participant actions so client call sites migrate 1:1.
 
-const UpdateParticipant = createAction('cmd/participant/update', (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ParticipantStatus, miles?: number, eta?: number) => ({
-  payload: {
-    activityId,
-    participant: { id: participantId, firstname, lastname, organizationId, miles, eta },
-    update: { time, status },
-  },
-}));
+const UpdateParticipant = createAction(
+  'cmd/participant/update',
+  (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ParticipantStatus, miles?: number, eta?: number) => ({
+    payload: {
+      activityId,
+      participant: { id: participantId, firstname, lastname, organizationId, miles, eta },
+      update: { time, status },
+    },
+  }),
+);
 
 const AddParticipantTimeline = createAction('cmd/participant/timelineAdd', (activityId: string, participantId: string, update: ParticipantUpdate) => ({
   payload: { activityId, participantId, update },

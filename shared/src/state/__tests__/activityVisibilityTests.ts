@@ -43,7 +43,11 @@ describe('activity initial state visibility', () => {
   });
 
   it('filters a mixed list', () => {
-    const visible = filterInitialActivities([activity('active-old', now - daysToMilliseconds(180)), activity('recent', now - daysToMilliseconds(10), now - daysToMilliseconds(5)), activity('old', now - daysToMilliseconds(120), now - daysToMilliseconds(100))], now, historyMs);
+    const visible = filterInitialActivities(
+      [activity('active-old', now - daysToMilliseconds(180)), activity('recent', now - daysToMilliseconds(10), now - daysToMilliseconds(5)), activity('old', now - daysToMilliseconds(120), now - daysToMilliseconds(100))],
+      now,
+      historyMs,
+    );
 
     expect(visible.map((a) => a.id)).toEqual(['active-old', 'recent']);
   });

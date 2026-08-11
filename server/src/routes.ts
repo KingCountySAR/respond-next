@@ -15,7 +15,9 @@ export const api = new Hono();
 // ---- Activities -----------------------------------------------------------
 
 async function activitiesList(activityType: ActivityType) {
-  const list = (await (await getServices()).stateManager.getAllActivities()).filter((a) => a.isMission === (activityType === 'missions')).sort((a, b) => (a.startTime > b.startTime ? 1 : a.startTime < b.startTime ? -1 : 0));
+  const list = (await (await getServices()).stateManager.getAllActivities())
+    .filter((a) => a.isMission === (activityType === 'missions'))
+    .sort((a, b) => (a.startTime > b.startTime ? 1 : a.startTime < b.startTime ? -1 : 0));
   return { status: 'ok', data: list };
 }
 

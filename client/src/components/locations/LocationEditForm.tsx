@@ -42,7 +42,19 @@ const resolver: Resolver<Location> = async (values) => {
   return { values: values.id ? values : {}, errors } as unknown as ResolverResult<Location>;
 };
 
-export function LocationEditForm({ location, enableTemporary, variant = 'filled', onSubmit, onClose }: { location: Location; enableTemporary?: boolean; variant?: InputVariant; onSubmit: (location: Location) => void; onClose?: () => void }) {
+export function LocationEditForm({
+  location,
+  enableTemporary,
+  variant = 'filled',
+  onSubmit,
+  onClose,
+}: {
+  location: Location;
+  enableTemporary?: boolean;
+  variant?: InputVariant;
+  onSubmit: (location: Location) => void;
+  onClose?: () => void;
+}) {
   // Legacy activity.location records will only have title. We need to initialize
   // them onto the new Location object to ensures backward compatibility.
   const defaultValues = { ...createNewLocation(), ...location, toSaved: !enableTemporary };

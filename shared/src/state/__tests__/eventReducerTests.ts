@@ -53,14 +53,20 @@ describe('Event Reducers', () => {
   });
 
   it('ParticipantUpdated creates a new participant with an undefined tags (so tagging can fire)', () => {
-    const next = apply(stateWithActivity(activityId), ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 100, status: ParticipantStatus.SignedIn }));
+    const next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 100, status: ParticipantStatus.SignedIn }),
+    );
     const person = next.list[0].participants['p1'];
     expect(person.timeline[0].status).toBe(ParticipantStatus.SignedIn);
     expect(person.tags).toBeUndefined();
   });
 
   it('ParticipantTagged sets tags on an existing participant', () => {
-    let next = apply(stateWithActivity(activityId), ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 100, status: ParticipantStatus.SignedIn }));
+    let next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 100, status: ParticipantStatus.SignedIn }),
+    );
     next = apply(next, ParticipantEvents.ParticipantTagged(activityId, 'p1', ['Snow', 'OL']));
     expect(next.list[0].participants['p1'].tags).toEqual(['Snow', 'OL']);
   });

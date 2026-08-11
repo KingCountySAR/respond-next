@@ -68,12 +68,7 @@ export default tseslint.config(
           },
         },
       ],
-      'prettier/prettier': [
-        'error',
-        {
-          printWidth: 9999,
-        },
-      ],
+      'prettier/prettier': 'error',
       'sort-imports': [
         'error',
         {

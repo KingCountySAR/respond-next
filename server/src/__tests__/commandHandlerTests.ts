@@ -125,7 +125,10 @@ describe('teamCommsReactor', () => {
     const assign = await teamCommsReactor.react(TeamEvents.StaffUpdated(activityId, { 'Rescue Group': 'p1' }), { priorActivities: { [activityId]: prior }, currentActivities: { [activityId]: activity } });
     expect(assign.map((c) => (CommsCommands.LogComm.match(c) ? c.payload.entry.message : ''))).toEqual(['Ann Lee assuming Rescue Group']);
 
-    const unassign = await teamCommsReactor.react(TeamEvents.StaffUpdated(activityId, { 'Rescue Group': '' }), { priorActivities: { [activityId]: activity }, currentActivities: { [activityId]: { ...activity, staff: { 'Rescue Group': '' } } } });
+    const unassign = await teamCommsReactor.react(TeamEvents.StaffUpdated(activityId, { 'Rescue Group': '' }), {
+      priorActivities: { [activityId]: activity },
+      currentActivities: { [activityId]: { ...activity, staff: { 'Rescue Group': '' } } },
+    });
     expect(unassign.map((c) => (CommsCommands.LogComm.match(c) ? c.payload.entry.message : ''))).toEqual(['Rescue Group unassigned']);
   });
 });

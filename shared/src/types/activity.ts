@@ -160,7 +160,24 @@ export interface Activity {
   places: Place[];
 }
 
-export const pickActivityProperties = pickSafely<Partial<Activity>>(['id', 'idNumber', 'title', 'description', 'location', 'mapId', 'ownerOrgId', 'isMission', 'asMission', 'forceStandbyOnly', 'startTime', 'endTime', 'earlySignInWindow', 'comms', 'staff', 'places']);
+export const pickActivityProperties = pickSafely<Partial<Activity>>([
+  'id',
+  'idNumber',
+  'title',
+  'description',
+  'location',
+  'mapId',
+  'ownerOrgId',
+  'isMission',
+  'asMission',
+  'forceStandbyOnly',
+  'startTime',
+  'endTime',
+  'earlySignInWindow',
+  'comms',
+  'staff',
+  'places',
+]);
 
 export type ActivityType = 'missions' | 'events';
 

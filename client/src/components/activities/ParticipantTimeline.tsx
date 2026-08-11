@@ -27,7 +27,9 @@ export default function ParticipantTimeline({ participant }: { participant: Part
       organizationName: getOrganizationName(activity, update.organizationId),
     };
   };
-  return <Stack spacing={2}>{[...participant.timeline].map((update, i) => <ParticipantUpdateTile key={i} record={getEnrichedUpdate(update)} onChange={(time) => updateTimeline({ ...update, time }, i)} />).reverse()}</Stack>;
+  return (
+    <Stack spacing={2}>{[...participant.timeline].map((update, i) => <ParticipantUpdateTile key={i} record={getEnrichedUpdate(update)} onChange={(time) => updateTimeline({ ...update, time }, i)} />).reverse()}</Stack>
+  );
 }
 
 function ParticipantUpdateTile({ record, onChange }: { record: EnrichedParticipantUpdate; onChange: (time: number) => void }) {
@@ -48,7 +50,14 @@ function ParticipantUpdateTile({ record, onChange }: { record: EnrichedParticipa
     <Box>
       {edit ? (
         <Stack direction="row" sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
-          <DateTimePicker value={new Date(initialTime)} label={`${record.organizationName} - ${record.statusText}`} format="MM/dd HH:mm" onChange={(d) => handleAccept(d ? d.getTime() : null)} onAccept={(d) => handleAccept(d ? d.getTime() : null)} onClose={handleClose} />
+          <DateTimePicker
+            value={new Date(initialTime)}
+            label={`${record.organizationName} - ${record.statusText}`}
+            format="MM/dd HH:mm"
+            onChange={(d) => handleAccept(d ? d.getTime() : null)}
+            onAccept={(d) => handleAccept(d ? d.getTime() : null)}
+            onClose={handleClose}
+          />
           <IconButton disableRipple onClick={handleClose}>
             <Close />
           </IconButton>

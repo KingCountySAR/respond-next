@@ -24,7 +24,6 @@ interface RosterPanelProps {
   onClick?: (participant: Participant) => void;
 }
 
-// eslint-disable-next-line prettier/prettier
 const STATUS_SORT_ORDER = [
   ParticipantStatus.SignedIn,
   ParticipantStatus.Available,

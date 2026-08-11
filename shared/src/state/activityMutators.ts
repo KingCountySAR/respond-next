@@ -273,7 +273,13 @@ export function completeActivity(state: Draft<ActivityState>, activityId: string
   }
 }
 
-export function appendOrganizationTimeline(state: Draft<ActivityState>, activityId: string, orgId: string, org: { id: string; title: string; rosterName?: string }, status: { time: number; status: OrganizationStatus }): void {
+export function appendOrganizationTimeline(
+  state: Draft<ActivityState>,
+  activityId: string,
+  orgId: string,
+  org: { id: string; title: string; rosterName?: string },
+  status: { time: number; status: OrganizationStatus },
+): void {
   const activity = state.list.find((f) => f.id === activityId);
   if (!activity) return;
   activity.organizations[orgId] = Object.assign(activity.organizations[orgId] ?? { timeline: [] }, org);

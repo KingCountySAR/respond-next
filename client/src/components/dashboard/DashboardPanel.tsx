@@ -5,7 +5,21 @@ import { useState } from 'react';
 
 const COLLAPSE_WIDTH = 56;
 
-export function DashboardPanel({ title, icon, collapse = 'left', grow = false, children, sx }: { title: string; icon?: React.ReactNode; collapse: 'left' | 'right'; grow?: boolean; children: React.ReactNode; sx?: SxProps<Theme> }) {
+export function DashboardPanel({
+  title,
+  icon,
+  collapse = 'left',
+  grow = false,
+  children,
+  sx,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  collapse: 'left' | 'right';
+  grow?: boolean;
+  children: React.ReactNode;
+  sx?: SxProps<Theme>;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const toggle = () => {
     setCollapsed((current) => !current);
