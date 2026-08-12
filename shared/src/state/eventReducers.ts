@@ -100,4 +100,8 @@ export const BasicEventReducers: EventReducers = {
   [DomainEvents.OrganizationTimelineAppended.type]: (state, { payload }) => {
     Mutators.appendOrganizationTimeline(state, payload.activityId, payload.orgId, payload.org, payload.status);
   },
+
+  [DomainEvents.OperationsDecorated.type]: (state, { payload }) => {
+    Mutators.decorateOperations(state, payload.activityId, payload.operations);
+  },
 };

@@ -102,6 +102,29 @@ export const getDefaultPlaces = (activity?: Activity): Place[] => {
   }, []);
 };
 
+/** The operations-only slice of an activity (the fields the ops dashboard needs). */
+export type OperationsSpecificFields = Pick<Activity, 'teams' | 'comms' | 'staff' | 'places'>;
+
+/**
+ * The default operations state the server stamps onto an activity when it is
+ * first decorated: empty teams/comms/staff plus the default places (Command Post
+ * first, then Field). Built server-side so every client sees identical uuids.
+ */
+export function createDefaultOperations(): OperationsSpecificFields {
+  return {
+    teams: [],
+    comms: [],
+    staff: {},
+    places: getDefaultPlaces(),
+  };
+}
+
+/** True once an activity carries all of its operations properties. Legacy
+ * activities loaded from the database may be missing some or all of them. */
+export function hasOperations(activity: Activity): boolean {
+  return activity.teams !== undefined && activity.comms !== undefined && activity.staff !== undefined && activity.places !== undefined;
+}
+
 export const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) => {
   return left.name.localeCompare(right.name);
 };

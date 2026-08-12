@@ -2,7 +2,7 @@ import type { Draft } from '@reduxjs/toolkit';
 import merge from 'lodash.merge';
 
 import { Activity, createNewActivity, OrganizationStatus, ParticipantStatus, ParticipantUpdate, pickActivityProperties } from '../types/activity';
-import { CommunicationsLogEntry, pickTeamProperties, Place, Team } from '../types/operations';
+import { CommunicationsLogEntry, OperationsSpecificFields, pickTeamProperties, Place, Team } from '../types/operations';
 
 import { ActivityState } from '.';
 
@@ -239,6 +239,21 @@ export function updateActivity(state: Draft<ActivityState>, updates: Partial<Act
     state.list.push(target);
   }
   merge(target, pickActivityProperties(updates));
+}
+
+/**
+ * Fill in the operations properties on an activity that is missing them.
+ * Idempotent per-property: only unset (undefined) fields are seeded, so a second
+ * OperationsDecorated event (e.g. from another client racing on load) is a no-op
+ * and never clobbers real data.
+ */
+export function decorateOperations(state: Draft<ActivityState>, activityId: string, operations: OperationsSpecificFields): void {
+  const activity = state.list.find((a) => a.id === activityId);
+  if (!activity) return;
+  if (!activity.teams) activity.teams = operations.teams;
+  if (!activity.comms) activity.comms = operations.comms;
+  if (!activity.staff) activity.staff = operations.staff;
+  if (!activity.places) activity.places = operations.places;
 }
 
 export function removeActivity(state: Draft<ActivityState>, activityId: string): void {

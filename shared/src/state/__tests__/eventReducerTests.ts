@@ -3,7 +3,7 @@ import { produce } from 'immer';
 import { ActivityState } from '..';
 import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '../../events';
 import { createNewActivity, ParticipantStatus } from '../../types/activity';
-import { CommunicationsLogEntry, createNewPlace, createNewTeam } from '../../types/operations';
+import { CommunicationsLogEntry, createDefaultOperations, createNewPlace, createNewTeam, DEFAULT_PLACES } from '../../types/operations';
 import { BasicEventReducers } from '../eventReducers';
 
 function stateWithActivity(activityId: string): ActivityState {
@@ -84,6 +84,31 @@ describe('Event Reducers', () => {
     let next = apply(stateWithActivity(activityId), TeamEvents.StaffUpdated(activityId, { 'Rescue Group': 'p1' }));
     next = apply(next, TeamEvents.StaffUpdated(activityId, { 'Medical Group': 'p2' }));
     expect(next.list[0].staff).toEqual({ 'Rescue Group': 'p1', 'Medical Group': 'p2' });
+  });
+
+  it('OperationsDecorated seeds missing operations and is idempotent per-property', () => {
+    // Simulate a legacy activity loaded without its operations properties.
+    const legacy = createNewActivity();
+    legacy.id = activityId;
+    legacy.teams = undefined as never;
+    legacy.comms = undefined as never;
+    legacy.staff = undefined as never;
+    legacy.places = undefined as never;
+    const state: ActivityState = { list: [legacy] };
+
+    let next = apply(state, ActivityEvents.OperationsDecorated(activityId, createDefaultOperations()));
+    expect(next.list[0].teams).toEqual([]);
+    expect(next.list[0].comms).toEqual([]);
+    expect(next.list[0].staff).toEqual({});
+    expect(next.list[0].places?.map((p) => p.name)).toEqual([DEFAULT_PLACES.base, DEFAULT_PLACES.field]);
+
+    // A second decorate (e.g. another client racing on load) must not clobber
+    // real data added in the meantime.
+    const seededPlaces = next.list[0].places!;
+    next = apply(next, TeamEvents.TeamCreated(activityId, createNewTeam('Team 1')));
+    next = apply(next, ActivityEvents.OperationsDecorated(activityId, createDefaultOperations()));
+    expect(next.list[0].teams.map((t) => t.name)).toEqual(['Team 1']);
+    expect(next.list[0].places).toEqual(seededPlaces);
   });
 
   it('ActivityUpdated merges summary fields (create-or-update)', () => {

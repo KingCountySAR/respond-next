@@ -1,7 +1,7 @@
-import { CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands } from '@shared/commands';
-import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
+import { ActivityCommands, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands } from '@shared/commands';
+import { ActivityEvents, CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
 import { createNewActivity, ParticipantStatus } from '@shared/types/activity';
-import { createNewPlace, createNewTeam } from '@shared/types/operations';
+import { createNewPlace, createNewTeam, DEFAULT_PLACES } from '@shared/types/operations';
 
 import { produceEvents } from '../commandHandlers';
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
@@ -36,6 +36,19 @@ describe('produceEvents', () => {
   it('maps location commands -> location events', () => {
     expect(LocationEvents.LocationUpdated.match(produceEvents(LocationCommands.UpdateLocation({ id: 'L1', title: 'x' }))[0])).toBe(true);
     expect(LocationEvents.LocationRemoved.match(produceEvents(LocationCommands.RemoveLocation('L1'))[0])).toBe(true);
+  });
+
+  it('DecorateOperations -> OperationsDecorated with server-built default operations', () => {
+    const [event] = produceEvents(ActivityCommands.DecorateOperations(activityId));
+    expect(ActivityEvents.OperationsDecorated.match(event)).toBe(true);
+    if (!ActivityEvents.OperationsDecorated.match(event)) throw new Error('expected OperationsDecorated');
+    const { operations } = event.payload;
+    expect(operations.teams).toEqual([]);
+    expect(operations.comms).toEqual([]);
+    expect(operations.staff).toEqual({});
+    // Command Post is the first default place, then Field; server-minted ids.
+    expect(operations.places.map((p) => p.name)).toEqual([DEFAULT_PLACES.base, DEFAULT_PLACES.field]);
+    expect(operations.places.every((p) => !!p.id)).toBe(true);
   });
 
   it('returns no events for an unknown command', () => {

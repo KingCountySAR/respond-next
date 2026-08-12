@@ -50,7 +50,8 @@ const activitySliceArgs = {
       .addCase(ActivityEvents.ActivityRemoved, BasicEventReducers[ActivityEvents.ActivityRemoved.type])
       .addCase(ActivityEvents.ActivityCompleted, BasicEventReducers[ActivityEvents.ActivityCompleted.type])
       .addCase(ActivityEvents.ActivityReactivated, BasicEventReducers[ActivityEvents.ActivityReactivated.type])
-      .addCase(ActivityEvents.OrganizationTimelineAppended, BasicEventReducers[ActivityEvents.OrganizationTimelineAppended.type]);
+      .addCase(ActivityEvents.OrganizationTimelineAppended, BasicEventReducers[ActivityEvents.OrganizationTimelineAppended.type])
+      .addCase(ActivityEvents.OperationsDecorated, BasicEventReducers[ActivityEvents.OperationsDecorated.type]);
   },
 };
 

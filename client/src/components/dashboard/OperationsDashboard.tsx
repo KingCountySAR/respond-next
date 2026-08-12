@@ -9,6 +9,9 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { Box, Stack } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 
+import { useActivityCommands } from '@respond/lib/client/services/activity';
+import { hasOperations } from '@respond/shared/types/operations';
+
 import { useActivityContext } from '../activities/ActivityProvider';
 import { DnDProvider } from '../DragAndDrop/DnDProvider';
 import { ToolbarPage } from '../ToolbarPage';
@@ -29,8 +32,20 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 function OperationsDashboardContent() {
   const activity = useActivityContext();
 
+  const { decorateOperations } = useActivityCommands();
+
   const [isResizing, setIsResizing] = useState(false);
   const centerRef = useRef<HTMLDivElement | null>(null);
+
+  // Legacy activities load without their operations properties. Detecting that
+  // here, ask the server to decorate the activity with the default operations
+  // state (teams/comms/staff + the default places). Idempotent server-side.
+  useEffect(() => {
+    if (activity && !hasOperations(activity)) {
+      decorateOperations(activity.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -55,7 +70,7 @@ function OperationsDashboardContent() {
     };
   }, [isResizing]);
 
-  if (!activity) {
+  if (!activity?.teams) {
     return (
       <ToolbarPage maxWidth={false}>
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>Loading activity…</Box>

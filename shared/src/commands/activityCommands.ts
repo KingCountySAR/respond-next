@@ -25,10 +25,18 @@ const AppendOrganizationTimeline = createAction('cmd/activity/appendOrg', (activ
   payload: { activityId, orgId: org.id, org, status },
 }));
 
+// Intent to add the operations properties (teams/comms/staff/places + default
+// places) to an activity that is missing them. The server builds the default
+// state so every client receives identical place ids.
+const DecorateOperations = createAction('cmd/activity/decorateOps', (activityId: string) => ({
+  payload: { activityId },
+}));
+
 export const ActivityCommands = {
   UpdateActivity,
   RemoveActivity,
   CompleteActivity,
   ReactivateActivity,
   AppendOrganizationTimeline,
+  DecorateOperations,
 };

@@ -17,5 +17,6 @@ export function useActivityCommands() {
     reactivate: (activityId: string) => dispatch(ActivityCommands.ReactivateActivity(activityId)),
     appendOrganizationTimeline: (activityId: string, org: { id: string; title: string; rosterName?: string }, status: { time: number; status: OrganizationStatus }) =>
       dispatch(ActivityCommands.AppendOrganizationTimeline(activityId, org, status)),
+    decorateOperations: (activityId: string) => dispatch(ActivityCommands.DecorateOperations(activityId)),
   };
 }

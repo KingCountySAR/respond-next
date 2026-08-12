@@ -2,11 +2,11 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, Button, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
+import { createNewPlace, DEFAULT_PLACES, EquipmentItem, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
@@ -26,23 +26,6 @@ export function DashboardPlaceManager() {
   const activity = useActivityContext();
 
   const [addingPlace, setAddingPlace] = useState<Place | null>(null);
-
-  // Backward-compat bootstrap of the default places (Command Post / Field). The
-  // place-comms reactor skips default-place names, so these creates are silent.
-  useEffect(() => {
-    const defaultPlaces = getDefaultPlaces(activity);
-
-    if (defaultPlaces.length) {
-      defaultPlaces.forEach((place) => places.createPlace(activity.id, place));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activity]);
-
-  // The server's place-comms reactor logs the "established" comm now — the
-  // component only expresses the intent to create the place.
-  const addPlace = (placeToCreate: Place) => {
-    places.createPlace(activity.id, placeToCreate);
-  };
 
   // nullish coalese for backward compatibility on inital render
   const activityPlaces = activity.places?.filter((f) => f.name !== DEFAULT_PLACES.field || f.assignedParticipants.length || f.assignedEquipment.length) ?? [];
@@ -65,7 +48,7 @@ export function DashboardPlaceManager() {
       <DashboardPlaceEditDialog
         place={addingPlace}
         onSave={(placeFromForm) => {
-          addPlace(placeFromForm);
+          places.createPlace(activity.id, placeFromForm);
           setAddingPlace(null);
         }}
         onClose={() => setAddingPlace(null)}
