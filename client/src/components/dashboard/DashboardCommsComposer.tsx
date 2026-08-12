@@ -15,7 +15,13 @@ type FormValues = {
   timestamp: number;
 };
 
-export function DashboardCommsComposer({ entry, onSave, onCancel, onManualEntryAdded }: { entry?: CommunicationsLogEntry | null; onSave?: () => void; onCancel?: () => void; onManualEntryAdded?: () => void }) {
+type DashboardCommsComposerProps = {
+  entry?: CommunicationsLogEntry | null;
+  onSave?: () => void;
+  onCancel?: () => void;
+};
+
+export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCommsComposerProps) {
   const comms = useCommsCommands();
   const activity = useActivityContext();
   const fromRef = useRef<HTMLInputElement | null>(null);
@@ -49,7 +55,6 @@ export function DashboardCommsComposer({ entry, onSave, onCancel, onManualEntryA
     } else {
       // No id/timestamp — the server stamps those when it mints CommLogged.
       comms.logComm(activity.id, { from: values.from, to: values.to, message: values.message });
-      onManualEntryAdded?.();
       onSave?.();
     }
 
@@ -61,7 +66,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel, onManualEntryA
   };
 
   return (
-    <Box sx={{ borderColor: 'divider', p: 0.5, mt: entry ? 0 : 0.5, flexShrink: 0 }}>
+    <Box sx={{ borderColor: 'divider', p: entry ? 2 : 1, mt: entry ? 0 : 2, flexShrink: 0 }}>
       <form onSubmit={handleSubmit(submit)}>
         <Stack spacing={1}>
           <Stack direction={{ xl: 'row' }} sx={{ alignItems: { xs: 'stretch', xl: 'center' }, gap: 2 }}>

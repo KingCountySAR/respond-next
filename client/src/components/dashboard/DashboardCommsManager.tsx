@@ -1,15 +1,12 @@
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
-import PrintIcon from '@mui/icons-material/Print';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import { Box, IconButton, Paper, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
+import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useReactToPrint } from 'react-to-print';
 
 import { useCommsCommands } from '@respond/lib/client/services/comms';
-import { Activity } from '@respond/shared/types/activity';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
@@ -19,6 +16,7 @@ import { Stack } from '../Material';
 import { CommsAutomatedToggleButton } from './DashboardCommsAutomatedToggleButton';
 import { DashboardCommsComposer } from './DashboardCommsComposer';
 import { CommsFavoriteToggleButton } from './DashboardCommsFavoriteToggleButton';
+import { DashboardCommsPrintButton } from './DashboardCommsPrintButton';
 import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardSearchBox } from './DashboardSearchBox';
 
@@ -46,7 +44,6 @@ const parseValues = (value: string): string[] => {
 export function DashboardCommsManager() {
   const comms = useCommsCommands();
   const activity = useActivityContext();
-  const printable = useRef<HTMLDivElement>(null);
   const commsListRef = useRef<HTMLDivElement>(null);
   const pendingManualEntryScrollRef = useRef(false);
 
@@ -98,11 +95,6 @@ export function DashboardCommsManager() {
     setEntryPendingDelete(null);
   };
 
-  const handlePrint = useReactToPrint({
-    content: () => printable.current,
-    documentTitle: `${activity.title || 'activity'}-comms-log`,
-  });
-
   useEffect(() => {
     if (!pendingManualEntryScrollRef.current || editingId) {
       return;
@@ -123,20 +115,7 @@ export function DashboardCommsManager() {
         <DashboardSearchBox onChange={setSearchQuery} placeholder="Search messages, to, or from..." sx={{ flex: 1 }} />
         <CommsAutomatedToggleButton onChange={setHideAutomated} />
         <CommsFavoriteToggleButton onChange={(isSelected) => setShowFavorites(isSelected)} />
-        <Tooltip title="Print communications log">
-          <IconButton
-            onClick={handlePrint}
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <PrintIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <DashboardCommsPrintButton activity={activity} communications={filteredCommunications} />
       </Stack>
       <Box ref={commsListRef} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
         {filteredCommunications.length === 0 ? (
@@ -157,11 +136,8 @@ export function DashboardCommsManager() {
           ))
         )}
       </Box>
-      <Box ref={printable} sx={{ display: 'none', '@media print': { display: 'block' } }}>
-        <DashboardCommsPrintView activity={activity} communications={filteredCommunications} />
-      </Box>
       <DashboardCommsComposer
-        onManualEntryAdded={() => {
+        onSave={() => {
           pendingManualEntryScrollRef.current = true;
         }}
       />
@@ -173,61 +149,6 @@ export function DashboardCommsManager() {
         onConfirm={confirmDeleteEntry}
         onClose={() => setEntryPendingDelete(null)}
       />
-    </Box>
-  );
-}
-
-function DashboardCommsPrintView({ activity, communications }: { activity: Activity | undefined; communications: Array<CommunicationsLogEntry> }) {
-  const { title, startTime, endTime, idNumber } = activity || {};
-  const startTimeValue = startTime ? new Date(startTime) : undefined;
-  const endTimeValue = endTime ? new Date(endTime) : undefined;
-  const generatedAt = new Date();
-  return (
-    <Box sx={{ p: 2 }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell colSpan={4}>
-              <Stack direction="row" sx={{ mb: 1.5, justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Stack>
-                  <Typography variant="body2">{title}</Typography>
-                  <Typography variant="body2">State #: {idNumber ?? '_____________'}</Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Communications Log
-                  </Typography>
-                </Stack>
-                <Stack sx={{ alignItems: 'flex-end' }}>
-                  <Typography variant="body2" sx={{ textAlign: 'right' }}>
-                    Start Time: {startTimeValue ? `${startTimeValue.toLocaleDateString('en-US')} ${format24HourTime(startTimeValue.getTime())}` : '_____________'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ textAlign: 'right' }}>
-                    End Time: {endTimeValue ? `${endTimeValue.toLocaleDateString('en-US')} ${format24HourTime(endTimeValue.getTime())}` : '_____________'}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Printed: {generatedAt.toLocaleDateString('en-US')} {format24HourTime(generatedAt.getTime())}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell sx={{ fontWeight: 700, width: 80 }}>Time</TableCell>
-            <TableCell sx={{ fontWeight: 700, width: 120 }}>From</TableCell>
-            <TableCell sx={{ fontWeight: 700, width: 120 }}>To</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>Message</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {communications.map((entry) => (
-            <TableRow key={entry.id}>
-              <TableCell>{format24HourTime(entry.timestamp)}</TableCell>
-              <TableCell>{entry.from}</TableCell>
-              <TableCell>{entry.to}</TableCell>
-              <TableCell sx={{ whiteSpace: 'pre-wrap' }}>{entry.message}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </Box>
   );
 }
