@@ -37,6 +37,8 @@ function storeBuilder(middlewares: Middleware[]) {
       getDefault()
         .prepend(listenerMiddleware.middleware)
         .concat(logMiddleware, ...middlewares),
+    // Enable the Redux DevTools browser extension in dev only.
+    devTools: import.meta.env.DEV,
   });
 
   return store;
