@@ -2,7 +2,16 @@ import { Button, DialogActions, DialogContent } from '@mui/material';
 
 import { DialogWithHistory } from '@respond/components/Material';
 
-export default function ConfirmDialog({ open, prompt, onConfirm, onClose }: { open: boolean; prompt: string; onConfirm: () => void; onClose: () => void }) {
+type ConfirmDialogProps = {
+  open: boolean;
+  prompt: string;
+  onConfirm: () => void;
+  onClose: () => void;
+  destructive?: boolean;
+  label?: string;
+};
+
+export default function ConfirmDialog({ open, prompt, onConfirm, onClose, destructive = false, label = 'OK' }: ConfirmDialogProps) {
   const handleConfirm = () => {
     onConfirm();
     onClose();
@@ -12,8 +21,8 @@ export default function ConfirmDialog({ open, prompt, onConfirm, onClose }: { op
       <DialogContent>{prompt}</DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleConfirm}>
-          OK
+        <Button variant="contained" color={destructive ? 'error' : 'primary'} onClick={handleConfirm}>
+          {label}
         </Button>
       </DialogActions>
     </DialogWithHistory>

@@ -4,18 +4,20 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { CommunicationsLogEntry } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
+import ConfirmDialog from '../ConfirmDialog';
 import { Stack } from '../Material';
 
 import { CommsAutomatedToggleButton } from './DashboardCommsAutomatedToggleButton';
 import { DashboardCommsComposer } from './DashboardCommsComposer';
 import { CommsFavoriteToggleButton } from './DashboardCommsFavoriteToggleButton';
+import { DashboardCommsPrintButton } from './DashboardCommsPrintButton';
 import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardSearchBox } from './DashboardSearchBox';
 
@@ -43,14 +45,28 @@ const parseValues = (value: string): string[] => {
 export function DashboardCommsManager() {
   const dispatch = useAppDispatch();
   const activity = useActivityContext();
+  const commsListRef = useRef<HTMLDivElement>(null);
+  const pendingManualEntryScrollRef = useRef(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [entryPendingDelete, setEntryPendingDelete] = useState<CommunicationsLogEntry | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showFavorites, setShowFavorites] = useState(false);
   const [hideAutomated, setHideAutomated] = useState(false);
 
-  const visibleCommunications = useMemo(() => (activity.comms ?? []).filter((entry) => !entry.isDeleted && (!showFavorites || entry.isFavorite) && (!hideAutomated || !entry.isAutomated)), [activity, showFavorites, hideAutomated]);
+  const visibleCommunications = useMemo(() => {
+    const filtered = (activity.comms ?? []).filter((entry) => {
+      return !entry.isDeleted && (!showFavorites || entry.isFavorite) && (!hideAutomated || !entry.isAutomated);
+    });
+    return [...filtered].sort((left, right) => {
+      const timestampDiff = (left.timestamp ?? 0) - (right.timestamp ?? 0);
+      if (timestampDiff !== 0) {
+        return timestampDiff;
+      }
+      return (left.id ?? '').localeCompare(right.id ?? '');
+    });
+  }, [activity, showFavorites, hideAutomated]);
 
   const filteredCommunications = useMemo(() => {
     const q = (searchQuery || '').trim().toLowerCase();
@@ -62,6 +78,17 @@ export function DashboardCommsManager() {
       return msg.includes(q) || from.includes(q) || to.includes(q);
     });
   }, [visibleCommunications, searchQuery]);
+
+  const requestDeleteEntry = (entry: CommunicationsLogEntry) => {
+    setEntryPendingDelete(entry);
+  };
+
+  const confirmDeleteEntry = () => {
+    if (entryPendingDelete) {
+      deleteEntry(entryPendingDelete.id);
+    }
+    setEntryPendingDelete(null);
+  };
 
   const toggleFavorite = (entry: CommunicationsLogEntry) => {
     const updates: Partial<CommunicationsLogEntry> = {
@@ -77,14 +104,29 @@ export function DashboardCommsManager() {
     dispatch(ActivityActions.updateComm(activity.id, id, updates));
   };
 
+  useEffect(() => {
+    if (!pendingManualEntryScrollRef.current || editingId) {
+      return;
+    }
+
+    const target = commsListRef.current;
+    if (!target) {
+      return;
+    }
+
+    target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' });
+    pendingManualEntryScrollRef.current = false;
+  }, [filteredCommunications, editingId]);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         <DashboardSearchBox onChange={setSearchQuery} placeholder="Search messages, to, or from..." sx={{ flex: 1 }} />
         <CommsAutomatedToggleButton onChange={setHideAutomated} />
         <CommsFavoriteToggleButton onChange={(isSelected) => setShowFavorites(isSelected)} />
+        <DashboardCommsPrintButton activity={activity} communications={filteredCommunications} />
       </Stack>
-      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
+      <Box ref={commsListRef} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
         {filteredCommunications.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography variant="body2" color="text.secondary" textAlign="center">
@@ -93,13 +135,18 @@ export function DashboardCommsManager() {
           </Box>
         ) : (
           filteredCommunications.map((entry) => (
-            <Paper key={entry.id} variant="outlined" sx={{ p: 1, bgcolor: entry.isFavorite ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined }}>
-              {editingId === entry.id ? <DashboardCommsComposer entry={entry} onSave={() => setEditingId(null)} onCancel={() => setEditingId(null)} /> : <DashboardCommsEntry entry={entry} onEdit={() => setEditingId(entry.id)} onFavorite={() => toggleFavorite(entry)} onDelete={() => deleteEntry(entry.id)} />}
-            </Paper>
+            <DashboardCommsItemWrapper key={entry.id} entry={entry} isEditing={editingId === entry.id}>
+              {editingId === entry.id ? <DashboardCommsComposer entry={entry} onSave={() => setEditingId(null)} onCancel={() => setEditingId(null)} /> : <DashboardCommsEntry entry={entry} onEdit={() => setEditingId(entry.id)} onFavorite={() => toggleFavorite(entry)} onDelete={() => requestDeleteEntry(entry)} />}
+            </DashboardCommsItemWrapper>
           ))
         )}
       </Box>
-      <DashboardCommsComposer />
+      <DashboardCommsComposer
+        onSave={() => {
+          pendingManualEntryScrollRef.current = true;
+        }}
+      />
+      <ConfirmDialog open={Boolean(entryPendingDelete)} prompt={entryPendingDelete ? `Delete communication from ${entryPendingDelete.from} to ${entryPendingDelete.to} at ${format24HourTime(entryPendingDelete.timestamp)}?` : 'Delete this communication?'} destructive={true} label="Delete" onConfirm={confirmDeleteEntry} onClose={() => setEntryPendingDelete(null)} />
     </Box>
   );
 }
@@ -138,5 +185,23 @@ function DashboardCommsEntry({ entry, onEdit, onFavorite, onDelete }: { entry: C
       </Typography>
       {!!copyValues.length && copyValues.map((value) => <DashboardCopyChip key={value} value={value} />)}
     </Box>
+  );
+}
+
+function DashboardCommsItemWrapper({ entry, isEditing = false, children }: { entry: CommunicationsLogEntry; isEditing: boolean; children: React.ReactNode }) {
+  return (
+    <Paper
+      key={entry.id}
+      variant="outlined"
+      sx={{
+        p: 1,
+        bgcolor: entry.isFavorite && !isEditing ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined,
+        borderWidth: isEditing ? 2 : 1,
+        borderStyle: 'solid',
+        borderColor: isEditing ? 'primary.main' : 'divider',
+      }}
+    >
+      {children}
+    </Paper>
   );
 }
