@@ -72,7 +72,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel, onManualEntryA
                 name="timestamp"
                 control={control}
                 render={({ field }) => (
-                  <DateTimePicker<Date>
+                  <DateTimePicker
                     label="Time"
                     value={new Date(field.value)}
                     format="MM/dd/yyyy HH:mm"
