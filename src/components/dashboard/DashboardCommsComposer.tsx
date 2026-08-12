@@ -1,7 +1,7 @@
 import { Box, Button, Stack, TextField } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
@@ -13,18 +13,26 @@ type FormValues = {
   from: string;
   to: string;
   message: string;
+  timestamp: number;
 };
 
-export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: CommunicationsLogEntry | null; onSave?: () => void; onCancel?: () => void }) {
+type DashboardCommsComposerProps = {
+  entry?: CommunicationsLogEntry | null;
+  onSave?: () => void;
+  onCancel?: () => void;
+};
+
+export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCommsComposerProps) {
   const dispatch = useAppDispatch();
   const activity = useActivityContext();
   const fromRef = useRef<HTMLInputElement | null>(null);
 
-  const { register, handleSubmit, reset, formState } = useForm<FormValues>({
+  const { register, handleSubmit, reset, formState, control } = useForm<FormValues>({
     defaultValues: {
       from: entry?.from ?? '',
       to: entry?.to ?? '',
       message: entry?.message ?? '',
+      timestamp: entry?.timestamp ?? Date.now(),
     },
   });
 
@@ -40,6 +48,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
         from: values.from,
         to: values.to,
         message: values.message,
+        timestamp: values.timestamp,
         isAutomated: false, // Automated messages are toggled to false when edited
       };
       dispatch(ActivityActions.updateComm(activity.id, entry.id, updates));
@@ -54,7 +63,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
       onSave?.();
     }
 
-    reset({ from: '', to: '', message: '' });
+    reset({ from: '', to: '', message: '', timestamp: Date.now() });
 
     if (!entry) {
       fromRef.current?.focus();
@@ -62,12 +71,31 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: { entry?: Co
   };
 
   return (
-    <Box sx={{ borderColor: 'divider', p: entry ? 2 : 1, mt: entry ? 0 : 2, flexShrink: 0, bgcolor: entry ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined }}>
+    <Box sx={{ borderColor: 'divider', p: entry ? 2 : 1, mt: entry ? 0 : 2, flexShrink: 0 }}>
       <form onSubmit={handleSubmit(submit)}>
         <Stack spacing={2}>
           <Stack direction={{ xl: 'row' }} alignItems={{ xs: 'stretch', xl: 'center' }} gap={2}>
             <TextField label="From" size="small" inputRef={fromRef} {...register('from')} />
             <TextField label="To" size="small" {...register('to')} />
+            {entry && (
+              <Controller
+                name="timestamp"
+                control={control}
+                render={({ field }) => (
+                  <DateTimePicker<Date>
+                    label="Time"
+                    value={new Date(field.value)}
+                    format="MM/dd/yyyy HH:mm"
+                    onChange={(newValue) => {
+                      if (newValue) {
+                        field.onChange(newValue.getTime());
+                      }
+                    }}
+                    slotProps={{ textField: { size: 'small' } }}
+                  />
+                )}
+              />
+            )}
           </Stack>
           <TextField
             label="Message"
