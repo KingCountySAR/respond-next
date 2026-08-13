@@ -28,12 +28,12 @@ export function DashboardPlaceManager() {
   const [addingPlace, setAddingPlace] = useState<Place | null>(null);
 
   // nullish coalese for backward compatibility on inital render
-  const activityPlaces = activity.places?.filter((f) => f.name !== DEFAULT_PLACES.field || f.assignedParticipants.length || f.assignedEquipment.length) ?? [];
+  const activityPlaces = activity.places ?? [];
 
   return (
     <>
       <Stack spacing={2} sx={{ overflow: 'auto' }}>
-        <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: 'center', justifyContent: 'space-between' }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
           <Box />
           <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAddingPlace(createNewPlace(''))}>
             Add
