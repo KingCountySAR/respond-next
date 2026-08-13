@@ -24,5 +24,11 @@ export default defineConfig({
     // mongodb-memory-server downloads/spins up a real mongod on first server-test run.
     testTimeout: 30000,
     hookTimeout: 60000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['shared/src/**', 'client/src/**', 'server/src/**'],
+      exclude: ['**/__tests__/**', '**/*.d.ts'],
+    },
   },
 });
