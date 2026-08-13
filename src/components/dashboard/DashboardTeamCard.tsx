@@ -5,13 +5,14 @@ import { useEffect, useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { Participant } from '@respond/types/activity';
+import { Participant, ParticipantStatus } from '@respond/types/activity';
 
 import { CommunicationsLogEntry, createNewCommsEntry, EquipmentItem, Team } from '../../types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';
 
+import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 import { DashboardTeamEditDialog } from './DashboardTeamEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
@@ -49,6 +50,8 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
   const updateTeamLeader = (newLeaderId: string) => {
     dispatch(ActivityActions.updateTeam(activity.id, { ...team, teamLeaderParticipantId: newLeaderId }));
   };
+
+  const hasTeamMemberError = teamParticipants.some((participant) => participant.timeline?.[0]?.status !== ParticipantStatus.Assigned);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDrop = (item: any, type: string, callback?: (...args: any[]) => void) => {
@@ -135,7 +138,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
     <>
       <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
         <StatusContainer color={team.status === 'Disbanded' ? 'grey' : statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1.5, bgcolor: 'background.paper', height: '100%' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Stack direction="row" alignItems="center">
                 <IconButton onClick={handleExpandClick} size="small" sx={{ width: 32, height: 32 }}>
@@ -145,6 +148,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
                   <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer' }} onClick={() => setOpenTeamEditor(team)}>
                     {team.name}
                   </Typography>
+                  <DashboardErrorIndicator message={hasTeamMemberError ? 'One or more team members are not assigned to the activity.' : undefined} size={16} />
                   {teamLeader && (
                     <Draggable type="participant" item={teamLeader} callback={() => removeTeamMember(teamLeader.id)}>
                       <DashboardTeamMember key={teamLeader.id} participant={teamLeader} />
