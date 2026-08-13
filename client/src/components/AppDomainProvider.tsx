@@ -2,9 +2,10 @@ import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react'
 import { useStore } from 'react-redux';
 
 import type { AppStore } from '@respond/lib/client/store';
-import { ObservableClock } from '@respond/lib/client/viewmodels/observableClock';
-import { OrganizationDomainModel } from '@respond/lib/client/viewmodels/OrganizationDomainModel';
-import { UserDomainModel } from '@respond/lib/client/viewmodels/UserDomainModel';
+
+import { ObservableClock } from 'src/models/observableClock';
+import { OrganizationDomainModel } from 'src/models/organizationDomainModel';
+import { UserDomainModel } from 'src/models/userDomainModel';
 
 const UserDomainModelContext = createContext<UserDomainModel | null>(null);
 const OrganizationDomainModelContext = createContext<OrganizationDomainModel | null>(null);

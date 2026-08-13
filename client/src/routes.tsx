@@ -1,14 +1,11 @@
-import { Route, Switch } from 'wouter';
+import { Redirect, Route, Switch } from 'wouter';
 
-import ActivityLayout from '@respond/components/activities/ActivityLayout';
-import { RosterReview } from '@respond/components/activities/RosterView';
-import { OperationsDashboard } from '@respond/components/dashboard/OperationsDashboard';
 import { LocationManager } from '@respond/components/locations/LocationManager';
 
 import { Home } from './pages/Home';
-import { ActivityEditPage } from './pages/respond/ActivityEditPage';
-import { ActivityListPage } from './pages/respond/ActivityListPage';
-import { ActivityPage } from './pages/respond/ActivityPage';
+import { OpsRoutes } from './pages/operations/OpsRoutes';
+import { ReportRoutes } from './pages/reports/ReportRoutes';
+import { RespondRoutes } from './pages/respond/RespondRoutes';
 
 // Order matters: wouter's <Switch> renders the first matching <Route>, so more
 // specific paths (e.g. /mission/new) must precede parameterized ones (/mission/:id).
@@ -17,43 +14,20 @@ export function AppRoutes() {
     <Switch>
       <Route path="/" component={Home} />
 
-      <Route path="/mission/new">{() => <ActivityEditPage activityType="missions" />}</Route>
-      <Route path="/mission/:missionId/edit">{(p) => <ActivityEditPage activityType="missions" activityId={p.missionId} />}</Route>
-      <Route path="/mission/:missionId/ops">
-        {(p) => (
-          <ActivityLayout activityId={p.missionId}>
-            <OperationsDashboard />
-          </ActivityLayout>
-        )}
+      <Route path="/mission" nest>
+        <RespondRoutes type="missions" />
       </Route>
-      <Route path="/mission/:missionId">
-        {(p) => (
-          <ActivityLayout activityId={p.missionId}>
-            <ActivityPage />
-          </ActivityLayout>
-        )}
+      <Route path="/event" nest>
+        <RespondRoutes type="events" />
       </Route>
-      <Route path="/mission">{() => <ActivityListPage activityType="missions" />}</Route>
+      <Route path="/ops" nest>
+        <OpsRoutes />
+      </Route>
+      <Route path="/reports" nest>
+        <ReportRoutes />
+      </Route>
+      <Route path="/roster/:id">{(p) => <Redirect to={`/reports/roster/${p.id}`} replace />}</Route>
 
-      <Route path="/event/new">{() => <ActivityEditPage activityType="events" />}</Route>
-      <Route path="/event/:eventId/edit">{(p) => <ActivityEditPage activityType="events" activityId={p.eventId} />}</Route>
-      <Route path="/event/:eventId/ops">
-        {(p) => (
-          <ActivityLayout activityId={p.eventId}>
-            <OperationsDashboard />
-          </ActivityLayout>
-        )}
-      </Route>
-      <Route path="/event/:eventId">
-        {(p) => (
-          <ActivityLayout activityId={p.eventId}>
-            <ActivityPage />
-          </ActivityLayout>
-        )}
-      </Route>
-      <Route path="/event">{() => <ActivityListPage activityType="events" />}</Route>
-
-      <Route path="/roster/:activityId">{(p) => <RosterReview activityId={p.activityId} />}</Route>
       <Route path="/admin/locations" component={LocationManager} />
     </Switch>
   );

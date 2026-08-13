@@ -2,7 +2,8 @@ import { createContext, ReactNode, useContext, useEffect, useRef } from 'react';
 import { useStore } from 'react-redux';
 
 import type { AppStore } from '@respond/lib/client/store';
-import { ActivityDomainModel } from '@respond/lib/client/viewmodels/ActivityDomainModel';
+
+import { ActivityDomainModel } from 'src/models/activityDomainModel';
 
 import { useClock } from '../AppDomainProvider';
 

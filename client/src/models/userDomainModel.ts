@@ -1,8 +1,8 @@
 import type { UserInfo } from '@respond/shared/types/userInfo';
 
-import type { AppStore } from '../store';
+import type { AppStore } from '../lib/client/store';
 
-import { ReduxProjection } from './ReduxProjection';
+import { ReduxProjection } from './reduxProjection';
 
 /**
  * The logged-in user, projected from `state.auth.userInfo`. App-scoped singleton

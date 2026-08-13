@@ -13,9 +13,9 @@ import { ParticipantEtaUpdater } from '@respond/components/participant/Participa
 import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { ActivityViewModel } from '@respond/lib/client/viewmodels/ActivityViewModel';
-import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
 
+import { ParticipantDomainModel } from 'src/models/participantDomainModel';
+import { ActivityViewModel } from 'src/pages/respond/activityViewModel';
 import { MobilePageId } from 'src/types';
 
 import { ActivityActionsBar } from './ActivityPage';

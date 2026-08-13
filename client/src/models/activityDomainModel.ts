@@ -1,13 +1,16 @@
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { makeObservable, observableRef, runInAction } from 'mobx';
 
+import { ActivityCommands } from '@respond/shared/commands';
+import { ActivityEvents } from '@respond/shared/events';
 import { Activity } from '@respond/shared/types/activity';
 
-import { addAppListener, type AppDispatch, type AppStore } from '../store';
-import { buildActivitySelector } from '../store/activities';
+import { type AppDispatch, type AppStore } from '../lib/client/store';
+import { buildActivitySelector } from '../lib/client/store/activities';
 
 import { ObservableClock } from './observableClock';
-import { ParticipantDomainModel } from './ParticipantDomainModel';
+import { ParticipantDomainModel } from './participantDomainModel';
+import { ReduxProjection } from './reduxProjection';
 
 /**
  * Bridges the Redux read-model into MobX for a single activity.
@@ -23,76 +26,41 @@ import { ParticipantDomainModel } from './ParticipantDomainModel';
  * activity opened by direct link, hydrated by ActivityLayout's one-off fetch).
  */
 export class ActivityDomainModel {
-  // Initialized here (not just declared) so the fields exist as own properties
+  // The live store activity, mirrored via the shared Redux→MobX projection.
+  private readonly storeActivity: ReduxProjection<Activity | undefined>;
+  // Initialized here (not just declared) so the field exists as an own property
   // before makeObservable runs — the repo transpiles with useDefineForClassFields
   // off, where a declared-only field isn't yet present at construction time.
-  private storeActivity: Activity | undefined = undefined;
   private fallbackActivity: Activity | undefined = undefined;
-  private unsubscribe?: () => void;
   // Stable ParticipantDomainModel per id — each reads its participant live, so the
   // same instance survives updates (only re-created if a participant id is new).
   private readonly participantModels = new Map<string, ParticipantDomainModel>();
 
   constructor(
-    private readonly store: AppStore,
+    store: AppStore,
     private readonly activityId: string,
     private readonly clock: ObservableClock,
   ) {
-    this.storeActivity = this.select();
-    makeObservable<ActivityDomainModel, 'storeActivity' | 'fallbackActivity'>(this, {
+    this.storeActivity = new ReduxProjection(store, buildActivitySelector(activityId));
+    makeObservable<ActivityDomainModel, 'fallbackActivity'>(this, {
       // Reference observability only — the Activity graph comes frozen from Redux
       // and is swapped wholesale, so we must not let MobX deep-proxy it.
-      storeActivity: observableRef,
       fallbackActivity: observableRef,
     });
   }
 
-  private select(): Activity | undefined {
-    return buildActivitySelector(this.activityId)(this.store.getState());
-  }
-
-  /**
-   * Dispatch a command into the Redux timeline. The domain model owns the sole
-   * reference to the store — view models issue commands through here so they stay
-   * decoupled from Redux (ClientSync forwards the command; the server event reduces
-   * back in via the subscription above).
-   */
+  /** Dispatch a command into the Redux timeline (delegated to the projection). */
   get dispatch(): AppDispatch {
-    return this.store.dispatch;
+    return this.storeActivity.dispatch;
   }
 
   /**
-   * Dispatch a command, then resolve once an event whose type is in `eventTypes`
-   * is observed on the Redux action stream (via the listener middleware). This is
-   * the round-trip completion signal for command → server → event → reduce — e.g.
-   * to navigate away only after the delete has actually landed. Rejects if no
-   * matching event arrives within `timeoutMs`; the listener is always torn down.
-   *
-   * Note: matches on event type only, so it resolves on the first such event
-   * regardless of which activity it targets. Sufficient for the single-activity
-   * page; pass a narrower type set (or add id matching) if that ever bites.
+   * Dispatch a command and resolve once a matching event has reduced back in — the
+   * command → server → event → reduce round-trip signal (e.g. navigate away only
+   * after a delete lands). Delegated to the projection; see {@link ReduxProjection.dispatchAndWait}.
    */
-  dispatchAndWait(command: UnknownAction, eventTypes: string[], timeoutMs = 10000): Promise<UnknownAction> {
-    const wanted = new Set(eventTypes);
-    return new Promise<UnknownAction>((resolve, reject) => {
-      let stop = () => {};
-      const timer = setTimeout(() => {
-        stop();
-        reject(new Error(`dispatchAndWait timed out after ${timeoutMs}ms waiting for: ${eventTypes.join(', ')}`));
-      }, timeoutMs);
-      // Register the listener before dispatching so a fast event can't be missed.
-      stop = this.store.dispatch(
-        addAppListener({
-          predicate: (action) => wanted.has(action.type),
-          effect: (action) => {
-            stop();
-            clearTimeout(timer);
-            resolve(action);
-          },
-        }),
-      );
-      this.store.dispatch(command);
-    });
+  dispatchAndWait(command: UnknownAction, eventTypes: string[], timeoutMs?: number): Promise<UnknownAction> {
+    return this.storeActivity.dispatchAndWait(command, eventTypes, timeoutMs);
   }
 
   /**
@@ -101,24 +69,12 @@ export class ActivityDomainModel {
    * matters under React StrictMode, which builds-and-discards. Idempotent.
    */
   connect() {
-    if (this.unsubscribe) return;
-    // Re-sync in case the store changed between construction and connect.
-    runInAction(() => {
-      this.storeActivity = this.select();
-    });
-    this.unsubscribe = this.store.subscribe(() => {
-      const next = this.select();
-      if (next !== this.storeActivity) {
-        runInAction(() => {
-          this.storeActivity = next;
-        });
-      }
-    });
+    this.storeActivity.connect();
   }
 
   /** Live store data wins; the fetched fallback fills the not-in-store gap. */
   get activity(): Activity | undefined {
-    return this.storeActivity ?? this.fallbackActivity;
+    return this.storeActivity.value ?? this.fallbackActivity;
   }
 
   /**
@@ -129,7 +85,7 @@ export class ActivityDomainModel {
    * flips back to editable.
    */
   get readOnly(): boolean {
-    return this.storeActivity === undefined;
+    return this.storeActivity.value === undefined;
   }
 
   /**
@@ -162,6 +118,32 @@ export class ActivityDomainModel {
     return Object.keys(activity.participants).map((id) => this.getParticipant(id)!);
   }
 
+  // --- Command actions (dispatched into the Redux timeline) ---
+
+  /** Mark this activity complete as of now. No-op when read-only or unloaded. */
+  markComplete() {
+    const activity = this.activity;
+    if (!activity || this.readOnly) return;
+    this.dispatch(ActivityCommands.CompleteActivity(activity.id, Date.now()));
+  }
+
+  /** Reactivate a completed activity. No-op when read-only or unloaded. */
+  reactivate() {
+    const activity = this.activity;
+    if (!activity || this.readOnly) return;
+    this.dispatch(ActivityCommands.ReactivateActivity(activity.id));
+  }
+
+  /**
+   * Remove (soft-delete) this activity, resolving once the ActivityRemoved event
+   * has reduced back in so callers can safely navigate away. No-op when read-only.
+   */
+  async remove() {
+    const activity = this.activity;
+    if (!activity || this.readOnly) return;
+    await this.dispatchAndWait(ActivityCommands.RemoveActivity(activity.id), [ActivityEvents.ActivityRemoved.type]);
+  }
+
   setFallback(activity: Activity | undefined) {
     if (activity !== this.fallbackActivity) {
       runInAction(() => {
@@ -171,8 +153,7 @@ export class ActivityDomainModel {
   }
 
   dispose() {
-    this.unsubscribe?.();
-    this.unsubscribe = undefined;
+    this.storeActivity.dispose();
     Object.values(this.participantModels).forEach((p) => p.dispose());
   }
 }

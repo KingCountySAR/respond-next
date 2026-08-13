@@ -1,51 +1,41 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
-import { addDays } from 'date-fns/addDays';
-import { useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { useEffect, useMemo } from 'react';
+import { useStore } from 'react-redux';
 import { Link } from 'wouter';
 
 import { ActivityStack } from '@respond/components/activities/ActivityStack';
 import { ActivityTile } from '@respond/components/activities/ActivityTile';
+import { useClock, useOrganizationDomainModel, useUserDomainModel } from '@respond/components/AppDomainProvider';
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { useAppSelector } from '@respond/lib/client/store';
-import { buildActivityTypeSelector, buildMyActivitySelector, getActivityStatus, isActive, isComplete, isFuture } from '@respond/lib/client/store/activities';
-import { canCreateEvents, canCreateMissions } from '@respond/lib/client/store/organization';
-import { Activity, isActive as isParticipantStatusActive } from '@respond/shared/types/activity';
+import type { AppStore } from '@respond/lib/client/store';
+import { getActivityStatus, isFuture } from '@respond/lib/client/store/activities';
 
-function filterActivitiesForDisplay(activities: Activity[], maxCompletedVisible: number, oldestVisible: number) {
-  // Most recent first
-  const sort = (a: Activity, b: Activity) => {
-    // sort missions date descending. Other activities date ascending
-    const sign = a.isMission ? -1 : 1;
-    return a.startTime === b.startTime ? 0 : a.startTime > b.startTime ? sign : -sign;
-  };
+import { ActivityListDomainModel } from 'src/models/activityListDomainModel';
+import { HomeViewModel } from 'src/pages/respond/homeViewModel';
 
-  const active = activities.filter(isActive).sort(sort);
-  const complete = activities
-    .filter((a) => isComplete(a) && a.startTime > oldestVisible)
-    .sort(sort)
-    .slice(0, maxCompletedVisible);
+// Owns the activity-list domain model's lifecycle: build it from the store and
+// subscribe/unsubscribe across mount. Kept off the app-wide provider since Home is
+// the only consumer — a thin wrapper here is enough. The observing content lives in
+// HomeContent so only that subtree re-renders as the read model changes.
+export function Home() {
+  const store = useStore() as AppStore;
+  const list = useMemo(() => new ActivityListDomainModel(store), [store]);
 
-  return active.concat(complete);
+  useEffect(() => {
+    list.connect();
+    return () => list.dispose();
+  }, [list]);
+
+  return <HomeContent domain={list} />;
 }
 
-export function Home() {
-  const myActivities = useAppSelector(buildMyActivitySelector());
-  const myCurrentActivities = myActivities.filter((activity) => isParticipantStatusActive(activity.status.status) === true);
-
-  const statusMap = myActivities.reduce((accum, cur) => ({ [cur.activity.id]: cur.status.status, ...accum }), {});
-
-  const maxCompletedActivitiesVisible = 3;
-  const oldestCompletedActivityVisible = addDays(new Date(), -3).getTime();
-
-  const canCreateM = useAppSelector((state) => canCreateMissions(state));
-  const canCreateE = useAppSelector((state) => canCreateEvents(state));
-
-  let missions = useAppSelector(buildActivityTypeSelector(true));
-  missions = filterActivitiesForDisplay(missions, maxCompletedActivitiesVisible, oldestCompletedActivityVisible);
-
-  let events = useAppSelector(buildActivityTypeSelector(false));
-  events = filterActivitiesForDisplay(events, maxCompletedActivitiesVisible, oldestCompletedActivityVisible);
+const HomeContent = observer(function HomeContent({ domain }: { domain: ActivityListDomainModel }) {
+  const user = useUserDomainModel();
+  const organization = useOrganizationDomainModel();
+  const clock = useClock();
+  const activities = useMemo(() => new HomeViewModel(domain, user, organization, clock), [domain, user, organization, clock]);
 
   useEffect(() => {
     document.title = 'Event list';
@@ -54,13 +44,13 @@ export function Home() {
   return (
     <ToolbarPage>
       <main>
-        {myCurrentActivities.length < 1 ? null : (
+        {activities.myCurrentActivities.length < 1 ? null : (
           <Box sx={{ mb: 3 }}>
             <Box sx={{ mb: 1 }}>
               <Typography variant="h5">My Activity</Typography>
             </Box>
             <Stack spacing={1}>
-              {myCurrentActivities.map((up) => (
+              {activities.myCurrentActivities.map((up) => (
                 <ActivityTile key={up.activity.id} activity={up.activity} status={up.status.status}>
                   <OutputForm>
                     <Box>
@@ -86,13 +76,13 @@ export function Home() {
             }}
           >
             <Typography variant="h5">Missions</Typography>
-            {canCreateM && (
+            {activities.canCreateMissions && (
               <Button variant="outlined" component={Link} href="/mission/new">
                 New Mission
               </Button>
             )}
           </Box>
-          <ActivityStack type="missions" activities={missions} statusMap={statusMap} showOrgs />
+          <ActivityStack type="missions" activities={activities.missions} statusMap={activities.statusMap} showOrgs />
         </Box>
         <Box sx={{ pb: 4 }}>
           <Box
@@ -104,15 +94,15 @@ export function Home() {
             }}
           >
             <Typography variant="h5">Events</Typography>
-            {canCreateE && (
+            {activities.canCreateEvents && (
               <Button variant="outlined" component={Link} href="/event/new">
                 New Event
               </Button>
             )}
           </Box>
-          <ActivityStack type="events" activities={events} statusMap={statusMap} />
+          <ActivityStack type="events" activities={activities.events} statusMap={activities.statusMap} />
         </Box>
       </main>
     </ToolbarPage>
   );
-}
+});

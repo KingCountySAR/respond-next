@@ -1,8 +1,8 @@
 import type { MyOrganization } from '@respond/shared/types/organization';
 
-import type { AppStore } from '../store';
+import type { AppStore } from '../lib/client/store';
 
-import { ReduxProjection } from './ReduxProjection';
+import { ReduxProjection } from './reduxProjection';
 
 /**
  * The site tenant organization, projected from `state.organization.mine`.

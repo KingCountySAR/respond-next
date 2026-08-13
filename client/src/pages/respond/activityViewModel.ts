@@ -1,15 +1,12 @@
 import { makeAutoObservable } from 'mobx';
 
-import { ActivityCommands } from '@respond/shared/commands';
-import { ActivityEvents } from '@respond/shared/events';
 import { Activity } from '@respond/shared/types/activity';
 
-import { getActivityStatus, isActive } from '../store/activities';
-
-import { ActivityDomainModel } from './ActivityDomainModel';
-import { ParticipantDomainModel } from './ParticipantDomainModel';
-import { RosterViewModel } from './RosterViewModel';
-import { UserDomainModel } from './UserDomainModel';
+import { getActivityStatus, isActive } from '../../lib/client/store/activities';
+import { ActivityDomainModel } from '../../models/activityDomainModel';
+import { ParticipantDomainModel } from '../../models/participantDomainModel';
+import { UserDomainModel } from '../../models/userDomainModel';
+import { RosterViewModel } from '../reports/rosterReportViewModel';
 
 /**
  * Sits between the domain model (Redux projection) and the React UI. Holds:
@@ -76,21 +73,17 @@ export class ActivityViewModel {
     return this.domain.getParticipant(this.user.participantId);
   }
 
-  // --- Command actions (dispatched into the Redux timeline) ---
+  // --- Command actions (delegated to the domain model, which owns dispatch) ---
 
   toggleStatus() {
-    const activity = this.activity;
-    if (!activity || this.readOnly) return;
     if (this.isActive) {
-      this.domain.dispatch(ActivityCommands.CompleteActivity(activity.id, Date.now()));
+      this.domain.markComplete();
     } else {
-      this.domain.dispatch(ActivityCommands.ReactivateActivity(activity.id));
+      this.domain.reactivate();
     }
   }
 
   async remove() {
-    const activity = this.activity;
-    if (!activity || this.readOnly) return;
-    await this.domain.dispatchAndWait(ActivityCommands.RemoveActivity(activity.id), [ActivityEvents.ActivityRemoved.type]);
+    await this.domain.remove();
   }
 }

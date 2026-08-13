@@ -2,8 +2,8 @@ import { makeAutoObservable } from 'mobx';
 
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
-import { ActivityDomainModel } from './ActivityDomainModel';
-import { ParticipantDomainModel } from './ParticipantDomainModel';
+import { ActivityDomainModel } from '../../models/activityDomainModel';
+import { ParticipantDomainModel } from '../../models/participantDomainModel';
 
 const STATUS_SORT_ORDER = [
   ParticipantStatus.SignedIn,

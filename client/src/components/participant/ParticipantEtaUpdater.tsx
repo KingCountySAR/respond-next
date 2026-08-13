@@ -6,7 +6,8 @@ import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
 
 import { useDebouncedCallback } from '@respond/hooks/useDebouncedCallback';
-import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
+
+import { ParticipantDomainModel } from 'src/models/participantDomainModel';
 
 import { InlineTimeEdit } from '../InlineTimeEdit';
 import { usePreferences } from '../PreferencesProvider';

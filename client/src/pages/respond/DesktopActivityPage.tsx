@@ -13,9 +13,10 @@ import { Box, Paper, Stack } from '@respond/components/Material';
 import { ParticipantEtaUpdater } from '@respond/components/participant/ParticipantEtaUpdater';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { ActivityViewModel } from '@respond/lib/client/viewmodels/ActivityViewModel';
-import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
 import { ParticipantStatus } from '@respond/shared/types/activity';
+
+import { ParticipantDomainModel } from 'src/models/participantDomainModel';
+import { ActivityViewModel } from 'src/pages/respond/activityViewModel';
 
 import { ActivityActionsBar } from './ActivityPage';
 

@@ -4,14 +4,12 @@ import { differenceInCalendarDays, format as formatDate } from 'date-fns';
 import { forwardRef, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
+import { ActivityProvider, useActivityContext } from '@respond/components/activities/ActivityProvider';
+import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
 import { Activity, getOrganizationName, Participant, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
-
-import { OutputForm, OutputText, OutputTime } from '../OutputForm';
-
-import { ActivityProvider, useActivityContext } from './ActivityProvider';
 
 interface RosterEntryProps {
   participant: Participant;
@@ -28,7 +26,7 @@ const columnBordersStyle = {
   },
 };
 
-export function RosterReview({ activityId }: { activityId: string }) {
+export function RosterReportPage({ activityId }: { activityId: string }) {
   const activity = useAppSelector(buildActivitySelector(activityId));
   const [lastNameFirst, setLastNameFirst] = useState(false);
   const [showColumnBorders, setShowColumnBorders] = useState(false);

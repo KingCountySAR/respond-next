@@ -9,9 +9,10 @@ import { observer } from 'mobx-react-lite';
 import { FunctionComponent, ReactNode, useState } from 'react';
 
 import { Box, DialogContent, DialogTitle, DialogWithHistory, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
-import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
-import { RosterViewModel } from '@respond/lib/client/viewmodels/RosterViewModel';
 import { getStatusCssColor, ParticipantStatus } from '@respond/shared/types/activity';
+
+import { ParticipantDomainModel } from 'src/models/participantDomainModel';
+import { RosterViewModel } from 'src/pages/reports/rosterReportViewModel';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
