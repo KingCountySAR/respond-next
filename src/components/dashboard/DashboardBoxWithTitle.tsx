@@ -8,6 +8,7 @@ interface DashboardBoxWithTitleProps {
   actions?: DashboardBoxWithTitleAction[];
   collapsible?: boolean;
   children: React.ReactNode;
+  adornment?: React.ReactNode;
   sx?: SxProps<Theme>;
 }
 
@@ -17,7 +18,7 @@ interface DashboardBoxWithTitleAction {
   onClick: () => void;
 }
 
-export function DashboardBoxWithTitle({ title, actions = [], collapsible = false, children, sx }: DashboardBoxWithTitleProps): JSX.Element {
+export function DashboardBoxWithTitle({ title, actions = [], collapsible = false, children, adornment, sx }: DashboardBoxWithTitleProps): JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -38,16 +39,17 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
     >
       <Stack
         direction="row"
-        alignItems="center"
-        justifyContent="space-between"
         onClick={() => {
           if (!collapsible) return;
           setCollapsed((current) => !current);
         }}
-        sx={{ cursor: 'pointer', pb: collapsed ? 0 : 1 }}
+        sx={{ alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', pb: !collapsible || collapsed ? 0 : 1 }}
       >
-        <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
-        <Stack direction="row" alignItems="center">
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
+          {adornment}
+        </Stack>
+        <Stack direction="row" sx={{ alignItems: 'center' }}>
           <Stack direction="row" sx={{ visibility: hovered ? 'visible' : 'hidden' }}>
             {actions.map((action) => (
               <IconButton

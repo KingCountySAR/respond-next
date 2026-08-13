@@ -51,6 +51,7 @@ const inventory = [
   { id: 'inventory-35', type: 'Medical', name: 'A.E.D - EMT' },
   { id: 'inventory-36', type: 'Medical', name: 'Backboard' },
   { id: 'inventory-37', type: 'Rigging', name: 'Bolt Kit' },
+  { id: 'inventory-38', type: 'Packaging', name: 'Packaging' },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const checkOutEquipmentItem = (item: EquipmentItem): EquipmentItem => {
@@ -144,8 +145,8 @@ export function DashboardEquipmentManager() {
     <>
       <Droppable accepts="equipment" onDrop={handleDrop} grow>
         <Stack spacing={2} sx={{ overflow: 'auto' }}>
-          <Stack direction="row" spacing={1}>
-            <DashboardSearchBox onChange={setSearchQuery} />
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <DashboardSearchBox onChange={setSearchQuery} sx={{ flex: 1 }} />
             <EquipmentGroupToggleButton onChange={(value) => setGroupBy(value)} />
           </Stack>
           <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pr: 0.5 }}>{groupBy === 'All' ? <EquipmentAphabetical items={filteredEquipment} /> : <EquipmentGroups groups={groupedEquipment} />}</Box>
@@ -159,7 +160,7 @@ export function DashboardEquipmentManager() {
 function EquipmentTile({ item }: { item: EquipmentItem }) {
   return (
     <DashboardDraggableContainer variant="compact">
-      <Stack direction="row" justifyContent="space-between">
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ flex: 1, minWidth: 0, width: '100%' }}>
         <Typography variant="subtitle2">{item.name}</Typography>
         <Typography variant="caption" color="text.secondary">
           {item.type}

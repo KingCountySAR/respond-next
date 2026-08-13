@@ -11,6 +11,12 @@ import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 
 import DashboardParticipantCard from './DashboardParticipantCard';
 
+function sortParticipantsAlphabetically(left: Participant, right: Participant) {
+  const leftName = `${left.firstname} ${left.lastname}`.trim();
+  const rightName = `${right.firstname} ${right.lastname}`.trim();
+  return leftName.localeCompare(rightName, undefined, { sensitivity: 'base' });
+}
+
 export function DashboardResponderManager() {
   const dispatch = useAppDispatch();
 
@@ -27,6 +33,39 @@ export function DashboardResponderManager() {
         return participant.timeline[0].status === ParticipantStatus.Available && !assignedParticipants.includes(participant.id);
       })
       .sort((a, b) => a.firstname.localeCompare(b.lastname));
+  }, [activity, teams]);
+
+  const signedInParticipants = useMemo(() => {
+    const assignedParticipants = teams.flatMap((team) => team.assignedParticipants.map((id) => id));
+    return (
+      Object.values(activity.participants)
+        .filter((participant) => {
+          return participant.timeline[0].status === ParticipantStatus.SignedIn && !assignedParticipants.includes(participant.id);
+        })
+        // Signed-in responders are ordered by earliest ETA first; unknown ETA entries sort last and are alphabetized.
+        .sort((left, right) => {
+          const leftEta = left.eta;
+          const rightEta = right.eta;
+
+          if (leftEta == null && rightEta == null) {
+            return sortParticipantsAlphabetically(left, right);
+          }
+
+          if (leftEta == null) {
+            return 1;
+          }
+
+          if (rightEta == null) {
+            return -1;
+          }
+
+          if (leftEta !== rightEta) {
+            return leftEta - rightEta;
+          }
+
+          return sortParticipantsAlphabetically(left, right);
+        })
+    );
   }, [activity, teams]);
 
   const setAssigned = (isSelf: boolean, participant: Participant) => {
@@ -55,13 +94,18 @@ export function DashboardResponderManager() {
             </Typography>
           </Box>
         ) : (
-          availableParticipants.map((participant) => {
-            return (
-              <Draggable key={participant.id} type="participant" item={participant} callback={(isSelf: boolean) => setAssigned(isSelf, participant)}>
-                <DashboardParticipantCard key={participant.id} participant={participant} />
-              </Draggable>
-            );
-          })
+          <>
+            {availableParticipants.map((participant) => {
+              return (
+                <Draggable key={participant.id} type="participant" item={participant} callback={(isSelf: boolean) => setAssigned(isSelf, participant)}>
+                  <DashboardParticipantCard key={participant.id} participant={participant} />
+                </Draggable>
+              );
+            })}
+            {signedInParticipants.map((participant) => (
+              <DashboardParticipantCard key={participant.id} participant={participant} />
+            ))}
+          </>
         )}
       </Box>
     </Droppable>

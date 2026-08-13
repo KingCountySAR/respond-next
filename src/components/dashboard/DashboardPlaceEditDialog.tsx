@@ -133,10 +133,9 @@ export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPl
   return (
     <DialogWithHistory fullWidth={true} open={Boolean(place)} onClose={onClose}>
       <DialogTitle>Edit Place</DialogTitle>
-
       <form onSubmit={handleSubmit(handleSave)}>
         <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
+          <Stack spacing={1}>
             <TextField autoFocus label="Place Name" disabled={isDefault} fullWidth {...register('name')} error={Boolean(errors.name)} helperText={errors.name?.message ?? 'Choose a unique name for this place.'} />
             <TextField label="Latitude" fullWidth {...register('lat')} error={Boolean(errors.lat)} helperText={errors.lat?.message ?? 'Optional, decimal degrees (-90 to 90).'} />
             <TextField label="Longitude" fullWidth {...register('lon')} error={Boolean(errors.lon)} helperText={errors.lon?.message ?? 'Optional, decimal degrees (-180 to 180).'} />

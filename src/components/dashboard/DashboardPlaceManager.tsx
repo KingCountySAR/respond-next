@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
-import { Participant } from '@respond/types/activity';
+import { Participant, ParticipantStatus } from '@respond/types/activity';
 import { CommunicationsLogEntry, createNewCommsEntry, createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
@@ -17,6 +17,7 @@ import { Stack } from '../Material';
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 import { DashboardCopyChip } from './DashboardCopyChip';
 import { DashboardDividedSection } from './DashboardDividedSection';
+import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
@@ -55,10 +56,10 @@ export function DashboardPlaceManager() {
 
   return (
     <>
-      <Stack spacing={1} sx={{ overflow: 'auto' }}>
+      <Stack spacing={2} sx={{ overflow: 'auto' }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
           <Box />
-          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAddingPlace(createNewPlace('New Place'))}>
+          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAddingPlace(createNewPlace(''))}>
             Add
           </Button>
         </Stack>
@@ -120,7 +121,7 @@ function PlaceTile({ place }: { place: Place }) {
     const comm: CommunicationsLogEntry = createNewCommsEntry({
       from: place.name,
       to: 'CP',
-      message: `${place.name} terminated`,
+      message: `${place.name} location terminated`,
       isAutomated: true,
     });
     dispatch(ActivityActions.addComm(activity.id, comm));
@@ -194,13 +195,17 @@ function PlaceTile({ place }: { place: Place }) {
     dispatch(ActivityActions.updatePlace(activity.id, updated));
   };
 
+  const hasContent = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0 || (place.lat?.trim() && place.lon?.trim()) || (place.notes?.trim() && place.notes.trim().length > 0);
+
+  const hasPersonnelError = place.assignedParticipants.some((id) => activity.participants[id].timeline[0].status !== ParticipantStatus.Assigned);
+
   return (
     <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
-      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible>
+      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible={!!hasContent} adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined}>
         <Stack spacing={1}>
           {!!place.assignedParticipants.length && (
             <DashboardDividedSection title="Personnel">
-              <Stack spacing={0.75}>
+              <Stack spacing={0.5}>
                 {!!place.assignedParticipants.length &&
                   participants.map((participant) => {
                     return (
@@ -214,7 +219,7 @@ function PlaceTile({ place }: { place: Place }) {
           )}
           {!!sortedTeamEquipment.length && (
             <DashboardDividedSection title="Equipment">
-              <Stack spacing={0.75}>
+              <Stack spacing={0.5}>
                 {sortedTeamEquipment.map((item) => {
                   return (
                     <Draggable
