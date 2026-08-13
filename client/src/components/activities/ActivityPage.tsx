@@ -36,7 +36,7 @@ const ActivityPageContent = observer(function ActivityPageContent() {
 
   if (!vm.activity) return <div>Loading activity...</div>;
 
-  return isMobile ? <MobileActivityPage vm={vm} /> : <DesktopActivityPage vm={vm} />;
+  return isMobile ? <MobileActivityPage activity={vm} /> : <DesktopActivityPage vm={vm} />;
 });
 
 export const ActivityActionsBar = observer(function ActivityActionsBar({ vm }: { vm: ActivityViewModel }) {

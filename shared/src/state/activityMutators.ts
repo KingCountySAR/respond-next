@@ -188,12 +188,13 @@ export function participantMilesUpdate(state: Draft<ActivityState>, activityId: 
   person.miles = miles;
 }
 
-export function participantEtaUpdate(state: Draft<ActivityState>, activityId: string, participantId: string, eta: number): void {
+export function participantEtaUpdate(state: Draft<ActivityState>, activityId: string, participantId: string, eta: number | null): void {
   const activity = state.list.find((f) => f.id === activityId);
   if (!activity) return;
   const person = activity.participants[participantId];
   if (!person) return;
-  person.eta = eta;
+  // null clears the ETA — normalize to undefined so Participant.eta stays number | undefined.
+  person.eta = eta ?? undefined;
 }
 
 export function tagParticipant(state: Draft<ActivityState>, activityId: string, participantId: string, tags: string[]): void {

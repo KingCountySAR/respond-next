@@ -24,7 +24,7 @@ const ParticipantMilesUpdated = createAction('evt/participant/milesUpdated', (ac
   payload: { activityId, participantId, miles },
 }));
 
-const ParticipantEtaUpdated = createAction('evt/participant/etaUpdated', (activityId: string, participantId: string, eta: number) => ({
+const ParticipantEtaUpdated = createAction('evt/participant/etaUpdated', (activityId: string, participantId: string, eta: number | null) => ({
   payload: { activityId, participantId, eta },
 }));
 

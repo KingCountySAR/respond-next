@@ -6,6 +6,7 @@ import { Activity } from '@respond/shared/types/activity';
 
 import { type AppStore, buildClientStore } from '../../store';
 import { ActivityDomainModel } from '../ActivityDomainModel';
+import { ObservableClock } from '../observableClock';
 
 function makeStore(activities: Activity[]): AppStore {
   const listeners = new Set<() => void>();
@@ -19,10 +20,12 @@ function makeStore(activities: Activity[]): AppStore {
   } as unknown as AppStore;
 }
 
+const clock = new ObservableClock();
+
 describe('ActivityDomainModel', () => {
   it('constructs and observes without makeObservable field errors', () => {
     const activity = { id: 'a1', title: 'Test' } as Activity;
-    const model = new ActivityDomainModel(makeStore([activity]), 'a1');
+    const model = new ActivityDomainModel(makeStore([activity]), 'a1', clock);
     expect(model.activity).toBe(activity);
     expect(model.readOnly).toBe(false);
     model.dispose();
@@ -30,7 +33,7 @@ describe('ActivityDomainModel', () => {
 
   it('is read-only when the activity is not in the live store', () => {
     const fallback = { id: 'a2', title: 'Archived' } as Activity;
-    const model = new ActivityDomainModel(makeStore([]), 'a2');
+    const model = new ActivityDomainModel(makeStore([]), 'a2', clock);
     expect(model.readOnly).toBe(true);
     model.setFallback(fallback);
     expect(model.activity).toBe(fallback);
@@ -41,7 +44,7 @@ describe('ActivityDomainModel', () => {
   describe('dispatchAndWait', () => {
     it('resolves with the event once a matching event is dispatched', async () => {
       const store = buildClientStore([]);
-      const model = new ActivityDomainModel(store, 'a1');
+      const model = new ActivityDomainModel(store, 'a1', clock);
 
       const pending = model.dispatchAndWait(ActivityCommands.RemoveActivity('a1'), [ActivityEvents.ActivityRemoved.type]);
       // Simulate the server round-trip: the event action reaches the store.
@@ -54,7 +57,7 @@ describe('ActivityDomainModel', () => {
 
     it('rejects when no matching event arrives before the timeout', async () => {
       const store = buildClientStore([]);
-      const model = new ActivityDomainModel(store, 'a1');
+      const model = new ActivityDomainModel(store, 'a1', clock);
 
       await expect(model.dispatchAndWait(ActivityCommands.RemoveActivity('a1'), ['evt/never/happens'], 20)).rejects.toThrow(/timed out/);
       model.dispose();

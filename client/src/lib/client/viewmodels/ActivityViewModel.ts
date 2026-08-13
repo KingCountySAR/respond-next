@@ -1,8 +1,8 @@
-import { makeAutoObservable, observableRef } from 'mobx';
+import { makeAutoObservable } from 'mobx';
 
 import { ActivityCommands } from '@respond/shared/commands';
 import { ActivityEvents } from '@respond/shared/events';
-import { Activity, Participant } from '@respond/shared/types/activity';
+import { Activity } from '@respond/shared/types/activity';
 
 import { getActivityStatus, isActive } from '../store/activities';
 
@@ -14,17 +14,15 @@ import { UserDomainModel } from './UserDomainModel';
 /**
  * Sits between the domain model (Redux projection) and the React UI. Holds:
  *  - `@computed` derivations that were previously inlined across components,
- *  - ephemeral UI state (filters, selection, dialog flags) that never belonged
- *    in the Redux timeline,
+ *  - child view models (the roster) that own their own view state,
  *  - action methods that dispatch commands — commands stay in Redux (ClientSync
  *    forwards them; the server events reduce back in), so the devtools timeline
- *    is preserved. This is exactly what `useActivityCommands` did, absorbed here.
+ *    is preserved.
+ *
+ * Purely per-component ephemeral UI state (e.g. which participant's dialog is
+ * open) lives in the components, not here.
  */
 export class ActivityViewModel {
-  // Ephemeral UI state that never belonged in the Redux timeline.
-  selectedParticipant: Participant | undefined = undefined;
-  participantDialogOpen = false;
-
   // The roster list view model (org filter + sort + the filtered/sorted list).
   readonly roster: RosterViewModel;
 
@@ -37,13 +35,15 @@ export class ActivityViewModel {
       domain: false,
       user: false,
       roster: false,
-      // Holds a frozen Participant from the Redux store — keep it a ref.
-      selectedParticipant: observableRef,
     });
   }
 
   get activity(): Activity | undefined {
     return this.domain.activity;
+  }
+
+  get title(): string {
+    return this.domain.activity?.title ?? '';
   }
 
   get isActive(): boolean {
@@ -74,17 +74,6 @@ export class ActivityViewModel {
   /** The logged-in user's participation in this activity, or undefined if none. */
   get myParticipation(): ParticipantDomainModel | undefined {
     return this.domain.getParticipant(this.user.participantId);
-  }
-
-  // --- UI state actions ---
-
-  openParticipant(participant: Participant) {
-    this.selectedParticipant = participant;
-    this.participantDialogOpen = true;
-  }
-
-  closeParticipantDialog() {
-    this.participantDialogOpen = false;
   }
 
   // --- Command actions (dispatched into the Redux timeline) ---

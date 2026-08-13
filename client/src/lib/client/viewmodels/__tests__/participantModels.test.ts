@@ -1,14 +1,35 @@
 import { autorun, observable, runInAction } from 'mobx';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { ParticipantCommands } from '@respond/shared/commands';
 import { Activity, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/shared/types/activity';
+import type { MemberInfo } from '@respond/shared/types/member';
 import type { UserInfo } from '@respond/shared/types/userInfo';
+
+// ParticipantDomainModel lazily fetches member contact info via apiFetch when
+// memberInfo is observed / the participant's org or id changes. Mock it so tests
+// don't hit the network (preserving the module's other exports).
+vi.mock('@respond/lib/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@respond/lib/api')>()),
+  apiFetch: vi.fn(async () => ({
+    data: {
+      id: 'p1',
+      name: 'Pat Rescuer',
+      given_name: 'Pat',
+      family_name: 'Rescuer',
+      groups: [],
+      email: 'pat@example.org',
+      mobilephone: '15551234567',
+    } satisfies MemberInfo,
+  })),
+}));
 
 import { buildClientStore } from '../../store';
 import { activitiesReloaded } from '../../store/activities';
 import { AuthActions } from '../../store/auth';
 import { ActivityDomainModel } from '../ActivityDomainModel';
 import { ActivityViewModel } from '../ActivityViewModel';
+import { ObservableClock } from '../observableClock';
 import { ParticipantDomainModel } from '../ParticipantDomainModel';
 import { RosterViewModel } from '../RosterViewModel';
 import { UserDomainModel } from '../UserDomainModel';
@@ -21,13 +42,18 @@ function makeActivity(participants: Record<string, Participant>, organizations: 
   return { id: 'a1', title: 'Test', participants, organizations } as unknown as Activity;
 }
 
+const clock = new ObservableClock(false);
+
 describe('ParticipantDomainModel', () => {
   it('reacts to the underlying participant and resolves the org name', () => {
-    const box = observable.box<Participant | undefined>(undefined, { deep: false });
+    const box = observable.box<Participant>(participant('p1', 'Jane', 'o2', ParticipantStatus.Assigned), { deep: false });
     const orgs: Record<string, ParticipatingOrg> = { o1: { id: 'o1', title: 'Org One', rosterName: 'ORG1', timeline: [] } };
     const pdm = new ParticipantDomainModel(
       () => box.get(),
       () => orgs,
+      clock,
+      'a1',
+      () => {},
     );
 
     const seen: string[] = [];
@@ -36,10 +62,86 @@ describe('ParticipantDomainModel', () => {
     runInAction(() => box.set(participant('p1', 'Pat', 'o1', ParticipantStatus.Standby)));
     runInAction(() => box.set(participant('p1', 'Pat', 'o1', ParticipantStatus.SignedIn)));
 
-    expect(seen).toEqual(['', 'Standby', 'Responding']);
+    expect(seen).toEqual(['Assigned', 'Standby', 'Responding']);
     expect(pdm.isEnrouteOrStandby).toBe(true);
     expect(pdm.organizationName).toBe('ORG1');
     stop();
+  });
+
+  it('counts timeOnClock', () => {
+    let reduxModel = participant('p1', 'Jane', 'o2', ParticipantStatus.SignedIn);
+    const box = observable.box<Participant>(reduxModel, { deep: false });
+    const orgs: Record<string, ParticipatingOrg> = { o1: { id: 'o1', title: 'Org One', rosterName: 'ORG1', timeline: [] } };
+    const pdm = new ParticipantDomainModel(
+      () => box.get(),
+      () => orgs,
+      clock,
+      'a1',
+      () => {},
+    );
+    function updateStatus(status: ParticipantStatus, time: number) {
+      reduxModel = {
+        ...reduxModel,
+        timeline: [{ status, time, organizationId: reduxModel.timeline[0].organizationId }, ...reduxModel.timeline],
+      };
+      box.set(reduxModel);
+    }
+    runInAction(() => (clock.time = 42));
+    expect(pdm.timeOnClock).toBe(42);
+    runInAction(() => (clock.time = 64));
+    expect(pdm.timeOnClock).toBe(64);
+
+    runInAction(() => {
+      updateStatus(ParticipantStatus.Standby, 100);
+      updateStatus(ParticipantStatus.SignedIn, 150);
+      clock.time = 160;
+    });
+    expect(pdm.timeOnClock).toBe(160 - 150 + 100);
+  });
+
+  it('dispatches a miles command bound to its activity and participant', () => {
+    const box = observable.box<Participant>(participant('p7', 'Pat', 'o1', ParticipantStatus.SignedIn), { deep: false });
+    const dispatch = vi.fn();
+    const pdm = new ParticipantDomainModel(
+      () => box.get(),
+      () => ({}),
+      clock,
+      'act-42',
+      dispatch,
+    );
+
+    pdm.updateMiles(12);
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch.mock.calls[0][0]).toMatchObject({
+      type: ParticipantCommands.UpdateParticipantMiles.type,
+      payload: { activityId: 'act-42', participantId: 'p7', miles: 12 },
+    });
+  });
+
+  it('dispatches an eta command bound to its activity and participant', () => {
+    const box = observable.box<Participant>(participant('p7', 'Pat', 'o1', ParticipantStatus.Standby), { deep: false });
+    const dispatch = vi.fn();
+    const pdm = new ParticipantDomainModel(
+      () => box.get(),
+      () => ({}),
+      clock,
+      'act-42',
+      dispatch,
+    );
+
+    pdm.updateEta(1_700_000_000_000);
+    pdm.updateEta(null); // clear
+
+    expect(dispatch).toHaveBeenCalledTimes(2);
+    expect(dispatch.mock.calls[0][0]).toMatchObject({
+      type: ParticipantCommands.UpdateParticipantEta.type,
+      payload: { activityId: 'act-42', participantId: 'p7', eta: 1_700_000_000_000 },
+    });
+    expect(dispatch.mock.calls[1][0]).toMatchObject({
+      type: ParticipantCommands.UpdateParticipantEta.type,
+      payload: { activityId: 'act-42', participantId: 'p7', eta: null },
+    });
   });
 });
 
@@ -51,7 +153,7 @@ describe('ActivityViewModel.myParticipation', () => {
 
     const user = new UserDomainModel(store);
     user.connect();
-    const domain = new ActivityDomainModel(store, 'a1');
+    const domain = new ActivityDomainModel(store, 'a1', clock);
     domain.connect();
     const vm = new ActivityViewModel(domain, user);
 
@@ -71,7 +173,7 @@ describe('ActivityViewModel.myParticipation', () => {
 
     const user = new UserDomainModel(store);
     user.connect();
-    const domain = new ActivityDomainModel(store, 'a1');
+    const domain = new ActivityDomainModel(store, 'a1', clock);
     domain.connect();
 
     expect(new ActivityViewModel(domain, user).myParticipation).toBeUndefined();
@@ -86,7 +188,7 @@ describe('ActivityDomainModel.getParticipant', () => {
     const store = buildClientStore([]);
     store.dispatch(activitiesReloaded({ list: [makeActivity({ p1: participant('p1', 'Pat', 'o1', ParticipantStatus.Standby) })] }));
 
-    const domain = new ActivityDomainModel(store, 'a1');
+    const domain = new ActivityDomainModel(store, 'a1', clock);
     domain.connect();
 
     const first = domain.getParticipant('p1');
@@ -110,7 +212,7 @@ describe('RosterViewModel', () => {
     };
     store.dispatch(activitiesReloaded({ list: [makeActivity(participants)] }));
 
-    const domain = new ActivityDomainModel(store, 'a1');
+    const domain = new ActivityDomainModel(store, 'a1', clock);
     domain.connect();
     const roster = new RosterViewModel(domain);
 

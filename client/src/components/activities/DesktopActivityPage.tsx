@@ -1,7 +1,7 @@
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
 import { observer } from 'mobx-react-lite';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link } from 'wouter';
 
 import { Box, Paper, Stack } from '@respond/components/Material';
@@ -22,6 +22,8 @@ import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
 export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }: { vm: ActivityViewModel }) {
   const activity = vm.activity!;
+  const [selectedParticipant, setSelectedParticipant] = useState<ParticipantDomainModel>();
+  const [participantOpen, setParticipantOpen] = useState(false);
   return (
     <ToolbarPage maxWidth="lg">
       <Stack direction="row" sx={{ mb: 1, alignItems: 'start' }} spacing={2}>
@@ -45,14 +47,18 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
             roster={vm.roster}
             participantContainerComponent={RosterContainer}
             participantRowComponent={RosterRow}
-            onClick={(p) => p.participant && vm.openParticipant(p.participant)}
+            onClick={(p) => {
+              if (!p.participant) return;
+              setSelectedParticipant(p);
+              setParticipantOpen(true);
+            }}
           />
         </Box>
         <Stack sx={{ width: 400, alignItems: 'stretch' }}>
           <BriefingPanel sx={{ px: 3 }} />
           {vm.myParticipation?.isEnrouteOrStandby && vm.myParticipation.id && (
             <Paper sx={{ mt: 2, p: 2 }}>
-              <ParticipantEtaUpdater activityId={activity.id} participantId={vm.myParticipation.id} participantEta={vm.myParticipation.eta} />
+              <ParticipantEtaUpdater participant={vm.myParticipation} />
             </Paper>
           )}
           {vm.isActive && (
@@ -63,7 +69,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
           <ManagerPanel sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={vm.participantDialogOpen} participant={vm.selectedParticipant} onClose={() => vm.closeParticipantDialog()} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </ToolbarPage>
   );
 });

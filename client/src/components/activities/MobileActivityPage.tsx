@@ -2,7 +2,6 @@ import AnnouncementIcon from '@mui/icons-material/Announcement';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
-import { format as formatDate } from 'date-fns';
 import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
 
@@ -11,12 +10,10 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { ActivityViewModel } from '@respond/lib/client/viewmodels/ActivityViewModel';
 import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
-import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
 import { ActivityActionsBar } from './ActivityPage';
-import { useActivityContext } from './ActivityProvider';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
@@ -33,26 +30,25 @@ export enum MobilePageId {
   Manage = 'Manage',
 }
 
-export const MobileActivityPage = observer(function MobileActivityPage({ vm }: { vm: ActivityViewModel }) {
+export const MobileActivityPage = observer(function MobileActivityPage({ activity }: { activity: ActivityViewModel }) {
   const { defaultMobileView } = usePreferences();
   const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
-  const activity = useActivityContext();
-  const myParticipation = vm.myParticipation;
-  const showParticipantOptions = vm.isActive;
+  const myParticipation = activity.myParticipation;
+  const showParticipantOptions = activity.isActive;
   const showEta = myParticipation?.isEnrouteOrStandby;
   const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showParticipantOptions ? MOBILE_STATUS_UPDATER_HEIGHT : 0) + (showEta ? MOBILE_ETA_INPUT_HEIGHT : 0) - ROSTER_PANEL_PADDING;
 
   return (
     <ToolbarPage>
       <Typography variant="h5">{activity.title}</Typography>
-      {bottomNav === MobilePageId.Roster && <MobileRosterScreen vm={vm} />}
+      {bottomNav === MobilePageId.Roster && <MobileRosterScreen activity={activity} />}
       {bottomNav === MobilePageId.Briefing && <MobileBriefingScreen />}
-      {bottomNav === MobilePageId.Manage && <MobileManageScreen vm={vm} />}
+      {bottomNav === MobilePageId.Manage && <MobileManageScreen vm={activity} />}
       <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
         {showParticipantOptions && (
           <Stack spacing={2} sx={{ p: 2 }}>
-            {showEta && myParticipation?.id && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
+            {showEta && myParticipation?.id && <ParticipantEtaUpdater participant={myParticipation} />}
             <StatusUpdater fullWidth={true} />
           </Stack>
         )}
@@ -76,26 +72,32 @@ function MobileBriefingScreen() {
   return <BriefingPanel />;
 }
 
-const MobileRosterScreen = observer(function MobileRosterScreen({ vm }: { vm: ActivityViewModel }) {
+const MobileRosterScreen = observer(function MobileRosterScreen({ activity }: { activity: ActivityViewModel }) {
+  const [selectedParticipant, setSelectedParticipant] = useState<ParticipantDomainModel>();
+  const [participantOpen, setParticipantOpen] = useState(false);
   return (
     <>
-      <ParticipatingOrgChips filter={vm.roster.filter} setFilter={(f) => vm.roster.setFilter(f)} />
+      <ParticipatingOrgChips filter={activity.roster.filter} setFilter={(f) => activity.roster.setFilter(f)} />
       <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} sx={{ flex: '1 1 auto' }}>
         <RosterPanel //
-          roster={vm.roster}
+          roster={activity.roster}
           participantContainerComponent={RosterContainer}
           participantRowComponent={RosterRow}
-          onClick={(p) => p.participant && vm.openParticipant(p.participant)}
+          onClick={(p) => {
+            if (!p.participant) return;
+            setSelectedParticipant(p);
+            setParticipantOpen(true);
+          }}
         />
       </Box>
-      <ParticipantDialog open={vm.participantDialogOpen} participant={vm.selectedParticipant} onClose={() => vm.closeParticipantDialog()} />
+      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </>
   );
 });
 
 const RosterRow = observer(function RosterRow({ participant, onClick }: { participant: ParticipantDomainModel; onClick?: () => void }) {
   return (
-    <RosterRowCard status={participant.status ?? ParticipantStatus.NotResponding} onClick={onClick}>
+    <RosterRowCard status={participant.status} onClick={onClick}>
       <Stack direction="row" sx={{ justifyContent: 'space-between', flexGrow: 1, m: '5px', ml: '8px' }}>
         <Stack>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -107,7 +109,7 @@ const RosterRow = observer(function RosterRow({ participant, onClick }: { partic
         </Stack>
         <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
           <Typography variant="body2">{participant.statusText}</Typography>
-          <Typography variant="body2">{participant.isEnrouteOrStandby && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
+          <Typography variant="body2">{participant.etaText ? `ETA ${participant.etaText}` : null}</Typography>
         </Stack>
       </Stack>
     </RosterRowCard>

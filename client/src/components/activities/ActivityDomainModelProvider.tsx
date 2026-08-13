@@ -4,6 +4,8 @@ import { useStore } from 'react-redux';
 import type { AppStore } from '@respond/lib/client/store';
 import { ActivityDomainModel } from '@respond/lib/client/viewmodels/ActivityDomainModel';
 
+import { useClock } from '../AppDomainProvider';
+
 import { useActivityContext } from './ActivityProvider';
 
 const ActivityDomainModelContext = createContext<ActivityDomainModel | null>(null);
@@ -20,6 +22,7 @@ const ActivityDomainModelContext = createContext<ActivityDomainModel | null>(nul
 export function ActivityDomainModelProvider({ children }: { children: ReactNode }) {
   const activity = useActivityContext();
   const store = useStore() as AppStore;
+  const clock = useClock();
   const activityId = activity.id;
 
   // One model per activity id. Built during render (pure) so consumers can build
@@ -27,7 +30,7 @@ export function ActivityDomainModelProvider({ children }: { children: ReactNode 
   // effect below so only the committed instance connects (StrictMode-safe).
   const ref = useRef<{ id: string; model: ActivityDomainModel } | null>(null);
   if (ref.current?.id !== activityId) {
-    ref.current = { id: activityId, model: new ActivityDomainModel(store, activityId) };
+    ref.current = { id: activityId, model: new ActivityDomainModel(store, activityId, clock) };
   }
 
   useEffect(() => {

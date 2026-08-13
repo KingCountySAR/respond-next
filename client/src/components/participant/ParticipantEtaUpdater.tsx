@@ -1,31 +1,29 @@
 import AccessTime from '@mui/icons-material/AccessTime';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import { Button, IconButton, Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { useDebounce } from '@respond/hooks/useDebounce';
-import { useAppDispatch } from '@respond/lib/client/store';
-import { ParticipantCommands } from '@respond/shared/commands';
+import { useDebouncedCallback } from '@respond/hooks/useDebouncedCallback';
+import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
 
 import { InlineTimeEdit } from '../InlineTimeEdit';
-import { Button, IconButton, Stack, Typography } from '../Material';
 import { usePreferences } from '../PreferencesProvider';
 
 const toMilliseconds = (minutes: number) => minutes * 60 * 1000;
 
-export function ParticipantEtaUpdater({ activityId, participantId, participantEta }: { activityId: string; participantId: string; participantEta?: number }) {
-  const dispatch = useAppDispatch();
-
+export function ParticipantEtaUpdater({ participant }: { participant: Pick<ParticipantDomainModel, 'eta' | 'updateEta'> }) {
   const { etaIncrement, etaPreset1, etaPreset2, etaPreset3 } = usePreferences();
 
-  const [eta, setEta] = useState<number | undefined | null>(participantEta);
+  const [eta, setEta] = useState<number | null>(participant.eta ?? null);
   const [editing, setEditing] = useState(false);
-  const debouncedEta = useDebounce(eta, 1000);
 
-  useEffect(() => {
-    dispatch(ParticipantCommands.UpdateParticipantEta(activityId, participantId, debouncedEta));
-  }, [debouncedEta, activityId, participantId, dispatch]);
+  const commitEta = useDebouncedCallback((value: number | null) => participant.updateEta(value), 1000);
+  const changeEta = (value: number | null) => {
+    setEta(value);
+    commitEta(value);
+  };
 
   return (
     <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
@@ -35,7 +33,7 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
           format="MM/dd HH:mm"
           openTo="hours"
           onChange={(time) => {
-            if (time) setEta(new Date(time).getTime());
+            if (time) changeEta(new Date(time).getTime());
             setEditing(false);
           }}
           onClose={() => setEditing(false)}
@@ -45,22 +43,22 @@ export function ParticipantEtaUpdater({ activityId, participantId, participantEt
         <>
           <Typography variant="h6">ETA</Typography>
           <Typography variant="h6">{formatDate(eta, 'HHmm')}</Typography>
-          <IconButton onClick={() => setEta(eta - toMilliseconds(etaIncrement))}>
+          <IconButton onClick={() => changeEta(eta - toMilliseconds(etaIncrement))}>
             <RemoveIcon />
           </IconButton>
-          <IconButton onClick={() => setEta(eta + toMilliseconds(etaIncrement))}>
+          <IconButton onClick={() => changeEta(eta + toMilliseconds(etaIncrement))}>
             <AddIcon />
           </IconButton>
-          <Button onClick={() => setEta(null)}>clear</Button>
+          <Button onClick={() => changeEta(null)}>clear</Button>
         </>
       )}
       {!editing && !eta && (
         <>
           <Typography variant="h6">ETA</Typography>
           <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-            <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset1))}>{etaPreset1}</IconButton>
-            <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset2))}>{etaPreset2}</IconButton>
-            <IconButton onClick={() => setEta(new Date().getTime() + toMilliseconds(etaPreset3))}>{etaPreset3}</IconButton>
+            <IconButton onClick={() => changeEta(new Date().getTime() + toMilliseconds(etaPreset1))}>{etaPreset1}</IconButton>
+            <IconButton onClick={() => changeEta(new Date().getTime() + toMilliseconds(etaPreset2))}>{etaPreset2}</IconButton>
+            <IconButton onClick={() => changeEta(new Date().getTime() + toMilliseconds(etaPreset3))}>{etaPreset3}</IconButton>
             <IconButton onClick={() => setEditing(true)}>
               <AccessTime />
             </IconButton>

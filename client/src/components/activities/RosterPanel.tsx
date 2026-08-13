@@ -6,18 +6,15 @@ import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
 import { observer } from 'mobx-react-lite';
-import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
+import { FunctionComponent, ReactNode, useState } from 'react';
 
 import { Box, DialogContent, DialogTitle, DialogWithHistory, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
-import { apiFetch } from '@respond/lib/api';
 import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
 import { RosterViewModel } from '@respond/lib/client/viewmodels/RosterViewModel';
-import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
-import { MemberInfo } from '@respond/shared/types/member';
+import { getStatusCssColor, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
-import { useActivityContext } from './ActivityProvider';
 import ParticipantTimeline from './ParticipantTimeline';
 
 interface RosterPanelProps {
@@ -27,29 +24,9 @@ interface RosterPanelProps {
   onClick?: (participant: ParticipantDomainModel) => void;
 }
 
-const findMember = async (orgId: string, memberId: string) => {
-  return (await apiFetch<{ data: MemberInfo }>(`/api/v1/organizations/${orgId}/members/${memberId}`)).data;
-};
-
-const formatPhoneNumber = (phoneNumberString: string, includeIntlCode: boolean = false) => {
-  const cleaned = ('' + phoneNumberString).replace(/\D/g, '');
-  const match = cleaned.match(/^(1|)?(\d{3})(\d{3})(\d{4})$/);
-  if (match) {
-    const intlCode = match[1] ? '+1 ' : '';
-    return [includeIntlCode ? intlCode : '', '(', match[2], ') ', match[3], '-', match[4]].join('');
-  }
-  return null;
-};
-
-const normalizePhoneNumber = (phoneNumberString: string) => {
-  return ('' + phoneNumberString).replace(/\D/g, '');
-};
-
 export const RosterPanel = observer(function RosterPanel({ roster, participantContainerComponent: Participants, participantRowComponent: Row, onClick }: RosterPanelProps) {
-  const participants = roster.participants;
-
-  let cards: ReactNode = participants.map((p) => <Row key={p.id} participant={p} onClick={() => onClick?.(p)} />);
-  if (participants.length == 0) {
+  let cards: ReactNode = roster.participants.map((p) => <Row key={p.id} participant={p} onClick={() => onClick?.(p)} />);
+  if (roster.participants.length == 0) {
     cards = (
       <RosterRowCard status={ParticipantStatus.NotResponding}>
         <Typography sx={{ p: 2 }}>No responders with the selected filter</Typography>
@@ -87,67 +64,52 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
   );
 }
 
-export function ParticipantDialog({ open, participant, onClose }: { open: boolean; onClose: () => void; participant?: Participant }) {
-  const activity = useActivityContext();
+export const ParticipantDialog = observer(({ open, participant, onClose }: { open: boolean; onClose: () => void; participant?: ParticipantDomainModel }) => {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
-  const [memberInfo, setMemberInfo] = useState<MemberInfo | undefined>();
-
-  useEffect(() => {
-    if (!participant) return;
-
-    findMember(participant.organizationId, participant.id).then((member) => {
-      setMemberInfo(member);
-    });
-
-    return () => {
-      setMemberInfo(undefined);
-    };
-  }, [participant]);
 
   if (!participant) return <></>;
 
-  const name = `${participant.firstname} ${participant.lastname}`;
   return (
     <DialogWithHistory fullWidth open={open} onClose={onClose}>
-      <DialogTitle style={{ borderBottom: 'solid 4px ' + getStatusCssColor(participant.timeline[0].status) }} sx={{ alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
-        <Box>{name}</Box>
-        <Typography style={{ color: getStatusCssColor(participant.timeline[0].status) }}>{getStatusText(participant.timeline[0].status)}</Typography>
+      <DialogTitle style={{ borderBottom: 'solid 4px ' + participant.statusColor }} sx={{ alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
+        <Box>{participant.fullName}</Box>
+        <Typography style={{ color: participant.statusColor }}>{participant.statusText}</Typography>
       </DialogTitle>
       <DialogContent>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ pt: 2 }} divider={<Divider orientation={isMobile ? 'horizontal' : 'vertical'} flexItem />}>
           <Box>
             <img //
               src={`/api/v1/organizations/${participant.organizationId}/members/${participant.id}/photo`}
-              alt={`Photo of ${name}`}
+              alt={`Photo of ${participant.fullName}`}
               style={{ width: '8rem', minHeight: '10rem', border: 'solid 1px #777', borderRadius: '4px' }}
             />
-            <Typography sx={{ fontWeight: 600 }}>{getOrganizationName(activity, participant.organizationId)}</Typography>
+            <Typography sx={{ fontWeight: 600 }}>{participant.organizationName}</Typography>
             <Box>
-              {participant.tags?.map((t) => (
+              {participant.tags.map((t) => (
                 <Chip sx={{ mr: '3px' }} key={t} label={t} variant="outlined" size="small" />
               ))}
             </Box>
-            {memberInfo?.mobilephone &&
+            {participant.mobilePhoneFormatted &&
               (isMobile ? (
-                <Button fullWidth component="a" href={`tel:${normalizePhoneNumber(memberInfo.mobilephone)}`} variant="contained" size="small" startIcon={<PhoneIcon />} sx={{ textTransform: 'none', my: 1 }}>
-                  {formatPhoneNumber(memberInfo.mobilephone)}
+                <Button fullWidth component="a" href={`tel:${participant.mobilePhone}`} variant="contained" size="small" startIcon={<PhoneIcon />} sx={{ textTransform: 'none', my: 1 }}>
+                  {participant.mobilePhoneFormatted}
                 </Button>
               ) : (
-                <Typography>{formatPhoneNumber(memberInfo.mobilephone)}</Typography>
+                <Typography>{participant.mobilePhoneFormatted}</Typography>
               ))}
-            {memberInfo?.email && (
+            {participant.email && (
               <Typography>
-                <a href={`mailto:${memberInfo.email}`}>{memberInfo.email}</a>
+                <a href={`mailto:${participant.email}`}>{participant.email}</a>
               </Typography>
             )}
           </Box>
           <Stack spacing={2} sx={{ flexGrow: 1 }}>
             <ParticipantHoursText participant={participant} />
-            <ParticipantMiles activityId={activity.id} participant={participant} />
+            <ParticipantMiles participant={participant} />
             <Typography variant="h6" sx={{ borderBottom: 1 }}>
               Timeline
             </Typography>
-            <ParticipantTimeline participant={participant} />
+            <ParticipantTimeline participant={participant.participant} />
           </Stack>
         </Stack>
         {/* <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText> */}
@@ -159,53 +121,21 @@ export function ParticipantDialog({ open, participant, onClose }: { open: boolea
       </DialogActions>
     </DialogWithHistory>
   );
-}
+});
 
-function isOnClock(status: ParticipantStatus) {
-  if (status === ParticipantStatus.Standby) return false;
-  return isActive(status);
-}
-
-function getLastTimeout(lastUpdate: ParticipantUpdate) {
-  if (!isOnClock(lastUpdate.status)) return lastUpdate.time;
-  return new Date().getTime();
-}
-
-function ParticipantHoursText({ participant }: { participant: Participant }) {
-  const lastTimeline = participant.timeline[0];
-  const [latestTimeout, setLatestTimeout] = useState<number>(getLastTimeout(lastTimeline));
-
-  // Keep the timeline up to date while the dialog is open
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLatestTimeout(getLastTimeout(lastTimeline));
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [lastTimeline, latestTimeout, participant.firstname]);
-
-  let timeOnClock = 0;
-  let lastTime: number = latestTimeout;
-  for (const t of participant.timeline) {
-    if (isOnClock(t.status)) {
-      timeOnClock += lastTime - t.time;
-    }
-
-    lastTime = t.time;
-  }
-
+const ParticipantHoursText = observer(({ participant }: { participant: Pick<ParticipantDomainModel, 'timeOnClock'> }) => {
   // Round to the nearest quarter hour.
   return (
     <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
       <Typography variant="h6">Total Hours:</Typography>
       <Typography variant="h6" align={'right'} sx={{ flexGrow: 1 }}>
-        {Math.round(timeOnClock / 1000 / 60 / 15) / 4}
+        {Math.round(participant.timeOnClock / 1000 / 60 / 15) / 4}
       </Typography>
     </Stack>
   );
-}
+});
 
-function ParticipantMiles({ activityId, participant }: { activityId: string; participant: Participant }) {
-  const [miles, setMiles] = useState(participant.miles ?? 0);
+const ParticipantMiles = observer(function ParticipantMiles({ participant }: { participant: Pick<ParticipantDomainModel, 'miles' | 'updateMiles'> }) {
   const [edit, setEdit] = useState(false);
   return (
     <>
@@ -214,7 +144,7 @@ function ParticipantMiles({ activityId, participant }: { activityId: string; par
           <Stack sx={{ width: '100%', justifyContent: 'space-between' }} direction="row" spacing={2}>
             <Typography variant="h6">Total Miles:</Typography>
             <Typography variant="h6" align="right" sx={{ flexGrow: 1 }}>
-              {miles}
+              {participant.miles ?? 0}
             </Typography>
           </Stack>
         </ButtonBase>
@@ -222,17 +152,9 @@ function ParticipantMiles({ activityId, participant }: { activityId: string; par
       {edit && (
         <>
           <Typography variant="h6">Updating Miles</Typography>
-          <ParticipantMilesUpdater
-            activityId={activityId}
-            participant={{ ...participant, miles: miles }}
-            onCancel={() => setEdit(false)}
-            onSubmit={(newMiles) => {
-              setMiles(newMiles);
-              setEdit(false);
-            }}
-          />
+          <ParticipantMilesUpdater participant={participant} onCancel={() => setEdit(false)} onSubmit={() => setEdit(false)} />
         </>
       )}
     </>
   );
-}
+});

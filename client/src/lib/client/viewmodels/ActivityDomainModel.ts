@@ -6,6 +6,7 @@ import { Activity } from '@respond/shared/types/activity';
 import { addAppListener, type AppDispatch, type AppStore } from '../store';
 import { buildActivitySelector } from '../store/activities';
 
+import { ObservableClock } from './observableClock';
 import { ParticipantDomainModel } from './ParticipantDomainModel';
 
 /**
@@ -35,6 +36,7 @@ export class ActivityDomainModel {
   constructor(
     private readonly store: AppStore,
     private readonly activityId: string,
+    private readonly clock: ObservableClock,
   ) {
     this.storeActivity = this.select();
     makeObservable<ActivityDomainModel, 'storeActivity' | 'fallbackActivity'>(this, {
@@ -140,10 +142,13 @@ export class ActivityDomainModel {
       return undefined;
     }
     let model = this.participantModels.get(participantId);
-    if (!model) {
+    if (!model && this.activity) {
       model = new ParticipantDomainModel(
-        () => this.activity?.participants[participantId],
-        () => this.activity?.organizations,
+        () => this.activity!.participants[participantId],
+        () => this.activity!.organizations,
+        this.clock,
+        this.activityId,
+        this.dispatch,
       );
       this.participantModels.set(participantId, model);
     }
@@ -154,9 +159,7 @@ export class ActivityDomainModel {
   get participants(): ParticipantDomainModel[] {
     const activity = this.activity;
     if (!activity) return [];
-    return Object.keys(activity.participants)
-      .map((id) => this.getParticipant(id))
-      .filter((model): model is ParticipantDomainModel => model !== undefined);
+    return Object.keys(activity.participants).map((id) => this.getParticipant(id)!);
   }
 
   setFallback(activity: Activity | undefined) {
@@ -170,5 +173,6 @@ export class ActivityDomainModel {
   dispose() {
     this.unsubscribe?.();
     this.unsubscribe = undefined;
+    Object.values(this.participantModels).forEach((p) => p.dispose());
   }
 }

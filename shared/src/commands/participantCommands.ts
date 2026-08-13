@@ -29,7 +29,7 @@ const UpdateParticipantMiles = createAction('cmd/participant/miles', (activityId
   payload: { activityId, participantId, miles },
 }));
 
-const UpdateParticipantEta = createAction('cmd/participant/eta', (activityId: string, participantId: string, eta: number) => ({
+const UpdateParticipantEta = createAction('cmd/participant/eta', (activityId: string, participantId: string, eta: number | null) => ({
   payload: { activityId, participantId, eta },
 }));
 
