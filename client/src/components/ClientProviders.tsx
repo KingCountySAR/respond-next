@@ -17,6 +17,7 @@ import type { SiteConfig } from '@respond/shared/types/bootstrap';
 import { MyOrganization } from '@respond/shared/types/organization';
 import { UserInfo } from '@respond/shared/types/userInfo';
 
+import { AppDomainProvider } from './AppDomainProvider';
 import PreferencesProvider from './PreferencesProvider';
 
 export type { SiteConfig };
@@ -68,11 +69,13 @@ export default function ClientProviders({ googleClient, config, user, myOrg, chi
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        <ThemeProvider theme={hydratedTheme}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <PreferencesProvider>{inner}</PreferencesProvider>
-          </LocalizationProvider>
-        </ThemeProvider>
+        <AppDomainProvider>
+          <ThemeProvider theme={hydratedTheme}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <PreferencesProvider>{inner}</PreferencesProvider>
+            </LocalizationProvider>
+          </ThemeProvider>
+        </AppDomainProvider>
       </Provider>
     </QueryClientProvider>
   );

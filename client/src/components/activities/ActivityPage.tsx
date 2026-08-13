@@ -1,88 +1,95 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useEffect, useState } from 'react';
+import { observer } from 'mobx-react-lite';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, DialogWithHistory, IconButton, Stack } from '@respond/components/Material';
-import { useActivityCommands } from '@respond/lib/client/services/activity';
-import { useAppSelector } from '@respond/lib/client/store';
-import { isActive } from '@respond/lib/client/store/activities';
+import { ActivityViewModel } from '@respond/lib/client/viewmodels/ActivityViewModel';
 
-import { useActivityContext } from './ActivityProvider';
+import { useUserDomainModel } from '../AppDomainProvider';
+
+import { ActivityDomainModelProvider, useActivityDomainModel } from './ActivityDomainModelProvider';
 import { DesktopActivityPage } from './DesktopActivityPage';
 import { MobileActivityPage } from './MobileActivityPage';
 
-export const ActivityPage = () => {
-  const activity = useActivityContext();
-  const org = useAppSelector((state) => state.organization.mine);
+export const ActivityPage = () => (
+  <ActivityDomainModelProvider>
+    <ActivityPageContent />
+  </ActivityDomainModelProvider>
+);
+
+const ActivityPageContent = observer(function ActivityPageContent() {
+  const domain = useActivityDomainModel();
+  const user = useUserDomainModel();
+  // Page-scoped view model over the shared domain model, drilled into the child
+  // pages. Recreated (and its ephemeral UI state reset) only when the domain model
+  // changes, i.e. on activity id change.
+  const vm = useMemo(() => new ActivityViewModel(domain, user), [domain, user]);
 
   useEffect(() => {
-    document.title = `${activity.idNumber} ${activity.title}`;
-  }, [activity.idNumber, activity.title]);
+    document.title = vm.numberAndTitle;
+  }, [vm.numberAndTitle]);
 
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
 
-  if (!org) return <div>Loading org...</div>;
+  if (!vm.activity) return <div>Loading activity...</div>;
 
-  return isMobile ? <MobileActivityPage /> : <DesktopActivityPage />;
-};
+  return isMobile ? <MobileActivityPage vm={vm} /> : <DesktopActivityPage vm={vm} />;
+});
 
-export function ActivityActionsBar() {
-  const activityCommands = useActivityCommands();
+export const ActivityActionsBar = observer(function ActivityActionsBar({ vm }: { vm: ActivityViewModel }) {
   const [, navigate] = useLocation();
-  const activity = useActivityContext();
-  const isActivityActive = isActive(activity);
 
-  const handleRemove = () => {
-    activityCommands.remove(activity.id);
-    navigate('/', { replace: true });
-  };
+  if (!vm.activity) return null;
 
-  const toggleStatus = () => {
-    if (isActivityActive) {
-      activityCommands.complete(activity.id, new Date().getTime());
-    } else {
-      activityCommands.reactivate(activity.id);
+  const handleRemove = async () => {
+    // Wait for the ActivityRemoved event to land before leaving, so we don't
+    // navigate to a list that hasn't yet dropped this activity.
+    try {
+      await vm.remove();
+    } finally {
+      navigate('/', { replace: true });
     }
   };
 
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-      <EditActivityButton href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}/edit`} />
-      <UpdateActivityStatusButton label={isActivityActive ? 'Complete' : 'Reactivate'} onClick={toggleStatus} />
+      <EditActivityButton disabled={vm.readOnly} href={`${vm.url}/edit`} />
+      <UpdateActivityStatusButton label={vm.isActive ? 'Complete' : 'Reactivate'} onClick={() => vm.toggleStatus()} />
       <RemoveActivityButton onClick={handleRemove} />
     </Stack>
   );
-}
+});
 
-function EditActivityButton({ href }: { href: string }) {
+function EditActivityButton({ href, disabled }: { href: string; disabled?: boolean }) {
   return (
-    <Button variant="outlined" size="small" component={Link} href={href}>
+    <Button disabled={disabled} variant="outlined" size="small" component={Link} href={href}>
       Edit
     </Button>
   );
 }
 
 function UpdateActivityStatusButton({ label, onClick }: { label: string; onClick: () => void }) {
-  const [showDialog, setShowDialog] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   return (
     <>
-      <Button variant="outlined" size="small" onClick={() => setShowDialog(true)}>
+      <Button variant="outlined" size="small" onClick={() => setShowConfirm(true)}>
         {label}
       </Button>
-      <DialogWithHistory open={showDialog} onClose={() => setShowDialog(false)}>
+      <DialogWithHistory open={showConfirm} onClose={() => setShowConfirm(false)}>
         <DialogTitle>{label} event?</DialogTitle>
         <DialogContent>
           <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowDialog(false)}>Cancel</Button>
+          <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
           <Button
             autoFocus
             onClick={() => {
               onClick();
-              setShowDialog(false);
+              setShowConfirm(false);
             }}
           >
             {label}
@@ -94,19 +101,19 @@ function UpdateActivityStatusButton({ label, onClick }: { label: string; onClick
 }
 
 function RemoveActivityButton({ onClick }: { onClick: () => void }) {
-  const [showDialog, setShowDialog] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   return (
     <>
-      <IconButton color="danger" onClick={() => setShowDialog(true)}>
+      <IconButton color="danger" onClick={() => setShowConfirm(true)}>
         <DeleteIcon />
       </IconButton>
-      <DialogWithHistory open={showDialog} onClose={() => setShowDialog(false)}>
+      <DialogWithHistory open={showConfirm} onClose={() => setShowConfirm(false)}>
         <DialogTitle>Remove Activity?</DialogTitle>
         <DialogContent>
           <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowDialog(false)}>Cancel</Button>
+          <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
           <Button autoFocus color="danger" onClick={onClick}>
             Remove
           </Button>

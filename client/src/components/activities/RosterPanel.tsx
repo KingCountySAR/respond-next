@@ -5,11 +5,14 @@ import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
+import { observer } from 'mobx-react-lite';
 import { FunctionComponent, ReactNode, useEffect, useState } from 'react';
 
 import { Box, DialogContent, DialogTitle, DialogWithHistory, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
 import { apiFetch } from '@respond/lib/api';
-import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/shared/types/activity';
+import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
+import { RosterViewModel } from '@respond/lib/client/viewmodels/RosterViewModel';
+import { getOrganizationName, getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
 import { MemberInfo } from '@respond/shared/types/member';
 
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
@@ -18,33 +21,11 @@ import { useActivityContext } from './ActivityProvider';
 import ParticipantTimeline from './ParticipantTimeline';
 
 interface RosterPanelProps {
-  filter?: string;
+  roster: RosterViewModel;
   participantContainerComponent: FunctionComponent<{ children: ReactNode }>;
-  participantRowComponent: FunctionComponent<{ orgs: Record<string, ParticipatingOrg>; participant: Participant; onClick?: () => void }>;
-  onClick?: (participant: Participant) => void;
+  participantRowComponent: FunctionComponent<{ participant: ParticipantDomainModel; onClick?: () => void }>;
+  onClick?: (participant: ParticipantDomainModel) => void;
 }
-
-const STATUS_SORT_ORDER = [
-  ParticipantStatus.SignedIn,
-  ParticipantStatus.Available,
-  ParticipantStatus.Assigned,
-  ParticipantStatus.Demobilized,
-  ParticipantStatus.Remote,
-  ParticipantStatus.Standby,
-  ParticipantStatus.SignedOut,
-  ParticipantStatus.NotResponding,
-];
-
-const etaStatus = (status: ParticipantStatus) => {
-  return [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(status) ? 1 : 0;
-};
-
-const sortByStatus = (a: Participant, b: Participant) => {
-  const statusIndexA = STATUS_SORT_ORDER.indexOf(a.timeline[0].status);
-  const statusIndexB = STATUS_SORT_ORDER.indexOf(b.timeline[0].status);
-  return statusIndexA - statusIndexB || etaStatus(b.timeline[0].status) - etaStatus(a.timeline[0].status) || (a.eta ?? Infinity) - (b.eta ?? Infinity);
-};
-const sortAlphabetical = (a: Participant, b: Participant) => a.firstname.localeCompare(b.firstname);
 
 const findMember = async (orgId: string, memberId: string) => {
   return (await apiFetch<{ data: MemberInfo }>(`/api/v1/organizations/${orgId}/members/${memberId}`)).data;
@@ -64,19 +45,10 @@ const normalizePhoneNumber = (phoneNumberString: string) => {
   return ('' + phoneNumberString).replace(/\D/g, '');
 };
 
-export function RosterPanel({ filter, participantContainerComponent: Participants, participantRowComponent: Participant, onClick }: RosterPanelProps) {
-  const activity = useActivityContext();
-  const [sortOnStatus, setSortOnStatus] = useState(false);
-  const [participants, setParticipants] = useState<Array<Participant>>(Object.values(activity.participants));
+export const RosterPanel = observer(function RosterPanel({ roster, participantContainerComponent: Participants, participantRowComponent: Row, onClick }: RosterPanelProps) {
+  const participants = roster.participants;
 
-  useEffect(() => {
-    let list = Object.values(activity.participants);
-    if (filter) list = list.filter((p) => p.organizationId === filter);
-    list.sort(sortOnStatus ? sortByStatus : sortAlphabetical);
-    setParticipants(list);
-  }, [activity, filter, sortOnStatus]);
-
-  let cards: ReactNode = participants.map((p) => <Participant key={p.id} orgs={activity.organizations} participant={p} onClick={() => onClick?.(p)} />);
+  let cards: ReactNode = participants.map((p) => <Row key={p.id} participant={p} onClick={() => onClick?.(p)} />);
   if (participants.length == 0) {
     cards = (
       <RosterRowCard status={ParticipantStatus.NotResponding}>
@@ -89,13 +61,13 @@ export function RosterPanel({ filter, participantContainerComponent: Participant
     <Box sx={{ flex: '1 1 auto' }}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'right' }}>
         <Typography>Sort By: Name</Typography>
-        <Switch value={sortOnStatus} onChange={(event) => setSortOnStatus(event.target.checked)} color="primary" />
+        <Switch checked={roster.sortOnStatus} onChange={(event) => roster.setSortOnStatus(event.target.checked)} color="primary" />
         <Typography>Status</Typography>
       </Stack>
       <Participants>{cards}</Participants>
     </Box>
   );
-}
+});
 
 export function RosterRowCard({ status, children, onClick, ...props }: PaperProps & { status: ParticipantStatus; children: ReactNode; onClick?: () => void }) {
   let cardContent = (

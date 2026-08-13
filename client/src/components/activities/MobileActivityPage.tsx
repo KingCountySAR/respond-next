@@ -3,14 +3,15 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
+import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
 
 import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { useAppSelector } from '@respond/lib/client/store';
-import { isActive } from '@respond/lib/client/store/activities';
-import { getStatusText, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/shared/types/activity';
+import { ActivityViewModel } from '@respond/lib/client/viewmodels/ActivityViewModel';
+import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
+import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
@@ -32,27 +33,26 @@ export enum MobilePageId {
   Manage = 'Manage',
 }
 
-export function MobileActivityPage() {
+export const MobileActivityPage = observer(function MobileActivityPage({ vm }: { vm: ActivityViewModel }) {
   const { defaultMobileView } = usePreferences();
   const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
   const activity = useActivityContext();
-  const user = useAppSelector((state) => state.auth.userInfo);
-  const myParticipation = activity?.participants[user?.participantId ?? ''];
-  const showParticipantOptions = isActive(activity);
-  const showEta = myParticipation?.timeline[0] && [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(myParticipation.timeline[0].status);
+  const myParticipation = vm.myParticipation;
+  const showParticipantOptions = vm.isActive;
+  const showEta = myParticipation?.isEnrouteOrStandby;
   const navFillerHeight = MOBILE_BOTTOM_NAV_TAB_HEIGHT + (showParticipantOptions ? MOBILE_STATUS_UPDATER_HEIGHT : 0) + (showEta ? MOBILE_ETA_INPUT_HEIGHT : 0) - ROSTER_PANEL_PADDING;
 
   return (
     <ToolbarPage>
       <Typography variant="h5">{activity.title}</Typography>
-      {bottomNav === MobilePageId.Roster && <MobileRosterScreen />}
+      {bottomNav === MobilePageId.Roster && <MobileRosterScreen vm={vm} />}
       {bottomNav === MobilePageId.Briefing && <MobileBriefingScreen />}
-      {bottomNav === MobilePageId.Manage && <MobileManageScreen />}
+      {bottomNav === MobilePageId.Manage && <MobileManageScreen vm={vm} />}
       <Box sx={{ height: navFillerHeight }}>{/* filler for bottomnav */}</Box>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderRadius: 0 }} elevation={3}>
         {showParticipantOptions && (
           <Stack spacing={2} sx={{ p: 2 }}>
-            {showEta && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
+            {showEta && myParticipation?.id && <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />}
             <StatusUpdater fullWidth={true} />
           </Stack>
         )}
@@ -70,65 +70,58 @@ export function MobileActivityPage() {
       </Paper>
     </ToolbarPage>
   );
-}
+});
 
 function MobileBriefingScreen() {
   return <BriefingPanel />;
 }
 
-function MobileRosterScreen() {
-  const [orgFilter, setOrgFilter] = useState<string>('');
-  const [participantOpen, setParticipantOpen] = useState<boolean>(false);
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
-
+const MobileRosterScreen = observer(function MobileRosterScreen({ vm }: { vm: ActivityViewModel }) {
   return (
     <>
-      <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} />
+      <ParticipatingOrgChips filter={vm.roster.filter} setFilter={(f) => vm.roster.setFilter(f)} />
       <Box style={{ overflowY: 'auto', height: 0, paddingBottom: 16 }} sx={{ flex: '1 1 auto' }}>
         <RosterPanel //
-          filter={orgFilter}
+          roster={vm.roster}
           participantContainerComponent={RosterContainer}
           participantRowComponent={RosterRow}
-          onClick={(p) => {
-            setSelectedParticipant(p);
-            setParticipantOpen(true);
-          }}
+          onClick={(p) => p.participant && vm.openParticipant(p.participant)}
         />
       </Box>
-      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={vm.participantDialogOpen} participant={vm.selectedParticipant} onClose={() => vm.closeParticipantDialog()} />
     </>
   );
-}
+});
 
-function RosterRow({ participant, orgs, onClick }: { participant: Participant; orgs: Record<string, ParticipatingOrg>; onClick?: () => void }) {
+const RosterRow = observer(function RosterRow({ participant, onClick }: { participant: ParticipantDomainModel; onClick?: () => void }) {
   return (
-    <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
+    <RosterRowCard status={participant.status ?? ParticipantStatus.NotResponding} onClick={onClick}>
       <Stack direction="row" sx={{ justifyContent: 'space-between', flexGrow: 1, m: '5px', ml: '8px' }}>
         <Stack>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            {participant.firstname} {participant.lastname}
+            {participant.fullName}
           </Typography>
           <Typography variant="body2">
-            {orgs[participant.organizationId]?.rosterName ?? orgs[participant.organizationId]?.title} {participant.tags?.join(', ')}
+            {participant.organizationName} {participant.tags.join(', ')}
           </Typography>
         </Stack>
         <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-          <Typography variant="body2">{getStatusText(participant.timeline[0].status)}</Typography>
-          <Typography variant="body2">{isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
+          <Typography variant="body2">{participant.statusText}</Typography>
+          <Typography variant="body2">{participant.isEnrouteOrStandby && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
         </Stack>
       </Stack>
     </RosterRowCard>
   );
-}
+});
 
 function RosterContainer({ children }: { children: ReactNode }) {
   return <Stack spacing={1}>{children}</Stack>;
 }
 
-function MobileManageScreen() {
+function MobileManageScreen({ vm }: { vm: ActivityViewModel }) {
   return (
     <>
-      <ActivityActionsBar />
+      <ActivityActionsBar vm={vm} />
       <ManagerPanel />
     </>
   );

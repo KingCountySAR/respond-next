@@ -1,49 +1,39 @@
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import { ReactNode, useState } from 'react';
+import { observer } from 'mobx-react-lite';
+import { ReactNode } from 'react';
 import { Link } from 'wouter';
 
 import { Box, Paper, Stack } from '@respond/components/Material';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { useAppSelector } from '@respond/lib/client/store';
-import { isActive } from '@respond/lib/client/store/activities';
-import { getStatusText, isEnrouteOrStandby, Participant, ParticipatingOrg } from '@respond/shared/types/activity';
+import { ActivityViewModel } from '@respond/lib/client/viewmodels/ActivityViewModel';
+import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
+import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
 
 import { ActivityActionsBar } from './ActivityPage';
-import { useActivityContext } from './ActivityProvider';
 import AddParticipantButton from './AddParticipantButton';
 import { BriefingPanel } from './BriefingPanel';
 import { ManagerPanel } from './ManagerPanel';
 import { ParticipatingOrgChips } from './ParticipatingOrgChips';
 import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
-export function DesktopActivityPage() {
-  const activity = useActivityContext();
-  const user = useAppSelector((state) => state.auth.userInfo);
-  const myParticipation = activity?.participants[user?.participantId ?? ''];
-  const isActivityActive = isActive(activity);
-
-  const [orgFilter, setOrgFilter] = useState<string>('');
-  const [participantOpen, setParticipantOpen] = useState<boolean>(false);
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant>();
-
-  const showEta = isEnrouteOrStandby(myParticipation?.timeline[0]?.status);
-
+export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }: { vm: ActivityViewModel }) {
+  const activity = vm.activity!;
   return (
     <ToolbarPage maxWidth="lg">
       <Stack direction="row" sx={{ mb: 1, alignItems: 'start' }} spacing={2}>
         <Typography variant="h4" sx={{ flex: '1 1 auto' }}>
           {activity.idNumber} {activity.title}
         </Typography>
-        <ActivityActionsBar />
+        <ActivityActionsBar vm={vm} />
       </Stack>
       <Stack direction="row" spacing={1} divider={<Divider orientation="vertical" flexItem />} sx={{ flex: '1 1 auto' }}>
         <Box sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column' }}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <ParticipatingOrgChips filter={orgFilter} setFilter={setOrgFilter} sx={{ display: 'flex', flexDirection: 'row' }} />
+            <ParticipatingOrgChips filter={vm.roster.filter} setFilter={(f) => vm.roster.setFilter(f)} sx={{ display: 'flex', flexDirection: 'row' }} />
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <AddParticipantButton activity={activity} />
               <Button component={Link} href={`/roster/${activity.id}`} variant="outlined" size="small">
@@ -52,23 +42,20 @@ export function DesktopActivityPage() {
             </Stack>
           </Stack>
           <RosterPanel //
-            filter={orgFilter}
+            roster={vm.roster}
             participantContainerComponent={RosterContainer}
             participantRowComponent={RosterRow}
-            onClick={(p) => {
-              setSelectedParticipant(p);
-              setParticipantOpen(true);
-            }}
+            onClick={(p) => p.participant && vm.openParticipant(p.participant)}
           />
         </Box>
         <Stack sx={{ width: 400, alignItems: 'stretch' }}>
           <BriefingPanel sx={{ px: 3 }} />
-          {showEta && (
+          {vm.myParticipation?.isEnrouteOrStandby && vm.myParticipation.id && (
             <Paper sx={{ mt: 2, p: 2 }}>
-              <ParticipantEtaUpdater activityId={activity.id} participantId={myParticipation.id} participantEta={myParticipation.eta} />
+              <ParticipantEtaUpdater activityId={activity.id} participantId={vm.myParticipation.id} participantEta={vm.myParticipation.eta} />
             </Paper>
           )}
-          {isActivityActive && (
+          {vm.isActive && (
             <Box sx={{ my: 2, display: 'flex', justifyContent: 'end' }}>
               <StatusUpdater />
             </Box>
@@ -76,33 +63,33 @@ export function DesktopActivityPage() {
           <ManagerPanel sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
+      <ParticipantDialog open={vm.participantDialogOpen} participant={vm.selectedParticipant} onClose={() => vm.closeParticipantDialog()} />
     </ToolbarPage>
   );
-}
+});
 
-function RosterRow({ participant, orgs, onClick }: { participant: Participant; orgs: Record<string, ParticipatingOrg>; onClick?: () => void }) {
+const RosterRow = observer(function RosterRow({ participant, onClick }: { participant: ParticipantDomainModel; onClick?: () => void }) {
   return (
-    <RosterRowCard status={participant.timeline[0].status} onClick={onClick}>
+    <RosterRowCard status={participant.status ?? ParticipantStatus.NotResponding} onClick={onClick}>
       <Stack direction="column" sx={{ m: '5px', ml: '8px', flexGrow: 1 }}>
         <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
           <Stack>
             <Typography variant="body1" sx={{ fontWeight: 600 }}>
-              {participant.firstname} {participant.lastname}
+              {participant.fullName}
             </Typography>
             <Typography variant="body2">
-              {orgs[participant.organizationId]?.rosterName ?? orgs[participant.organizationId]?.title} {participant.tags?.join(', ')}
+              {participant.organizationName} {participant.tags.join(', ')}
             </Typography>
           </Stack>
           <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-            <Typography variant="body2">{getStatusText(participant.timeline[0].status)}</Typography>
-            <Typography variant="body2">{isEnrouteOrStandby(participant.timeline[0].status) && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
+            <Typography variant="body2">{participant.statusText}</Typography>
+            <Typography variant="body2">{participant.isEnrouteOrStandby && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
           </Stack>
         </Stack>
       </Stack>
     </RosterRowCard>
   );
-}
+});
 
 function RosterContainer({ children }: { children: ReactNode }) {
   return <Stack spacing={1}>{children}</Stack>;
