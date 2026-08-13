@@ -1,14 +1,14 @@
 import { Route, Switch } from 'wouter';
 
-import { ActivityEditPage } from '@respond/components/activities/ActivityEditPage';
 import ActivityLayout from '@respond/components/activities/ActivityLayout';
-import { ActivityListPage } from '@respond/components/activities/ActivityListPage';
-import { ActivityPage } from '@respond/components/activities/ActivityPage';
 import { RosterReview } from '@respond/components/activities/RosterView';
 import { OperationsDashboard } from '@respond/components/dashboard/OperationsDashboard';
 import { LocationManager } from '@respond/components/locations/LocationManager';
 
 import { Home } from './pages/Home';
+import { ActivityEditPage } from './pages/respond/ActivityEditPage';
+import { ActivityListPage } from './pages/respond/ActivityListPage';
+import { ActivityPage } from './pages/respond/ActivityPage';
 
 // Order matters: wouter's <Switch> renders the first matching <Route>, so more
 // specific paths (e.g. /mission/new) must precede parameterized ones (/mission/:id).

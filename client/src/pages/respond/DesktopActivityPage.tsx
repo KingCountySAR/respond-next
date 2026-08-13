@@ -4,21 +4,20 @@ import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
 import { Link } from 'wouter';
 
+import AddParticipantButton from '@respond/components/activities/AddParticipantButton';
+import { BriefingPanel } from '@respond/components/activities/BriefingPanel';
+import { ManagerPanel } from '@respond/components/activities/ManagerPanel';
+import { ParticipatingOrgChips } from '@respond/components/activities/ParticipatingOrgChips';
+import { ParticipantDialog, RosterPanel, RosterRowCard } from '@respond/components/activities/RosterPanel';
 import { Box, Paper, Stack } from '@respond/components/Material';
+import { ParticipantEtaUpdater } from '@respond/components/participant/ParticipantEtaUpdater';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { ActivityViewModel } from '@respond/lib/client/viewmodels/ActivityViewModel';
 import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
-import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
-
 import { ActivityActionsBar } from './ActivityPage';
-import AddParticipantButton from './AddParticipantButton';
-import { BriefingPanel } from './BriefingPanel';
-import { ManagerPanel } from './ManagerPanel';
-import { ParticipatingOrgChips } from './ParticipatingOrgChips';
-import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
 export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }: { vm: ActivityViewModel }) {
   const activity = vm.activity!;

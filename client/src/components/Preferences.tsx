@@ -2,9 +2,8 @@ import { Button, DialogContent, DialogTitle, FormControl, FormHelperText, InputL
 import { Controller, useForm } from 'react-hook-form';
 
 import { DialogWithHistory } from '@respond/components/Material';
-import { NavigationApp, PerferencesState } from '@respond/shared/types/preferences';
+import { MobilePageId, NavigationApp, PerferencesState } from '@respond/shared/types/preferences';
 
-import { MobilePageId } from './activities/MobileActivityPage';
 import { usePreferences, useSetPreferences } from './PreferencesProvider';
 
 export function PreferencesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {

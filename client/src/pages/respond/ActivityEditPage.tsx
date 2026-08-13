@@ -1,4 +1,3 @@
-'use client';
 import AddLocation from '@mui/icons-material/AddLocation';
 import Edit from '@mui/icons-material/Edit';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
@@ -7,14 +6,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 import { useLocation } from 'wouter';
 
+import { LocationAutocomplete } from '@respond/components/locations/LocationAutocomplete';
+import { LocationEditDialog } from '@respond/components/locations/LocationEditDialog';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useActivityCommands } from '@respond/lib/client/services/activity';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/shared/types/activity';
-
-import { LocationAutocomplete } from '../locations/LocationAutocomplete';
-import { LocationEditDialog } from '../locations/LocationEditDialog';
 
 /**
  * Validation resolver

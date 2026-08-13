@@ -5,30 +5,25 @@ import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography
 import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
 
+import { BriefingPanel } from '@respond/components/activities/BriefingPanel';
+import { ManagerPanel } from '@respond/components/activities/ManagerPanel';
+import { ParticipatingOrgChips } from '@respond/components/activities/ParticipatingOrgChips';
+import { ParticipantDialog, RosterPanel, RosterRowCard } from '@respond/components/activities/RosterPanel';
+import { ParticipantEtaUpdater } from '@respond/components/participant/ParticipantEtaUpdater';
 import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { ActivityViewModel } from '@respond/lib/client/viewmodels/ActivityViewModel';
 import { ParticipantDomainModel } from '@respond/lib/client/viewmodels/ParticipantDomainModel';
 
-import { ParticipantEtaUpdater } from '../participant/ParticipantEtaUpdater';
+import { MobilePageId } from 'src/types';
 
 import { ActivityActionsBar } from './ActivityPage';
-import { BriefingPanel } from './BriefingPanel';
-import { ManagerPanel } from './ManagerPanel';
-import { ParticipatingOrgChips } from './ParticipatingOrgChips';
-import { ParticipantDialog, RosterPanel, RosterRowCard } from './RosterPanel';
 
 const MOBILE_BOTTOM_NAV_TAB_HEIGHT = 56;
 const MOBILE_STATUS_UPDATER_HEIGHT = 68.5;
 const MOBILE_ETA_INPUT_HEIGHT = 59.5;
 const ROSTER_PANEL_PADDING = 16;
-
-export enum MobilePageId {
-  Briefing = 'Briefing',
-  Roster = 'Roster',
-  Manage = 'Manage',
-}
 
 export const MobileActivityPage = observer(function MobileActivityPage({ activity }: { activity: ActivityViewModel }) {
   const { defaultMobileView } = usePreferences();
