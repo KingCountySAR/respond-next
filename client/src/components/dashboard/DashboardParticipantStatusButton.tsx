@@ -1,5 +1,5 @@
 import { Chip } from '@mui/material';
-import { type MouseEvent, useState } from 'react';
+import { type MouseEvent, type PointerEvent, useState } from 'react';
 
 import { useParticipantCommands } from '@respond/lib/client/services/participants';
 import { getStatusMuiColor, getStatusText, Participant, ParticipantStatus } from '@respond/shared/types/activity';
@@ -21,6 +21,10 @@ export function DashboardParticipantStatusButton({ participant, status }: { part
     setConfirmOpen(true);
   };
 
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+  };
+
   const updateParticipantStatus = () => {
     setConfirmOpen(false);
     const update = { time: Date.now(), status, organizationId: participant.organizationId };
@@ -29,7 +33,7 @@ export function DashboardParticipantStatusButton({ participant, status }: { part
 
   return (
     <>
-      <Chip label={statusLabel} size="small" variant="filled" color={chipColor} clickable onClick={handleClick} sx={{ color: 'common.white' }} />
+      <Chip label={statusLabel} size="small" variant="filled" color={chipColor} clickable onClick={handleClick} onPointerDown={handlePointerDown} sx={{ color: 'common.white' }} />
       <ConfirmDialog open={confirmOpen} prompt={`Mark ${participant.firstname} ${participant.lastname} as ${statusLabel}?`} onConfirm={updateParticipantStatus} onClose={() => setConfirmOpen(false)} />
     </>
   );

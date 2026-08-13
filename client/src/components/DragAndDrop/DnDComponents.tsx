@@ -16,34 +16,61 @@ interface DraggableProps<T> {
 export function Draggable<T>({ type, item, callback, children }: DraggableProps<T>) {
   const { startDrag, updateDrag, endDrag } = useDnD();
   const [isDraggingPointer, setIsDraggingPointer] = useState(false);
+  const dragStartPointRef = useRef<{ x: number; y: number } | null>(null);
+  const hasStartedDragRef = useRef(false);
+  const DRAG_START_THRESHOLD_PX = 6;
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Prevents text selection during drag
+    // Prevent parent wrappers from competing for pointer events.
     e.stopPropagation();
-    setIsDraggingPointer(true);
-    startDrag({ type, data: item, callback, previewNode: children }, e);
+    dragStartPointRef.current = { x: e.clientX, y: e.clientY };
+    hasStartedDragRef.current = false;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const dragStartPoint = dragStartPointRef.current;
+    if (!dragStartPoint) return;
+
+    if (!hasStartedDragRef.current) {
+      const deltaX = e.clientX - dragStartPoint.x;
+      const deltaY = e.clientY - dragStartPoint.y;
+      const movedDistance = Math.hypot(deltaX, deltaY);
+
+      if (movedDistance < DRAG_START_THRESHOLD_PX) return;
+
+      hasStartedDragRef.current = true;
+      setIsDraggingPointer(true);
+      startDrag({ type, data: item, callback, previewNode: children }, e);
+    }
+
+    updateDrag(e);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    setIsDraggingPointer(false);
-    endDrag(e, (targetElement) => {
-      // Finds closest droppable ancestor and dispatches a synthetic drop event
-      const droppable = targetElement.closest<HTMLElement>('[data-droppable]');
-      if (droppable) {
-        droppable.dispatchEvent(
-          new CustomEvent('custom-drop', {
-            bubbles: true,
-            detail: { type, data: item, callback },
-          }),
-        );
-      }
-    });
+    if (hasStartedDragRef.current) {
+      setIsDraggingPointer(false);
+      endDrag(e, (targetElement) => {
+        // Finds closest droppable ancestor and dispatches a synthetic drop event.
+        const droppable = targetElement.closest<HTMLElement>('[data-droppable]');
+        if (droppable) {
+          droppable.dispatchEvent(
+            new CustomEvent('custom-drop', {
+              bubbles: true,
+              detail: { type, data: item, callback },
+            }),
+          );
+        }
+      });
+    }
+
+    dragStartPointRef.current = null;
+    hasStartedDragRef.current = false;
   };
 
   return (
     <div
       onPointerDown={handlePointerDown}
-      onPointerMove={updateDrag}
+      onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       style={{

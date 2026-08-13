@@ -66,7 +66,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
   };
 
   return (
-    <Box sx={{ borderColor: 'divider', p: entry ? 2 : 1, mt: entry ? 0 : 2, flexShrink: 0 }}>
+    <Box sx={{ borderColor: 'divider', p: 0.5, mt: entry ? 0 : 0.5, flexShrink: 0 }}>
       <form onSubmit={handleSubmit(submit)}>
         <Stack spacing={1}>
           <Stack direction={{ xl: 'row' }} sx={{ alignItems: { xs: 'stretch', xl: 'center' }, gap: 2 }}>
