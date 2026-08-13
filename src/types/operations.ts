@@ -85,7 +85,7 @@ export function createNewCommsEntry(values: Partial<CommunicationsLogEntry>): Co
 
 export const DEFAULT_PLACES = {
   base: 'Command Post',
-  field: 'Field (Unassigned)',
+  field: 'Field',
 };
 
 export const isDefaultPlace = (place: Place) => {

@@ -52,12 +52,12 @@ export function DashboardPlaceManager() {
   };
 
   // nullish coalese for backward compatibility on inital render
-  const activityPlaces = activity.places?.filter((f) => f.name !== DEFAULT_PLACES.field || f.assignedParticipants.length || f.assignedEquipment.length) ?? [];
+  const activityPlaces = activity.places ?? [];
 
   return (
     <>
       <Stack spacing={2} sx={{ overflow: 'auto' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
           <Box />
           <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAddingPlace(createNewPlace(''))}>
             Add
