@@ -98,7 +98,7 @@ const OutputShowMore = ({ children, rows }: { children: ReactNode; rows?: number
   );
 };
 
-export const OutputText = ({ label, value }: { label: string; value?: string }) => {
+export const OutputText = ({ label, value }: { label: string; value?: string | number }) => {
   return <OutputField label={label}>{value !== undefined && <Typography variant="body1">{value}</Typography>}</OutputField>;
 };
 

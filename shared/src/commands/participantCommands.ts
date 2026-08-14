@@ -21,8 +21,8 @@ const AddParticipantTimeline = createAction('cmd/participant/timelineAdd', (acti
   payload: { activityId, participantId, update },
 }));
 
-const UpdateParticipantTimeline = createAction('cmd/participant/timelineUpdate', (activityId: string, participantId: string, update: ParticipantUpdate, index: number) => ({
-  payload: { activityId, participantId, update, index },
+const UpdateParticipantTimeline = createAction('cmd/participant/timelineUpdate', (activityId: string, participantId: string, update: ParticipantUpdate) => ({
+  payload: { activityId, participantId, update },
 }));
 
 const UpdateParticipantMiles = createAction('cmd/participant/miles', (activityId: string, participantId: string, miles: number) => ({

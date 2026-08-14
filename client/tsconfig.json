@@ -13,7 +13,9 @@
       "@respond/shared/*": ["../shared/src/*"],
       "@respond/components/*": ["./src/components/*"],
       "@respond/lib/*": ["./src/lib/*"],
-      "@respond/hooks/*": ["./src/hooks/*"]
+      "@respond/hooks/*": ["./src/hooks/*"],
+      "@/client": ["./src"],
+      "@/client/*": ["./src/*"],
     }
   },
   "include": ["src"]

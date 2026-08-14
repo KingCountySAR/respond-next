@@ -41,7 +41,7 @@ describe('ActivityViewModel', () => {
 
       const user = new UserDomainModel(store);
       user.connect();
-      const domain = new ActivityDomainModel(store, 'a1', clock);
+      const domain = ActivityDomainModel.forStore(store, 'a1', clock);
       domain.connect();
       const vm = new ActivityViewModel(domain, user);
 
@@ -61,7 +61,7 @@ describe('ActivityViewModel', () => {
 
       const user = new UserDomainModel(store);
       user.connect();
-      const domain = new ActivityDomainModel(store, 'a1', clock);
+      const domain = ActivityDomainModel.forStore(store, 'a1', clock);
       domain.connect();
 
       expect(new ActivityViewModel(domain, user).myParticipation).toBeUndefined();

@@ -10,9 +10,9 @@
   ],
   "scripts": {
     "dev:server": "npm --workspace @respond/server run dev",
-    "dev:client": "npm --workspace @respond/client run dev",
+    "dev:client": "npm --workspace @/client run dev",
     "dev": "run-p -rl dev:server dev:client",
-    "build:client": "npm --workspace @respond/client run build",
+    "build:client": "npm --workspace @/client run build",
     "build:server": "npm --workspace @respond/server run build",
     "build": "run-s -l build:client build:server",
     "test": "vitest run",

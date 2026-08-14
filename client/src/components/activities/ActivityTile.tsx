@@ -1,56 +1,55 @@
 import { NearMe } from '@mui/icons-material';
 import { Box, Card, CardActions, Grid, IconButton, Link, Typography } from '@mui/material';
-import { ReactNode } from 'react';
+import { observer } from 'mobx-react-lite';
+import { PropsWithChildren } from 'react';
 import { Link as RouterLink } from 'wouter';
 
 import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusChip } from '@respond/components/StatusChip';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
-import { getActivityPath, isActive } from '@respond/lib/client/store/activities';
-import { Activity, ParticipantStatus } from '@respond/shared/types/activity';
+import type { ParticipantStatus } from '@respond/shared/types/activity';
 import { NavigationApp } from '@respond/shared/types/preferences';
 
-import { ActivityProvider } from './ActivityProvider';
+import { ActivityDomainModel } from '@/client/models/activityDomainModel';
 
-export const ActivityTile = ({ activity, status, children }: { activity: Activity; status?: ParticipantStatus; children?: ReactNode }) => {
+export const ActivityTile = observer(function ActivityTile({ activity, status, children }: PropsWithChildren<{ activity: ActivityDomainModel; status?: ParticipantStatus }>) {
+  if (!activity.activityLoaded) return null;
   return (
-    <ActivityProvider activity={activity}>
-      <Card>
-        <Box sx={{ padding: 1 }}>
-          <Box sx={{ alignItems: 'center', pb: 2, display: 'flex', flexDirection: 'row' }}>
-            <Box sx={{ flexGrow: 1 }}>
-              <Link component={RouterLink} href={getActivityPath(activity)} color="textPrimary" underline="hover">
-                <Typography sx={{ fontWeight: 'bold' }} variant="h6">
-                  {activity.title}
-                </Typography>
-              </Link>
-            </Box>
-            <Box>{status && <StatusChip status={status} />}</Box>
+    <Card>
+      <Box sx={{ padding: 1 }}>
+        <Box sx={{ alignItems: 'center', pb: 2, display: 'flex', flexDirection: 'row' }}>
+          <Box sx={{ flexGrow: 1 }}>
+            <Link component={RouterLink} href={activity.path} color="textPrimary" underline="hover">
+              <Typography sx={{ fontWeight: 'bold' }} variant="h6">
+                {activity.title}
+              </Typography>
+            </Link>
           </Box>
-          <Box>{children}</Box>
+          <Box>{status && <StatusChip status={status} />}</Box>
         </Box>
+        <Box>{children}</Box>
+      </Box>
 
-        {isActive(activity) && (
-          <CardActions>
-            <Grid container sx={{ flexGrow: 1, justifyContent: 'space-between', alignItems: 'center' }}>
-              <Grid>
-                {activity.mapId && (
-                  <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
-                    <img src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
-                  </IconButton>
-                )}
-                <NavigationButton lat={activity.location.lat} lon={activity.location.lon} />
-              </Grid>
-              <Grid>
-                <StatusUpdater />
-              </Grid>
+      {activity.isActive && (
+        <CardActions>
+          <Grid container sx={{ flexGrow: 1, justifyContent: 'space-between', alignItems: 'center' }}>
+            <Grid>
+              {activity.mapId && (
+                <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
+                  <img src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
+                </IconButton>
+              )}
+              <NavigationButton lat={activity.location.lat} lon={activity.location.lon} />
             </Grid>
-          </CardActions>
-        )}
-      </Card>
-    </ActivityProvider>
+            <Grid>
+              <StatusUpdater activity={activity} />
+            </Grid>
+          </Grid>
+        </CardActions>
+      )}
+    </Card>
   );
-};
+});
 
 const NavigationButton = ({ lat, lon }: { lat?: string; lon?: string }) => {
   const { navigationApp } = usePreferences();

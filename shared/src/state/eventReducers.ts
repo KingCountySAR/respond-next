@@ -50,7 +50,7 @@ export const BasicEventReducers: EventReducers = {
   },
 
   [DomainEvents.ParticipantTimelineUpdated.type]: (state, { payload }) => {
-    Mutators.participantTimelineUpdate(state, payload.activityId, payload.participantId, payload.update, payload.index);
+    Mutators.participantTimelineUpdate(state, payload.activityId, payload.participantId, payload.update);
   },
 
   [DomainEvents.ParticipantMilesUpdated.type]: (state, { payload }) => {

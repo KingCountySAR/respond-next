@@ -15,6 +15,7 @@ export default defineConfig({
       '@respond/components': r('client/src/components'),
       '@respond/hooks': r('client/src/hooks'),
       '@respond/lib': r('client/src/lib'),
+      '@/client': r('client/src'),
     },
   },
   test: {

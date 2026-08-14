@@ -3,7 +3,7 @@ import { useStore } from 'react-redux';
 
 import type { AppStore } from '@respond/lib/client/store';
 
-import { ActivityDomainModel } from 'src/models/activityDomainModel';
+import { ActivityDomainModel } from '@/client/models/activityDomainModel';
 
 import { useClock } from '../AppDomainProvider';
 
@@ -31,7 +31,7 @@ export function ActivityDomainModelProvider({ children }: { children: ReactNode 
   // effect below so only the committed instance connects (StrictMode-safe).
   const ref = useRef<{ id: string; model: ActivityDomainModel } | null>(null);
   if (ref.current?.id !== activityId) {
-    ref.current = { id: activityId, model: new ActivityDomainModel(store, activityId, clock) };
+    ref.current = { id: activityId, model: ActivityDomainModel.forStore(store, activityId, clock) };
   }
 
   useEffect(() => {

@@ -9,7 +9,7 @@ import { ActivityDomainModelProvider, useActivityDomainModel } from '@respond/co
 import { useUserDomainModel } from '@respond/components/AppDomainProvider';
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, DialogWithHistory, IconButton, Stack } from '@respond/components/Material';
 
-import { ActivityViewModel } from 'src/pages/respond/activityViewModel';
+import { ActivityViewModel } from '@/client/pages/respond/activityViewModel';
 
 import { DesktopActivityPage } from './DesktopActivityPage';
 import { MobileActivityPage } from './MobileActivityPage';
@@ -34,7 +34,7 @@ const ActivityPageContent = observer(function ActivityPageContent() {
 
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
 
-  if (!vm.activity) return <div>Loading activity...</div>;
+  if (!vm.activityLoaded) return <div>Loading activity...</div>;
 
   return isMobile ? <MobileActivityPage activity={vm} /> : <DesktopActivityPage vm={vm} />;
 });
@@ -42,7 +42,7 @@ const ActivityPageContent = observer(function ActivityPageContent() {
 export const ActivityActionsBar = observer(function ActivityActionsBar({ vm }: { vm: ActivityViewModel }) {
   const [, navigate] = useLocation();
 
-  if (!vm.activity) return null;
+  if (!vm.activityLoaded) return null;
 
   const handleRemove = async () => {
     // Wait for the ActivityRemoved event to land before leaving, so we don't

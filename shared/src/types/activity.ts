@@ -112,6 +112,10 @@ export enum OrganizationStatus {
 }
 
 export interface ParticipantUpdate {
+  // Server-generated, stable per timeline entry (absent on legacy entries, which
+  // are therefore read-only). Used to target an entry for edits without a
+  // positional index that shifts as intermediate entries are added/removed.
+  id?: string;
   time: number;
   organizationId: string;
   status: ParticipantStatus;

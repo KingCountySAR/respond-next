@@ -27,7 +27,7 @@ describe('RosterViewModel', () => {
     };
     store.dispatch(activitiesReloaded({ list: [makeActivity(participants)] }));
 
-    const domain = new ActivityDomainModel(store, 'a1', clock);
+    const domain = ActivityDomainModel.forStore(store, 'a1', clock);
     domain.connect();
     const roster = new RosterViewModel(domain);
 

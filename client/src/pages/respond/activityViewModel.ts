@@ -1,8 +1,5 @@
 import { makeAutoObservable } from 'mobx';
 
-import { Activity } from '@respond/shared/types/activity';
-
-import { getActivityStatus, isActive } from '../../lib/client/store/activities';
 import { ActivityDomainModel } from '../../models/activityDomainModel';
 import { ParticipantDomainModel } from '../../models/participantDomainModel';
 import { UserDomainModel } from '../../models/userDomainModel';
@@ -24,7 +21,7 @@ export class ActivityViewModel {
   readonly roster: RosterViewModel;
 
   constructor(
-    private readonly domain: ActivityDomainModel,
+    readonly domain: ActivityDomainModel,
     private readonly user: UserDomainModel,
   ) {
     this.roster = new RosterViewModel(domain);
@@ -35,8 +32,8 @@ export class ActivityViewModel {
     });
   }
 
-  get activity(): Activity | undefined {
-    return this.domain.activity;
+  get activityLoaded(): boolean {
+    return !!this.domain.activity;
   }
 
   get title(): string {
@@ -44,18 +41,16 @@ export class ActivityViewModel {
   }
 
   get isActive(): boolean {
-    const activity = this.activity;
-    return activity ? isActive(activity) : false;
+    return this.domain.isActive;
   }
 
   get numberAndTitle(): string {
-    const activity = this.activity;
+    const activity = this.domain.activity;
     return activity ? `${activity.idNumber} ${activity.title}` : '';
   }
 
   get statusText(): string {
-    const activity = this.activity;
-    return activity ? getActivityStatus(activity) : '';
+    return this.domain.statusText;
   }
 
   /** True for an inactive activity fetched from the API — commands are disabled. */
@@ -64,8 +59,7 @@ export class ActivityViewModel {
   }
 
   get url(): string {
-    const activity = this.activity;
-    return activity ? `/${activity.isMission ? 'mission' : 'event'}/${activity.id}` : '/';
+    return this.domain.path;
   }
 
   /** The logged-in user's participation in this activity, or undefined if none. */

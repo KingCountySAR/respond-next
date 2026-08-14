@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 import { useDebouncedCallback } from '@respond/hooks/useDebouncedCallback';
 
-import { ParticipantDomainModel } from 'src/models/participantDomainModel';
+import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
 
 import { InlineTimeEdit } from '../InlineTimeEdit';
 import { usePreferences } from '../PreferencesProvider';

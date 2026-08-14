@@ -3,9 +3,9 @@ import { useStore } from 'react-redux';
 
 import type { AppStore } from '@respond/lib/client/store';
 
-import { ObservableClock } from 'src/models/observableClock';
-import { OrganizationDomainModel } from 'src/models/organizationDomainModel';
-import { UserDomainModel } from 'src/models/userDomainModel';
+import { ObservableClock } from '@/client/models/observableClock';
+import { OrganizationDomainModel } from '@/client/models/organizationDomainModel';
+import { UserDomainModel } from '@/client/models/userDomainModel';
 
 const UserDomainModelContext = createContext<UserDomainModel | null>(null);
 const OrganizationDomainModelContext = createContext<OrganizationDomainModel | null>(null);

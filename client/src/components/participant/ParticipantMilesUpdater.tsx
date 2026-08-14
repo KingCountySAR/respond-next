@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 
-import { ParticipantDomainModel } from 'src/models/participantDomainModel';
+import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
 
 import { Button, Stack } from '../Material';
 

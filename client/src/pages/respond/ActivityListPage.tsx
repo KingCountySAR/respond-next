@@ -6,7 +6,6 @@ import { Link } from 'wouter';
 import { RelativeTimeText } from '@respond/components/RelativeTimeText';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { apiFetch } from '@respond/lib/api';
-import { getActivityPath } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType } from '@respond/shared/types/activity';
 
 function GridToolbar() {
@@ -19,7 +18,7 @@ function GridToolbar() {
 
 const columns: GridColDef[] = [
   { field: 'idNumber', headerName: 'DEM #', width: 150 },
-  { field: 'title', headerName: 'Title', width: 450, renderCell: (params) => <Link href={getActivityPath(params.row)}>{params.row.title}</Link> },
+  { field: 'title', headerName: 'Title', width: 450, renderCell: (params) => <Link href={`/${params.row.isMission ? 'mission' : 'event'}/${params.row.id}`}>{params.row.title}</Link> },
   {
     field: 'startTime',
     headerName: 'Start Time',

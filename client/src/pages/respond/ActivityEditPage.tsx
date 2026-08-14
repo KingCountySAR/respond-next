@@ -11,8 +11,8 @@ import { LocationEditDialog } from '@respond/components/locations/LocationEditDi
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { useActivityCommands } from '@respond/lib/client/services/activity';
 import { useAppSelector } from '@respond/lib/client/store';
-import { buildActivitySelector, defaultEarlySigninWindow, earlySignInWindowOptions, isFuture } from '@respond/lib/client/store/activities';
-import { Activity, ActivityType, createNewActivity, OrganizationStatus } from '@respond/shared/types/activity';
+import { buildActivitySelector } from '@respond/lib/client/store/activities';
+import { Activity, ActivityType, createNewActivity, defaultEarlySigninWindow, earlySignInWindowOptions, OrganizationStatus } from '@respond/shared/types/activity';
 
 /**
  * Validation resolver
@@ -283,7 +283,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                 name="earlySignInWindow"
                 control={control}
                 render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.earlySignInWindow?.message} disabled={!isFuture(watch('startTime'))}>
+                  <FormControl fullWidth error={!!errors.earlySignInWindow?.message} disabled={!(watch('startTime') > Date.now())}>
                     <InputLabel variant="outlined">Early Sign In Window</InputLabel>
                     <Select {...field} variant="outlined" label="Early Sign In Window">
                       {earlySignInWindowOptions.map((p) => (

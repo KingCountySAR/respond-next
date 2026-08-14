@@ -6,7 +6,7 @@ import { ParticipantStatus, ParticipantUpdate } from '../types/activity';
 // ParticipantTagged is authored by the participant-tag reactor.
 
 type ParticipantIdentity = { id: string; firstname: string; lastname: string; organizationId: string; miles?: number; eta?: number };
-type StatusUpdate = { time: number; status: ParticipantStatus };
+type StatusUpdate = { id?: string; time: number; status: ParticipantStatus };
 
 const ParticipantUpdated = createAction('evt/participant/updated', (activityId: string, participant: ParticipantIdentity, update: StatusUpdate) => ({
   payload: { activityId, participant, update },
@@ -16,8 +16,8 @@ const ParticipantTimelineAdded = createAction('evt/participant/timelineAdded', (
   payload: { activityId, participantId, update },
 }));
 
-const ParticipantTimelineUpdated = createAction('evt/participant/timelineUpdated', (activityId: string, participantId: string, update: ParticipantUpdate, index: number) => ({
-  payload: { activityId, participantId, update, index },
+const ParticipantTimelineUpdated = createAction('evt/participant/timelineUpdated', (activityId: string, participantId: string, update: ParticipantUpdate) => ({
+  payload: { activityId, participantId, update },
 }));
 
 const ParticipantMilesUpdated = createAction('evt/participant/milesUpdated', (activityId: string, participantId: string, miles: number) => ({

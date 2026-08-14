@@ -4,10 +4,15 @@ import { makeAutoObservable, onBecomeObserved, onBecomeUnobserved, reaction, run
 
 import { apiFetch } from '@respond/lib/api';
 import { ParticipantCommands } from '@respond/shared/commands';
-import { getStatusCssColor, getStatusText, isActive, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/shared/types/activity';
+import { getStatusCssColor, getStatusText, isActive, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/shared/types/activity';
 import { MemberInfo } from '@respond/shared/types/member';
 
 import { ObservableClock } from './observableClock';
+
+export interface DomainParticipantUpdate extends ParticipantUpdate {
+  statusText: string;
+  organizationName: string;
+}
 
 function isOnClock(status: ParticipantStatus) {
   return status !== ParticipantStatus.Standby && isActive(status);
@@ -140,6 +145,17 @@ export class ParticipantDomainModel {
     return isActive(this.status);
   }
 
+  get timeline(): DomainParticipantUpdate[] {
+    return this.participant.timeline.map((t) => {
+      const org = this.getOrganizations()[t.organizationId];
+      return {
+        ...t,
+        statusText: getStatusText(t.status),
+        organizationName: org?.rosterName ?? org?.title ?? '',
+      };
+    });
+  }
+
   get timeOnClock(): number {
     let timeOnClock = 0;
     const lastUpdate = this.participant.timeline[0];
@@ -170,6 +186,10 @@ export class ParticipantDomainModel {
   /** Set this participant's ETA (null clears it). Ids are bound into the model. */
   updateEta(eta: number | null) {
     this.dispatch(ParticipantCommands.UpdateParticipantEta(this.activityId, this.id, eta));
+  }
+
+  updateTimeline(update: ParticipantUpdate) {
+    this.dispatch(ParticipantCommands.UpdateParticipantTimeline(this.activityId, this.id, update));
   }
 
   dispose() {

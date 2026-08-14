@@ -1,5 +1,5 @@
 import PhoneIcon from '@mui/icons-material/Phone';
-import { Button, ButtonBase, Chip, DialogActions, Divider } from '@mui/material';
+import { Box, Button, ButtonBase, Chip, DialogActions, DialogContent, DialogTitle, Divider, Paper, Stack, Typography, useMediaQuery } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import { PaperProps } from '@mui/material/Paper';
@@ -8,12 +8,12 @@ import Switch from '@mui/material/Switch';
 import { observer } from 'mobx-react-lite';
 import { FunctionComponent, ReactNode, useState } from 'react';
 
-import { Box, DialogContent, DialogTitle, DialogWithHistory, Paper, Stack, Typography, useMediaQuery } from '@respond/components/Material';
 import { getStatusCssColor, ParticipantStatus } from '@respond/shared/types/activity';
 
-import { ParticipantDomainModel } from 'src/models/participantDomainModel';
-import { RosterViewModel } from 'src/pages/reports/rosterReportViewModel';
+import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
+import { RosterViewModel } from '@/client/pages/reports/rosterReportViewModel';
 
+import DialogWithHistory from '../DialogWithHistory';
 import { ParticipantMilesUpdater } from '../participant/ParticipantMilesUpdater';
 
 import ParticipantTimeline from './ParticipantTimeline';
@@ -110,7 +110,7 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
             <Typography variant="h6" sx={{ borderBottom: 1 }}>
               Timeline
             </Typography>
-            <ParticipantTimeline participant={participant.participant} />
+            <ParticipantTimeline participant={participant} />
           </Stack>
         </Stack>
         {/* <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText> */}

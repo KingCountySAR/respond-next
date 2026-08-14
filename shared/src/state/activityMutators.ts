@@ -9,7 +9,7 @@ import { ActivityState } from '.';
 /** The participant identity fields a status update carries (no timeline/tags). */
 type ParticipantInput = { id: string; firstname: string; lastname: string; organizationId: string; miles?: number; eta?: number };
 /** A participantUpdate status change; the org is taken from the participant, not the update. */
-type StatusUpdate = { time: number; status: ParticipantStatus };
+type StatusUpdate = { id?: string; time: number; status: ParticipantStatus };
 
 /**
  * Pure state mutators for the Places + Comms domains, factored out of the
@@ -158,12 +158,16 @@ export function bulkParticipantUpdate(state: Draft<ActivityState>, activityId: s
   }
 }
 
-export function participantTimelineUpdate(state: Draft<ActivityState>, activityId: string, participantId: string, update: ParticipantUpdate, index: number): void {
+export function participantTimelineUpdate(state: Draft<ActivityState>, activityId: string, participantId: string, update: ParticipantUpdate): void {
   const activity = state.list.find((f) => f.id === activityId);
   if (!activity) return;
   const person = activity.participants[participantId];
   if (!person) return;
-  person.timeline[index] = update;
+  // Target the entry by its stable server id. Legacy entries have no id and so
+  // can't be edited (guarded in the UI); a missing/unknown id is a no-op.
+  if (update.id === undefined) return;
+  const index = person.timeline.findIndex((entry) => entry.id === update.id);
+  if (index >= 0) person.timeline[index] = update;
 }
 
 export function participantTimelineAdd(state: Draft<ActivityState>, activityId: string, participantId: string, update: ParticipantUpdate): void {

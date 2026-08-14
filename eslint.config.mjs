@@ -56,6 +56,7 @@ export default tseslint.config(
           pathGroups: [
             { pattern: '@respond/**', group: 'internal', position: 'before' },
             { pattern: '@shared/**', group: 'internal', position: 'before' },
+            { pattern: '@/**', group: 'internal', position: 'before' },
           ],
           // @respond/shared resolves via a node_modules symlink (import type
           // `external`), so it must be exempted from the default exclusion for

@@ -1,13 +1,14 @@
+import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 
 import { useAppSelector } from '@respond/lib/client/store';
-import { defaultEarlySigninWindow, isFuture } from '@respond/lib/client/store/activities';
-import { getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/shared/types/activity';
+import { defaultEarlySigninWindow, getOrganizationName, isActive, isResponding, ParticipantStatus } from '@respond/shared/types/activity';
 import { MemberInfo } from '@respond/shared/types/member';
 import { Organization } from '@respond/shared/types/organization';
 import { UserInfo } from '@respond/shared/types/userInfo';
 
-import { useActivityContext } from '../activities/ActivityProvider';
+import { ActivityDomainModel } from '@/client/models/activityDomainModel';
+
 import { Alert, Button, DialogActions, DialogContent, DialogTitle, DialogWithHistory } from '../Material';
 import { SplitButton } from '../SplitButton';
 
@@ -84,22 +85,24 @@ function getStatusOptions(current: ParticipantStatus | undefined, startTime: num
   // 1. The activity's sign-in window is in the future.
   // 2. The activity is marked as standby only, and the current responder is not actively responding.
   //    If the responder is already responding, let them update their status as normal.
-  if (isFuture(startTime - earlySigninWindow) || (forceStandbyOnly && !isResponding(status))) {
+  if (startTime - earlySigninWindow > Date.now() || (forceStandbyOnly && !isResponding(status))) {
     return standbyOnlyStatusOptions[status];
   }
 
   return statusOptions[status];
 }
 
-export const StatusUpdater = ({ member, organization, fullWidth }: { member?: MemberInfo; organization?: Organization; fullWidth?: boolean }) => {
+export const StatusUpdater = ({ member, organization, fullWidth, activity }: { member?: MemberInfo; organization?: Organization; fullWidth?: boolean; activity: ActivityDomainModel }) => {
   const user = useAppSelector((state) => state.auth.userInfo);
   const thisOrg = useAppSelector((state) => state.organization.mine);
 
-  return user && thisOrg ? <StatusUpdaterProtected user={member || user} thisOrg={organization || thisOrg} fullWidth={fullWidth} /> : null;
+  return user && thisOrg ? <StatusUpdaterProtected activity={activity} user={member || user} thisOrg={organization || thisOrg} fullWidth={fullWidth} /> : null;
 };
 
-const StatusUpdaterProtected = ({ fullWidth, user, thisOrg }: { user: UserInfo | MemberInfo; fullWidth?: boolean; thisOrg: Organization }) => {
-  const activity = useActivityContext();
+const StatusUpdaterProtected = observer(({ fullWidth, user, thisOrg, activity: activityModel }: { user: UserInfo | MemberInfo; fullWidth?: boolean; thisOrg: Organization; activity: ActivityDomainModel }) => {
+  // Read the plain Activity off the domain model (which is what callers now pass);
+  // StatusUpdater only renders for a loaded activity, so this is present.
+  const activity = activityModel.activity!;
   const [confirming, setConfirming] = useState<boolean>(false);
   const [confirmTitle, setConfirmTitle] = useState<string>('');
   const [confirmStatus, setConfirmStatus] = useState<ParticipantStatus>(ParticipantStatus.SignedIn);
@@ -181,4 +184,4 @@ const StatusUpdaterProtected = ({ fullWidth, user, thisOrg }: { user: UserInfo |
       </DialogWithHistory>
     </>
   );
-};
+});

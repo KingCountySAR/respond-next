@@ -135,7 +135,7 @@ GOOGLE_ID=<client-id>.apps.googleusercontent.com
 The app is an npm-workspaces monorepo with three packages:
 - **`shared/`** (`@respond/shared`) — domain types + the isomorphic state (actions/reducers) used by both client and server.
 - **`server/`** (`@respond/server`) — a [Hono](https://hono.dev) Node server that owns the REST API, Google auth/session (iron-session), and the socket.io realtime server + in-memory `StateManager`. In **dev** it listens on **5173** (Vite proxies to it); in **production** it listens on **3000** and also serves the built client.
-- **`client/`** (`@respond/client`) — a [Vite](https://vite.dev) + React SPA (routing via [wouter](https://github.com/molefrog/wouter)). The dev server runs on **3000** (the app URL) and proxies `/api` + `/socket.io` to the server.
+- **`client/`** (`@/client`) — a [Vite](https://vite.dev) + React SPA (routing via [wouter](https://github.com/molefrog/wouter)). The dev server runs on **3000** (the app URL) and proxies `/api` + `/socket.io` to the server.
 
 The app URL is **http://localhost:3000** in both dev (Vite) and production (Hono).
 

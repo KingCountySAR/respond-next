@@ -10,10 +10,9 @@ import { useClock, useOrganizationDomainModel, useUserDomainModel } from '@respo
 import { OutputForm, OutputText, OutputTime } from '@respond/components/OutputForm';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import type { AppStore } from '@respond/lib/client/store';
-import { getActivityStatus, isFuture } from '@respond/lib/client/store/activities';
 
-import { ActivityListDomainModel } from 'src/models/activityListDomainModel';
-import { HomeViewModel } from 'src/pages/respond/homeViewModel';
+import { ActivityListDomainModel } from '@/client/models/activityListDomainModel';
+import { HomeViewModel } from '@/client/pages/respond/homeViewModel';
 
 // Owns the activity-list domain model's lifecycle: build it from the store and
 // subscribe/unsubscribe across mount. Kept off the app-wide provider since Home is
@@ -21,7 +20,8 @@ import { HomeViewModel } from 'src/pages/respond/homeViewModel';
 // HomeContent so only that subtree re-renders as the read model changes.
 export function Home() {
   const store = useStore() as AppStore;
-  const list = useMemo(() => new ActivityListDomainModel(store), [store]);
+  const clock = useClock();
+  const list = useMemo(() => new ActivityListDomainModel(store, clock), [store, clock]);
 
   useEffect(() => {
     list.connect();
@@ -51,14 +51,14 @@ const HomeContent = observer(function HomeContent({ domain }: { domain: Activity
             </Box>
             <Stack spacing={1}>
               {activities.myCurrentActivities.map((up) => (
-                <ActivityTile key={up.activity.id} activity={up.activity} status={up.status.status}>
+                <ActivityTile key={up.activity.id} activity={up.activity} status={up.participant.status}>
                   <OutputForm>
                     <Box>
                       <OutputText label="Location" value={up.activity.location.title} />
                     </Box>
                     <Box>
-                      <OutputText label="Mission Status" value={getActivityStatus(up.activity)} />
-                      {isFuture(up.activity.startTime) && <OutputTime label="Start Time" time={up.activity.startTime}></OutputTime>}
+                      <OutputText label="Mission Status" value={up.activity.statusText} />
+                      {up.activity.startsInFuture && <OutputTime label="Start Time" time={up.activity.startTime}></OutputTime>}
                     </Box>
                   </OutputForm>
                 </ActivityTile>

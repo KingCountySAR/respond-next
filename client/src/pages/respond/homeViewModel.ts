@@ -1,11 +1,12 @@
 import { makeAutoObservable } from 'mobx';
 
-import { Activity, isActive as isParticipantStatusActive, ParticipantStatus, ParticipantUpdate } from '@respond/shared/types/activity';
+import { ParticipantStatus } from '@respond/shared/types/activity';
 
-import { isActive, isComplete } from '../../lib/client/store/activities';
+import type { ActivityDomainModel } from '../../models/activityDomainModel';
 import type { ActivityListDomainModel } from '../../models/activityListDomainModel';
 import { ObservableClock } from '../../models/observableClock';
 import type { OrganizationDomainModel } from '../../models/organizationDomainModel';
+import type { ParticipantDomainModel } from '../../models/participantDomainModel';
 import type { UserDomainModel } from '../../models/userDomainModel';
 
 const MAX_COMPLETED_VISIBLE = 3;
@@ -13,12 +14,12 @@ const COMPLETED_VISIBLE_DAYS = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface MyParticipation {
-  activity: Activity;
-  status: ParticipantUpdate;
+  activity: ActivityDomainModel;
+  participant: ParticipantDomainModel;
 }
 
 // Most recent first: missions sort by start time descending, other activities ascending.
-function byRecency(a: Activity, b: Activity) {
+function byRecency(a: ActivityDomainModel, b: ActivityDomainModel) {
   const sign = a.isMission ? -1 : 1;
   return a.startTime === b.startTime ? 0 : a.startTime > b.startTime ? sign : -sign;
 }
@@ -50,10 +51,10 @@ export class HomeViewModel {
     if (!participantId) return [];
 
     const mine: MyParticipation[] = [];
-    for (const activity of this.list.activities) {
-      const myUpdate = activity.participants[participantId]?.timeline[0];
-      if (myUpdate && myUpdate.status !== ParticipantStatus.NotResponding) {
-        mine.push({ activity, status: myUpdate });
+    for (const activity of this.list.activityModels) {
+      const participant = activity.getParticipant(participantId);
+      if (participant && participant.status !== ParticipantStatus.NotResponding) {
+        mine.push({ activity, participant });
       }
     }
 
@@ -67,23 +68,23 @@ export class HomeViewModel {
 
   /** The subset of my participation whose status is currently active (rendered in "My Activity"). */
   get myCurrentActivities(): MyParticipation[] {
-    return this.myParticipation.filter((p) => isParticipantStatusActive(p.status.status));
+    return this.myParticipation.filter((p) => p.participant.isActive);
   }
 
   /** activity id -> my participant status, for tagging tiles in the mission/event stacks. */
   get statusMap(): Record<string, ParticipantStatus> {
     return this.myParticipation.reduce<Record<string, ParticipantStatus>>((accum, cur) => {
-      accum[cur.activity.id] = cur.status.status;
+      accum[cur.activity.id] = cur.participant.status;
       return accum;
     }, {});
   }
 
-  get missions(): Activity[] {
-    return this.filterForDisplay(this.list.missions);
+  get missions(): ActivityDomainModel[] {
+    return this.filterForDisplay(this.list.activityModels.filter((m) => m.isMission));
   }
 
-  get events(): Activity[] {
-    return this.filterForDisplay(this.list.events);
+  get events(): ActivityDomainModel[] {
+    return this.filterForDisplay(this.list.activityModels.filter((m) => !m.isMission));
   }
 
   get canCreateMissions(): boolean {
@@ -95,11 +96,11 @@ export class HomeViewModel {
   }
 
   /** Active activities plus a bounded tail of recently-completed ones, sorted for display. */
-  private filterForDisplay(activities: Activity[]): Activity[] {
+  private filterForDisplay(models: ActivityDomainModel[]): ActivityDomainModel[] {
     const oldestVisible = this.clock.time - COMPLETED_VISIBLE_DAYS * DAY_MS;
-    const active = activities.filter(isActive).sort(byRecency);
-    const complete = activities
-      .filter((a) => isComplete(a) && a.startTime > oldestVisible)
+    const active = models.filter((m) => m.isActive).sort(byRecency);
+    const complete = models
+      .filter((m) => m.isComplete && m.startTime > oldestVisible)
       .sort(byRecency)
       .slice(0, MAX_COMPLETED_VISIBLE);
     return active.concat(complete);

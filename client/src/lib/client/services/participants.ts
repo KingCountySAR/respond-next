@@ -15,7 +15,7 @@ export function useParticipantCommands() {
     update: (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ParticipantStatus, miles?: number, eta?: number) =>
       dispatch(ParticipantCommands.UpdateParticipant(activityId, participantId, firstname, lastname, organizationId, time, status, miles, eta)),
     addTimeline: (activityId: string, participantId: string, update: ParticipantUpdate) => dispatch(ParticipantCommands.AddParticipantTimeline(activityId, participantId, update)),
-    updateTimeline: (activityId: string, participantId: string, update: ParticipantUpdate, index: number) => dispatch(ParticipantCommands.UpdateParticipantTimeline(activityId, participantId, update, index)),
+    updateTimeline: (activityId: string, participantId: string, update: ParticipantUpdate) => dispatch(ParticipantCommands.UpdateParticipantTimeline(activityId, participantId, update)),
     updateMiles: (activityId: string, participantId: string, miles: number) => dispatch(ParticipantCommands.UpdateParticipantMiles(activityId, participantId, miles)),
     updateEta: (activityId: string, participantId: string, eta: number) => dispatch(ParticipantCommands.UpdateParticipantEta(activityId, participantId, eta)),
     bulkUpdate: (activityId: string, updates: Array<{ participantId: string; update: ParticipantUpdate }>) => dispatch(ParticipantCommands.BulkUpdateParticipants(activityId, updates)),

@@ -1,32 +1,28 @@
 import { Chip } from '@mui/material';
 import { BoxProps } from '@mui/material/Box';
+import { observer } from 'mobx-react-lite';
 
 import { Box } from '@respond/components/Material';
-import { isActive, OrganizationStatus, ParticipatingOrg } from '@respond/shared/types/activity';
+import { OrganizationStatus } from '@respond/shared/types/activity';
 
-import { useActivityContext } from './ActivityProvider';
+import { ActivityDomainModel } from '@/client/models/activityDomainModel';
 
-export function ParticipatingOrgChips({ filter, setFilter, ...boxProps }: BoxProps & { filter?: string; setFilter?: (value: string) => void }) {
-  const activity = useActivityContext();
-
+export const ParticipatingOrgChips = observer(function ParticipatingOrgChips({
+  activity,
+  filter,
+  setFilter,
+  ...boxProps
+}: BoxProps & { activity: ActivityDomainModel; filter?: string; setFilter?: (value: string) => void }) {
   const onClick = (id: string) => (setFilter ? () => setFilter(filter === id ? '' : id) : undefined);
-
-  const getParticipantCount = (org: ParticipatingOrg) => {
-    return Object.values(activity.participants).filter((p) => isActive(p.timeline[0].status) && p.organizationId === org.id).length;
-  };
-
-  const getLabel = (org: ParticipatingOrg) => {
-    return `${org.rosterName ?? org.title} ${getParticipantCount(org) || ''}`;
-  };
 
   return (
     <Box {...boxProps}>
-      {Object.entries(activity.organizations ?? {}).map(([id, org]) => (
-        <OrganizationChip key={id} label={getLabel(org)} status={org.timeline[0]?.status} selected={filter === id} onClick={onClick?.(id)} />
+      {activity.organizations.map((org) => (
+        <OrganizationChip key={org.id} label={`${org.name} ${org.activeParticipantCount || ''}`} status={org.status} selected={filter === org.id} onClick={onClick?.(org.id)} />
       ))}
     </Box>
   );
-}
+});
 
 function OrganizationChip({ label, status, selected, onClick }: { label: string; status: OrganizationStatus; selected: boolean; onClick?: () => void }) {
   const color = status === OrganizationStatus.Responding ? 'success' : status === OrganizationStatus.Standby ? 'warning' : 'default';

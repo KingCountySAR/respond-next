@@ -15,13 +15,13 @@ import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
-import { ParticipantDomainModel } from 'src/models/participantDomainModel';
-import { ActivityViewModel } from 'src/pages/respond/activityViewModel';
+import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
+import { ActivityViewModel } from '@/client/pages/respond/activityViewModel';
 
 import { ActivityActionsBar } from './ActivityPage';
 
 export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }: { vm: ActivityViewModel }) {
-  const activity = vm.activity!;
+  const activity = vm.domain;
   const [selectedParticipant, setSelectedParticipant] = useState<ParticipantDomainModel>();
   const [participantOpen, setParticipantOpen] = useState(false);
   return (
@@ -35,7 +35,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
       <Stack direction="row" spacing={1} divider={<Divider orientation="vertical" flexItem />} sx={{ flex: '1 1 auto' }}>
         <Box sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column' }}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <ParticipatingOrgChips filter={vm.roster.filter} setFilter={(f) => vm.roster.setFilter(f)} sx={{ display: 'flex', flexDirection: 'row' }} />
+            <ParticipatingOrgChips activity={activity} filter={vm.roster.filter} setFilter={(f) => vm.roster.setFilter(f)} sx={{ display: 'flex', flexDirection: 'row' }} />
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <AddParticipantButton activity={activity} />
               <Button component={Link} href={`/roster/${activity.id}`} variant="outlined" size="small">
@@ -55,7 +55,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
           />
         </Box>
         <Stack sx={{ width: 400, alignItems: 'stretch' }}>
-          <BriefingPanel sx={{ px: 3 }} />
+          <BriefingPanel sx={{ px: 3 }} activity={vm.domain} />
           {vm.myParticipation?.isEnrouteOrStandby && vm.myParticipation.id && (
             <Paper sx={{ mt: 2, p: 2 }}>
               <ParticipantEtaUpdater participant={vm.myParticipation} />
@@ -63,10 +63,10 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
           )}
           {vm.isActive && (
             <Box sx={{ my: 2, display: 'flex', justifyContent: 'end' }}>
-              <StatusUpdater />
+              <StatusUpdater activity={activity} />
             </Box>
           )}
-          <ManagerPanel sx={{ px: 3 }} />
+          <ManagerPanel activity={activity} sx={{ px: 3 }} />
         </Stack>
       </Stack>
       <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />

@@ -1,3 +1,5 @@
+import { v4 as uuid } from 'uuid';
+
 import { ActivityCommands, Command, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
 import { ActivityEvents, CommsEvents, DomainEvent, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
 import { createDefaultOperations, createNewCommsEntry } from '@shared/types/operations';
@@ -33,13 +35,16 @@ export function produceEvents(command: Command): DomainEvent[] {
     return [CommsEvents.CommUpdated(command.payload.activityId, command.payload.commId, command.payload.updates)];
   }
   if (ParticipantCommands.UpdateParticipant.match(command)) {
-    return [ParticipantEvents.ParticipantUpdated(command.payload.activityId, command.payload.participant, command.payload.update)];
+    // Server authors the timeline entry's stable id (see UpdateParticipantTimeline).
+    return [ParticipantEvents.ParticipantUpdated(command.payload.activityId, command.payload.participant, { ...command.payload.update, id: uuid() })];
   }
   if (ParticipantCommands.AddParticipantTimeline.match(command)) {
-    return [ParticipantEvents.ParticipantTimelineAdded(command.payload.activityId, command.payload.participantId, command.payload.update)];
+    return [ParticipantEvents.ParticipantTimelineAdded(command.payload.activityId, command.payload.participantId, { ...command.payload.update, id: uuid() })];
   }
   if (ParticipantCommands.UpdateParticipantTimeline.match(command)) {
-    return [ParticipantEvents.ParticipantTimelineUpdated(command.payload.activityId, command.payload.participantId, command.payload.update, command.payload.index)];
+    // An edit keeps the entry's existing id (client echoes it back) so it targets
+    // the same row; only the create paths above mint fresh ids.
+    return [ParticipantEvents.ParticipantTimelineUpdated(command.payload.activityId, command.payload.participantId, command.payload.update)];
   }
   if (ParticipantCommands.UpdateParticipantMiles.match(command)) {
     return [ParticipantEvents.ParticipantMilesUpdated(command.payload.activityId, command.payload.participantId, command.payload.miles)];
@@ -48,7 +53,8 @@ export function produceEvents(command: Command): DomainEvent[] {
     return [ParticipantEvents.ParticipantEtaUpdated(command.payload.activityId, command.payload.participantId, command.payload.eta)];
   }
   if (ParticipantCommands.BulkUpdateParticipants.match(command)) {
-    return [ParticipantEvents.ParticipantsBulkUpdated(command.payload.activityId, command.payload.updates)];
+    const updates = command.payload.updates.map((u) => ({ ...u, update: { ...u.update, id: uuid() } }));
+    return [ParticipantEvents.ParticipantsBulkUpdated(command.payload.activityId, updates)];
   }
   if (ParticipantCommands.TagParticipant.match(command)) {
     return [ParticipantEvents.ParticipantTagged(command.payload.activityId, command.payload.participantId, command.payload.tags)];
