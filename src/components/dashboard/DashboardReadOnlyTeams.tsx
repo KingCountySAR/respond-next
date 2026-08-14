@@ -9,82 +9,14 @@ import { EquipmentItem, Team } from '@respond/types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { StatusContainer } from '../StatusContainer';
 
+import { sortTeams } from './DashboardTeamManager';
+
 const sortParicipantsAlphabetically = (left: Participant, right: Participant) => {
   return `${left.firstname} ${left.lastname}`.localeCompare(`${right.firstname} ${right.lastname}`);
 };
 
 const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) => {
   return left.name.localeCompare(right.name);
-};
-
-// TODO: When I tried to impor the same function from DashboardTeamManager, the sort didn't work.
-const sortTeams = (left: Team, right: Team) => {
-  // Sort order for dashboard team listing:
-  // 1. All non-disbanded teams should appear before any 'Disbanded' teams.
-  // 2. Teams with status 'Disbanded' should still be alphabetized by name.
-  // 3. For active teams, sort by GAR priority (red first, then amber, then green).
-  // 4. If GAR is the same, team names starting with "Team" come first.
-  // 5. Then sort alphabetically (case-insensitive) and by first numeric value when present.
-  const normalizeName = (name: string) => name.trim();
-  const startsWithTeam = (name: string) => /^team\b/i.test(normalizeName(name));
-  const extractFirstNumber = (name: string): number | null => {
-    const match = normalizeName(name).match(/\d+/);
-    return match ? Number(match[0]) : null;
-  };
-  const alphaKey = (name: string) => normalizeName(name).replace(/\d+/g, '').trim();
-
-  const compareTeamNames = (leftName: string, rightName: string) => {
-    const leftIsTeamName = startsWithTeam(leftName);
-    const rightIsTeamName = startsWithTeam(rightName);
-    if (leftIsTeamName !== rightIsTeamName) {
-      return leftIsTeamName ? -1 : 1;
-    }
-
-    const alphaCompare = alphaKey(leftName).localeCompare(alphaKey(rightName), undefined, { sensitivity: 'base' });
-    if (alphaCompare !== 0) {
-      return alphaCompare;
-    }
-
-    const leftFirstNumber = extractFirstNumber(leftName);
-    const rightFirstNumber = extractFirstNumber(rightName);
-
-    if (leftFirstNumber != null && rightFirstNumber != null && leftFirstNumber !== rightFirstNumber) {
-      return leftFirstNumber - rightFirstNumber;
-    }
-
-    if (leftFirstNumber != null && rightFirstNumber == null) {
-      return -1;
-    }
-
-    if (leftFirstNumber == null && rightFirstNumber != null) {
-      return 1;
-    }
-
-    return normalizeName(leftName).localeCompare(normalizeName(rightName), undefined, { sensitivity: 'base' });
-  };
-
-  if (left.status === 'Disbanded' && right.status !== 'Disbanded') {
-    return 1;
-  }
-
-  if (right.status === 'Disbanded' && left.status !== 'Disbanded') {
-    return -1;
-  }
-
-  if (left.status === 'Disbanded' && right.status === 'Disbanded') {
-    return compareTeamNames(left.name, right.name);
-  }
-
-  const garPriority: Team['gar'][] = ['red', 'amber', 'green'];
-
-  const leftPriority = garPriority.indexOf(left.gar as Team['gar']);
-  const rightPriority = garPriority.indexOf(right.gar as Team['gar']);
-
-  if (leftPriority !== rightPriority) {
-    return leftPriority - rightPriority;
-  }
-
-  return compareTeamNames(left.name, right.name);
 };
 
 export function DashboardReadOnlyTeams() {
