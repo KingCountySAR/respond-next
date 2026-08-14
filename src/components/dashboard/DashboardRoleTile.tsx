@@ -42,7 +42,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
 
   return (
     <Droppable accepts="participant" onDrop={handleDrop}>
-      <Paper variant="outlined" sx={{ p: 1 }}>
+      <Paper variant="outlined" sx={{ p: 1, borderRadius: 2 }}>
         <Box sx={{ '&:hover .action': { opacity: 1, visibility: 'visible' } }}>
           <Typography component="div" variant="subtitle1" sx={{ fontWeight: 700 }}>
             {title}

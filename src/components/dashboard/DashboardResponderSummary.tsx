@@ -1,10 +1,8 @@
-import { Typography } from '@mui/material';
-
 import { ParticipantStatus } from '@respond/types/activity';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
-import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
+import { DashboardMetricTile } from './DashboardMetricTile';
 
 export function DashboardResponderSummary() {
   const activity = useActivityContext();
@@ -32,19 +30,17 @@ export function DashboardResponderSummary() {
   }, 0);
 
   const summaryLines = [
-    ['Field', fieldResources],
-    ['Assigned', participantTotals.Assigned],
-    ['Available', participantTotals.Available],
     ['Responding', participantTotals.Responding],
+    ['Available', participantTotals.Available],
+    ['Assigned', participantTotals.Assigned],
+    ['Field', fieldResources],
   ] as const;
 
   return (
-    <DashboardBoxWithTitle title="Responders" collapsible>
+    <>
       {summaryLines.map(([label, count]) => (
-        <Typography key={label} variant="subtitle1">
-          {`${count} - ${label}`}
-        </Typography>
+        <DashboardMetricTile key={label} label={label} value={count.toString()} />
       ))}
-    </DashboardBoxWithTitle>
+    </>
   );
 }

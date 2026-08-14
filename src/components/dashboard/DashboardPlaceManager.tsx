@@ -1,6 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
+import MapIcon from '@mui/icons-material/Map';
 import { Box, Button, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
@@ -22,20 +23,10 @@ import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
 
-export function DashboardPlaceManager() {
+export function DashboardAddPlaceButton() {
   const dispatch = useAppDispatch();
   const activity = useActivityContext();
-
   const [addingPlace, setAddingPlace] = useState<Place | null>(null);
-
-  // For backward compatibility, if the activity does not have places
-  useEffect(() => {
-    const defaultPlaces = getDefaultPlaces(activity);
-
-    if (defaultPlaces.length) {
-      defaultPlaces.forEach((place) => dispatch(ActivityActions.createPlace(activity.id, place)));
-    }
-  }, [activity, dispatch]);
 
   const addPlace = (placeToCreate: Place) => {
     dispatch(ActivityActions.createPlace(activity.id, placeToCreate));
@@ -51,24 +42,14 @@ export function DashboardPlaceManager() {
     dispatch(ActivityActions.addComm(activity.id, comm));
   };
 
-  // nullish coalese for backward compatibility on inital render
-  const activityPlaces = activity.places ?? [];
-
   return (
     <>
-      <Stack spacing={2} sx={{ overflow: 'auto' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-          <Box />
-          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAddingPlace(createNewPlace(''))}>
-            Add
-          </Button>
-        </Stack>
-        <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {activityPlaces.map((place) => (
-            <PlaceTile key={place.id} place={place}></PlaceTile>
-          ))}
+      <Button size="small" variant="contained" onClick={() => setAddingPlace(createNewPlace(''))}>
+        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+          <AddIcon fontSize="small" />
+          <MapIcon fontSize="small" />
         </Box>
-      </Stack>
+      </Button>
       <DashboardPlaceEditDialog
         place={addingPlace}
         onSave={(placeFromForm) => {
@@ -78,6 +59,31 @@ export function DashboardPlaceManager() {
         onClose={() => setAddingPlace(null)}
       />
     </>
+  );
+}
+
+export function DashboardPlaceManager() {
+  const dispatch = useAppDispatch();
+  const activity = useActivityContext();
+
+  // For backward compatibility, if the activity does not have places
+  useEffect(() => {
+    const defaultPlaces = getDefaultPlaces(activity);
+
+    if (defaultPlaces.length) {
+      defaultPlaces.forEach((place) => dispatch(ActivityActions.createPlace(activity.id, place)));
+    }
+  }, [activity, dispatch]);
+
+  // nullish coalese for backward compatibility on inital render
+  const activityPlaces = activity.places ?? [];
+
+  return (
+    <Stack spacing={1}>
+      {activityPlaces.map((place) => (
+        <PlaceTile key={place.id} place={place}></PlaceTile>
+      ))}
+    </Stack>
   );
 }
 
@@ -201,7 +207,7 @@ function PlaceTile({ place }: { place: Place }) {
 
   return (
     <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
-      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible={!!hasContent} adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined}>
+      <DashboardBoxWithTitle title={place.name} actions={actions} collapsible={!!hasContent} icon={<MapIcon fontSize="small" />} adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined}>
         <Stack spacing={1}>
           {!!place.assignedParticipants.length && (
             <DashboardDividedSection title="Personnel">

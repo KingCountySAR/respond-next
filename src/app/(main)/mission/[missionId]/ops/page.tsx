@@ -1,7 +1,7 @@
 'use client';
 
-import { OperationsDashboard } from '@respond/components/dashboard/OperationsDashboard';
+import { Dashboard } from '@respond/components/dashboard/Dashboard';
 
 export default function EditEvent() {
-  return <OperationsDashboard />;
+  return <Dashboard />;
 }
