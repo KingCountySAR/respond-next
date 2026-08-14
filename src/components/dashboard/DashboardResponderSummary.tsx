@@ -32,7 +32,7 @@ export function DashboardResponderSummary() {
   const summaryLines = [
     ['Responding', participantTotals.Responding],
     ['Available', participantTotals.Available],
-    ['Assigned', participantTotals.Assigned],
+    // ['Assigned', participantTotals.Assigned],
     ['Field', fieldResources],
   ] as const;
 

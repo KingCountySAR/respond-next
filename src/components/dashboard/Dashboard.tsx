@@ -155,7 +155,7 @@ function DashboardContent() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0 }}>
             {/* Operations Staffing */}
             <DashboardPanel title="Operations" actions={<DashboardAddPlaceButton />}>
-              <Stack direction="column" spacing={1} overflow="auto" sx={{ flex: 1, minHeight: 0, p: 0.5 }}>
+              <Stack direction="column" spacing={1} overflow="auto" sx={{ flex: 1, minHeight: 0 }}>
                 {hasLocation && <DashboardWeather lat={activity.location.lat} lon={activity.location.lon} />}
                 <DashboardRoleTile title="Rescue Group" id={activity.staff?.['Rescue Group']} />
                 <DashboardRoleTile title="Medical Group" id={activity.staff?.['Medical Group']} />
