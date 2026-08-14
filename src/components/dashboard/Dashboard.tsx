@@ -4,7 +4,7 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import GroupsIcon from '@mui/icons-material/Groups';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import { Box, Stack, Tab, Tabs, useMediaQuery } from '@mui/material';
+import { Badge, Box, Stack, Tab, Tabs, useMediaQuery } from '@mui/material';
 import { useState } from 'react';
 
 import { useActivityContext } from '../activities/ActivityProvider';
@@ -28,6 +28,7 @@ import { DashboardWeather } from './DashboardWeather';
  */
 function CombinedResourcesPanel() {
   const [tab, setTab] = useState<'responders' | 'equipment'>('responders');
+  const [available, setAvailable] = useState(0);
 
   return (
     <DashboardPanel title="Resources" grow>
@@ -38,12 +39,23 @@ function CombinedResourcesPanel() {
           variant="fullWidth"
           sx={{ minHeight: 36, height: 36 }} // Compact height replacing invalid size prop
         >
-          <Tab icon={<PeopleAltIcon fontSize="small" />} iconPosition="start" label="Responders" value="responders" sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }} />
+          <Tab
+            icon={<PeopleAltIcon fontSize="small" />}
+            iconPosition="start"
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <span>Responders</span>
+                <Badge badgeContent={available} color="info" sx={{ m: 0.5 }} />
+              </Box>
+            }
+            value="responders"
+            sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }}
+          />
           <Tab icon={<Inventory2Icon fontSize="small" />} iconPosition="start" label="Equipment" value="equipment" sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }} />
         </Tabs>
       </Box>
 
-      {tab === 'responders' && <DashboardResponderManager />}
+      {tab === 'responders' && <DashboardResponderManager availableCallback={setAvailable} />}
       {tab === 'equipment' && <DashboardEquipmentManager />}
     </DashboardPanel>
   );
