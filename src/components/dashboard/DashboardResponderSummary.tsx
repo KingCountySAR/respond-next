@@ -1,4 +1,5 @@
 import { ParticipantStatus } from '@respond/types/activity';
+import { DEFAULT_PLACES } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
@@ -29,11 +30,16 @@ export function DashboardResponderSummary() {
     return count + team.assignedParticipants.length;
   }, 0);
 
+  const placeResources = (activity.places ?? []).reduce((count, place) => {
+    if (place.name === DEFAULT_PLACES.base) return count;
+    return count + (place.assignedParticipants?.length ?? 0);
+  }, 0);
+
   const summaryLines = [
     ['Responding', participantTotals.Responding],
     ['Available', participantTotals.Available],
     // ['Assigned', participantTotals.Assigned],
-    ['Field', fieldResources],
+    ['Field', fieldResources + placeResources],
   ] as const;
 
   return (
