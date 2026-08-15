@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { FieldErrors, Resolver, useForm } from 'react-hook-form';
 
 import { Activity } from '@respond/shared/types/activity';
-import { DEFAULT_PLACES, isDefaultPlace, Place } from '@respond/shared/types/operations';
+import { isDefaultPlace, Place } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import DialogWithHistory from '../DialogWithHistory';
@@ -81,7 +81,6 @@ export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPl
   const activity = useActivityContext();
 
   const isDefault = !!place && isDefaultPlace(place);
-  const isFieldUnassigned = !!place && place.name === DEFAULT_PLACES.field;
   const resolver = useMemo(() => createResolver(activity, place?.id ?? ''), [activity, place?.id]);
 
   const {
@@ -132,8 +131,8 @@ export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPl
         <DialogContent>
           <Stack spacing={1}>
             <TextField autoFocus label="Place Name" disabled={isDefault} fullWidth {...register('name')} error={Boolean(errors.name)} helperText={errors.name?.message ?? 'Choose a unique name for this place.'} />
-            {!isFieldUnassigned && <TextField label="Latitude" fullWidth {...register('lat')} error={Boolean(errors.lat)} helperText={errors.lat?.message ?? 'Optional, decimal degrees (-90 to 90).'} />}
-            {!isFieldUnassigned && <TextField label="Longitude" fullWidth {...register('lon')} error={Boolean(errors.lon)} helperText={errors.lon?.message ?? 'Optional, decimal degrees (-180 to 180).'} />}
+            {!isDefault && <TextField label="Latitude" fullWidth {...register('lat')} error={Boolean(errors.lat)} helperText={errors.lat?.message ?? 'Optional, decimal degrees (-90 to 90).'} />}
+            {!isDefault && <TextField label="Longitude" fullWidth {...register('lon')} error={Boolean(errors.lon)} helperText={errors.lon?.message ?? 'Optional, decimal degrees (-180 to 180).'} />}
             <TextField label="Notes" fullWidth multiline minRows={3} {...register('notes')} />
           </Stack>
         </DialogContent>

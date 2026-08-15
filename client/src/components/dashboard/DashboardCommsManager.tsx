@@ -45,10 +45,12 @@ export function DashboardCommsManager() {
   const comms = useCommsCommands();
   const activity = useActivityContext();
   const commsListRef = useRef<HTMLDivElement>(null);
-  const pendingManualEntryScrollRef = useRef(false);
+  const previousCommunicationIdsRef = useRef<string[] | null>(null);
+  const pendingNewEntryScrollRef = useRef(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [entryPendingDelete, setEntryPendingDelete] = useState<CommunicationsLogEntry | null>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showFavorites, setShowFavorites] = useState(false);
@@ -96,18 +98,29 @@ export function DashboardCommsManager() {
   };
 
   useEffect(() => {
-    if (!pendingManualEntryScrollRef.current || editingId) {
+    const currentCommunicationIds = (activity.comms ?? []).map((entry) => entry.id);
+    const previousCommunicationIds = previousCommunicationIdsRef.current;
+    previousCommunicationIdsRef.current = currentCommunicationIds;
+
+    if (!previousCommunicationIds) {
+      return;
+    }
+
+    const hasNewEntry = currentCommunicationIds.some((id) => previousCommunicationIds.indexOf(id) === -1);
+    if (hasNewEntry) {
+      pendingNewEntryScrollRef.current = autoScroll;
+    }
+
+    if (!autoScroll || editingId || !pendingNewEntryScrollRef.current) {
       return;
     }
 
     const target = commsListRef.current;
-    if (!target) {
-      return;
+    if (target) {
+      target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' });
+      pendingNewEntryScrollRef.current = false;
     }
-
-    target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' });
-    pendingManualEntryScrollRef.current = false;
-  }, [filteredCommunications, editingId]);
+  }, [activity.comms, autoScroll, editingId]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
@@ -136,11 +149,7 @@ export function DashboardCommsManager() {
           ))
         )}
       </Box>
-      <DashboardCommsComposer
-        onSave={() => {
-          pendingManualEntryScrollRef.current = true;
-        }}
-      />
+      <DashboardCommsComposer autoScroll={autoScroll} onAutoScrollChange={setAutoScroll} />
       <ConfirmDialog
         open={Boolean(entryPendingDelete)}
         prompt={entryPendingDelete ? `Delete communication from ${entryPendingDelete.from} to ${entryPendingDelete.to} at ${format24HourTime(entryPendingDelete.timestamp)}?` : 'Delete this communication?'}

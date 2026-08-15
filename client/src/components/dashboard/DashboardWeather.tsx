@@ -1,44 +1,47 @@
+import { Box, Link, Paper, Stack, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+
+import { DashboardDividedSection } from './DashboardDividedSection';
 
 interface WeatherProps {
   lat: string | number;
   lon: string | number;
-  className?: string;
+  variant?: 'standard' | 'compact';
 }
 
 interface WeatherData {
   temperature: number;
   humidity: number;
-  windSpeed: number;
-  weatherCode: number;
+  windSpeed: string;
+  condition: string;
+  periodName: string;
+  forecastUrl: string;
   unit: string;
 }
 
-// Maps Open-Meteo WMO Weather Interpretation Codes to human-readable labels & emoji
-const getWeatherCondition = (code: number): { label: string; icon: string } => {
-  if (code === 0) return { label: 'Clear Sky', icon: '☀️' };
-  if (code >= 1 && code <= 3) return { label: 'Partly Cloudy', icon: '⛅' };
-  if (code >= 45 && code <= 48) return { label: 'Foggy', icon: '🌫️' };
-  if (code >= 51 && code <= 55) return { label: 'Drizzle', icon: '🌧️' };
-  if (code >= 61 && code <= 65) return { label: 'Rain', icon: '🌧️' };
-  if (code >= 71 && code <= 77) return { label: 'Snow', icon: '❄️' };
-  if (code >= 80 && code <= 82) return { label: 'Rain Showers', icon: '🌦️' };
-  if (code >= 95) return { label: 'Thunderstorm', icon: '⛈️' };
-  return { label: 'Unknown', icon: '🌡️' };
+const getWeatherIcon = (condition: string): string => {
+  const normalizedCondition = condition.toLowerCase();
+  if (normalizedCondition.includes('thunder')) return '⛈️';
+  if (normalizedCondition.includes('snow') || normalizedCondition.includes('sleet')) return '❄️';
+  if (normalizedCondition.includes('rain') || normalizedCondition.includes('shower')) return '🌧️';
+  if (normalizedCondition.includes('smoke')) return '💨';
+  if (normalizedCondition.includes('fog')) return '🌫️';
+  if (normalizedCondition.includes('cloud')) return '⛅';
+  if (normalizedCondition.includes('sun') || normalizedCondition.includes('clear')) return '☀️';
+  return '🌡️';
 };
 
-export const DashboardWeather: React.FC<WeatherProps> = ({ lat, lon, className = '' }) => {
+const DashboardWeather: React.FC<WeatherProps> = ({ lat, lon, variant }) => {
   const [data, setData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchWeather = async () => {
-      // Validate decimal coordinates
-      const latitude = parseFloat(String(lat));
-      const longitude = parseFloat(String(lon));
+      const latitude = Number(lat);
+      const longitude = Number(lon);
 
-      if (isNaN(latitude) || isNaN(longitude)) {
+      if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
         setError('Invalid coordinates provided.');
         setLoading(false);
         return;
@@ -48,22 +51,22 @@ export const DashboardWeather: React.FC<WeatherProps> = ({ lat, lon, className =
       setError(null);
 
       try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&temperature_unit=fahrenheit`;
-
-        const response = await fetch(url);
+        const response = await fetch(`/api/weather?lat=${latitude}&lon=${longitude}`);
         if (!response.ok) {
           throw new Error(`Weather service error (${response.status})`);
         }
 
         const json = await response.json();
-        const current = json.current;
+        const period = json.period;
 
         setData({
-          temperature: Math.round(current.temperature_2m),
-          humidity: current.relative_humidity_2m,
-          windSpeed: Math.round(current.wind_speed_10m),
-          weatherCode: current.weather_code,
-          unit: json.current_units?.temperature_2m || '°F',
+          temperature: period.temperature,
+          humidity: period.humidity,
+          windSpeed: period.windSpeed,
+          condition: period.shortForecast,
+          periodName: period.name,
+          forecastUrl: json.forecastUrl,
+          unit: `°${period.temperatureUnit}`,
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load weather');
@@ -76,48 +79,80 @@ export const DashboardWeather: React.FC<WeatherProps> = ({ lat, lon, className =
   }, [lat, lon]);
 
   if (loading) {
-    return (
-      <div className={`weather-card loading ${className}`}>
-        <span>Loading weather...</span>
-      </div>
-    );
+    return <Box>Loading weather...</Box>;
   }
 
   if (error || !data) {
-    return (
-      <div className={`weather-card error ${className}`}>
-        <span>⚠️ {error || 'No weather data available'}</span>
-      </div>
-    );
+    return <Box>⚠️ {error || 'No weather data available!'}</Box>;
   }
 
-  const { label, icon } = getWeatherCondition(data.weatherCode);
-
   return (
-    <div
-      className={`weather-card ${className}`}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        border: '1px solid #e2e8f0',
-        backgroundColor: '#ffffff',
-        fontFamily: 'system-ui, sans-serif',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    <Link
+      color="textPrimary"
+      href={data.forecastUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      sx={{
+        textDecoration: 'none',
+        '&:hover': {
+          textDecoration: 'none',
+        },
       }}
     >
-      <span style={{ fontSize: '28px' }}>{icon}</span>
-      <div>
-        <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-          {data.temperature}
-          {data.unit}
-        </div>
-        <div style={{ fontSize: '12px', color: '#64748b' }}>
-          {label} • Wind: {data.windSpeed} mph • Humidity: {data.humidity}%
-        </div>
-      </div>
-    </div>
+      {variant === 'standard' ? <DashboardWeatherStandard data={data} /> : <DashboardWeatherCompact data={data} />}
+    </Link>
   );
 };
+
+function DashboardWeatherStandard({ data }: { data: WeatherData }) {
+  const icon = getWeatherIcon(data.condition);
+  return (
+    <Stack direction="row" alignItems="center" spacing={1}>
+      <Typography component="span" sx={{ fontSize: 28 }}>
+        {icon}
+      </Typography>
+      <Box>
+        <Typography variant="caption" color="text.secondary" display="block">
+          {data.periodName}
+        </Typography>
+        <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+          {data.temperature}
+          {data.unit}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block">
+          {data.condition} • Wind: {data.windSpeed} • Humidity: {data.humidity ?? 'Unavailable'}%
+        </Typography>
+      </Box>
+    </Stack>
+  );
+}
+
+function DashboardWeatherCompact({ data }: { data: WeatherData }) {
+  return (
+    <Stack direction="row" alignItems="center" spacing={1}>
+      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+        {data.temperature}
+        {data.unit}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {data.condition} • Wind: {data.windSpeed} • Humidity: {data.humidity ?? 'Unavailable'}%
+      </Typography>
+    </Stack>
+  );
+}
+
+export function DashboardWeatherDividedSection({ lat, lon }: WeatherProps) {
+  return (
+    <DashboardDividedSection title="Weather">
+      <DashboardWeather lat={lat} lon={lon} variant="compact" />
+    </DashboardDividedSection>
+  );
+}
+
+export function DashboardWeatherTile({ lat, lon }: WeatherProps) {
+  return (
+    <Paper variant="outlined" sx={{ p: 1, borderRadius: 2 }}>
+      <DashboardWeather lat={lat} lon={lon} variant="standard" />
+    </Paper>
+  );
+}

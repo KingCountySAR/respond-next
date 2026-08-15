@@ -8,6 +8,7 @@ interface DashboardBoxWithTitleProps {
   actions?: DashboardBoxWithTitleAction[];
   collapsible?: boolean;
   children: React.ReactNode;
+  icon?: React.ReactNode;
   adornment?: React.ReactNode;
   sx?: SxProps<Theme>;
 }
@@ -18,7 +19,7 @@ interface DashboardBoxWithTitleAction {
   onClick: () => void;
 }
 
-export function DashboardBoxWithTitle({ title, actions = [], collapsible = false, children, adornment, sx }: DashboardBoxWithTitleProps): JSX.Element {
+export function DashboardBoxWithTitle({ title, actions = [], collapsible = false, children, icon, adornment, sx }: DashboardBoxWithTitleProps): JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -46,6 +47,7 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
         sx={{ alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', pb: !collapsible || collapsed ? 0 : 1 }}
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          {icon}
           <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center' }}>{title}</Typography>
           {adornment}
         </Stack>

@@ -17,6 +17,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
 
   // The team-comms reactor logs the "assuming"/"unassigned" comm server-side.
   const handleDrop = (p: Participant | null) => {
+    if (!p || selectedId === p.id) return;
     if (p && activity && activity.id) {
       teams.updateStaff(activity.id, { [title]: p.id });
     }
@@ -30,7 +31,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
 
   return (
     <Droppable accepts="participant" onDrop={handleDrop}>
-      <Paper variant="outlined" sx={{ p: 1 }}>
+      <Paper variant="outlined" sx={{ p: 1, borderRadius: 2 }}>
         <Box sx={{ '&:hover .action': { opacity: 1, visibility: 'visible' } }}>
           <Typography component="div" variant="subtitle1" sx={{ fontWeight: 700 }}>
             {title}

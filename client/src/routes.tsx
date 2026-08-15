@@ -5,7 +5,7 @@ import ActivityLayout from '@respond/components/activities/ActivityLayout';
 import { ActivityListPage } from '@respond/components/activities/ActivityListPage';
 import { ActivityPage } from '@respond/components/activities/ActivityPage';
 import { RosterReview } from '@respond/components/activities/RosterView';
-import { OperationsDashboard } from '@respond/components/dashboard/OperationsDashboard';
+import { Dashboard } from '@respond/components/dashboard/Dashboard';
 import { LocationManager } from '@respond/components/locations/LocationManager';
 
 import { Home } from './pages/Home';
@@ -22,7 +22,7 @@ export function AppRoutes() {
       <Route path="/mission/:missionId/ops">
         {(p) => (
           <ActivityLayout activityId={p.missionId}>
-            <OperationsDashboard />
+            <Dashboard />
           </ActivityLayout>
         )}
       </Route>
@@ -40,7 +40,7 @@ export function AppRoutes() {
       <Route path="/event/:eventId/ops">
         {(p) => (
           <ActivityLayout activityId={p.eventId}>
-            <OperationsDashboard />
+            <Dashboard />
           </ActivityLayout>
         )}
       </Route>

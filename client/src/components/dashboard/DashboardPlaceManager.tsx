@@ -1,12 +1,13 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
+import MapIcon from '@mui/icons-material/Map';
 import { Box, Button, Typography } from '@mui/material';
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace, DEFAULT_PLACES, EquipmentItem, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
+import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
@@ -20,31 +21,21 @@ import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
+import { DashboardWeatherDividedSection } from './DashboardWeather';
 
-export function DashboardPlaceManager() {
+export function DashboardAddPlaceButton() {
   const places = usePlaceCommands();
   const activity = useActivityContext();
-
   const [addingPlace, setAddingPlace] = useState<Place | null>(null);
-
-  // nullish coalese for backward compatibility on inital render
-  const activityPlaces = activity.places ?? [];
 
   return (
     <>
-      <Stack spacing={2} sx={{ overflow: 'auto' }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box />
-          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAddingPlace(createNewPlace(''))}>
-            Add
-          </Button>
-        </Stack>
-        <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {activityPlaces.map((place) => (
-            <PlaceTile key={place.id} place={place}></PlaceTile>
-          ))}
+      <Button size="small" variant="contained" onClick={() => setAddingPlace(createNewPlace(''))}>
+        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+          <AddIcon fontSize="small" />
+          <MapIcon fontSize="small" />
         </Box>
-      </Stack>
+      </Button>
       <DashboardPlaceEditDialog
         place={addingPlace}
         onSave={(placeFromForm) => {
@@ -54,6 +45,31 @@ export function DashboardPlaceManager() {
         onClose={() => setAddingPlace(null)}
       />
     </>
+  );
+}
+
+export function DashboardPlaceManager() {
+  const places = usePlaceCommands();
+  const activity = useActivityContext();
+
+  // For backward compatibility, if the activity does not have places
+  useEffect(() => {
+    const defaultPlaces = getDefaultPlaces(activity);
+
+    if (defaultPlaces.length) {
+      defaultPlaces.forEach((place) => places.createPlace(activity.id, place));
+    }
+  }, [activity, places]);
+
+  // nullish coalese for backward compatibility on inital render
+  const activityPlaces = activity.places ?? [];
+
+  return (
+    <Stack spacing={1}>
+      {activityPlaces.map((place) => (
+        <PlaceTile key={place.id} place={place}></PlaceTile>
+      ))}
+    </Stack>
   );
 }
 
@@ -172,6 +188,7 @@ function PlaceTile({ place }: { place: Place }) {
         title={place.name}
         actions={actions}
         collapsible={!!hasContent}
+        icon={<MapIcon fontSize="small" />}
         adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined}
       >
         <Stack spacing={1}>
@@ -209,9 +226,12 @@ function PlaceTile({ place }: { place: Place }) {
             </DashboardDividedSection>
           )}
           {place.lat?.trim() && place.lon?.trim() && (
-            <DashboardDividedSection title="Coordinates">
-              <DashboardCopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} />
-            </DashboardDividedSection>
+            <>
+              <DashboardDividedSection title="Coordinates">
+                <DashboardCopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} />
+              </DashboardDividedSection>
+              <DashboardWeatherDividedSection lat={activity.location.lat} lon={activity.location.lon} />
+            </>
           )}
           {place.notes?.trim() && (
             <DashboardDividedSection title="Notes">

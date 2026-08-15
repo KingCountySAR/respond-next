@@ -28,7 +28,7 @@ function getNextTeamNumber(teams: Team[]): number {
   return nextNumber;
 }
 
-const sortTeams = (left: Team, right: Team) => {
+export const sortTeams = (left: Team, right: Team) => {
   // Sort order for dashboard team listing:
   // 1. All non-disbanded teams should appear before any 'Disbanded' teams.
   // 2. Teams with status 'Disbanded' should still be alphabetized by name.

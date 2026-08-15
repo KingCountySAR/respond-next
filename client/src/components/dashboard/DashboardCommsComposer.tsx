@@ -1,4 +1,4 @@
-import { Box, Button, Stack, TextField } from '@mui/material';
+import { Box, Button, FormControlLabel, Stack, Switch, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -19,9 +19,11 @@ type DashboardCommsComposerProps = {
   entry?: CommunicationsLogEntry | null;
   onSave?: () => void;
   onCancel?: () => void;
+  autoScroll?: boolean;
+  onAutoScrollChange?: (enabled: boolean) => void;
 };
 
-export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCommsComposerProps) {
+export function DashboardCommsComposer({ entry, onSave, onCancel, autoScroll, onAutoScrollChange }: DashboardCommsComposerProps) {
   const comms = useCommsCommands();
   const activity = useActivityContext();
   const fromRef = useRef<HTMLInputElement | null>(null);
@@ -107,21 +109,26 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
               }
             }}
           />
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-            {entry && (
-              <Button
-                onClick={() => {
-                  reset();
-                  onCancel?.();
-                }}
-                size="small"
-              >
-                Cancel
-              </Button>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+            {!entry && onAutoScrollChange && (
+              <FormControlLabel control={<Switch size="small" checked={autoScroll ?? true} onChange={(event) => onAutoScrollChange(event.target.checked)} sx={{ ml: 0.5 }} />} label="Auto-scroll" />
             )}
-            <Button type="submit" size="small" variant="contained">
-              Save
-            </Button>
+            <Stack direction="row" spacing={1} sx={{ ml: 'auto', alignItems: 'center' }}>
+              {entry && (
+                <Button
+                  onClick={() => {
+                    reset();
+                    onCancel?.();
+                  }}
+                  size="small"
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button type="submit" size="small" variant="contained">
+                Save
+              </Button>
+            </Stack>
           </Stack>
         </Stack>
       </form>

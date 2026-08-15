@@ -1,13 +1,11 @@
 import { Box, Paper, Stack } from '@mui/material';
 
-import { useActivityContext } from '../activities/ActivityProvider';
 import { DashboardActivityDetails } from '../dashboard/DashboardActivityDetails';
 import { DashboardClock } from '../dashboard/DashboardClock';
-import { DashboardWeather } from '../dashboard/DashboardWeather';
+
+import { DashboardResponderSummary } from './DashboardResponderSummary';
 
 export function DashboardHeader() {
-  const activity = useActivityContext();
-  const hasLocation = !!(activity.location?.lat && activity.location?.lon);
   return (
     <Paper elevation={2} sx={{ p: 2, display: 'flex', alignItems: 'stretch', justifyContent: 'space-between', gap: 2, borderRadius: 3, minHeight: 120 }}>
       <Box
@@ -23,7 +21,9 @@ export function DashboardHeader() {
           <DashboardClock />
           <DashboardActivityDetails />
         </Stack>
-        <Box sx={{ justifySelf: 'right', display: 'flex', alignItems: 'stretch' }}>{hasLocation && <DashboardWeather lat={activity.location?.lat ?? 0} lon={activity.location?.lon ?? 0} />}</Box>
+        <Stack direction={'row'} spacing={1} sx={{ justifySelf: 'right' }}>
+          <DashboardResponderSummary />
+        </Stack>
       </Box>
     </Paper>
   );
