@@ -11,6 +11,7 @@ import { useActivityContext } from '../activities/ActivityProvider';
 import { DnDProvider } from '../DragAndDrop/DnDProvider';
 import { ToolbarPage } from '../ToolbarPage';
 
+import { DashboardActivityDescription } from './DashboardActivityDescription';
 import { DashboardCommsManager } from './DashboardCommsManager';
 import { DashboardEquipmentManager } from './DashboardEquipmentManager';
 import { DashboardEquipmentSummary } from './DashboardEquipmentSummary';
@@ -157,6 +158,7 @@ function DashboardContent() {
             <DashboardPanel title="Operations" actions={<DashboardAddPlaceButton />}>
               <Stack direction="column" spacing={1} overflow="auto" sx={{ flex: 1, minHeight: 0 }}>
                 {hasLocation && <DashboardWeather lat={activity.location.lat} lon={activity.location.lon} />}
+                <DashboardActivityDescription activity={activity} />
                 <DashboardRoleTile title="Rescue Group" id={activity.staff?.['Rescue Group']} />
                 <DashboardRoleTile title="Medical Group" id={activity.staff?.['Medical Group']} />
                 <DashboardRoleTile title="Rigging Group" id={activity.staff?.['Rigging Group']} />
