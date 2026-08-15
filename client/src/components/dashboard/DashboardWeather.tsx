@@ -107,19 +107,19 @@ const DashboardWeather: React.FC<WeatherProps> = ({ lat, lon, variant }) => {
 function DashboardWeatherStandard({ data }: { data: WeatherData }) {
   const icon = getWeatherIcon(data.condition);
   return (
-    <Stack direction="row" alignItems="center" spacing={1}>
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
       <Typography component="span" sx={{ fontSize: 28 }}>
         {icon}
       </Typography>
       <Box>
-        <Typography variant="caption" color="text.secondary" display="block">
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
           {data.periodName}
         </Typography>
         <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
           {data.temperature}
           {data.unit}
         </Typography>
-        <Typography variant="caption" color="text.secondary" display="block">
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
           {data.condition} • Wind: {data.windSpeed} • Humidity: {data.humidity ?? 'Unavailable'}%
         </Typography>
       </Box>
@@ -129,7 +129,7 @@ function DashboardWeatherStandard({ data }: { data: WeatherData }) {
 
 function DashboardWeatherCompact({ data }: { data: WeatherData }) {
   return (
-    <Stack direction="row" alignItems="center" spacing={1}>
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
       <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
         {data.temperature}
         {data.unit}
