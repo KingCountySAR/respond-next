@@ -18,6 +18,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
   const name = participant ? `${participant.firstname} ${participant.lastname}` : 'Unassigned';
 
   const handleDrop = (p: Participant | null) => {
+    if (!p || selectedId === p.id) return;
     if (p && activity && activity.id) {
       dispatch(ActivityActions.updateStaff(activity.id, { [title]: p.id }));
       autoLog(`${p.firstname} ${p.lastname} assuming ${title}`);
