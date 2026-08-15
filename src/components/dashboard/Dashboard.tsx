@@ -22,7 +22,7 @@ import { DashboardReadOnlyTeams } from './DashboardReadOnlyTeams';
 import { DashboardResponderManager } from './DashboardResponderManager';
 import { DashboardRoleTile } from './DashboardRoleTile';
 import { DashboardTeamManager } from './DashboardTeamManager';
-import { DashboardWeather } from './DashboardWeather';
+import { DashboardWeatherTile } from './DashboardWeather';
 
 /**
  * Combined Responders + Equipment Component
@@ -157,7 +157,7 @@ function DashboardContent() {
             {/* Operations Staffing */}
             <DashboardPanel title="Operations" actions={<DashboardAddPlaceButton />}>
               <Stack direction="column" spacing={1} overflow="auto" sx={{ flex: 1, minHeight: 0 }}>
-                {hasLocation && <DashboardWeather lat={activity.location.lat} lon={activity.location.lon} />}
+                {hasLocation && <DashboardWeatherTile lat={activity.location.lat} lon={activity.location.lon} />}
                 <DashboardActivityDescription activity={activity} />
                 <DashboardRoleTile title="Rescue Group" id={activity.staff?.['Rescue Group']} />
                 <DashboardRoleTile title="Medical Group" id={activity.staff?.['Medical Group']} />

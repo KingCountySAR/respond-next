@@ -22,6 +22,7 @@ import { DashboardErrorIndicator } from './DashboardErrorIndicator';
 import { DashboardPlaceEditDialog } from './DashboardPlaceEditDialog';
 import { DashboardTeamEquipment } from './DashboardTeamEquipment';
 import { DashboardTeamMember } from './DashboardTeamMember';
+import { DashboardWeatherDividedSection } from './DashboardWeather';
 
 export function DashboardAddPlaceButton() {
   const dispatch = useAppDispatch();
@@ -244,9 +245,12 @@ function PlaceTile({ place }: { place: Place }) {
             </DashboardDividedSection>
           )}
           {place.lat?.trim() && place.lon?.trim() && (
-            <DashboardDividedSection title="Coordinates">
-              <DashboardCopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} />
-            </DashboardDividedSection>
+            <>
+              <DashboardDividedSection title="Coordinates">
+                <DashboardCopyChip value={`${place.lat?.trim()}, ${place.lon?.trim()}`} />
+              </DashboardDividedSection>
+              <DashboardWeatherDividedSection lat={activity.location.lat} lon={activity.location.lon} />
+            </>
           )}
           {place.notes?.trim() && (
             <DashboardDividedSection title="Notes">

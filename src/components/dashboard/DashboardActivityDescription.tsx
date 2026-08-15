@@ -23,7 +23,7 @@ export function DashboardActivityDescription({ activity }: { activity: Activity 
 
   return (
     <>
-      <DashboardBoxWithTitle title={'Description'} actions={[editAction]} collapsible>
+      <DashboardBoxWithTitle title={'Description'} actions={[editAction]} collapsible={activity.description?.trim() !== ''}>
         {activity.description && (
           <Typography variant="body2" color="text.secondary">
             <Linkify>{activity.description || 'No description provided.'}</Linkify>
