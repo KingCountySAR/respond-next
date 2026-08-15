@@ -4,7 +4,7 @@ import { makeAutoObservable, onBecomeObserved, onBecomeUnobserved, reaction, run
 
 import { apiFetch } from '@respond/lib/api';
 import { ParticipantCommands } from '@respond/shared/commands';
-import { getStatusCssColor, getStatusText, isActive, isEnrouteOrStandby, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/shared/types/activity';
+import { getStatusCssColor, getStatusText, isActive, Participant, ParticipantStatus, ParticipantUpdate, ParticipatingOrg } from '@respond/shared/types/activity';
 import { MemberInfo } from '@respond/shared/types/member';
 
 import { ObservableClock } from './observableClock';
@@ -171,7 +171,7 @@ export class ParticipantDomainModel {
   }
 
   get isEnrouteOrStandby(): boolean {
-    return !!isEnrouteOrStandby(this.status);
+    return ParticipantDomainModel.isEnrouteOrStandby(this.status);
   }
 
   /**
@@ -194,5 +194,9 @@ export class ParticipantDomainModel {
 
   dispose() {
     this.disposeInfoWatcher();
+  }
+
+  static isEnrouteOrStandby(status: ParticipantStatus) {
+    return [ParticipantStatus.Standby, ParticipantStatus.SignedIn].includes(status);
   }
 }

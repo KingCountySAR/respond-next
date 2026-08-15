@@ -1,9 +1,9 @@
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { makeObservable, observableRef, runInAction } from 'mobx';
 
-import { ActivityCommands } from '@respond/shared/commands';
+import { ActivityCommands, ParticipantCommands } from '@respond/shared/commands';
 import { ActivityEvents } from '@respond/shared/events';
-import { Activity, isActive as isParticipantActive, ParticipantStatus } from '@respond/shared/types/activity';
+import { Activity, defaultEarlySigninWindow, getOrganizationName, isActive, isActive as isParticipantActive, isResponding, OrganizationStatus, ParticipantStatus } from '@respond/shared/types/activity';
 import { Location } from '@respond/shared/types/location';
 
 import { type AppDispatch, type AppStore } from '../lib/client/store';
@@ -13,6 +13,7 @@ import { ObservableClock } from './observableClock';
 import { ParticipantDomainModel } from './participantDomainModel';
 import { ParticipatingOrgDomainModel } from './participatingOrgDomainModel';
 import { ReduxProjection } from './reduxProjection';
+import { pickStatusOptions, statusTransitions, Transition } from './statusTransitions';
 
 /**
  * The read/write surface a domain model needs from Redux, abstracted so one
@@ -307,6 +308,14 @@ export class ActivityDomainModel {
     return this.activity?.endTime;
   }
 
+  get forceStandbyOnly(): boolean {
+    return this.activity!.forceStandbyOnly;
+  }
+
+  get earlySignInWindow(): number | undefined {
+    return this.activity!.earlySignInWindow;
+  }
+
   get participantCountByStatus(): Record<ParticipantStatus, number> {
     // Seed every status at 0 (numeric enum values only — Object.values also yields
     // the reverse-mapped names), then tally each participant's current status.
@@ -377,7 +386,62 @@ export class ActivityDomainModel {
     return Object.keys(activity.organizations).map((id) => this.getOrganization(id)!);
   }
 
+  /**
+   * The status-change options to offer a responder in `respondingOrgId` whose
+   * current status is `current` (last recorded under `lastOrgId`). Reads the
+   * observable clock so options recompute as the activity crosses its sign-in
+   * window. Two shapes:
+   *  - Cross-org: an active responder acting under a different org than their last
+   *    update gets a "Switch from <org>" / "Sign Out from <org>" pair.
+   *  - Otherwise: the normal (or standby-only) options for `current`. Standby-only
+   *    applies while sign-in hasn't opened, or when the activity is standby-only and
+   *    the responder isn't already responding.
+   */
+  getStatusTransitions(current: ParticipantStatus | undefined, lastOrgId: string | undefined, respondingOrgId: string): Transition[] {
+    if (current !== undefined && isActive(current) && respondingOrgId !== lastOrgId) {
+      let transition: Transition;
+      switch (current) {
+        case ParticipantStatus.Remote:
+          transition = statusTransitions.inTown;
+          break;
+        case ParticipantStatus.Standby:
+          transition = statusTransitions.standBy;
+          break;
+        default:
+          transition = statusTransitions.signIn;
+      }
+      const fromName = getOrganizationName(this.activity!, lastOrgId!);
+      return [
+        { ...transition, text: `Switch from ${fromName}` },
+        { ...statusTransitions.signOut, text: `Sign Out from ${fromName}` },
+      ];
+    }
+
+    const earlySignInWindow = this.earlySignInWindow ?? defaultEarlySigninWindow;
+    const standbyOnly = this.startTime - earlySignInWindow > this.clock.time || (this.forceStandbyOnly && !(current !== undefined && isResponding(current)));
+    return pickStatusOptions(current, standbyOnly);
+  }
+
   // --- Command actions (dispatched into the Redux timeline) ---
+
+  /**
+   * Record a responder's status change. The first responder for an org brings that
+   * org onto the activity, so append its timeline entry first, then the participant
+   * update. No-op when read-only or unloaded.
+   */
+  recordStatusUpdate(p: { participantId: string; firstName: string; lastName: string; org: { id: string; title: string; rosterName?: string }; time: number; status: ParticipantStatus; miles?: number; eta?: number }) {
+    const activity = this.activity;
+    if (!activity || this.readOnly) return;
+    if (!activity.organizations[p.org.id]) {
+      this.dispatch(
+        ActivityCommands.AppendOrganizationTimeline(activity.id, p.org, {
+          status: p.status === ParticipantStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding,
+          time: p.time,
+        }),
+      );
+    }
+    this.dispatch(ParticipantCommands.UpdateParticipant(activity.id, p.participantId, p.firstName, p.lastName, p.org.id, p.time, p.status, p.miles, p.eta));
+  }
 
   /** Mark this activity complete as of now. No-op when read-only or unloaded. */
   markComplete() {

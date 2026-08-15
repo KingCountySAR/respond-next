@@ -134,4 +134,105 @@ describe('ActivityDomainModel', () => {
       domain.dispose();
     });
   });
+
+  describe('getStatusTransitions', () => {
+    // startTime 1000, opens for sign-in at 800 (early window 200).
+    function seed(store: ReturnType<typeof buildClientStore>, overrides: Partial<Activity> = {}) {
+      const activity = {
+        id: 'a1',
+        title: 'Test',
+        startTime: 1000,
+        earlySignInWindow: 200,
+        forceStandbyOnly: false,
+        organizations: { o1: { id: 'o1', title: 'Org One', timeline: [] } },
+        participants: {},
+        ...overrides,
+      } as unknown as Activity;
+      store.dispatch(activitiesReloaded({ list: [activity] }));
+    }
+
+    function model(store: ReturnType<typeof buildClientStore>, clk: ObservableClock) {
+      const projection = new ReduxProjection<Activity[]>(store, (s) => s.activities.list);
+      projection.connect();
+      return ActivityDomainModel.projected(projection, 'a1', clk);
+    }
+
+    it('offers the normal options once sign-in is open', () => {
+      const store = buildClientStore([]);
+      seed(store);
+      const clk = new ObservableClock(false);
+      runInAction(() => (clk.time = 900)); // past the sign-in window (opens 800)
+      const actions = model(store, clk).getStatusTransitions(ParticipantStatus.NotResponding, 'o1', 'o1');
+      expect(actions.map((a) => a.newStatus)).toEqual([ParticipantStatus.SignedIn, ParticipantStatus.Standby, ParticipantStatus.Remote]);
+    });
+
+    it('restricts to standby-only before sign-in opens', () => {
+      const store = buildClientStore([]);
+      seed(store);
+      const clk = new ObservableClock(false);
+      runInAction(() => (clk.time = 500)); // before the sign-in window opens
+      const actions = model(store, clk).getStatusTransitions(ParticipantStatus.NotResponding, 'o1', 'o1');
+      expect(actions.map((a) => a.newStatus)).toEqual([ParticipantStatus.Standby]);
+    });
+
+    it('restricts to standby-only for a non-responder when the activity is standby-only', () => {
+      const store = buildClientStore([]);
+      seed(store, { forceStandbyOnly: true });
+      const clk = new ObservableClock(false);
+      runInAction(() => (clk.time = 900)); // sign-in open, but standby-only in effect
+      const actions = model(store, clk).getStatusTransitions(ParticipantStatus.NotResponding, 'o1', 'o1');
+      expect(actions.map((a) => a.newStatus)).toEqual([ParticipantStatus.Standby]);
+    });
+
+    it('offers a cross-org switch pair when acting under a different org', () => {
+      const store = buildClientStore([]);
+      seed(store);
+      const clk = new ObservableClock(false);
+      runInAction(() => (clk.time = 900));
+      const actions = model(store, clk).getStatusTransitions(ParticipantStatus.SignedIn, 'o1', 'o2');
+      expect(actions).toHaveLength(2);
+      expect(actions[0].text).toBe('Switch from Org One');
+      expect(actions[1].newStatus).toBe(ParticipantStatus.SignedOut);
+      expect(actions[1].text).toBe('Sign Out from Org One');
+    });
+  });
+
+  describe('recordStatusUpdate', () => {
+    function capturingStore(activities: Activity[]) {
+      const dispatched: Array<{ type: string }> = [];
+      const store = {
+        getState: () => ({ activities: { list: activities } }),
+        subscribe: () => () => undefined,
+        dispatch: (action: { type: string }) => {
+          dispatched.push(action);
+          return action;
+        },
+      } as unknown as AppStore;
+      return { store, dispatched };
+    }
+
+    const params = { participantId: 'p1', firstName: 'Pat', lastName: 'Rescuer', org: { id: 'o1', title: 'Org One' }, time: 5, status: ParticipantStatus.SignedIn };
+
+    it('appends the org timeline for a first responder, then updates the participant', () => {
+      const { store, dispatched } = capturingStore([makeActivity({}, {})]);
+      const domain = ActivityDomainModel.forStore(store, 'a1', clock);
+      domain.recordStatusUpdate(params);
+      // Org timeline first, then the participant.
+      expect(dispatched.map((a) => a.type)).toEqual(['cmd/activity/appendOrg', 'cmd/participant/update']);
+    });
+
+    it('skips the org timeline when the org already participates', () => {
+      const { store, dispatched } = capturingStore([makeActivity({}, { o1: { id: 'o1', title: 'Org One', timeline: [] } as unknown as ParticipatingOrg })]);
+      const domain = ActivityDomainModel.forStore(store, 'a1', clock);
+      domain.recordStatusUpdate(params);
+      expect(dispatched.map((a) => a.type)).toEqual(['cmd/participant/update']);
+    });
+
+    it('is a no-op when the activity is read-only', () => {
+      const { store, dispatched } = capturingStore([]); // a1 absent -> read-only
+      const domain = ActivityDomainModel.forStore(store, 'a1', clock);
+      domain.recordStatusUpdate(params);
+      expect(dispatched).toHaveLength(0);
+    });
+  });
 });
