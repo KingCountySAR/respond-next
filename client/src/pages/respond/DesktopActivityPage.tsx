@@ -38,7 +38,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
             <ParticipatingOrgChips activity={activity} filter={vm.roster.filter} setFilter={(f) => vm.roster.setFilter(f)} sx={{ display: 'flex', flexDirection: 'row' }} />
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <AddParticipantButton activity={activity} />
-              <Button component={Link} href={`/roster/${activity.id}`} variant="outlined" size="small">
+              <Button component={Link} href={`~/reports/roster/${activity.id}`} variant="outlined" size="small">
                 View Roster
               </Button>
             </Stack>

@@ -56,7 +56,7 @@ export const ActivityActionsBar = observer(function ActivityActionsBar({ vm }: {
 
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-      <EditActivityButton disabled={vm.readOnly} href={`${vm.url}/edit`} />
+      <EditActivityButton disabled={vm.readOnly} href={`~${vm.url}/edit`} />
       <UpdateActivityStatusButton label={vm.isActive ? 'Complete' : 'Reactivate'} onClick={() => vm.toggleStatus()} />
       <RemoveActivityButton onClick={handleRemove} />
     </Stack>

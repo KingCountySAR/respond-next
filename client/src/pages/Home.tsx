@@ -77,7 +77,7 @@ const HomeContent = observer(function HomeContent({ domain }: { domain: Activity
           >
             <Typography variant="h5">Missions</Typography>
             {activities.canCreateMissions && (
-              <Button variant="outlined" component={Link} href="/mission/new">
+              <Button variant="outlined" component={Link} href="~/mission/new">
                 New Mission
               </Button>
             )}
@@ -95,7 +95,7 @@ const HomeContent = observer(function HomeContent({ domain }: { domain: Activity
           >
             <Typography variant="h5">Events</Typography>
             {activities.canCreateEvents && (
-              <Button variant="outlined" component={Link} href="/event/new">
+              <Button variant="outlined" component={Link} href="~/event/new">
                 New Event
               </Button>
             )}

@@ -19,7 +19,7 @@ export const ActivityTile = observer(function ActivityTile({ activity, status, c
       <Box sx={{ padding: 1 }}>
         <Box sx={{ alignItems: 'center', pb: 2, display: 'flex', flexDirection: 'row' }}>
           <Box sx={{ flexGrow: 1 }}>
-            <Link component={RouterLink} href={activity.path} color="textPrimary" underline="hover">
+            <Link component={RouterLink} href={`~${activity.path}`} color="textPrimary" underline="hover">
               <Typography sx={{ fontWeight: 'bold' }} variant="h6">
                 {activity.title}
               </Typography>

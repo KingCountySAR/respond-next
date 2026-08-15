@@ -12,8 +12,9 @@ export function RespondRoutes({ type }: { type: 'missions' | 'events' }) {
   return (
     <Switch>
       <Route path="/new">{() => <ActivityEditPage activityType={type} />}</Route>
+      <Route path="/roster/:id">{(p) => <Redirect to={`~/reports/roster/${p.id}`} replace />}</Route>
       <Route path="/:id/edit">{(p) => <ActivityEditPage activityType={type} activityId={p.id} />}</Route>
-      <Route path="/:id/ops">{(p) => <Redirect to={`/ops/${p.id}`} replace />}</Route>
+      <Route path="/:id/ops">{(p) => <Redirect to={`~/ops/${p.id}`} replace />}</Route>
       <Route path="/:id">
         {(p) => (
           <ActivityLayout activityId={p.id}>

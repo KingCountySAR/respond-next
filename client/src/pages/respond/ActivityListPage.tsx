@@ -18,7 +18,7 @@ function GridToolbar() {
 
 const columns: GridColDef[] = [
   { field: 'idNumber', headerName: 'DEM #', width: 150 },
-  { field: 'title', headerName: 'Title', width: 450, renderCell: (params) => <Link href={`/${params.row.isMission ? 'mission' : 'event'}/${params.row.id}`}>{params.row.title}</Link> },
+  { field: 'title', headerName: 'Title', width: 450, renderCell: (params) => <Link href={`~/${params.row.isMission ? 'mission' : 'event'}/${params.row.id}`}>{params.row.title}</Link> },
   {
     field: 'startTime',
     headerName: 'Start Time',
@@ -93,7 +93,7 @@ export function ActivityListPage({ activityType }: { activityType: ActivityType 
     <ToolbarPage>
       <Paper sx={{ p: 2 }}>
         <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-          <Link href="/">Home</Link>
+          <Link href="~/">Home</Link>
           <Typography sx={{ color: 'text.primary' }}>{pageTitle}</Typography>
         </Breadcrumbs>
         <ActivityList activities={sortedActivities} loading={loading} />

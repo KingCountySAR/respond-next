@@ -26,7 +26,6 @@ export function AppRoutes() {
       <Route path="/reports" nest>
         <ReportRoutes />
       </Route>
-      <Route path="/roster/:id">{(p) => <Redirect to={`/reports/roster/${p.id}`} replace />}</Route>
 
       <Route path="/admin/locations" component={LocationManager} />
     </Switch>

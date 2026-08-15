@@ -29,7 +29,7 @@ export function ToolbarPage({ children, maxWidth }: { children: React.ReactNode;
       <AppBar sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, position: 'fixed' }}>
         <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            <Link href="/" style={{ textDecoration: 'inherit', color: 'inherit' }}>
+            <Link href="~/" style={{ textDecoration: 'inherit', color: 'inherit' }}>
               {shortTitle} Check-In
             </Link>
           </Typography>
