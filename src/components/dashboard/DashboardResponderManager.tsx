@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
@@ -17,7 +17,7 @@ function sortParticipantsAlphabetically(left: Participant, right: Participant) {
   return leftName.localeCompare(rightName, undefined, { sensitivity: 'base' });
 }
 
-export function DashboardResponderManager() {
+export function DashboardResponderManager({ availableCallback }: { availableCallback: (count: number) => void }) {
   const dispatch = useAppDispatch();
 
   const activity = useActivityContext();
@@ -47,6 +47,10 @@ export function DashboardResponderManager() {
       })
       .sort((a, b) => a.firstname.localeCompare(b.lastname));
   }, [activity.participants, assignedParticipantIds]);
+
+  useEffect(() => {
+    availableCallback?.(availableParticipants.length);
+  }, [availableCallback, availableParticipants]);
 
   const signedInParticipants = useMemo(() => {
     return (
@@ -99,7 +103,7 @@ export function DashboardResponderManager() {
   return (
     <Droppable accepts="participant" onDrop={handleDrop} grow>
       <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {availableParticipants.length === 0 ? (
+        {availableParticipants.length === 0 && signedInParticipants.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography variant="body2" color="text.secondary" textAlign="center">
               All responders are assigned.

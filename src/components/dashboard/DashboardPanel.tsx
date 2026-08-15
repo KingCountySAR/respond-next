@@ -1,89 +1,79 @@
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Box, IconButton, Paper, Stack, SxProps, Theme, Typography } from '@mui/material';
-import { useState } from 'react';
+import { Box, Paper, Stack, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { ReactNode } from 'react';
 
-const COLLAPSE_WIDTH = 56;
+export interface DashboardPanelProps {
+  /** Title text shown in the header */
+  title: string;
+  /** Primary icon for the header */
+  icon?: ReactNode;
+  /** Main panel content */
+  children: ReactNode;
+  /** If true, the panel expands to take available flex space */
+  grow?: boolean;
+  /** Additional header action buttons (e.g., '+ ADD' or settings) */
+  actions?: ReactNode;
+}
 
-export function DashboardPanel({ title, icon, collapse = 'left', grow = false, children, sx }: { title: string; icon?: React.ReactNode; collapse: 'left' | 'right'; grow?: boolean; children: React.ReactNode; sx?: SxProps<Theme> }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const toggle = () => {
-    setCollapsed((current) => !current);
-  };
+export function DashboardPanel({ title, icon, children, grow = false, actions }: DashboardPanelProps) {
+  const theme = useTheme();
+
   return (
     <Paper
       elevation={2}
-      sx={[
-        {
-          width: collapsed ? COLLAPSE_WIDTH : grow ? '100%' : 300,
-          minWidth: collapsed ? COLLAPSE_WIDTH : 300,
-          flex: collapsed ? 'none' : grow ? 1 : 'none',
-          transition: 'width 180ms ease',
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: grow ? 1 : 'initial',
+        minHeight: 0,
+        height: '100%',
+        borderRadius: 2,
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+        border: `1px solid ${theme.palette.divider}`,
+        transition: theme.transitions.create(['all'], {
+          duration: theme.transitions.duration.shorter,
+        }),
+      }}
+    >
+      {/* Panel Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          py: 1,
+          bgcolor: 'action.hover',
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          minHeight: 48,
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+          {icon && <Box sx={{ display: 'flex', color: 'action.active' }}>{icon}</Box>}
+          <Typography variant="subtitle1" fontWeight={600} noWrap sx={{ userSelect: 'none' }}>
+            {title}
+          </Typography>
+        </Stack>
+
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {actions}
+        </Stack>
+      </Box>
+
+      {/* Panel Body */}
+      <Box
+        sx={{
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          p: 1,
-          borderRadius: 3,
-        },
-        ...(Array.isArray(sx) ? sx : [sx]),
-      ]}
-    >
-      {collapse === 'left' ? <LeftPanelHeader title={title} icon={icon} collapsed={collapsed} onToggle={toggle} /> : <RightPanelHeader title={title} icon={icon} collapsed={collapsed} onToggle={toggle} />}
-      {!collapsed && children}
+          minHeight: 0,
+          overflow: 'hidden',
+          p: 1.5,
+        }}
+      >
+        {children}
+      </Box>
     </Paper>
-  );
-}
-
-function LeftPanelHeader({ title, icon, collapsed, onToggle }: { title: string; icon?: React.ReactNode; collapsed: boolean; onToggle: () => void }) {
-  const open = (
-    <Stack direction="row" alignItems="center" sx={{ mb: 1, gap: 1, width: '100%' }} justifyContent="space-between">
-      <Box sx={{ width: 32, height: 32 }} /> {/* Placeholder to balance the layout when the button is on the right */}
-      <DashboardPanelTitle title={title} icon={icon} />
-      <IconButton onClick={onToggle} size="small" sx={{ width: 32, height: 32 }}>
-        {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-      </IconButton>
-    </Stack>
-  );
-
-  const closed = (
-    <Stack direction="column" alignItems="center" sx={{ gap: 2, width: '100%' }} justifyContent="flex-start">
-      <IconButton onClick={onToggle} size="small" sx={{ width: 32, height: 32 }}>
-        {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-      </IconButton>
-      <DashboardPanelTitle title={title} icon={icon} rotate />
-    </Stack>
-  );
-
-  return collapsed ? closed : open;
-}
-
-function RightPanelHeader({ title, icon, collapsed, onToggle }: { title: string; icon?: React.ReactNode; collapsed: boolean; onToggle: () => void }) {
-  const open = (
-    <Stack direction="row" alignItems="center" sx={{ mb: 1, gap: 1, width: '100%' }} justifyContent="space-between">
-      <IconButton onClick={onToggle} size="small" sx={{ width: 32, height: 32 }}>
-        {collapsed ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-      </IconButton>
-      <DashboardPanelTitle title={title} icon={icon} />
-      <Box sx={{ width: 32, height: 32 }} /> {/* Placeholder to balance the layout when the button is on the left */}
-    </Stack>
-  );
-
-  const closed = (
-    <Stack direction="column" alignItems="center" sx={{ gap: 2, width: '100%' }} justifyContent="flex-start">
-      <IconButton onClick={onToggle} size="small" sx={{ width: 32, height: 32 }}>
-        {collapsed ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-      </IconButton>
-      <DashboardPanelTitle title={title} icon={icon} rotate />
-    </Stack>
-  );
-
-  return collapsed ? closed : open;
-}
-
-function DashboardPanelTitle({ title, rotate = false, icon }: { title: string; rotate?: boolean; icon?: React.ReactNode }) {
-  return (
-    <Stack direction={rotate ? 'column' : 'row'} spacing={1} alignItems="center">
-      {icon}
-      <Typography sx={{ fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center', writingMode: rotate ? 'vertical-rl' : 'unset' }}>{title}</Typography>
-    </Stack>
   );
 }

@@ -1,10 +1,9 @@
-import { Typography } from '@mui/material';
-
 import { ParticipantStatus } from '@respond/types/activity';
+import { DEFAULT_PLACES } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
-import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
+import { DashboardMetricTile } from './DashboardMetricTile';
 
 export function DashboardResponderSummary() {
   const activity = useActivityContext();
@@ -31,20 +30,23 @@ export function DashboardResponderSummary() {
     return count + team.assignedParticipants.length;
   }, 0);
 
+  const placeResources = (activity.places ?? []).reduce((count, place) => {
+    if (place.name === DEFAULT_PLACES.base) return count;
+    return count + (place.assignedParticipants?.length ?? 0);
+  }, 0);
+
   const summaryLines = [
-    ['Field', fieldResources],
-    ['Assigned', participantTotals.Assigned],
-    ['Available', participantTotals.Available],
     ['Responding', participantTotals.Responding],
+    ['Available', participantTotals.Available],
+    // ['Assigned', participantTotals.Assigned],
+    ['Field', fieldResources + placeResources],
   ] as const;
 
   return (
-    <DashboardBoxWithTitle title="Responders" collapsible>
+    <>
       {summaryLines.map(([label, count]) => (
-        <Typography key={label} variant="subtitle1">
-          {`${count} - ${label}`}
-        </Typography>
+        <DashboardMetricTile key={label} label={label} value={count.toString()} />
       ))}
-    </DashboardBoxWithTitle>
+    </>
   );
 }
