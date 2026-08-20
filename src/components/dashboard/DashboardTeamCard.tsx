@@ -26,20 +26,26 @@ const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) 
   return left.name.localeCompare(right.name);
 };
 
-export default function DashboardTeamCard({ team, defaultExpanded }: { team: Team; defaultExpanded?: boolean }) {
+export default function DashboardTeamCard({ team, expandCommand, onExpandedChange }: { team: Team; expandCommand?: { expanded: boolean; nonce: number }; onExpandedChange?: (expanded: boolean) => void }) {
   const dispatch = useAppDispatch();
 
   const activity = useActivityContext();
 
   const [openTeamEditor, setOpenTeamEditor] = useState<Team | null>(null);
-  const [localExpanded, setLocalExpanded] = useState<boolean>(defaultExpanded ?? false);
+  const [localExpanded, setLocalExpanded] = useState<boolean>(false);
   const isExpanded = localExpanded;
 
   useEffect(() => {
-    if (defaultExpanded !== undefined) {
-      setLocalExpanded(defaultExpanded);
+    if (expandCommand !== undefined) {
+      setLocalExpanded(expandCommand.expanded);
     }
-  }, [defaultExpanded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandCommand]);
+
+  useEffect(() => {
+    onExpandedChange?.(isExpanded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isExpanded]);
 
   const teamParticipants: Participant[] = Object.values(activity.participants).filter((participant) => team.assignedParticipants.includes(participant.id));
   const teamLeader: Participant | undefined = teamParticipants.find((participant) => participant.id === team.teamLeaderParticipantId);
