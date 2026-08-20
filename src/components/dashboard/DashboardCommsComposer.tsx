@@ -1,4 +1,4 @@
-import { Box, Button, FormControlLabel, Stack, Switch, TextField } from '@mui/material';
+import { Box, Button, Stack, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -20,11 +20,9 @@ type DashboardCommsComposerProps = {
   entry?: CommunicationsLogEntry | null;
   onSave?: () => void;
   onCancel?: () => void;
-  autoScroll?: boolean;
-  onAutoScrollChange?: (enabled: boolean) => void;
 };
 
-export function DashboardCommsComposer({ entry, onSave, onCancel, autoScroll, onAutoScrollChange }: DashboardCommsComposerProps) {
+export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCommsComposerProps) {
   const dispatch = useAppDispatch();
   const activity = useActivityContext();
   const fromRef = useRef<HTMLInputElement | null>(null);
@@ -114,9 +112,8 @@ export function DashboardCommsComposer({ entry, onSave, onCancel, autoScroll, on
               }
             }}
           />
-          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-            {!entry && onAutoScrollChange && <FormControlLabel control={<Switch size="small" checked={autoScroll ?? true} onChange={(event) => onAutoScrollChange(event.target.checked)} sx={{ ml: 0.5 }} />} label="Auto-scroll" />}
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
+          <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
+            <Stack direction="row" spacing={1} alignItems="center">
               {entry && (
                 <Button
                   onClick={() => {
