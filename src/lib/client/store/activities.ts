@@ -36,6 +36,7 @@ const activitySliceArgs = {
       .addCase(ActivityActions.tagParticipant, BasicActivityReducers[ActivityActions.tagParticipant.type])
       .addCase(ActivityActions.createTeam, BasicActivityReducers[ActivityActions.createTeam.type])
       .addCase(ActivityActions.updateTeam, BasicActivityReducers[ActivityActions.updateTeam.type])
+      .addCase(ActivityActions.deleteTeam, BasicActivityReducers[ActivityActions.deleteTeam.type])
       .addCase(ActivityActions.addComm, BasicActivityReducers[ActivityActions.addComm.type])
       .addCase(ActivityActions.updateComm, BasicActivityReducers[ActivityActions.updateComm.type])
       .addCase(ActivityActions.updateStaff, BasicActivityReducers[ActivityActions.updateStaff.type])

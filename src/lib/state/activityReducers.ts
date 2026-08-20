@@ -311,4 +311,12 @@ export const BasicReducers: ActivityReducers = {
     const trimmedUpdates = pickTeamProperties(payload.updates);
     Object.assign(team, trimmedUpdates);
   },
+
+  [ActivityActions.deleteTeam.type]: (state, { payload }) => {
+    const activity = state.list.find((f) => f.id === payload.activityId);
+    if (!activity || !activity.teams) {
+      return;
+    }
+    activity.teams = activity.teams.filter((t) => t.id !== payload.teamId);
+  },
 };
