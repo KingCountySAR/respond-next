@@ -33,7 +33,9 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   const [openTeamEditor, setOpenTeamEditor] = useState<Team | null>(null);
   const [localExpanded, setLocalExpanded] = useState<boolean>(false);
-  const isExpanded = localExpanded;
+  const isDisbanded = team.status === 'Disbanded';
+  // Disbanded teams are read-only: never expandable, regardless of local state or expand-all commands.
+  const isExpanded = !isDisbanded && localExpanded;
 
   useEffect(() => {
     if (expandCommand !== undefined) {
@@ -131,6 +133,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   const handleExpandClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
+    if (isDisbanded) return;
     setLocalExpanded((current) => !current);
   };
 
@@ -142,16 +145,16 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   return (
     <>
-      <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
+      <Droppable accepts={isDisbanded ? [] : ['participant', 'equipment']} onDrop={handleDrop}>
         <StatusContainer color={team.status === 'Disbanded' ? 'grey' : statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Stack direction="row" alignItems="center">
-                <IconButton onClick={handleExpandClick} size="small" sx={{ width: 32, height: 32 }}>
+                <IconButton onClick={handleExpandClick} disabled={isDisbanded} size="small" sx={{ width: 32, height: 32 }}>
                   {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
                 </IconButton>
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer' }} onClick={() => setOpenTeamEditor(team)}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer', color: isDisbanded ? 'text.disabled' : undefined }} onClick={() => setOpenTeamEditor(team)}>
                     {team.name}
                   </Typography>
                   <DashboardErrorIndicator message={hasTeamMemberError ? 'One or more team members are not assigned to the activity.' : undefined} size={16} />
