@@ -31,7 +31,7 @@ export function DashboardAddPlaceButton() {
 
   const addPlace = (placeToCreate: Place) => {
     dispatch(ActivityActions.createPlace(activity.id, placeToCreate));
-    const parts = [placeToCreate.name, 'established: '];
+    const parts = [placeToCreate.name, 'established '];
     if (placeToCreate.lat?.trim() && placeToCreate.lon?.trim()) parts.push(`${placeToCreate.lat.trim()}, ${placeToCreate.lon.trim()}`);
     if (placeToCreate.notes?.trim()) parts.push(placeToCreate.notes.trim());
     const comm: CommunicationsLogEntry = createNewCommsEntry({
@@ -114,14 +114,8 @@ function PlaceTile({ place }: { place: Place }) {
     dispatch(ActivityActions.updatePlace(activity.id, placeToUpsert));
   };
 
-  const deletePlace = (id: string) => {
-    const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
-    if (hasResources) {
-      setConfirmDeleteOpen(true);
-      return;
-    }
-    dispatch(ActivityActions.deletePlace(activity.id, id));
-    logDeleteComm();
+  const deletePlace = () => {
+    setConfirmDeleteOpen(true);
   };
 
   const logDeleteComm = () => {
@@ -144,6 +138,17 @@ function PlaceTile({ place }: { place: Place }) {
     logDeleteComm();
   };
 
+  const confirmDelete = () => {
+    const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
+    if (hasResources) {
+      deleteAndReassign();
+    } else {
+      dispatch(ActivityActions.deletePlace(activity.id, place.id));
+      logDeleteComm();
+    }
+    setConfirmDeleteOpen(false);
+  };
+
   const editAction = {
     id: 'edit',
     icon: <EditIcon sx={{ fontSize: 16 }} />,
@@ -153,7 +158,7 @@ function PlaceTile({ place }: { place: Place }) {
   const deleteAction = {
     id: 'delete',
     icon: <DeleteOutlineIcon sx={{ fontSize: 16, color: 'darkred' }} />,
-    onClick: () => deletePlace(place.id),
+    onClick: () => deletePlace(),
   };
 
   const actions = isDefaultPlace(place) ? [editAction] : [editAction, deleteAction];
@@ -269,15 +274,7 @@ function PlaceTile({ place }: { place: Place }) {
         }}
         onClose={() => setEditingPlace(null)}
       />
-      <ConfirmDialog
-        open={confirmDeleteOpen}
-        prompt={`"${place.name}" still has assigned members or equipment. They will be moved to ${DEFAULT_PLACES.field}. Delete anyway?`}
-        onConfirm={() => {
-          deleteAndReassign();
-          setConfirmDeleteOpen(false);
-        }}
-        onClose={() => setConfirmDeleteOpen(false)}
-      />
+      <ConfirmDialog open={confirmDeleteOpen} prompt={place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0 ? `"${place.name}" still has assigned members or equipment. They will be moved to ${DEFAULT_PLACES.field}. Delete anyway?` : `Delete "${place.name}"?`} destructive={true} label="Delete" onConfirm={confirmDelete} onClose={() => setConfirmDeleteOpen(false)} />
     </Droppable>
   );
 }
