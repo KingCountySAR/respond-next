@@ -167,6 +167,14 @@ const updateTeam = createAction('team/update', (activityId: string, updates: Par
   meta: { sync: true },
 }));
 
+const deleteTeam = createAction('team/delete', (activityId: string, teamId: string) => ({
+  payload: {
+    activityId,
+    teamId,
+  },
+  meta: { sync: true },
+}));
+
 export const ActivityActions = {
   reload,
   update,
@@ -190,6 +198,7 @@ export const ActivityActions = {
   updateStaff,
   createTeam,
   updateTeam,
+  deleteTeam,
 };
 
 export type ActivityActionsType = typeof ActivityActions;
