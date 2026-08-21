@@ -7,7 +7,7 @@ import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Participant, ParticipantStatus } from '@respond/types/activity';
 
-import { CommunicationsLogEntry, createNewCommsEntry, EquipmentItem, Team } from '../../types/operations';
+import { CommunicationsLogEntry, createNewCommsEntry, DEFAULT_PLACES, EquipmentItem, Team } from '../../types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';
@@ -32,14 +32,12 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
   const activity = useActivityContext();
 
   const [openTeamEditor, setOpenTeamEditor] = useState<Team | null>(null);
-  const [localExpanded, setLocalExpanded] = useState<boolean>(false);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const isDisbanded = team.status === 'Disbanded';
-  // Disbanded teams are read-only: never expandable, regardless of local state or expand-all commands.
-  const isExpanded = !isDisbanded && localExpanded;
 
   useEffect(() => {
     if (expandCommand !== undefined) {
-      setLocalExpanded(expandCommand.expanded);
+      setIsExpanded(expandCommand.expanded);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandCommand]);
@@ -123,7 +121,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
   const autoLog = (message: string, isFavorite = false) => {
     const comm: CommunicationsLogEntry = createNewCommsEntry({
       from: team.name,
-      to: 'CP',
+      to: DEFAULT_PLACES.base,
       message: message,
       isAutomated: true,
       isFavorite,
@@ -133,8 +131,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   const handleExpandClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (isDisbanded) return;
-    setLocalExpanded((current) => !current);
+    setIsExpanded((current) => !current);
   };
 
   const statusColor = {
@@ -150,7 +147,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
           <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Stack direction="row" alignItems="center">
-                <IconButton onClick={handleExpandClick} disabled={isDisbanded} size="small" sx={{ width: 32, height: 32 }}>
+                <IconButton onClick={handleExpandClick} size="small" sx={{ width: 32, height: 32 }}>
                   {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
                 </IconButton>
                 <Stack direction="row" spacing={2} alignItems="center">

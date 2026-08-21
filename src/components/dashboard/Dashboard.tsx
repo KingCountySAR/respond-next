@@ -56,7 +56,10 @@ function CombinedResourcesPanel() {
         </Tabs>
       </Box>
 
-      {tab === 'responders' && <DashboardResponderManager availableCallback={setAvailable} />}
+      {/* Kept mounted (instead of conditionally rendered) so the available-count badge keeps updating while this tab isn't visible. */}
+      <Box sx={{ display: tab === 'responders' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+        <DashboardResponderManager availableCallback={setAvailable} />
+      </Box>
       {tab === 'equipment' && <DashboardEquipmentManager />}
     </DashboardPanel>
   );

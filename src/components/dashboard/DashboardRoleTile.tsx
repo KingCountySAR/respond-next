@@ -1,11 +1,12 @@
 import ClearIcon from '@mui/icons-material/Clear';
+import GroupsIcon from '@mui/icons-material/Groups';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Participant } from '@respond/types/activity';
-import { CommunicationsLogEntry, createNewCommsEntry } from '@respond/types/operations';
+import { CommunicationsLogEntry, createNewCommsEntry, DEFAULT_PLACES } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
@@ -41,7 +42,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
 
   const autoLog = (message: string) => {
     const comm: CommunicationsLogEntry = createNewCommsEntry({
-      from: 'CP',
+      from: DEFAULT_PLACES.base,
       message: message,
       isAutomated: true,
     });
@@ -53,9 +54,12 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
       <Droppable accepts="participant" onDrop={handleDrop}>
         <Paper variant="outlined" sx={{ p: 1, borderRadius: 2 }}>
           <Box sx={{ '&:hover .action': { opacity: 1, visibility: 'visible' } }}>
-            <Typography component="div" variant="subtitle1" sx={{ fontWeight: 700 }}>
-              {title}
-            </Typography>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <GroupsIcon fontSize="small" />
+              <Typography component="div" variant="subtitle1" sx={{ fontWeight: 700 }}>
+                {title}
+              </Typography>
+            </Stack>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
               <Typography component="div" sx={{ color: 'text.secondary' }}>
                 {name}

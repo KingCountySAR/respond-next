@@ -24,6 +24,16 @@ type DashboardCommsComposerProps = {
   onCancel?: () => void;
 };
 
+// MUI's default renderOption spreads a "key" prop into <li>; pull it out and pass it directly to silence React's key-spread warning.
+function renderContactOption(props: React.HTMLAttributes<HTMLLIElement> & { key?: React.Key }, option: string) {
+  const { key, ...optionProps } = props;
+  return (
+    <li key={key} {...optionProps}>
+      {option}
+    </li>
+  );
+}
+
 export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCommsComposerProps) {
   const dispatch = useAppDispatch();
   const activity = useActivityContext();
@@ -95,8 +105,8 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
       <form onSubmit={handleSubmit(submit)}>
         <Stack spacing={1}>
           <Stack direction={{ xl: 'row' }} alignItems={{ xs: 'stretch', xl: 'center' }} gap={2}>
-            <Controller name="from" control={control} render={({ field }) => <Autocomplete freeSolo fullWidth options={contactOptions} inputValue={field.value} onInputChange={(_, newInputValue) => field.onChange(newInputValue)} renderInput={(params) => <TextField {...params} label="From" size="small" inputRef={fromRef} />} sx={{ flex: entry ? 1 : undefined, minWidth: 0 }} />} />
-            <Controller name="to" control={control} render={({ field }) => <Autocomplete freeSolo fullWidth options={contactOptions} inputValue={field.value} onInputChange={(_, newInputValue) => field.onChange(newInputValue)} renderInput={(params) => <TextField {...params} label="To" size="small" />} sx={{ flex: entry ? 1 : undefined, minWidth: 0 }} />} />
+            <Controller name="from" control={control} render={({ field }) => <Autocomplete freeSolo fullWidth options={contactOptions} inputValue={field.value} onInputChange={(_, newInputValue) => field.onChange(newInputValue)} renderOption={renderContactOption} renderInput={(params) => <TextField {...params} label="From" size="small" inputRef={fromRef} />} sx={{ flex: entry ? 1 : undefined, minWidth: 0 }} />} />
+            <Controller name="to" control={control} render={({ field }) => <Autocomplete freeSolo fullWidth options={contactOptions} inputValue={field.value} onInputChange={(_, newInputValue) => field.onChange(newInputValue)} renderOption={renderContactOption} renderInput={(params) => <TextField {...params} label="To" size="small" />} sx={{ flex: entry ? 1 : undefined, minWidth: 0 }} />} />
             {entry && (
               <Controller
                 name="timestamp"
