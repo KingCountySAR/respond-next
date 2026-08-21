@@ -5,7 +5,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { Badge, Box, Stack, Tab, Tabs, useMediaQuery } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import { DnDProvider } from '../DragAndDrop/DnDProvider';
@@ -86,6 +86,10 @@ function CombinedTeamCommsPanel() {
 function DashboardContent() {
   const activity = useActivityContext();
   const hasLocation = activity.location?.lat && activity.location?.lon;
+
+  useEffect(() => {
+    document.title = `${activity.idNumber} ${activity.title} - Dashboard`;
+  }, [activity.idNumber, activity.title]);
 
   // Mobile View: narrower than 1280px
   const isSmallScreen = useMediaQuery('(max-width:1279.95px)');

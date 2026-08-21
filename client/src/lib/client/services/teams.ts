@@ -14,6 +14,7 @@ export function useTeamCommands() {
   return {
     createTeam: (activityId: string, team: Team) => dispatch(TeamCommands.CreateTeam(activityId, team)),
     updateTeam: (activityId: string, updates: Partial<Team> & { id: string }) => dispatch(TeamCommands.UpdateTeam(activityId, updates)),
+    deleteTeam: (activityId: string, id: string) => dispatch(TeamCommands.DeleteTeam(activityId, id)),
     updateStaff: (activityId: string, staff: Record<string, string>) => dispatch(TeamCommands.UpdateStaff(activityId, staff)),
   };
 }

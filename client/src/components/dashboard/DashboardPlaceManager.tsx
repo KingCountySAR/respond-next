@@ -100,13 +100,13 @@ function PlaceTile({ place }: { place: Place }) {
   };
 
   // The place-comms reactor logs the "terminated" comm server-side on delete.
-  const deletePlace = (id: string) => {
+  const deletePlace = () => {
     const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
     if (hasResources) {
       setConfirmDeleteOpen(true);
       return;
     }
-    places.deletePlace(activity.id, id);
+    places.deletePlace(activity.id, place.id);
   };
 
   const deleteAndReassign = () => {
@@ -120,6 +120,16 @@ function PlaceTile({ place }: { place: Place }) {
     places.batchUpdatePlaces(activity.id, [updatedFieldPlace], [place.id]);
   };
 
+  const confirmDelete = () => {
+    const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
+    if (hasResources) {
+      deleteAndReassign();
+    } else {
+      places.deletePlace(activity.id, place.id);
+    }
+    setConfirmDeleteOpen(false);
+  };
+
   const editAction = {
     id: 'edit',
     icon: <EditIcon sx={{ fontSize: 16 }} />,
@@ -129,7 +139,7 @@ function PlaceTile({ place }: { place: Place }) {
   const deleteAction = {
     id: 'delete',
     icon: <DeleteOutlineIcon sx={{ fontSize: 16, color: 'darkred' }} />,
-    onClick: () => deletePlace(place.id),
+    onClick: () => deletePlace(),
   };
 
   const actions = isDefaultPlace(place) ? [editAction] : [editAction, deleteAction];
@@ -252,11 +262,14 @@ function PlaceTile({ place }: { place: Place }) {
       />
       <ConfirmDialog
         open={confirmDeleteOpen}
-        prompt={`"${place.name}" still has assigned members or equipment. They will be moved to ${DEFAULT_PLACES.field}. Delete anyway?`}
-        onConfirm={() => {
-          deleteAndReassign();
-          setConfirmDeleteOpen(false);
-        }}
+        prompt={
+          place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0
+            ? `"${place.name}" still has assigned members or equipment. They will be moved to ${DEFAULT_PLACES.field}. Delete anyway?`
+            : `Delete "${place.name}"?`
+        }
+        destructive={true}
+        label="Delete"
+        onConfirm={confirmDelete}
         onClose={() => setConfirmDeleteOpen(false)}
       />
     </Droppable>

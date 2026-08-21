@@ -77,6 +77,10 @@ export const BasicEventReducers: EventReducers = {
     Mutators.updateTeam(state, payload.activityId, payload.updates);
   },
 
+  [DomainEvents.TeamDeleted.type]: (state, { payload }) => {
+    Mutators.deleteTeam(state, payload.activityId, payload.updates);
+  },
+
   [DomainEvents.StaffUpdated.type]: (state, { payload }) => {
     Mutators.updateStaff(state, payload.activityId, payload.staff);
   },

@@ -25,20 +25,27 @@ const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) 
   return left.name.localeCompare(right.name);
 };
 
-export default function DashboardTeamCard({ team, defaultExpanded }: { team: Team; defaultExpanded?: boolean }) {
+export default function DashboardTeamCard({ team, expandCommand, onExpandedChange }: { team: Team; expandCommand?: { expanded: boolean; nonce: number }; onExpandedChange?: (expanded: boolean) => void }) {
   const teams = useTeamCommands();
 
   const activity = useActivityContext();
 
   const [openTeamEditor, setOpenTeamEditor] = useState<Team | null>(null);
-  const [localExpanded, setLocalExpanded] = useState<boolean>(defaultExpanded ?? false);
-  const isExpanded = localExpanded;
+  const [localExpanded, setLocalExpanded] = useState<boolean>(false);
+  const isDisbanded = team.status === 'Disbanded';
+  // Disbanded teams are read-only: never expandable, regardless of local state or expand-all commands.
+  const isExpanded = !isDisbanded && localExpanded;
 
   useEffect(() => {
-    if (defaultExpanded !== undefined) {
-      setLocalExpanded(defaultExpanded);
+    if (expandCommand !== undefined) {
+      setLocalExpanded(expandCommand.expanded);
     }
-  }, [defaultExpanded]);
+  }, [expandCommand]);
+
+  useEffect(() => {
+    onExpandedChange?.(isExpanded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isExpanded]);
 
   const teamParticipants: Participant[] = Object.values(activity.participants).filter((participant) => team.assignedParticipants.includes(participant.id));
   const teamLeader: Participant | undefined = teamParticipants.find((participant) => participant.id === team.teamLeaderParticipantId);
@@ -114,6 +121,7 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
 
   const handleExpandClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
+    if (isDisbanded) return;
     setLocalExpanded((current) => !current);
   };
 
@@ -125,16 +133,16 @@ export default function DashboardTeamCard({ team, defaultExpanded }: { team: Tea
 
   return (
     <>
-      <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop}>
+      <Droppable accepts={isDisbanded ? [] : ['participant', 'equipment']} onDrop={handleDrop}>
         <StatusContainer color={team.status === 'Disbanded' ? 'grey' : statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
             <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Stack direction="row" sx={{ alignItems: 'center' }}>
-                <IconButton onClick={handleExpandClick} size="small" sx={{ width: 32, height: 32 }}>
+                <IconButton onClick={handleExpandClick} disabled={isDisbanded} size="small" sx={{ width: 32, height: 32 }}>
                   {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
                 </IconButton>
                 <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer' }} onClick={() => setOpenTeamEditor(team)}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer', color: isDisbanded ? 'text.disabled' : undefined }} onClick={() => setOpenTeamEditor(team)}>
                     {team.name}
                   </Typography>
                   <DashboardErrorIndicator message={hasTeamMemberError ? 'One or more team members are not assigned to the activity.' : undefined} size={16} />

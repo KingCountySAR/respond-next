@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material';
+import Link from 'next/link';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
@@ -6,7 +7,12 @@ export function DashboardActivityDetails() {
   const activity = useActivityContext();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+      <Typography
+        variant="h5"
+        component={Link}
+        href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}`}
+        sx={{ fontWeight: 700, lineHeight: 1.2, color: 'inherit', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+      >
         {activity.title}
       </Typography>
       <Typography variant="subtitle1" sx={{ color: 'text.secondary', mt: 0.5 }}>

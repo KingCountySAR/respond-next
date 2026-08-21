@@ -101,23 +101,31 @@ export function DashboardTeamManager() {
   const teamCommands = useTeamCommands();
 
   const activity = useActivityContext();
-  const [expandedAll, setExpandedAll] = useState(false);
+  const [expandCommand, setExpandCommand] = useState<{ expanded: boolean; nonce: number } | undefined>(undefined);
+  const [expandedTeamIds, setExpandedTeamIds] = useState<Record<string, boolean>>({});
   const teams = activity.teams ?? [];
+  const anyExpanded = teams.some((team) => expandedTeamIds[team.id]);
 
   const addTeam = () => {
     const nextTeamNumber = getNextTeamNumber(teams);
     teamCommands.createTeam(activity.id, createNewTeam(`Team ${nextTeamNumber}`));
   };
 
+  // nonce forces each card's effect to rerun even if `expanded` repeats (e.g. a card was manually
+  // re-collapsed after "Expand all", so the next "Expand all" click must still re-sync it).
   const toggleAll = () => {
-    setExpandedAll((current) => !current);
+    setExpandCommand({ expanded: !anyExpanded, nonce: Date.now() });
+  };
+
+  const handleTeamExpandedChange = (teamId: string, expanded: boolean) => {
+    setExpandedTeamIds((current) => (current[teamId] === expanded ? current : { ...current, [teamId]: expanded }));
   };
 
   return (
     <>
       <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}>
         <Button size="small" variant="outlined" onClick={toggleAll}>
-          {expandedAll ? 'Collapse all' : 'Expand all'}
+          {anyExpanded ? 'Collapse all' : 'Expand all'}
         </Button>
         <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={addTeam}>
           Add
@@ -127,7 +135,7 @@ export function DashboardTeamManager() {
         <Stack direction="column" spacing={1} sx={{ minHeight: 0, flex: 1 }}>
           {teams.length ? (
             [...teams].sort(sortTeams).map((team) => {
-              return <DashboardTeamCard key={team.id} team={team} defaultExpanded={expandedAll} />;
+              return <DashboardTeamCard key={team.id} team={team} expandCommand={expandCommand} onExpandedChange={(expanded) => handleTeamExpandedChange(team.id, expanded)} />;
             })
           ) : (
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

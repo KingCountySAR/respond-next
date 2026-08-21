@@ -13,6 +13,10 @@ const UpdateTeam = createAction('cmd/team/update', (activityId: string, updates:
   payload: { activityId, updates },
 }));
 
+const DeleteTeam = createAction('cmd/team/update', (activityId: string, id: string) => ({
+  payload: { activityId, id },
+}));
+
 const UpdateStaff = createAction('cmd/team/updateStaff', (activityId: string, staff: Record<string, string>) => ({
   payload: { activityId, staff },
 }));
@@ -20,5 +24,6 @@ const UpdateStaff = createAction('cmd/team/updateStaff', (activityId: string, st
 export const TeamCommands = {
   CreateTeam,
   UpdateTeam,
+  DeleteTeam,
   UpdateStaff,
 };
