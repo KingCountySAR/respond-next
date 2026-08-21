@@ -1,11 +1,13 @@
+import { Suspense, lazy } from 'react';
 import { Redirect, Route, Switch } from 'wouter';
 
 import { LocationManager } from '@respond/components/locations/LocationManager';
 
 import { Home } from './pages/Home';
-import { OpsRoutes } from './pages/operations/OpsRoutes';
-import { ReportRoutes } from './pages/reports/ReportRoutes';
 import { RespondRoutes } from './pages/respond/RespondRoutes';
+
+const OpsRoutes = lazy(() => import('./pages/operations/OpsRoutes').then((m) => ({ default: m.OpsRoutes })));
+const ReportRoutes = lazy(() => import('./pages/reports/ReportRoutes').then((m) => ({ default: m.ReportRoutes })));
 
 // Order matters: wouter's <Switch> renders the first matching <Route>, so more
 // specific paths (e.g. /mission/new) must precede parameterized ones (/mission/:id).
@@ -21,10 +23,14 @@ export function AppRoutes() {
         <RespondRoutes type="events" />
       </Route>
       <Route path="/ops" nest>
-        <OpsRoutes />
+        <Suspense fallback={<div>Loading...</div>}>
+          <OpsRoutes />
+        </Suspense>
       </Route>
       <Route path="/reports" nest>
-        <ReportRoutes />
+        <Suspense fallback={<div>Loading...</div>}>
+          <ReportRoutes />
+        </Suspense>
       </Route>
 
       <Route path="/admin/locations" component={LocationManager} />

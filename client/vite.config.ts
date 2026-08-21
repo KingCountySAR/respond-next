@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { compression } from 'vite-plugin-compression2';
 
 const SERVER_ORIGIN = process.env.RESPOND_SERVER_ORIGIN ?? 'http://localhost:5173';
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
@@ -15,7 +16,12 @@ export default defineConfig({
     outDir: '../server/static',
     emptyOutDir: true,
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Emit a .gz and .br next to each asset at build time (originals kept for clients
+    // that don't accept gzip). The Hono server serves these via 'precompressed'.
+    compression({ algorithms: ['gzip', 'brotliCompress'], threshold: 1024 }),
+  ],
   resolve: {
     alias: {
       '@respond/components': r('src/components'),

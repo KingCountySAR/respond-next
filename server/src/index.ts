@@ -25,8 +25,10 @@ async function main() {
   // and proxies /api + /socket.io here. CLIENT_DIST is relative to cwd.
   if (process.env.NODE_ENV !== 'development') {
     const root = CLIENT_DIST;
-    app.use('/*', serveStatic({ root }));
-    app.get('*', serveStatic({ path: 'index.html', root })); // SPA fallback
+    // precompressed: serve foo.js.gz (emitted by Vite at build time) when the
+    // client sends Accept-Encoding: gzip; falls back to the plain file otherwise.
+    app.use('/*', serveStatic({ root, precompressed: true }));
+    app.get('*', serveStatic({ path: 'index.html', root, precompressed: true })); // SPA fallback
   }
 
   // Constructing services also runs StateManager.start(), which loads current

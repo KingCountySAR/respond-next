@@ -3,7 +3,6 @@ import { Redirect, Route, Switch } from 'wouter';
 import ActivityLayout from '@respond/components/activities/ActivityLayout';
 
 import { ActivityEditPage } from './ActivityEditPage';
-import { ActivityListPage } from './ActivityListPage';
 import { ActivityPage } from './ActivityPage';
 
 // Order matters: wouter's <Switch> renders the first matching <Route>, so more
@@ -22,7 +21,9 @@ export function RespondRoutes({ type }: { type: 'missions' | 'events' }) {
           </ActivityLayout>
         )}
       </Route>
-      <Route path="/">{() => <ActivityListPage activityType={type} />}</Route>
+      <Route path="/">
+        <Redirect to={`~/reports/${type}`} replace />
+      </Route>
     </Switch>
   );
 }
