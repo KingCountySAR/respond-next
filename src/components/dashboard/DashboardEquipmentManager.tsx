@@ -75,7 +75,8 @@ export function DashboardEquipmentManager() {
     if (!q) return inventory;
     return inventory.filter((entry) => {
       const name = (entry.name || '').toLowerCase();
-      return name.includes(q);
+      const type = (entry.type || '').toLowerCase();
+      return name.includes(q) || type.includes(q);
     });
   }, [searchQuery]);
 
