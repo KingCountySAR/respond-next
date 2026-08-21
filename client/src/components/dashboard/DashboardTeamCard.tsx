@@ -31,14 +31,12 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
   const activity = useActivityContext();
 
   const [openTeamEditor, setOpenTeamEditor] = useState<Team | null>(null);
-  const [localExpanded, setLocalExpanded] = useState<boolean>(false);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const isDisbanded = team.status === 'Disbanded';
-  // Disbanded teams are read-only: never expandable, regardless of local state or expand-all commands.
-  const isExpanded = !isDisbanded && localExpanded;
 
   useEffect(() => {
     if (expandCommand !== undefined) {
-      setLocalExpanded(expandCommand.expanded);
+      setIsExpanded(expandCommand.expanded);
     }
   }, [expandCommand]);
 
@@ -121,8 +119,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   const handleExpandClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (isDisbanded) return;
-    setLocalExpanded((current) => !current);
+    setIsExpanded((current) => !current);
   };
 
   const statusColor = {
@@ -138,7 +135,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
           <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
             <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Stack direction="row" sx={{ alignItems: 'center' }}>
-                <IconButton onClick={handleExpandClick} disabled={isDisbanded} size="small" sx={{ width: 32, height: 32 }}>
+                <IconButton onClick={handleExpandClick} size="small" sx={{ width: 32, height: 32 }}>
                   {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
                 </IconButton>
                 <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>

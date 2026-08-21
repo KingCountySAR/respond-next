@@ -1,6 +1,6 @@
 import { CommsCommands, LogCommInput } from '@shared/commands';
 import { PlaceEvents } from '@shared/events';
-import { isDefaultPlace, Place } from '@shared/types/operations';
+import { DEFAULT_PLACES, isDefaultPlace, Place } from '@shared/types/operations';
 
 import { Reactor, ReactorContext } from './reactor';
 
@@ -8,11 +8,11 @@ function establishedEntry(place: Place): LogCommInput {
   const parts = [place.name, 'established'];
   if (place.lat?.trim() && place.lon?.trim()) parts.push(`${place.lat.trim()}, ${place.lon.trim()}`);
   if (place.notes?.trim()) parts.push(place.notes.trim());
-  return { from: place.name, to: 'CP', message: parts.join(' '), isAutomated: true };
+  return { from: place.name, to: DEFAULT_PLACES.base, message: parts.join(' '), isAutomated: true };
 }
 
 function terminatedEntry(placeName: string): LogCommInput {
-  return { from: placeName, to: 'CP', message: `${placeName} location terminated`, isAutomated: true };
+  return { from: placeName, to: DEFAULT_PLACES.base, message: `${placeName} location terminated`, isAutomated: true };
 }
 
 /**

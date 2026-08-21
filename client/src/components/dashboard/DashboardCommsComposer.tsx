@@ -23,6 +23,16 @@ type DashboardCommsComposerProps = {
   onCancel?: () => void;
 };
 
+// MUI's default renderOption spreads a "key" prop into <li>; pull it out and pass it directly to silence React's key-spread warning.
+function renderContactOption(props: React.HTMLAttributes<HTMLLIElement> & { key?: React.Key }, option: string) {
+  const { key, ...optionProps } = props;
+  return (
+    <li key={key} {...optionProps}>
+      {option}
+    </li>
+  );
+}
+
 export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCommsComposerProps) {
   const comms = useCommsCommands();
   const activity = useActivityContext();
@@ -100,6 +110,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
                   options={contactOptions}
                   inputValue={field.value}
                   onInputChange={(_, newInputValue) => field.onChange(newInputValue)}
+                  renderOption={renderContactOption}
                   renderInput={(params) => <TextField {...params} label="From" size="small" inputRef={fromRef} />}
                   sx={{ flex: entry ? 1 : undefined, minWidth: 0 }}
                 />
@@ -115,6 +126,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
                   options={contactOptions}
                   inputValue={field.value}
                   onInputChange={(_, newInputValue) => field.onChange(newInputValue)}
+                  renderOption={renderContactOption}
                   renderInput={(params) => <TextField {...params} label="To" size="small" />}
                   sx={{ flex: entry ? 1 : undefined, minWidth: 0 }}
                 />

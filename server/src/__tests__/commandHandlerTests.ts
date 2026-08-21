@@ -20,7 +20,7 @@ describe('produceEvents', () => {
   });
 
   it('LogComm mints a full server-authored comm (id + timestamp)', () => {
-    const [event] = produceEvents(CommsCommands.LogComm(activityId, { from: 'CP', message: 'radio check', isAutomated: false }));
+    const [event] = produceEvents(CommsCommands.LogComm(activityId, { from: DEFAULT_PLACES.base, message: 'radio check', isAutomated: false }));
     expect(CommsEvents.CommLogged.match(event)).toBe(true);
     if (!CommsEvents.CommLogged.match(event)) throw new Error('expected CommLogged');
     expect(event.payload.comm.id).toBeTruthy();
