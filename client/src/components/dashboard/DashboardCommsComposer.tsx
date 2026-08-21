@@ -101,6 +101,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
                   inputValue={field.value}
                   onInputChange={(_, newInputValue) => field.onChange(newInputValue)}
                   renderInput={(params) => <TextField {...params} label="From" size="small" inputRef={fromRef} />}
+                  sx={{ flex: entry ? 1 : undefined, minWidth: 0 }}
                 />
               )}
             />
@@ -115,6 +116,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
                   inputValue={field.value}
                   onInputChange={(_, newInputValue) => field.onChange(newInputValue)}
                   renderInput={(params) => <TextField {...params} label="To" size="small" />}
+                  sx={{ flex: entry ? 1 : undefined, minWidth: 0 }}
                 />
               )}
             />
@@ -133,6 +135,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
                       }
                     }}
                     slotProps={{ textField: { size: 'small' } }}
+                    sx={{ flex: 1, minWidth: 0 }}
                   />
                 )}
               />

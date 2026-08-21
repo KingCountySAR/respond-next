@@ -48,9 +48,11 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
               <Typography component="div" sx={{ color: 'text.secondary' }}>
                 {name}
               </Typography>
-              <IconButton className="action" onClick={handleDelete} size="small" aria-label="delete communication" sx={{ opacity: 0, visibility: 'hidden', transition: 'opacity 180ms ease' }}>
-                <ClearIcon sx={{ fontSize: 16, color: 'darkred' }} />
-              </IconButton>
+              {participant && (
+                <IconButton className="action" onClick={handleDelete} size="small" aria-label="delete communication" sx={{ opacity: 0, visibility: 'hidden', transition: 'opacity 180ms ease' }}>
+                  <ClearIcon sx={{ fontSize: 16, color: 'darkred' }} />
+                </IconButton>
+              )}
             </Stack>
           </Box>
         </Paper>
