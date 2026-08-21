@@ -226,6 +226,12 @@ export function updateTeam(state: Draft<ActivityState>, activityId: string, upda
   Object.assign(team, pickTeamProperties(updates));
 }
 
+export function deleteTeam(state: Draft<ActivityState>, activityId: string, updates: Partial<Team>): void {
+  const activity = state.list.find((f) => f.id === activityId);
+  if (!activity) return;
+  activity.teams = (activity.teams ?? []).filter((t) => t.id !== updates.id);
+}
+
 export function updateStaff(state: Draft<ActivityState>, activityId: string, staff: Record<string, string>): void {
   const activity = state.list.find((f) => f.id === activityId);
   if (!activity) return;

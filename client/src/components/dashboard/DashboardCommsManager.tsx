@@ -4,7 +4,7 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useCommsCommands } from '@respond/lib/client/services/comms';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
@@ -13,6 +13,7 @@ import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
 import { Stack } from '../Material';
 
+import { DashboardAutoScrollContainer } from './DashboardAutoScrollContainer';
 import { CommsAutomatedToggleButton } from './DashboardCommsAutomatedToggleButton';
 import { DashboardCommsComposer } from './DashboardCommsComposer';
 import { CommsFavoriteToggleButton } from './DashboardCommsFavoriteToggleButton';
@@ -44,8 +45,6 @@ const parseValues = (value: string): string[] => {
 export function DashboardCommsManager() {
   const comms = useCommsCommands();
   const activity = useActivityContext();
-  const commsListRef = useRef<HTMLDivElement>(null);
-  const pendingManualEntryScrollRef = useRef(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [entryPendingDelete, setEntryPendingDelete] = useState<CommunicationsLogEntry | null>(null);
@@ -95,20 +94,6 @@ export function DashboardCommsManager() {
     setEntryPendingDelete(null);
   };
 
-  useEffect(() => {
-    if (!pendingManualEntryScrollRef.current || editingId) {
-      return;
-    }
-
-    const target = commsListRef.current;
-    if (!target) {
-      return;
-    }
-
-    target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' });
-    pendingManualEntryScrollRef.current = false;
-  }, [filteredCommunications, editingId]);
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
@@ -117,7 +102,12 @@ export function DashboardCommsManager() {
         <CommsFavoriteToggleButton onChange={(isSelected) => setShowFavorites(isSelected)} />
         <DashboardCommsPrintButton activity={activity} communications={filteredCommunications} />
       </Stack>
-      <Box ref={commsListRef} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1, minHeight: 0, width: '100%' }}>
+      <DashboardAutoScrollContainer
+        items={filteredCommunications}
+        getItemKey={(entry) => entry.id}
+        paused={Boolean(editingId)}
+        contentSx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}
+      >
         {filteredCommunications.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
@@ -135,12 +125,8 @@ export function DashboardCommsManager() {
             </DashboardCommsItemWrapper>
           ))
         )}
-      </Box>
-      <DashboardCommsComposer
-        onSave={() => {
-          pendingManualEntryScrollRef.current = true;
-        }}
-      />
+      </DashboardAutoScrollContainer>
+      <DashboardCommsComposer />
       <ConfirmDialog
         open={Boolean(entryPendingDelete)}
         prompt={entryPendingDelete ? `Delete communication from ${entryPendingDelete.from} to ${entryPendingDelete.to} at ${format24HourTime(entryPendingDelete.timestamp)}?` : 'Delete this communication?'}

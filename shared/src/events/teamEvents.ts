@@ -12,6 +12,10 @@ const TeamUpdated = createAction('evt/team/updated', (activityId: string, update
   payload: { activityId, updates },
 }));
 
+const TeamDeleted = createAction('evt/team/deleted', (activityId: string, updates: Partial<Team> & { id: string }) => ({
+  payload: { activityId, updates },
+}));
+
 const StaffUpdated = createAction('evt/team/staffUpdated', (activityId: string, staff: Record<string, string>) => ({
   payload: { activityId, staff },
 }));
@@ -19,5 +23,6 @@ const StaffUpdated = createAction('evt/team/staffUpdated', (activityId: string, 
 export const TeamEvents = {
   TeamCreated,
   TeamUpdated,
+  TeamDeleted,
   StaffUpdated,
 };

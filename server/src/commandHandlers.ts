@@ -65,6 +65,9 @@ export function produceEvents(command: Command): DomainEvent[] {
   if (TeamCommands.UpdateTeam.match(command)) {
     return [TeamEvents.TeamUpdated(command.payload.activityId, command.payload.updates)];
   }
+  if (TeamCommands.DeleteTeam.match(command)) {
+    return [TeamEvents.TeamDeleted(command.payload.activityId, { id: command.payload.id })];
+  }
   if (TeamCommands.UpdateStaff.match(command)) {
     return [TeamEvents.StaffUpdated(command.payload.activityId, command.payload.staff)];
   }

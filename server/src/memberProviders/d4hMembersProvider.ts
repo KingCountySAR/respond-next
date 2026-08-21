@@ -267,7 +267,13 @@ export default class D4HMembersProvider implements MemberProvider {
       customFieldDefs = customFieldDefs.concat(chunk.results);
       page = chunk.page + 1;
     } while (customFieldDefs.length < totalSize);
-    const customFieldNames = customFieldDefs.reduce((accum, cur) => ({ ...accum, [cur.id]: cur.title }), {} as { [id: number]: string });
+    const customFieldNames = customFieldDefs.reduce(
+      (accum, cur) => {
+        if (!cur || typeof cur.id !== 'number' || typeof cur.title !== 'string') return accum;
+        return { ...accum, [cur.id]: cur.title };
+      },
+      {} as { [id: number]: string },
+    );
 
     let groupRows: Group[] = [];
     page = 0;
@@ -341,7 +347,7 @@ export default class D4HMembersProvider implements MemberProvider {
           emailLookup[cur.email.value] = member.memberInfo.id;
         }
         if (moreEmailsLabel) {
-          const moreEmails = ((cur.customFieldValues?.find((f) => customFieldNames[f.customField.id] === moreEmailsLabel)?.value as string) ?? '').split(/[;, /]+/);
+          const moreEmails = ((cur.customFieldValues?.find((f) => customFieldNames[f.customField.id] === moreEmailsLabel)?.value as string) ?? '').split(/[;, /]+/).filter(Boolean);
           moreEmails.forEach((email) => (emailLookup[email] = member.memberInfo.id));
         }
 

@@ -1,12 +1,14 @@
-import { Box, Button, Stack, TextField } from '@mui/material';
+import { Autocomplete, Box, Button, Stack, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useCommsCommands } from '@respond/lib/client/services/comms';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
+
+const PREDEFINED_COMMS_CONTACTS = ['All Teams', 'Incident Commander'];
 
 type FormValues = {
   from: string;
@@ -25,6 +27,24 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
   const comms = useCommsCommands();
   const activity = useActivityContext();
   const fromRef = useRef<HTMLInputElement | null>(null);
+
+  // Split by source so adding a comms entry only re-scans comms, not teams/staff/places.
+  const teamContacts = useMemo(() => (activity.teams ?? []).filter((team) => team.status !== 'Disbanded').map((team) => team.name), [activity.teams]);
+  const staffContacts = useMemo(() => Object.keys(activity.staff ?? {}), [activity.staff]);
+  const placeContacts = useMemo(() => (activity.places ?? []).map((place) => place.name), [activity.places]);
+  const commsContacts = useMemo(() => {
+    const seen = new Set<string>();
+    (activity.comms ?? []).forEach((comm) => {
+      if (comm.from) seen.add(comm.from);
+      if (comm.to) seen.add(comm.to);
+    });
+    return Array.from(seen);
+  }, [activity.comms]);
+
+  const contactOptions = useMemo(() => {
+    const options = new Set<string>([...PREDEFINED_COMMS_CONTACTS, ...teamContacts, ...staffContacts, ...placeContacts, ...commsContacts]);
+    return Array.from(options).sort((left, right) => left.localeCompare(right));
+  }, [teamContacts, staffContacts, placeContacts, commsContacts]);
 
   const { register, handleSubmit, reset, formState, control } = useForm<FormValues>({
     defaultValues: {
@@ -66,12 +86,40 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
   };
 
   return (
-    <Box sx={{ borderColor: 'divider', p: entry ? 2 : 1, mt: entry ? 0 : 2, flexShrink: 0 }}>
+    <Box sx={{ borderColor: 'divider', p: 0.5, mt: entry ? 0 : 0.5, flexShrink: 0 }}>
       <form onSubmit={handleSubmit(submit)}>
         <Stack spacing={1}>
-          <Stack direction={{ xl: 'row' }} sx={{ alignItems: { xs: 'stretch', xl: 'center' }, gap: 2 }}>
-            <TextField label="From" size="small" inputRef={fromRef} {...register('from')} />
-            <TextField label="To" size="small" {...register('to')} />
+          <Stack direction={{ xl: 'row' }} spacing={2} sx={{ alignItems: { xs: 'stretch', xl: 'center' } }}>
+            <Controller
+              name="from"
+              control={control}
+              render={({ field }) => (
+                <Autocomplete
+                  freeSolo
+                  fullWidth
+                  options={contactOptions}
+                  inputValue={field.value}
+                  onInputChange={(_, newInputValue) => field.onChange(newInputValue)}
+                  renderInput={(params) => <TextField {...params} label="From" size="small" inputRef={fromRef} />}
+                  sx={{ flex: entry ? 1 : undefined, minWidth: 0 }}
+                />
+              )}
+            />
+            <Controller
+              name="to"
+              control={control}
+              render={({ field }) => (
+                <Autocomplete
+                  freeSolo
+                  fullWidth
+                  options={contactOptions}
+                  inputValue={field.value}
+                  onInputChange={(_, newInputValue) => field.onChange(newInputValue)}
+                  renderInput={(params) => <TextField {...params} label="To" size="small" />}
+                  sx={{ flex: entry ? 1 : undefined, minWidth: 0 }}
+                />
+              )}
+            />
             {entry && (
               <Controller
                 name="timestamp"
@@ -87,6 +135,7 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
                       }
                     }}
                     slotProps={{ textField: { size: 'small' } }}
+                    sx={{ flex: 1, minWidth: 0 }}
                   />
                 )}
               />
@@ -108,20 +157,22 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
             }}
           />
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-            {entry && (
-              <Button
-                onClick={() => {
-                  reset();
-                  onCancel?.();
-                }}
-                size="small"
-              >
-                Cancel
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              {entry && (
+                <Button
+                  onClick={() => {
+                    reset();
+                    onCancel?.();
+                  }}
+                  size="small"
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button type="submit" size="small" variant="contained">
+                Save
               </Button>
-            )}
-            <Button type="submit" size="small" variant="contained">
-              Save
-            </Button>
+            </Stack>
           </Stack>
         </Stack>
       </form>

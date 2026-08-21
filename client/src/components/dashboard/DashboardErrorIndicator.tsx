@@ -11,24 +11,24 @@ interface DashboardErrorIndicatorProps {
 }
 
 export const DashboardErrorIndicator: React.FC<DashboardErrorIndicatorProps> = ({ message, size = 20 }) => {
-  if (message) {
-    return (
-      <Tooltip title={message} arrow placement="top">
-        <Box
-          aria-label={message || 'Error'}
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'error.main',
-            fontSize: size,
-            cursor: message ? 'help' : 'default',
-            lineHeight: 1,
-          }}
-        >
-          <ErrorIcon fontSize="inherit" />
-        </Box>
-      </Tooltip>
-    );
-  }
+  if (!message) return null;
+
+  return (
+    <Tooltip title={message} arrow placement="top">
+      <Box
+        aria-label={message}
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'error.main',
+          fontSize: size,
+          cursor: 'help',
+          lineHeight: 1,
+        }}
+      >
+        <ErrorIcon fontSize="inherit" />
+      </Box>
+    </Tooltip>
+  );
 };
