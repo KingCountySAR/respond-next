@@ -45,7 +45,7 @@ export function DashboardDraggableContainer({ children, sx, showHandle = true, v
     },
     ':active': {
       cursor: 'grabbing',
-      transform: 'scale(0.9)',
+      transform: 'scale(0.97)',
     },
   };
 
