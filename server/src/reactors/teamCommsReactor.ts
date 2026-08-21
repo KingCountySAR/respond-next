@@ -1,6 +1,6 @@
 import { CommsCommands, LogCommInput } from '@shared/commands';
 import { TeamEvents } from '@shared/events';
-import { TeamStatus } from '@shared/types/operations';
+import { DEFAULT_PLACES, TeamStatus } from '@shared/types/operations';
 
 import { Reactor, ReactorContext } from './reactor';
 
@@ -36,13 +36,13 @@ export const teamCommsReactor: Reactor = {
         // The first team to reach On Scene is logged as "Subject Located" (favorited).
         const teamsOnScene = ctx.currentActivities[activityId]?.teams?.filter((t) => t.status === 'On Scene').length ?? 0;
         if (current.status === 'On Scene' && teamsOnScene === 1) {
-          comms.push({ from: current.name, to: 'CP', message: 'Subject Located', isAutomated: true, isFavorite: true });
+          comms.push({ from: current.name, to: DEFAULT_PLACES.base, message: 'Subject Located', isAutomated: true, isFavorite: true });
         } else {
-          comms.push({ from: current.name, to: 'CP', message: STATUS_MESSAGES[current.status], isAutomated: true });
+          comms.push({ from: current.name, to: DEFAULT_PLACES.base, message: STATUS_MESSAGES[current.status], isAutomated: true });
         }
       }
       if (prior?.gar !== current.gar) {
-        comms.push({ from: current.name, to: 'CP', message: `${current.name} GAR changed to ${current.gar.toUpperCase()}`, isAutomated: true, isFavorite: current.gar !== 'green' });
+        comms.push({ from: current.name, to: DEFAULT_PLACES.base, message: `${current.name} GAR changed to ${current.gar.toUpperCase()}`, isAutomated: true, isFavorite: current.gar !== 'green' });
       }
       return comms.map((entry) => CommsCommands.LogComm(activityId, entry));
     }
@@ -55,11 +55,11 @@ export const teamCommsReactor: Reactor = {
       return Object.entries(staff).flatMap(([role, value]) => {
         if (value === (prior?.staff?.[role] ?? '')) return []; // unchanged
         if (!value) {
-          return [CommsCommands.LogComm(activityId, { from: 'CP', message: `${role} unassigned`, isAutomated: true })];
+          return [CommsCommands.LogComm(activityId, { from: DEFAULT_PLACES.base, message: `${role} unassigned`, isAutomated: true })];
         }
         const participant = current?.participants[value];
         const name = participant ? `${participant.firstname} ${participant.lastname}` : value;
-        return [CommsCommands.LogComm(activityId, { from: 'CP', message: `${name} assuming ${role}`, isAutomated: true })];
+        return [CommsCommands.LogComm(activityId, { from: DEFAULT_PLACES.base, message: `${name} assuming ${role}`, isAutomated: true })];
       });
     }
 

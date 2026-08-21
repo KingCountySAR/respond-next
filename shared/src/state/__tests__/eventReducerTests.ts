@@ -34,19 +34,19 @@ describe('Event Reducers', () => {
   });
 
   it('CommLogged appends the server-authored entry', () => {
-    const comm: CommunicationsLogEntry = { id: 'srv-1', from: 'CP', message: 'Staging established', timestamp: 111, isAutomated: true };
+    const comm: CommunicationsLogEntry = { id: 'srv-1', from: DEFAULT_PLACES.base, message: 'Staging established', timestamp: 111, isAutomated: true };
     const next = apply(stateWithActivity(activityId), CommsEvents.CommLogged(activityId, comm));
     expect(next.list[0].comms).toEqual([comm]);
   });
 
   it('CommLogged appends each server-authored entry (distinct ids)', () => {
-    let next = apply(stateWithActivity(activityId), CommsEvents.CommLogged(activityId, { id: 'srv-1', from: 'CP', message: 'one', timestamp: 111 }));
-    next = apply(next, CommsEvents.CommLogged(activityId, { id: 'srv-2', from: 'CP', message: 'two', timestamp: 112 }));
+    let next = apply(stateWithActivity(activityId), CommsEvents.CommLogged(activityId, { id: 'srv-1', from: DEFAULT_PLACES.base, message: 'one', timestamp: 111 }));
+    next = apply(next, CommsEvents.CommLogged(activityId, { id: 'srv-2', from: DEFAULT_PLACES.base, message: 'two', timestamp: 112 }));
     expect(next.list[0].comms?.map((c) => c.id)).toEqual(['srv-1', 'srv-2']);
   });
 
   it('CommUpdated merges fields into an existing entry', () => {
-    const comm: CommunicationsLogEntry = { id: 'srv-1', from: 'CP', message: 'draft', timestamp: 111 };
+    const comm: CommunicationsLogEntry = { id: 'srv-1', from: DEFAULT_PLACES.base, message: 'draft', timestamp: 111 };
     let next = apply(stateWithActivity(activityId), CommsEvents.CommLogged(activityId, comm));
     next = apply(next, CommsEvents.CommUpdated(activityId, 'srv-1', { message: 'final' }));
     expect(next.list[0].comms?.[0].message).toBe('final');
