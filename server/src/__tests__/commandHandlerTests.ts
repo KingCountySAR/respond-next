@@ -1,4 +1,4 @@
-import { ActivityCommands, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands } from '@shared/commands';
+import { ActivityCommands, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
 import { ActivityEvents, CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
 import { createNewActivity, ParticipantStatus } from '@shared/types/activity';
 import { createNewPlace, createNewTeam, DEFAULT_PLACES } from '@shared/types/operations';
@@ -31,6 +31,11 @@ describe('produceEvents', () => {
   it('maps UpdateParticipant -> ParticipantUpdated', () => {
     const [event] = produceEvents(ParticipantCommands.UpdateParticipant(activityId, 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn));
     expect(ParticipantEvents.ParticipantUpdated.match(event)).toBe(true);
+  });
+
+  it('maps DeleteTeam -> TeamDeleted', () => {
+    const [event] = produceEvents(TeamCommands.DeleteTeam(activityId, 'team-1'));
+    expect(event).toEqual(TeamEvents.TeamDeleted(activityId, { id: 'team-1' }));
   });
 
   it('maps location commands -> location events', () => {

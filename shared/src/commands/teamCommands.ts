@@ -13,7 +13,7 @@ const UpdateTeam = createAction('cmd/team/update', (activityId: string, updates:
   payload: { activityId, updates },
 }));
 
-const DeleteTeam = createAction('cmd/team/update', (activityId: string, id: string) => ({
+const DeleteTeam = createAction('cmd/team/delete', (activityId: string, id: string) => ({
   payload: { activityId, id },
 }));
 

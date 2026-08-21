@@ -101,12 +101,7 @@ function PlaceTile({ place }: { place: Place }) {
 
   // The place-comms reactor logs the "terminated" comm server-side on delete.
   const deletePlace = () => {
-    const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
-    if (hasResources) {
-      setConfirmDeleteOpen(true);
-      return;
-    }
-    places.deletePlace(activity.id, place.id);
+    setConfirmDeleteOpen(true);
   };
 
   const deleteAndReassign = () => {

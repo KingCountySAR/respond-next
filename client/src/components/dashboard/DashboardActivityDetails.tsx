@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import Link from 'next/link';
+import { Link } from 'wouter';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 
