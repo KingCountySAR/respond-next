@@ -12,6 +12,8 @@ import { NavigationApp } from '@respond/shared/types/preferences';
 
 import { ActivityDomainModel } from '@/client/models/activityDomainModel';
 
+import caltopoLogo from '@/client/assets/caltopo-logo.svg';
+
 export const ActivityTile = observer(function ActivityTile({ activity, status, children }: PropsWithChildren<{ activity: ActivityDomainModel; status?: ParticipantStatus }>) {
   if (!activity.activityLoaded) return null;
   return (
@@ -35,8 +37,8 @@ export const ActivityTile = observer(function ActivityTile({ activity, status, c
           <Grid container sx={{ flexGrow: 1, justifyContent: 'space-between', alignItems: 'center' }}>
             <Grid>
               {activity.mapId && (
-                <IconButton aria-label="Map" href={`https://sartopo.com/m/${activity.mapId}`} target="_blank">
-                  <img src="/sartopo-logo.svg" alt="SARTopo Logo" width={25} height={25} />
+                <IconButton aria-label="Map" href={`https://caltopo.com/m/${activity.mapId}`} target="_blank">
+                  <img src={caltopoLogo} alt="CalTopo Logo" width={25} height={25} />
                 </IconButton>
               )}
               <NavigationButton lat={activity.location.lat} lon={activity.location.lon} />
