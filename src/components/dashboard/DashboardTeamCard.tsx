@@ -7,7 +7,7 @@ import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Participant, ParticipantStatus } from '@respond/types/activity';
 
-import { CommunicationsLogEntry, createNewCommsEntry, EquipmentItem, Team } from '../../types/operations';
+import { CommunicationsLogEntry, createNewCommsEntry, DEFAULT_PLACES, EquipmentItem, Team } from '../../types/operations';
 import { useActivityContext } from '../activities/ActivityProvider';
 import { Draggable, Droppable } from '../DragAndDrop/DnDComponents';
 import { StatusContainer } from '../StatusContainer';
@@ -123,7 +123,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
   const autoLog = (message: string, isFavorite = false) => {
     const comm: CommunicationsLogEntry = createNewCommsEntry({
       from: team.name,
-      to: 'CP',
+      to: DEFAULT_PLACES.base,
       message: message,
       isAutomated: true,
       isFavorite,

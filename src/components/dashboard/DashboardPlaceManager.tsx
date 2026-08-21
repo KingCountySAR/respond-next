@@ -36,7 +36,7 @@ export function DashboardAddPlaceButton() {
     if (placeToCreate.notes?.trim()) parts.push(placeToCreate.notes.trim());
     const comm: CommunicationsLogEntry = createNewCommsEntry({
       from: placeToCreate.name,
-      to: 'CP',
+      to: DEFAULT_PLACES.base,
       message: parts.join(' '),
       isAutomated: true,
     });
@@ -121,7 +121,7 @@ function PlaceTile({ place }: { place: Place }) {
   const logDeleteComm = () => {
     const comm: CommunicationsLogEntry = createNewCommsEntry({
       from: place.name,
-      to: 'CP',
+      to: DEFAULT_PLACES.base,
       message: `${place.name} location terminated`,
       isAutomated: true,
     });

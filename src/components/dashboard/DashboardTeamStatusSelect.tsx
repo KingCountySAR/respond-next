@@ -47,7 +47,7 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
     };
     const comm: CommunicationsLogEntry = createNewCommsEntry({
       from: team.name,
-      to: 'CP',
+      to: DEFAULT_PLACES.base,
       message: messages[status] ?? status,
       isAutomated: true,
       isFavorite: status === 'Subject Located',

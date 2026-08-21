@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAppDispatch } from '@respond/lib/client/store';
 import { ActivityActions } from '@respond/lib/state';
 import { Participant } from '@respond/types/activity';
-import { CommunicationsLogEntry, createNewCommsEntry } from '@respond/types/operations';
+import { CommunicationsLogEntry, createNewCommsEntry, DEFAULT_PLACES } from '@respond/types/operations';
 
 import { useActivityContext } from '../activities/ActivityProvider';
 import ConfirmDialog from '../ConfirmDialog';
@@ -41,7 +41,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
 
   const autoLog = (message: string) => {
     const comm: CommunicationsLogEntry = createNewCommsEntry({
-      from: 'CP',
+      from: DEFAULT_PLACES.base,
       message: message,
       isAutomated: true,
     });
