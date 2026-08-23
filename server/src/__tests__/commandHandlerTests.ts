@@ -180,8 +180,8 @@ describe('placeCommsReactor', () => {
   });
 
   it('stays silent for default places (Command Post / Field)', () => {
-    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, createNewPlace('Command Post')), emptyCtx)).toEqual([]);
-    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, createNewPlace('Field (Unassigned)')), emptyCtx)).toEqual([]);
+    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, createNewPlace(DEFAULT_PLACES.base)), emptyCtx)).toEqual([]);
+    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, createNewPlace(DEFAULT_PLACES.field)), emptyCtx)).toEqual([]);
   });
 
   it('ignores comm events (no infinite loop)', () => {
