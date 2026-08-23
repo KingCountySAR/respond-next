@@ -14,12 +14,13 @@ vi.mock('@respond/lib/api', async (importOriginal) => ({
   }),
 }));
 
-import { buildClientStore } from '../../../lib/client/store';
-import { activitiesReloaded } from '../../../lib/client/store/activities';
-import { AuthActions } from '../../../lib/client/store/auth';
-import { ActivityDomainModel } from '../../../models/activityDomainModel';
-import { ObservableClock } from '../../../models/observableClock';
-import { UserDomainModel } from '../../../models/userDomainModel';
+import { buildClientStore } from '@/client/lib/client/store';
+import { activitiesReloaded } from '@/client/lib/client/store/activities';
+import { AuthActions } from '@/client/lib/client/store/auth';
+import { ActivityDomainModel } from '@/client/models/activityDomainModel';
+import { ObservableClock } from '@/client/models/observableClock';
+import { UserDomainModel } from '@/client/models/userDomainModel';
+
 import { ActivityViewModel } from '../activityViewModel';
 
 function participant(id: string, firstname: string, organizationId: string, status: ParticipantStatus): Participant {

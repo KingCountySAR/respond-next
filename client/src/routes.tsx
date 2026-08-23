@@ -1,9 +1,9 @@
-import { Suspense, lazy } from 'react';
-import { Redirect, Route, Switch } from 'wouter';
+import { lazy, Suspense } from 'react';
+import { Route, Switch } from 'wouter';
 
 import { LocationManager } from '@respond/components/locations/LocationManager';
 
-import { Home } from './pages/Home';
+import { Home } from './pages/respond/Home';
 import { RespondRoutes } from './pages/respond/RespondRoutes';
 
 const OpsRoutes = lazy(() => import('./pages/operations/OpsRoutes').then((m) => ({ default: m.OpsRoutes })));

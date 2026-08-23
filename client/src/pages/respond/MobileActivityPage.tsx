@@ -5,10 +5,6 @@ import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography
 import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
 
-import { BriefingPanel } from '@respond/components/activities/BriefingPanel';
-import { ManagerPanel } from '@respond/components/activities/ManagerPanel';
-import { ParticipatingOrgChips } from '@respond/components/activities/ParticipatingOrgChips';
-import { ParticipantDialog, RosterPanel, RosterRowCard } from '@respond/components/activities/RosterPanel';
 import { ParticipantEtaUpdater } from '@respond/components/participant/ParticipantEtaUpdater';
 import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
@@ -16,6 +12,10 @@ import { ToolbarPage } from '@respond/components/ToolbarPage';
 
 import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
 import { ActivityViewModel } from '@/client/pages/respond/activityViewModel';
+import { BriefingPanel } from '@/client/pages/respond/components/BriefingPanel';
+import { ManagerPanel } from '@/client/pages/respond/components/ManagerPanel';
+import { ParticipatingOrgChips } from '@/client/pages/respond/components/ParticipatingOrgChips';
+import { ParticipantDialog, RosterPanel, RosterRowCard } from '@/client/pages/respond/components/RosterPanel';
 import { MobilePageId } from '@/client/types';
 
 import { ActivityActionsBar } from './ActivityPage';

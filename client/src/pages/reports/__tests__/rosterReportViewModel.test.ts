@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { Activity, Participant, ParticipantStatus, ParticipatingOrg } from '@respond/shared/types/activity';
 
-import { buildClientStore } from '../../../lib/client/store';
-import { activitiesReloaded } from '../../../lib/client/store/activities';
-import { ActivityDomainModel } from '../../../models/activityDomainModel';
-import { ObservableClock } from '../../../models/observableClock';
+import { buildClientStore } from '@/client/lib/client/store';
+import { activitiesReloaded } from '@/client/lib/client/store/activities';
+import { ActivityDomainModel } from '@/client/models/activityDomainModel';
+import { ObservableClock } from '@/client/models/observableClock';
+
 import { RosterViewModel } from '../rosterReportViewModel';
 
 function participant(id: string, firstname: string, organizationId: string, status: ParticipantStatus): Participant {

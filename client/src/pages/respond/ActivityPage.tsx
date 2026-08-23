@@ -5,11 +5,11 @@ import { observer } from 'mobx-react-lite';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 
-import { ActivityDomainModelProvider, useActivityDomainModel } from '@respond/components/activities/ActivityDomainModelProvider';
 import { useUserDomainModel } from '@respond/components/AppDomainProvider';
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, DialogWithHistory, IconButton, Stack } from '@respond/components/Material';
 
 import { ActivityViewModel } from '@/client/pages/respond/activityViewModel';
+import { ActivityDomainModelProvider, useActivityDomainModel } from '@/client/pages/respond/components/ActivityDomainModelProvider';
 
 import { DesktopActivityPage } from './DesktopActivityPage';
 import { MobileActivityPage } from './MobileActivityPage';
