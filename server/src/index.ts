@@ -1,7 +1,8 @@
 import './env'; // must be first: populate process.env before mongodb.ts reads it
 
 import type { Server as HTTPServer } from 'http';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -12,7 +13,12 @@ import { getServices } from './services';
 import { SocketServer } from './socketManager';
 
 const PORT = Number(process.env.PORT ?? 3000);
-const CLIENT_DIST = resolve(process.cwd(), './static');
+// Serve the built client from ./static NEXT TO this bundle (dist/static), resolved
+// relative to the bundle file rather than cwd. This lets the app be launched from a
+// parent dir — where the operator's .env.local lives and where env.ts reads it from
+// cwd — while the replaceable client assets ship inside dist/. In dev this points at
+// a nonexistent server/src/static, but the static handler below is prod-only anyway.
+const CLIENT_DIST = resolve(dirname(fileURLToPath(import.meta.url)), 'static');
 
 async function main() {
   const app = new Hono();
@@ -22,7 +28,7 @@ async function main() {
 
   // In production, serve the built client SPA from this same process (single
   // origin for static assets + API + websocket). In dev, Vite serves the client
-  // and proxies /api + /socket.io here. CLIENT_DIST is relative to cwd.
+  // and proxies /api + /socket.io here. CLIENT_DIST is next to the bundle (see above).
   if (process.env.NODE_ENV !== 'development') {
     const root = CLIENT_DIST;
     // precompressed: serve foo.js.gz (emitted by Vite at build time) when the

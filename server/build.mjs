@@ -3,10 +3,16 @@ import { build } from 'esbuild';
 // Production bundle: one self-contained ESM file (dist/index.js) that inlines all
 // of our own source (server + @shared) plus every PURE-JS dependency.
 //
-// Deploy artifact = this file + the vite client output (server/static/). Run it
-// with `node dist/index.js` from a directory that also contains ./static and,
-// optionally, your .env / .env.local (dotenv reads those from cwd at RUNTIME —
-// they are never bundled). No node_modules needs to be copied to the server.
+// This file (server/dist/index.js) and the vite client output (server/static/)
+// are INTERMEDIATES. The shippable deploy artifact is assembled from them by
+// `npm run package` (repo root), which collects both — plus package.json and
+// .env.example — into ./package/, whose dist/ subfolder is the per-deploy
+// payload you rsync. See scripts/package.mjs.
+//
+// The bundle runs via `npm start` (-> `node dist/index.js`) from the deploy dir.
+// That cwd holds .env.local (dotenv reads it from cwd at RUNTIME — never bundled)
+// while ./static is resolved next to the bundle. No node_modules is copied to the
+// server: every pure-JS dependency is inlined here.
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // ADDING A DEPENDENCY? ASK: "Is it pure JavaScript?"
