@@ -62,6 +62,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same team, cancel.
       if (team.assignedParticipants.includes(item.id)) return;
+      callback?.();
       addTeamMember(item);
     } else if (type === 'equipment') {
       if (!!callback && item.type === 'Custom' && item.name === 'Custom Item') {
@@ -74,7 +75,6 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
     } else {
       return;
     }
-    callback?.();
   };
 
   const addTeamMember = (participant: Participant) => {
