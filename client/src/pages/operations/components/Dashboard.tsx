@@ -41,18 +41,17 @@ function CombinedResourcesPanel() {
           sx={{ minHeight: 36, height: 36 }} // Compact height replacing invalid size prop
         >
           <Tab
-            icon={<PeopleAltIcon fontSize="small" />}
-            iconPosition="start"
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <span>Responders</span>
-                <Badge badgeContent={available} color="info" sx={{ m: 0.5 }} />
-              </Box>
+            icon={
+              <Badge badgeContent={available} color="info" sx={{ m: 0.5 }}>
+                <PeopleAltIcon fontSize="small" />
+              </Badge>
             }
+            iconPosition="start"
+            label={<Box sx={{ ml: 1 }}>Responders</Box>}
             value="responders"
             sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }}
           />
-          <Tab icon={<Inventory2Icon fontSize="small" />} iconPosition="start" label="Equipment" value="equipment" sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }} />
+          <Tab icon={<Inventory2Icon fontSize="small" />} iconPosition="start" label={<Box sx={{ ml: 1 }}>Equipment</Box>} value="equipment" sx={{ minHeight: 40, py: 0, fontSize: '0.8125rem' }} />
         </Tabs>
       </Box>
 
