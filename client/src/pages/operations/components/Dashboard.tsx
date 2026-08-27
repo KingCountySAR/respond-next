@@ -20,6 +20,7 @@ import { DashboardPanel } from './DashboardPanel';
 import { DashboardAddPlaceButton, DashboardPlaceManager } from './DashboardPlaceManager';
 import { DashboardReadOnlyTeams } from './DashboardReadOnlyTeams';
 import { DashboardResponderManager } from './DashboardResponderManager';
+import { DashboardResponderSummary } from './DashboardResponderSummary';
 import { DashboardRoleTile } from './DashboardRoleTile';
 import { DashboardTeamManager } from './DashboardTeamManager';
 import { DashboardWeatherTile } from './DashboardWeather';
@@ -112,8 +113,12 @@ function DashboardContent() {
   if (isSmallScreen) {
     return (
       <ToolbarPage>
-        <Stack spacing={2}>
+        <Stack spacing={1} direction="column" sx={{ pb: 2 }}>
+          <Stack spacing={1} direction="row" sx={{ width: '100%' }}>
+            <DashboardResponderSummary variant="mobile" />
+          </Stack>
           <DashboardReadOnlyTeams />
+          <DashboardEquipmentSummary />
         </Stack>
       </ToolbarPage>
     );

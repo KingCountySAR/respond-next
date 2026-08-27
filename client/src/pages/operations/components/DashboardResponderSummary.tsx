@@ -5,7 +5,7 @@ import { useActivityContext } from '@/client/components/activities/ActivityProvi
 
 import { DashboardMetricTile } from './DashboardMetricTile';
 
-export function DashboardResponderSummary() {
+export function DashboardResponderSummary({ variant = 'desktop' }: { variant?: 'desktop' | 'mobile' }) {
   const activity = useActivityContext();
 
   const participantTotals = Object.values(activity.participants).reduce(
@@ -45,7 +45,7 @@ export function DashboardResponderSummary() {
   return (
     <>
       {summaryLines.map(([label, count]) => (
-        <DashboardMetricTile key={label} label={label} value={count.toString()} />
+        <DashboardMetricTile key={label} label={label} value={count.toString()} variant={variant} />
       ))}
     </>
   );
