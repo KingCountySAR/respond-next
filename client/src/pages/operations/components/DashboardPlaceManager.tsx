@@ -3,14 +3,14 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import MapIcon from '@mui/icons-material/Map';
 import { Box, Button, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
 import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
-import ConfirmDialog from '@/client/components/ConfirmDialog';
+import { useDialogs } from '@/client/components/DialogProvider';
 import { Draggable, Droppable } from '@/client/components/DragAndDrop/DnDComponents';
 import { Stack } from '@/client/components/Material';
 
@@ -26,24 +26,21 @@ import { DashboardWeatherDividedSection } from './DashboardWeather';
 export function DashboardAddPlaceButton() {
   const places = usePlaceCommands();
   const activity = useActivityContext();
-  const [addingPlace, setAddingPlace] = useState<Place | null>(null);
+  const { open } = useDialogs();
+
+  const handleAdd = async () => {
+    const result = await open(DashboardPlaceEditDialog, { activity, place: createNewPlace('') });
+    if (result != null) places.createPlace(activity.id, result);
+  };
 
   return (
     <>
-      <Button size="small" variant="contained" onClick={() => setAddingPlace(createNewPlace(''))}>
+      <Button size="small" variant="contained" onClick={handleAdd}>
         <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
           <AddIcon fontSize="small" />
           <MapIcon fontSize="small" />
         </Box>
       </Button>
-      <DashboardPlaceEditDialog
-        place={addingPlace}
-        onSave={(placeFromForm) => {
-          places.createPlace(activity.id, placeFromForm);
-          setAddingPlace(null);
-        }}
-        onClose={() => setAddingPlace(null)}
-      />
     </>
   );
 }
@@ -76,9 +73,7 @@ export function DashboardPlaceManager() {
 function PlaceTile({ place }: { place: Place }) {
   const places = usePlaceCommands();
   const activity = useActivityContext();
-
-  const [editingPlace, setEditingPlace] = useState<Place | null>(null);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const { open, confirm } = useDialogs();
 
   const participants = (place.assignedParticipants ?? []).flatMap((id) => {
     const participant = activity.participants[id];
@@ -99,9 +94,28 @@ function PlaceTile({ place }: { place: Place }) {
     places.updatePlace(activity.id, placeToUpsert);
   };
 
+  const editPlace = async () => {
+    const result = await open(DashboardPlaceEditDialog, { activity, place });
+    if (result != null) upsertPlace(result);
+  };
+
   // The place-comms reactor logs the "terminated" comm server-side on delete.
-  const deletePlace = () => {
-    setConfirmDeleteOpen(true);
+  const deletePlace = async () => {
+    const confirmed = await confirm({
+      prompt:
+        place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0
+          ? `"${place.name}" still has assigned members or equipment. They will be moved to ${DEFAULT_PLACES.field}. Delete anyway?`
+          : `Delete "${place.name}"?`,
+      destructive: true,
+      label: 'Delete',
+    });
+    if (!confirmed) return;
+    const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
+    if (hasResources) {
+      deleteAndReassign();
+    } else {
+      places.deletePlace(activity.id, place.id);
+    }
   };
 
   const deleteAndReassign = () => {
@@ -115,20 +129,10 @@ function PlaceTile({ place }: { place: Place }) {
     places.batchUpdatePlaces(activity.id, [updatedFieldPlace], [place.id]);
   };
 
-  const confirmDelete = () => {
-    const hasResources = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0;
-    if (hasResources) {
-      deleteAndReassign();
-    } else {
-      places.deletePlace(activity.id, place.id);
-    }
-    setConfirmDeleteOpen(false);
-  };
-
   const editAction = {
     id: 'edit',
     icon: <EditIcon sx={{ fontSize: 16 }} />,
-    onClick: () => setEditingPlace(place),
+    onClick: () => editPlace(),
   };
 
   const deleteAction = {
@@ -247,26 +251,6 @@ function PlaceTile({ place }: { place: Place }) {
           )}
         </Stack>
       </DashboardBoxWithTitle>
-      <DashboardPlaceEditDialog
-        place={editingPlace}
-        onSave={(placeFromForm) => {
-          upsertPlace(placeFromForm);
-          setEditingPlace(null);
-        }}
-        onClose={() => setEditingPlace(null)}
-      />
-      <ConfirmDialog
-        open={confirmDeleteOpen}
-        prompt={
-          place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0
-            ? `"${place.name}" still has assigned members or equipment. They will be moved to ${DEFAULT_PLACES.field}. Delete anyway?`
-            : `Delete "${place.name}"?`
-        }
-        destructive={true}
-        label="Delete"
-        onConfirm={confirmDelete}
-        onClose={() => setConfirmDeleteOpen(false)}
-      />
     </Droppable>
   );
 }

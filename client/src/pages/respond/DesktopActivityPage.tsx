@@ -1,9 +1,10 @@
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
 import { observer } from 'mobx-react-lite';
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 import { Link } from 'wouter';
 
+import { useDialogs } from '@respond/components/DialogProvider';
 import { Box, Paper, Stack } from '@respond/components/Material';
 import { ParticipantEtaUpdater } from '@respond/components/participant/ParticipantEtaUpdater';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
@@ -21,9 +22,11 @@ import { ParticipantDialog, RosterPanel, RosterRowCard } from '@/client/pages/re
 import { ActivityActionsBar } from './ActivityPage';
 
 export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }: { vm: ActivityViewModel }) {
+  const { open } = useDialogs();
   const activity = vm.domain;
-  const [selectedParticipant, setSelectedParticipant] = useState<ParticipantDomainModel>();
-  const [participantOpen, setParticipantOpen] = useState(false);
+  const openParticipantDialog = (participant: ParticipantDomainModel) => {
+    open(ParticipantDialog, { participant });
+  };
   return (
     <ToolbarPage maxWidth="lg">
       <Stack direction="row" sx={{ mb: 1, alignItems: 'start' }} spacing={2}>
@@ -49,8 +52,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
             participantRowComponent={RosterRow}
             onClick={(p) => {
               if (!p.participant) return;
-              setSelectedParticipant(p);
-              setParticipantOpen(true);
+              openParticipantDialog(p);
             }}
           />
         </Box>
@@ -69,7 +71,6 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
           <ManagerPanel activity={activity} sx={{ px: 3 }} />
         </Stack>
       </Stack>
-      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </ToolbarPage>
   );
 });

@@ -7,20 +7,16 @@ import * as React from 'react';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { AuthActions } from '@respond/lib/client/store/auth';
 
+import { useDialogs } from './DialogProvider';
 import { PreferencesDialog } from './Preferences';
 
 export function AppMenu() {
   const dispatch = useAppDispatch();
   const { userInfo } = useAppSelector((state) => state.auth);
+  const { open } = useDialogs();
   const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement | null>(null);
   const handleMenu = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => setMenuAnchor(event.currentTarget);
   const handleClose = () => setMenuAnchor(null);
-
-  const [openPreferences, setOpenPreferences] = React.useState(false);
-  const handleOpenPreferences = () => {
-    setOpenPreferences(true);
-  };
-  const handleClosePreferences = () => setOpenPreferences(false);
 
   return (
     <>
@@ -47,7 +43,7 @@ export function AppMenu() {
           <MenuItem
             onClick={() => {
               handleClose();
-              handleOpenPreferences();
+              open(PreferencesDialog, {});
             }}
           >
             Preferences
@@ -67,7 +63,6 @@ export function AppMenu() {
           </MenuItem>
         </Menu>
       </div>
-      <PreferencesDialog open={openPreferences} onClose={handleClosePreferences} />
     </>
   );
 }

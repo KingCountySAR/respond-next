@@ -1,23 +1,23 @@
 import EditIcon from '@mui/icons-material/Edit';
 import { Button, DialogActions, DialogContent, DialogTitle, TextField, Typography } from '@mui/material';
 import Linkify from 'linkify-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { useDialogs } from '@respond/components/DialogProvider';
+import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 import { useActivityCommands } from '@respond/lib/client/services/activity';
 import { Activity } from '@respond/shared/types/activity';
-
-import DialogWithHistory from '@/client/components/DialogWithHistory';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 
 export function DashboardActivityDescription({ activity }: { activity: Activity }) {
-  const [editing, setEditing] = useState(false);
+  const { open } = useDialogs();
 
   const editAction = {
     id: 'edit',
     icon: <EditIcon sx={{ fontSize: 16 }} />,
-    onClick: () => setEditing(true),
+    onClick: () => open(DashboardActivityDescriptionEditDialog, { activity }),
   };
 
   return (
@@ -29,7 +29,6 @@ export function DashboardActivityDescription({ activity }: { activity: Activity 
           </Typography>
         )}
       </DashboardBoxWithTitle>
-      <DashboardActivityDescriptionEditDialog open={editing} onClose={() => setEditing(false)} activity={activity} />
     </>
   );
 }
@@ -50,7 +49,7 @@ function DashboardActivityDescriptionEditDialog({ open, onClose, activity }: { o
   };
 
   return (
-    <DialogWithHistory fullWidth open={open} onClose={onClose}>
+    <AppDialog fullWidth open={open} onClose={onClose}>
       <DialogTitle>Edit Description</DialogTitle>
       <form onSubmit={handleSubmit(handleSave)}>
         <DialogContent>
@@ -63,6 +62,6 @@ function DashboardActivityDescriptionEditDialog({ open, onClose, activity }: { o
           </Button>
         </DialogActions>
       </form>
-    </DialogWithHistory>
+    </AppDialog>
   );
 }

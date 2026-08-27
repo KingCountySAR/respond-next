@@ -2,11 +2,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { observer } from 'mobx-react-lite';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
 
 import { useUserDomainModel } from '@respond/components/AppDomainProvider';
-import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, DialogWithHistory, IconButton, Stack } from '@respond/components/Material';
+import { useDialogs } from '@respond/components/DialogProvider';
+import { Button, IconButton, Stack } from '@respond/components/Material';
 
 import { ActivityViewModel } from '@/client/pages/respond/activityViewModel';
 import { ActivityDomainModelProvider, useActivityDomainModel } from '@/client/pages/respond/components/ActivityDomainModelProvider';
@@ -72,53 +73,36 @@ function EditActivityButton({ href, disabled }: { href: string; disabled?: boole
 }
 
 function UpdateActivityStatusButton({ label, onClick }: { label: string; onClick: () => void }) {
-  const [showConfirm, setShowConfirm] = useState(false);
+  const { confirm } = useDialogs();
+  const handleClick = async () => {
+    const confirmed = await confirm({
+      title: `${label} event?`,
+      prompt: 'Only perform this action if you are authorized to do so.',
+      label,
+    });
+    if (confirmed) onClick();
+  };
   return (
-    <>
-      <Button variant="outlined" size="small" onClick={() => setShowConfirm(true)}>
-        {label}
-      </Button>
-      <DialogWithHistory open={showConfirm} onClose={() => setShowConfirm(false)}>
-        <DialogTitle>{label} event?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>Only perform this action if you are authorized to do so.</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
-          <Button
-            autoFocus
-            onClick={() => {
-              onClick();
-              setShowConfirm(false);
-            }}
-          >
-            {label}
-          </Button>
-        </DialogActions>
-      </DialogWithHistory>
-    </>
+    <Button variant="outlined" size="small" onClick={handleClick}>
+      {label}
+    </Button>
   );
 }
 
 function RemoveActivityButton({ onClick }: { onClick: () => void }) {
-  const [showConfirm, setShowConfirm] = useState(false);
+  const { confirm } = useDialogs();
+  const handleClick = async () => {
+    const confirmed = await confirm({
+      title: 'Remove Activity?',
+      prompt: 'Mark this activity as deleted? Any data it contains will stop contributing to report totals.',
+      destructive: true,
+      label: 'Remove',
+    });
+    if (confirmed) onClick();
+  };
   return (
-    <>
-      <IconButton color="danger" onClick={() => setShowConfirm(true)}>
-        <DeleteIcon />
-      </IconButton>
-      <DialogWithHistory open={showConfirm} onClose={() => setShowConfirm(false)}>
-        <DialogTitle>Remove Activity?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
-          <Button autoFocus color="danger" onClick={onClick}>
-            Remove
-          </Button>
-        </DialogActions>
-      </DialogWithHistory>
-    </>
+    <IconButton color="danger" onClick={handleClick}>
+      <DeleteIcon />
+    </IconButton>
   );
 }

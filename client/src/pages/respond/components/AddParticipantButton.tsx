@@ -1,7 +1,8 @@
 import { Box, Button, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
 import * as React from 'react';
 
-import { DialogWithHistory } from '@respond/components/Material';
+import { useDialogs } from '@respond/components/DialogProvider';
+import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 import { MemberInfo } from '@respond/shared/types/member';
 import { Organization } from '@respond/shared/types/organization';
 
@@ -16,15 +17,11 @@ import ParticipantTimeline from './ParticipantTimeline';
 const getTitle = (activity: ActivityDomainModel) => `Add ${activity.isMission ? 'Responder' : 'Participant'}`;
 
 export default function AddParticipantButton({ activity }: { activity: ActivityDomainModel }) {
-  const [openDialog, setOpenDialog] = React.useState<boolean>(false);
-
+  const { open } = useDialogs();
   return (
-    <>
-      <Button size="small" variant="outlined" onClick={() => setOpenDialog(true)}>
-        {getTitle(activity)}
-      </Button>
-      <AddParticipantDialog open={openDialog} activity={activity} onClose={() => setOpenDialog(false)} />
-    </>
+    <Button size="small" variant="outlined" onClick={() => open(AddParticipantDialog, { activity })}>
+      {getTitle(activity)}
+    </Button>
   );
 }
 
@@ -46,7 +43,7 @@ function AddParticipantDialog({ open, activity, onClose }: { open: boolean; acti
   };
 
   return (
-    <DialogWithHistory fullWidth={true} open={open} onClose={onClose}>
+    <AppDialog fullWidth={true} open={open} onClose={onClose}>
       <DialogTitle sx={{ alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
         <Box>{getTitle(activity)}</Box>
       </DialogTitle>
@@ -61,6 +58,6 @@ function AddParticipantDialog({ open, activity, onClose }: { open: boolean; acti
       <DialogActions>
         <Button onClick={handleClose}>Close</Button>
       </DialogActions>
-    </DialogWithHistory>
+    </AppDialog>
   );
 }

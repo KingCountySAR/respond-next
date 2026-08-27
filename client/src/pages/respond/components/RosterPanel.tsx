@@ -8,9 +8,9 @@ import Switch from '@mui/material/Switch';
 import { observer } from 'mobx-react-lite';
 import { FunctionComponent, ReactNode, useState } from 'react';
 
+import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 import { getStatusCssColor, ParticipantStatus } from '@respond/shared/types/activity';
 
-import DialogWithHistory from '@/client/components/DialogWithHistory';
 import { ParticipantMilesUpdater } from '@/client/components/participant/ParticipantMilesUpdater';
 import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
 import { RosterViewModel } from '@/client/pages/reports/rosterReportViewModel';
@@ -70,7 +70,7 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
   if (!participant) return <></>;
 
   return (
-    <DialogWithHistory fullWidth open={open} onClose={onClose}>
+    <AppDialog fullWidth open={open} onClose={onClose}>
       <DialogTitle style={{ borderBottom: 'solid 4px ' + participant.statusColor }} sx={{ alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
         <Box>{participant.fullName}</Box>
         <Typography style={{ color: participant.statusColor }}>{participant.statusText}</Typography>
@@ -119,7 +119,7 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
           Close
         </Button>
       </DialogActions>
-    </DialogWithHistory>
+    </AppDialog>
   );
 });
 

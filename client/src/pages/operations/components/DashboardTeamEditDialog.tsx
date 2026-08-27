@@ -1,22 +1,20 @@
 import { Button, DialogActions, DialogContent, DialogTitle, MenuItem, TextField } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
+import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { Activity } from '@respond/shared/types/activity';
 import { createNewPlace, DEFAULT_PLACES, SarGar, Team } from '@respond/shared/types/operations';
 
-import { useActivityContext } from '@/client/components/activities/ActivityProvider';
-import ConfirmDialog from '@/client/components/ConfirmDialog';
-import DialogWithHistory from '@/client/components/DialogWithHistory';
+import { MuiDialogProps, useDialogs } from '@/client/components/DialogProvider';
 import { Stack } from '@/client/components/Material';
 
-type DashboardTeamEditDialogProps = {
+interface DashboardTeamEditDialogProps extends MuiDialogProps<Team | null> {
   team: Team | null;
-  teams: Team[];
-  onSave: (team: Team) => void;
-  onClose: () => void;
-};
+  activity: Activity;
+}
 
 type FormValues = {
   name: string;
@@ -41,11 +39,12 @@ export function validateTeamName(teams: Team[], currentTeamId: string, name: str
   return { isValid: true };
 }
 
-export function DashboardTeamEditDialog({ team, teams, onSave, onClose }: DashboardTeamEditDialogProps) {
+export function DashboardTeamEditDialog({ team, activity, onClose }: DashboardTeamEditDialogProps) {
   const teamCommands = useTeamCommands();
   const places = usePlaceCommands();
-  const activity = useActivityContext();
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const { confirm } = useDialogs();
+
+  const teams = activity.teams ?? [];
 
   const {
     register,
@@ -87,7 +86,7 @@ export function DashboardTeamEditDialog({ team, teams, onSave, onClose }: Dashbo
       return;
     }
 
-    onSave({
+    onClose({
       ...team,
       name: data.name.trim(),
       gar: data.gar,
@@ -101,12 +100,19 @@ export function DashboardTeamEditDialog({ team, teams, onSave, onClose }: Dashbo
 
   const hasAssignedResources = team.assignedParticipants.length > 0 || team.assignedEquipment.length > 0;
 
-  const deleteTeam = () => {
+  const deleteTeam = async () => {
+    const confirmed = await confirm({
+      prompt: hasAssignedResources ? `Deleting ${team.name} will move remaining members and equipment to ${DEFAULT_PLACES.field}. Continue?` : `Delete ${team.name}?`,
+      destructive: true,
+      label: 'Delete',
+    });
+    if (!confirmed) return;
+    if (hasAssignedResources) reassignResources();
     teamCommands.deleteTeam(activity.id, team.id);
-    onClose();
+    onClose(null);
   };
 
-  const deleteTeamWithReassign = () => {
+  const reassignResources = () => {
     const fieldPlace = activity.places?.find((place) => place.name === DEFAULT_PLACES.field);
     const mergedParticipants = Array.from(new Set([...(fieldPlace?.assignedParticipants ?? []), ...team.assignedParticipants]));
     const existingEquipmentIds = new Set((fieldPlace?.assignedEquipment ?? []).map((item) => item.uuid));
@@ -121,17 +127,11 @@ export function DashboardTeamEditDialog({ team, teams, onSave, onClose }: Dashbo
     } else {
       places.createPlace(activity.id, updatedFieldPlace);
     }
-
-    deleteTeam();
-  };
-
-  const handleDeleteClick = () => {
-    setConfirmDeleteOpen(true);
   };
 
   return (
     <>
-      <DialogWithHistory fullWidth={true} open={Boolean(team)} onClose={onClose}>
+      <AppDialog fullWidth={true} open={Boolean(team)} onClose={onClose}>
         <DialogTitle>Edit Team</DialogTitle>
 
         <form onSubmit={handleSubmit(handleSave)}>
@@ -156,26 +156,18 @@ export function DashboardTeamEditDialog({ team, teams, onSave, onClose }: Dashbo
           </DialogContent>
 
           <DialogActions sx={{ justifyContent: 'space-between' }}>
-            <Button color="error" onClick={handleDeleteClick}>
+            <Button color="error" onClick={deleteTeam}>
               Delete
             </Button>
             <Stack direction="row" spacing={1}>
-              <Button onClick={onClose}>Cancel</Button>
+              <Button onClick={() => onClose(null)}>Cancel</Button>
               <Button type="submit" variant="contained">
                 Save
               </Button>
             </Stack>
           </DialogActions>
         </form>
-      </DialogWithHistory>
-      <ConfirmDialog
-        open={confirmDeleteOpen}
-        prompt={hasAssignedResources ? `Deleting ${team.name} will move remaining members and equipment to ${DEFAULT_PLACES.field}. Continue?` : `Delete ${team.name}?`}
-        destructive={true}
-        label="Delete"
-        onConfirm={hasAssignedResources ? deleteTeamWithReassign : deleteTeam}
-        onClose={() => setConfirmDeleteOpen(false)}
-      />
+      </AppDialog>
     </>
   );
 }

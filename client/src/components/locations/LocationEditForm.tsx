@@ -1,11 +1,11 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Button, FormControl, FormHelperText, Grid, IconButton, Stack, Switch, TextField } from '@mui/material';
-import { useState } from 'react';
 import { Controller, Resolver, ResolverResult, useForm } from 'react-hook-form';
 
 import { createNewLocation, Location } from '@respond/shared/types/location';
 
-import ConfirmDialog from '../ConfirmDialog';
+import { useDialogs } from '@/client/components/DialogProvider';
+
 import { GoogleMapEmbed } from '../GoogleMapEmbed';
 import { FormControlLabel } from '../Material';
 
@@ -58,7 +58,7 @@ export function LocationEditForm({
   // Legacy activity.location records will only have title. We need to initialize
   // them onto the new Location object to ensures backward compatibility.
   const defaultValues = { ...createNewLocation(), ...location, toSaved: !enableTemporary };
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { confirm } = useDialogs();
 
   const {
     control,
@@ -79,8 +79,13 @@ export function LocationEditForm({
     onClose?.();
   };
 
-  const handleFormDelete = () => {
-    setConfirmDelete(true);
+  const handleFormDelete = async () => {
+    const confirmed = await confirm({
+      prompt: `Delete ${location.title}?`,
+      destructive: true,
+      label: 'Delete',
+    });
+    if (confirmed) handleFormSubmit({ ...location, isSaved: false });
   };
 
   const handleFormClose = () => {
@@ -189,7 +194,6 @@ export function LocationEditForm({
           </Grid>
         </Grid>
       </form>
-      <ConfirmDialog open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={() => handleFormSubmit({ ...location, isSaved: false })} prompt={`Delete ${location.title}?`} />
     </>
   );
 }

@@ -10,7 +10,7 @@ import { useCommsCommands } from '@respond/lib/client/services/comms';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
-import ConfirmDialog from '@/client/components/ConfirmDialog';
+import { useDialogs } from '@/client/components/DialogProvider';
 import { Stack } from '@/client/components/Material';
 
 import { DashboardAutoScrollContainer } from './DashboardAutoScrollContainer';
@@ -45,10 +45,9 @@ const parseValues = (value: string): string[] => {
 export function DashboardCommsManager() {
   const comms = useCommsCommands();
   const activity = useActivityContext();
+  const { confirm } = useDialogs();
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [entryPendingDelete, setEntryPendingDelete] = useState<CommunicationsLogEntry | null>(null);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [showFavorites, setShowFavorites] = useState(false);
   const [hideAutomated, setHideAutomated] = useState(false);
@@ -79,19 +78,13 @@ export function DashboardCommsManager() {
     comms.updateComm(activity.id, entry.id, { isFavorite: !entry.isFavorite });
   };
 
-  const deleteEntry = (id: string) => {
-    comms.updateComm(activity.id, id, { isDeleted: true });
-  };
-
-  const requestDeleteEntry = (entry: CommunicationsLogEntry) => {
-    setEntryPendingDelete(entry);
-  };
-
-  const confirmDeleteEntry = () => {
-    if (entryPendingDelete) {
-      deleteEntry(entryPendingDelete.id);
-    }
-    setEntryPendingDelete(null);
+  const requestDeleteEntry = async (entry: CommunicationsLogEntry) => {
+    const confirmed = await confirm({
+      prompt: entry ? `Delete communication from ${entry.from} to ${entry.to} at ${format24HourTime(entry.timestamp)}?` : 'Delete this communication?',
+      destructive: true,
+      label: 'Delete',
+    });
+    if (confirmed) comms.updateComm(activity.id, entry.id, { isDeleted: true });
   };
 
   return (
@@ -127,14 +120,6 @@ export function DashboardCommsManager() {
         )}
       </DashboardAutoScrollContainer>
       <DashboardCommsComposer />
-      <ConfirmDialog
-        open={Boolean(entryPendingDelete)}
-        prompt={entryPendingDelete ? `Delete communication from ${entryPendingDelete.from} to ${entryPendingDelete.to} at ${format24HourTime(entryPendingDelete.timestamp)}?` : 'Delete this communication?'}
-        destructive={true}
-        label="Delete"
-        onConfirm={confirmDeleteEntry}
-        onClose={() => setEntryPendingDelete(null)}
-      />
     </Box>
   );
 }

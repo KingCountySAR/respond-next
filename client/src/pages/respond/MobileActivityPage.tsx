@@ -5,6 +5,7 @@ import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography
 import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
 
+import { useDialogs } from '@respond/components/DialogProvider';
 import { ParticipantEtaUpdater } from '@respond/components/participant/ParticipantEtaUpdater';
 import { usePreferences } from '@respond/components/PreferencesProvider';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
@@ -68,8 +69,10 @@ function MobileBriefingScreen({ activity }: { activity: ActivityViewModel }) {
 }
 
 const MobileRosterScreen = observer(function MobileRosterScreen({ activity }: { activity: ActivityViewModel }) {
-  const [selectedParticipant, setSelectedParticipant] = useState<ParticipantDomainModel>();
-  const [participantOpen, setParticipantOpen] = useState(false);
+  const { open } = useDialogs();
+  const openParticipantDialog = (participant: ParticipantDomainModel) => {
+    open(ParticipantDialog, { participant });
+  };
   return (
     <>
       <ParticipatingOrgChips activity={activity.domain} filter={activity.roster.filter} setFilter={(f) => activity.roster.setFilter(f)} />
@@ -80,12 +83,10 @@ const MobileRosterScreen = observer(function MobileRosterScreen({ activity }: { 
           participantRowComponent={RosterRow}
           onClick={(p) => {
             if (!p.participant) return;
-            setSelectedParticipant(p);
-            setParticipantOpen(true);
+            openParticipantDialog(p);
           }}
         />
       </Box>
-      <ParticipantDialog open={participantOpen} participant={selectedParticipant} onClose={() => setParticipantOpen(false)} />
     </>
   );
 });

@@ -1,5 +1,5 @@
 import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
-import React, { useState } from 'react';
+import React from 'react';
 
 import { useParticipantCommands } from '@respond/lib/client/services/participants';
 import { usePlaceCommands } from '@respond/lib/client/services/places';
@@ -8,7 +8,7 @@ import { ParticipantStatus } from '@respond/shared/types/activity';
 import { createNewPlace, DEFAULT_PLACES, Team, TeamStatus } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
-import ConfirmDialog from '@/client/components/ConfirmDialog';
+import { useDialogs } from '@/client/components/DialogProvider';
 
 const TEAM_STATUSES: TeamStatus[] = ['In Base', 'In Transit', 'On Assignment', 'On Scene', 'Returning To Base', 'Disbanded'];
 
@@ -34,7 +34,7 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
   const places = usePlaceCommands();
   const teams = useTeamCommands();
   const activity = useActivityContext();
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const { confirm } = useDialogs();
 
   // Status-change comms are logged server-side by the team-comms reactor.
 
@@ -69,7 +69,14 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
     });
   };
 
-  const disbandWithReassign = () => {
+  const disbandWithReassign = async () => {
+    const confirmed = await confirm({
+      prompt: `Disbanding ${team.name} will move remaining members and equipment to ${DEFAULT_PLACES.field}. Continue?`,
+      destructive: true,
+      label: 'Disband',
+    });
+    if (!confirmed) return;
+
     const fieldPlace = activity.places?.find((place) => place.name === DEFAULT_PLACES.field);
     const mergedParticipants = Array.from(new Set([...(fieldPlace?.assignedParticipants ?? []), ...team.assignedParticipants]));
     const existingEquipmentIds = new Set((fieldPlace?.assignedEquipment ?? []).map((item) => item.uuid));
@@ -124,7 +131,7 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
     }
 
     if (needsConfirm) {
-      setConfirmOpen(true);
+      disbandWithReassign();
       return;
     }
 
@@ -188,15 +195,6 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
           </MenuItem>
         ))}
       </Select>
-      <ConfirmDialog
-        open={confirmOpen}
-        prompt={`Disbanding ${team.name} will move remaining members and equipment to ${DEFAULT_PLACES.field}. Continue?`}
-        onConfirm={() => {
-          disbandWithReassign();
-          setConfirmOpen(false);
-        }}
-        onClose={() => setConfirmOpen(false)}
-      />
     </>
   );
 };

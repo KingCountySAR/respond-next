@@ -1,19 +1,18 @@
 import ClearIcon from '@mui/icons-material/Clear';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
-import { useState } from 'react';
 
 import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { Participant } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
-import ConfirmDialog from '@/client/components/ConfirmDialog';
+import { useDialogs } from '@/client/components/DialogProvider';
 import { Droppable } from '@/client/components/DragAndDrop/DnDComponents';
 
 export function DashboardRoleTile({ title, id }: { title: string; id?: string }) {
+  const { confirm } = useDialogs();
   const teams = useTeamCommands();
   const activity = useActivityContext();
-  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const selectedId = activity.staff?.[title] ?? id;
   const participant = selectedId ? activity.participants[selectedId] : undefined;
@@ -27,12 +26,13 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
     }
   };
 
-  const handleDelete = (): void => {
-    setConfirmClearOpen(true);
-  };
-
-  const confirmDelete = (): void => {
-    if (activity && activity.id) {
+  const handleDelete = async () => {
+    const confirmed = await confirm({
+      prompt: `Unassign ${name} from ${title}?`,
+      destructive: true,
+      label: 'Unassign',
+    });
+    if (confirmed && activity && activity.id) {
       teams.updateStaff(activity.id, { [title]: '' });
     }
   };
@@ -61,7 +61,6 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
           </Box>
         </Paper>
       </Droppable>
-      <ConfirmDialog open={confirmClearOpen} prompt={`Unassign ${name} from ${title}?`} destructive={true} label="Unassign" onConfirm={confirmDelete} onClose={() => setConfirmClearOpen(false)} />
     </>
   );
 }

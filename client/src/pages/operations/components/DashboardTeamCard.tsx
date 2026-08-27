@@ -3,6 +3,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Chip, Divider, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
+import { useDialogs } from '@respond/components/DialogProvider';
 import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
 import { EquipmentItem, Team } from '@respond/shared/types/operations';
@@ -27,10 +28,9 @@ const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) 
 
 export default function DashboardTeamCard({ team, expandCommand, onExpandedChange }: { team: Team; expandCommand?: { expanded: boolean; nonce: number }; onExpandedChange?: (expanded: boolean) => void }) {
   const teams = useTeamCommands();
-
   const activity = useActivityContext();
+  const { open } = useDialogs();
 
-  const [openTeamEditor, setOpenTeamEditor] = useState<Team | null>(null);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const isDisbanded = team.status === 'Disbanded';
 
@@ -112,6 +112,11 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
     }
   };
 
+  const editTeam = async () => {
+    const result = await open(DashboardTeamEditDialog, { team, activity });
+    if (result !== null) updateTeam(result);
+  };
+
   // The team-comms reactor logs the GAR-change comm server-side.
   const updateTeam = (team: Team) => {
     teams.updateTeam(activity.id, team);
@@ -139,7 +144,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
                   {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
                 </IconButton>
                 <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer', color: isDisbanded ? 'text.disabled' : undefined }} onClick={() => setOpenTeamEditor(team)}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, cursor: 'pointer', color: isDisbanded ? 'text.disabled' : undefined }} onClick={editTeam}>
                     {team.name}
                   </Typography>
                   <DashboardErrorIndicator message={hasTeamMemberError ? 'One or more team members are not assigned to the activity.' : undefined} size={16} />
@@ -231,15 +236,6 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
           </Box>
         </StatusContainer>
       </Droppable>
-      <DashboardTeamEditDialog
-        team={openTeamEditor}
-        teams={activity.teams ?? []}
-        onSave={(team) => {
-          updateTeam(team);
-          setOpenTeamEditor(null);
-        }}
-        onClose={() => setOpenTeamEditor(null)}
-      />
     </>
   );
 }

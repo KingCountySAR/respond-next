@@ -6,6 +6,7 @@ import { apiFetch } from '@respond/lib/api';
 import { useAppSelector } from '@respond/lib/client/store';
 import type { BootstrapResponse } from '@respond/shared/types/bootstrap';
 
+import { DialogProvider } from './components/DialogProvider';
 import { AppRoutes } from './routes';
 
 // Replaces the old Next (main)/layout.tsx: show the login panel until authenticated.
@@ -30,7 +31,9 @@ export function App() {
   return (
     <ClientProviders googleClient={boot.googleClient} config={boot.config} user={boot.user} myOrg={boot.myOrg}>
       <MainGate>
-        <AppRoutes />
+        <DialogProvider>
+          <AppRoutes />
+        </DialogProvider>
       </MainGate>
     </ClientProviders>
   );

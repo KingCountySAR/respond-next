@@ -2,18 +2,17 @@ import { Button, DialogActions, DialogContent, DialogTitle, TextField } from '@m
 import { useEffect, useMemo } from 'react';
 import { FieldErrors, Resolver, useForm } from 'react-hook-form';
 
+import { MuiDialogProps } from '@respond/components/DialogProvider';
+import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 import { Activity } from '@respond/shared/types/activity';
 import { isDefaultPlace, Place } from '@respond/shared/types/operations';
 
-import { useActivityContext } from '@/client/components/activities/ActivityProvider';
-import DialogWithHistory from '@/client/components/DialogWithHistory';
 import { Stack } from '@/client/components/Material';
 
-type DashboardPlaceEditDialogProps = {
+interface DashboardPlaceEditDialogProps extends MuiDialogProps<Place | null> {
+  activity: Activity;
   place: Place | null;
-  onSave: (place: Place) => void;
-  onClose: () => void;
-};
+}
 
 type FormValues = Pick<Place, 'name' | 'lat' | 'lon' | 'notes'>;
 
@@ -77,9 +76,7 @@ const createResolver = (activity: Activity, placeId: string): Resolver<FormValue
   };
 };
 
-export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPlaceEditDialogProps) {
-  const activity = useActivityContext();
-
+export function DashboardPlaceEditDialog({ activity, place, onClose }: DashboardPlaceEditDialogProps) {
   const isDefault = !!place && isDefaultPlace(place);
   const resolver = useMemo(() => createResolver(activity, place?.id ?? ''), [activity, place?.id]);
 
@@ -112,7 +109,7 @@ export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPl
     // Safety check in case the form is somehow submitted while place is undefined
     if (!place) return;
 
-    onSave({
+    onClose({
       ...place,
       name: data.name,
       lat: data.lat,
@@ -125,7 +122,7 @@ export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPl
   if (!place) return null;
 
   return (
-    <DialogWithHistory fullWidth={true} open={Boolean(place)} onClose={onClose}>
+    <AppDialog fullWidth={true} open={Boolean(place)} onClose={onClose}>
       <DialogTitle>Edit Place</DialogTitle>
       <form onSubmit={handleSubmit(handleSave)}>
         <DialogContent>
@@ -137,12 +134,12 @@ export function DashboardPlaceEditDialog({ place, onSave, onClose }: DashboardPl
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onClose(null)}>Cancel</Button>
           <Button type="submit" variant="contained">
             Save
           </Button>
         </DialogActions>
       </form>
-    </DialogWithHistory>
+    </AppDialog>
   );
 }

@@ -2,6 +2,7 @@ import { Box, Stack, Typography } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
+import { useDialogs } from '@respond/components/DialogProvider';
 import { EquipmentItem } from '@respond/shared/types/operations';
 
 import { Draggable, Droppable } from '@/client/components/DragAndDrop/DnDComponents';
@@ -66,9 +67,9 @@ type EditingState = {
 };
 
 export function DashboardEquipmentManager() {
+  const { open } = useDialogs();
   const [searchQuery, setSearchQuery] = useState('');
   const [groupBy, setGroupBy] = useState<EquipmentGrouping>('Type');
-  const [editingState, setEditingState] = useState<EditingState | null>(null);
 
   const filteredEquipment = useMemo(() => {
     const q = (searchQuery || '').trim().toLowerCase();
@@ -96,18 +97,12 @@ export function DashboardEquipmentManager() {
     callback?.();
   };
 
-  const initializeCustomItem = (editingState: EditingState | undefined) => {
+  const initializeCustomItem = async (editingState: EditingState | undefined) => {
     if (!editingState) return;
-    setEditingState(editingState);
-  };
-
-  const handleSaveEdit = (name: string) => {
-    editingState?.onSave({ ...editingState.item, name });
-    setEditingState(null);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingState(null);
+    const name = await open(DashboardEquipmentCreateDialog, {});
+    if (name != null) {
+      editingState.onSave({ ...editingState.item, name });
+    }
   };
 
   function EquipmentAphabetical({ items }: { items: EquipmentItem[] }) {
@@ -155,7 +150,6 @@ export function DashboardEquipmentManager() {
           </Box>
         </Stack>
       </Droppable>
-      {!!editingState?.item && <DashboardEquipmentCreateDialog onSave={handleSaveEdit} onCancel={handleCancelEdit} />}
     </>
   );
 }

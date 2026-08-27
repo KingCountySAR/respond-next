@@ -1,11 +1,14 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from '@mui/material';
+import { Button, DialogActions, DialogContent, DialogTitle, Stack, TextField } from '@mui/material';
 import { Controller, useForm } from 'react-hook-form';
+
+import { MuiDialogProps } from '@respond/components/DialogProvider';
+import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 
 type FormValues = {
   name: string;
 };
 
-export function DashboardEquipmentCreateDialog({ onSave, onCancel }: { onSave: (name: string) => void; onCancel: () => void }) {
+export function DashboardEquipmentCreateDialog({ onClose }: MuiDialogProps<string>) {
   const {
     control,
     handleSubmit,
@@ -16,11 +19,11 @@ export function DashboardEquipmentCreateDialog({ onSave, onCancel }: { onSave: (
   });
 
   const onSubmit = ({ name }: FormValues) => {
-    onSave(name.trim());
+    onClose(name.trim());
   };
 
   return (
-    <Dialog open onClose={onCancel} maxWidth="sm" fullWidth>
+    <AppDialog open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Add Custom Equipment</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -49,13 +52,13 @@ export function DashboardEquipmentCreateDialog({ onSave, onCancel }: { onSave: (
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel} color="primary">
+        <Button onClick={() => onClose(null)} color="primary">
           Cancel
         </Button>
         <Button onClick={handleSubmit(onSubmit)} color="primary" variant="contained">
           Add
         </Button>
       </DialogActions>
-    </Dialog>
+    </AppDialog>
   );
 }

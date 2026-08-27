@@ -1,9 +1,9 @@
 import { Button, DialogContent, DialogTitle, FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack, TextField } from '@mui/material';
 import { Controller, useForm } from 'react-hook-form';
 
-import { DialogWithHistory } from '@respond/components/Material';
 import { MobilePageId, NavigationApp, PerferencesState } from '@respond/shared/types/preferences';
 
+import { AppDialog } from './DialogProvider/AppDialog';
 import { usePreferences, useSetPreferences } from './PreferencesProvider';
 
 export function PreferencesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -19,10 +19,10 @@ export function PreferencesDialog({ open, onClose }: { open: boolean; onClose: (
   };
 
   return (
-    <DialogWithHistory fullWidth={true} onClose={onClose} open={open}>
+    <AppDialog fullWidth={true} onClose={onClose} open={open}>
       <DialogTitle>Preferences</DialogTitle>
       <DialogContent>{open && <PreferencesForm onSubmit={handleSubmit} onCancel={handleCancel} />}</DialogContent>
-    </DialogWithHistory>
+    </AppDialog>
   );
 }
 

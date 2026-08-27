@@ -2,10 +2,11 @@ import AddLocation from '@mui/icons-material/AddLocation';
 import Edit from '@mui/icons-material/Edit';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
 import { useLocation } from 'wouter';
 
+import { useDialogs } from '@respond/components/DialogProvider';
 import { LocationAutocomplete } from '@respond/components/locations/LocationAutocomplete';
 import { LocationEditDialog } from '@respond/components/locations/LocationEditDialog';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
@@ -58,8 +59,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
   const [, navigate] = useLocation();
   const org = useAppSelector((state) => state.organization.mine);
   const selectedActivity = useAppSelector(buildActivitySelector(activityId));
-
-  const [showLocationEditDialog, setShowLocationEditDialog] = useState(false);
+  const { open } = useDialogs();
 
   const permProp = activityType === 'missions' ? 'canCreateMissions' : 'canCreateEvents';
   const initialOwnerOptions = [...(org?.[permProp] ? [org] : []), ...(org?.partners.filter((p) => p[permProp]) ?? [])];
@@ -226,7 +226,17 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                   )}
                 />
                 <Box sx={{ paddingRight: 2 }}>
-                  <IconButton color="default" onClick={() => setShowLocationEditDialog(true)}>
+                  <IconButton
+                    color="default"
+                    onClick={() => {
+                      open(LocationEditDialog, {
+                        location: watchLocation,
+                        onSubmit: (location) => {
+                          setValue('location', location);
+                        },
+                      });
+                    }}
+                  >
                     {watchLocation?.title ? <Edit /> : <AddLocation />}
                   </IconButton>
                 </Box>
@@ -368,15 +378,6 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
             </Grid>
           </Grid>
         </form>
-
-        <LocationEditDialog
-          location={watchLocation ?? undefined}
-          open={showLocationEditDialog}
-          onSubmit={(location) => {
-            setValue('location', location);
-          }}
-          onClose={() => setShowLocationEditDialog(false)}
-        />
       </Paper>
     </ToolbarPage>
   );
