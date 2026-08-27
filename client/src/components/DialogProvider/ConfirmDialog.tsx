@@ -17,7 +17,7 @@ export default function ConfirmDialog({ open, title, prompt, onClose, destructiv
   return (
     <AppDialog open={open} onClose={onClose}>
       {title && <DialogTitle>{title}</DialogTitle>}
-      <DialogContent>{prompt}</DialogContent>
+      <DialogContent sx={{ pt: title ? undefined : 2 }}>{prompt}</DialogContent>
       <DialogActions>
         <Button onClick={() => onClose(false)}>Cancel</Button>
         <Button variant="contained" color={destructive ? 'error' : 'primary'} onClick={() => onClose(true)}>

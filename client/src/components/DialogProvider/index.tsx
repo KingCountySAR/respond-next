@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ComponentType, createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
+import AlertDialog, { AlertDialogOptions } from './AlertDialog';
 import ConfirmDialog, { ConfirmDialogOptions } from './ConfirmDialog';
 
 // Props that every MUI dialog component will receive automatically
@@ -20,6 +21,7 @@ interface DialogsContextType {
   open: <P extends MuiDialogProps<any>, T = P extends MuiDialogProps<infer U> ? U : never>(Component: ComponentType<P>, props: Omit<P, keyof MuiDialogProps<any>>) => Promise<T | null>;
   close: (id: string, result?: unknown) => void;
   confirm: (options: ConfirmDialogOptions) => Promise<boolean | null>;
+  alert: (options: AlertDialogOptions | string) => Promise<void>;
 }
 
 const DialogsContext = createContext<DialogsContextType | null>(null);
@@ -95,8 +97,16 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     [open],
   );
 
+  const alert = useCallback(
+    async (options: AlertDialogOptions | string) => {
+      const props = typeof options === 'string' ? { message: options } : options;
+      return open(AlertDialog, props).then(() => undefined);
+    },
+    [open],
+  );
+
   return (
-    <DialogsContext.Provider value={{ open, close: closeAndPopHistory, confirm }}>
+    <DialogsContext.Provider value={{ open, close: closeAndPopHistory, alert, confirm }}>
       {children}
       {dialogs.map(({ id, Component, props }) => (
         <Component key={id} {...props} open={true} onClose={(result: unknown) => closeAndPopHistory(id, result)} />
