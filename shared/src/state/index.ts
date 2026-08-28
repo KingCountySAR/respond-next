@@ -16,4 +16,4 @@ export interface LocationState {
 
 export { BasicEventReducers } from './eventReducers';
 export { filterInitialActivities } from './activityVisibility';
-export { BasicLocationEventReducers } from './locationEventReducers';
+export { BasicLocationReducers } from './locationReducers';

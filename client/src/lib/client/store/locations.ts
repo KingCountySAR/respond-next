@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { BasicLocationEventReducers, LocationState } from '@respond/shared';
+import { BasicLocationReducers, LocationState } from '@respond/shared';
 import { LocationEvents } from '@respond/shared/events';
 
 import { ReducerBuilderStub } from '../types';
@@ -22,8 +22,8 @@ const locationsSlice = createSlice({
   },
   extraReducers: (builder: ReducerBuilderStub<LocationState>) => {
     builder //
-      .addCase(LocationEvents.LocationUpdated, BasicLocationEventReducers[LocationEvents.LocationUpdated.type])
-      .addCase(LocationEvents.LocationRemoved, BasicLocationEventReducers[LocationEvents.LocationRemoved.type]);
+      .addCase(LocationEvents.LocationUpdated, BasicLocationReducers[LocationEvents.LocationUpdated.type])
+      .addCase(LocationEvents.LocationRemoved, BasicLocationReducers[LocationEvents.LocationRemoved.type]);
   },
 });
 

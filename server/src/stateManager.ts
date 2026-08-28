@@ -2,7 +2,7 @@ import { produce } from 'immer';
 
 import { Command } from '@shared/commands';
 import { EventAuthor, isLocationEvent, serviceAuthor, StampedEvent } from '@shared/events';
-import { BasicEventReducers, BasicLocationEventReducers } from '@shared/state';
+import { BasicEventReducers, BasicLocationReducers } from '@shared/state';
 import type { ActivityState, LocationState, OrganizationState } from '@shared/state';
 import { filterInitialActivities } from '@shared/state/activityVisibility';
 import type { Activity } from '@shared/types/activity';
@@ -131,7 +131,7 @@ export class StateManager {
       const priorLocations = this.snapshotLocations();
       this.locationsState = produce(this.locationsState, (draft) => {
         for (const event of locationEvents) {
-          BasicLocationEventReducers[event.type as keyof typeof BasicLocationEventReducers](draft, event as never);
+          BasicLocationReducers[event.type as keyof typeof BasicLocationReducers](draft, event as never);
         }
       });
 

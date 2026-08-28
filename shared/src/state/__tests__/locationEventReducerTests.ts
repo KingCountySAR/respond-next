@@ -3,10 +3,10 @@ import { produce } from 'immer';
 import { LocationState } from '..';
 import { LocationEvents } from '../../events/locationEvents';
 import { createNewLocation } from '../../types/location';
-import { BasicLocationEventReducers } from '../locationEventReducers';
+import { BasicLocationReducers } from '../locationReducers';
 
 function apply<E extends { type: string; payload: unknown }>(state: LocationState, event: E): LocationState {
-  return produce(state, (draft) => BasicLocationEventReducers[event.type as keyof typeof BasicLocationEventReducers](draft, event as never));
+  return produce(state, (draft) => BasicLocationReducers[event.type as keyof typeof BasicLocationReducers](draft, event as never));
 }
 
 describe('Location Event Reducers', () => {
