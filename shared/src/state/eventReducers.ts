@@ -251,12 +251,10 @@ export const BasicEventReducers: EventReducers = {
     const activity = state.list.find((f) => f.id === activityId);
     if (!activity) return;
 
-    // Remove the participant from wherever they currently are. A team that loses
-    // its leader promotes whoever is now first (null if the team is emptied).
+    // Remove the participant from wherever they currently are.
     for (const team of activity.teams ?? []) {
       if (!team.assignedParticipants.includes(participantId)) continue;
       team.assignedParticipants = team.assignedParticipants.filter((id) => id !== participantId);
-      team.teamLeaderParticipantId = team.assignedParticipants[0] ?? null;
     }
     for (const place of activity.places ?? []) {
       if (place.assignedParticipants.includes(participantId)) {
@@ -270,7 +268,6 @@ export const BasicEventReducers: EventReducers = {
       const team = (activity.teams ?? []).find((t) => t.id === target.id);
       if (team) {
         team.assignedParticipants = target.asLeader ? [participantId, ...team.assignedParticipants] : [...team.assignedParticipants, participantId];
-        team.teamLeaderParticipantId = team.assignedParticipants[0] ?? null;
       }
     } else if (target?.type === 'place') {
       const place = (activity.places ?? []).find((p) => p.id === target.id);

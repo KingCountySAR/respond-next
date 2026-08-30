@@ -47,9 +47,9 @@ function DashboardReadOnlyTeamCard({ team }: { team: Team }) {
   const activity = useActivityContext();
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
-  const teamParticipants: Participant[] = Object.values(activity.participants).filter((participant) => team.assignedParticipants.includes(participant.id));
-  const teamLeader: Participant | undefined = teamParticipants.find((participant) => participant.id === team.teamLeaderParticipantId);
-  const teamMembers = teamParticipants.filter((participant) => participant.id !== team.teamLeaderParticipantId).sort(sortParicipantsAlphabetically);
+  const teamParticipants = team.assignedParticipants.map((pId) => activity.participants[pId]);
+  const teamLeader = teamParticipants[0];
+  const teamMembers = teamParticipants.slice(1).sort(sortParicipantsAlphabetically);
 
   const sortedTeamEquipment = [...team.assignedEquipment].sort(sortEquipmentAlphabetically);
 

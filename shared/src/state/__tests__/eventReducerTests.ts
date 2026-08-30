@@ -85,7 +85,7 @@ describe('Event Reducers', () => {
     function stateWithTeams(): ActivityState {
       const state = stateWithActivity(activityId);
       state.list[0].teams = [
-        { ...createNewTeam('Alpha'), id: 'alpha', assignedParticipants: ['p1'], teamLeaderParticipantId: 'p1' },
+        { ...createNewTeam('Alpha'), id: 'alpha', assignedParticipants: ['p1'] },
         { ...createNewTeam('Bravo'), id: 'bravo' },
       ];
       state.list[0].places = [{ ...createNewPlace('CP'), id: 'cp' }];
@@ -96,19 +96,15 @@ describe('Event Reducers', () => {
       const next = apply(stateWithTeams(), TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'team', id: 'bravo' }));
       const [alpha, bravo] = next.list[0].teams;
       expect(alpha.assignedParticipants).toEqual([]);
-      expect(alpha.teamLeaderParticipantId).toBeNull();
       expect(bravo.assignedParticipants).toEqual(['p1']);
-      expect(bravo.teamLeaderParticipantId).toBe('p1');
     });
 
     it('asLeader puts the member first (becomes the team lead)', () => {
       const state = stateWithTeams();
-      state.list[0].teams[1].assignedParticipants = ['p2'];
-      state.list[0].teams[1].teamLeaderParticipantId = 'p2';
+      state.list[0].teams[1].assignedParticipants = ['p2', 'p3'];
       const next = apply(state, TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'team', id: 'bravo', asLeader: true }));
       const bravo = next.list[0].teams[1];
-      expect(bravo.assignedParticipants).toEqual(['p1', 'p2']);
-      expect(bravo.teamLeaderParticipantId).toBe('p1');
+      expect(bravo.assignedParticipants).toEqual(['p1', 'p2', 'p3']);
     });
 
     it('moves a member from a team to a place', () => {
@@ -120,16 +116,13 @@ describe('Event Reducers', () => {
     it('unassigns (no target) by removing the member from its team', () => {
       const next = apply(stateWithTeams(), TeamEvents.TeamMemberAssigned(activityId, 'p1'));
       expect(next.list[0].teams[0].assignedParticipants).toEqual([]);
-      expect(next.list[0].teams[0].teamLeaderParticipantId).toBeNull();
     });
 
     it('promoting within the same team reorders without duplicating', () => {
       const state = stateWithTeams();
-      state.list[0].teams[0].assignedParticipants = ['p0', 'p1'];
-      state.list[0].teams[0].teamLeaderParticipantId = 'p0';
+      state.list[0].teams[0].assignedParticipants = ['p0', 'p1', 'p2'];
       const next = apply(state, TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'team', id: 'alpha', asLeader: true }));
-      expect(next.list[0].teams[0].assignedParticipants).toEqual(['p1', 'p0']);
-      expect(next.list[0].teams[0].teamLeaderParticipantId).toBe('p1');
+      expect(next.list[0].teams[0].assignedParticipants).toEqual(['p1', 'p0', 'p2']);
     });
   });
 

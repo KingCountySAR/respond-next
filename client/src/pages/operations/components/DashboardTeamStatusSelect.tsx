@@ -65,7 +65,6 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
       status: 'Disbanded',
       assignedParticipants: [],
       assignedEquipment: [],
-      teamLeaderParticipantId: null,
     });
   };
 
@@ -107,7 +106,6 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
       status: 'Disbanded',
       assignedParticipants: [],
       assignedEquipment: [],
-      teamLeaderParticipantId: null,
     });
   };
 

@@ -20,7 +20,6 @@ export interface Team {
   notes?: string;
   assignedParticipants: string[];
   assignedEquipment: EquipmentItem[];
-  teamLeaderParticipantId: string | null;
 }
 
 export interface EquipmentItem {
@@ -59,7 +58,6 @@ export function createNewTeam(name: string): Team {
     status: 'In Base',
     assignedParticipants: [],
     assignedEquipment: [],
-    teamLeaderParticipantId: null,
   };
 }
 
@@ -132,4 +130,4 @@ export const sortEquipmentAlphabetically = (left: EquipmentItem, right: Equipmen
   return left.name.localeCompare(right.name);
 };
 
-export const pickTeamProperties = pickSafely<Partial<Team>>(['id', 'name', 'gar', 'status', 'assignment', 'notes', 'assignedParticipants', 'assignedEquipment', 'teamLeaderParticipantId']);
+export const pickTeamProperties = pickSafely<Partial<Team>>(['id', 'name', 'gar', 'status', 'assignment', 'notes', 'assignedParticipants', 'assignedEquipment']);
