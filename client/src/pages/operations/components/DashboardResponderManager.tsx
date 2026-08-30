@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { useEffect, useMemo } from 'react';
 
-import { useParticipantCommands } from '@respond/lib/client/services/participants';
+import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { Participant } from '@respond/shared/types/activity';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
@@ -17,13 +17,11 @@ function sortParticipantsAlphabetically(left: Participant, right: Participant) {
 }
 
 export function DashboardResponderManager({ availableCallback }: { availableCallback: (count: number) => void }) {
-  const participants = useParticipantCommands();
+  const teamCommands = useTeamCommands();
 
   const activity = useActivityContext();
 
-  const teams = useMemo(() => {
-    return Object.values(activity.teams ?? []).filter((team) => team.status !== 'Disbanded');
-  }, [activity]);
+  const teams = useMemo(() => activity.teams?.filter((team) => team.status !== 'Disbanded') ?? [], [activity]);
 
   const assignedParticipantIds = useMemo(() => {
     const assignedIds = new Set<string>();
@@ -83,20 +81,11 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
     );
   }, [activity.participants, assignedParticipantIds]);
 
-  const setAssigned = (isSelf: boolean, participant: Participant) => {
-    if (isSelf) return; // If the participant is dragged from the Responders list to the Responders list, cancel.
-    const update = { time: Date.now(), status: ParticipantStatus.Assigned, organizationId: participant.organizationId };
-    participants.addTimeline(activity.id, participant.id, update);
-  };
-
-  const handleDrop = (participant: Participant, type: string, callback?: (isSelf: boolean) => void) => {
+  const handleDrop = (participant: Participant) => {
     // If the participant is not in Assigned status, do not overwrite the current status.
     if (participant.timeline[0].status === ParticipantStatus.Assigned) {
-      // Update the Participant Status to Available
-      const update = { time: Date.now(), status: ParticipantStatus.Available, organizationId: participant.organizationId };
-      participants.addTimeline(activity.id, participant.id, update);
+      teamCommands.assignTeamMember(activity.id, participant.id);
     }
-    callback?.(true);
   };
 
   return (
@@ -112,7 +101,7 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
           <>
             {availableParticipants.map((participant) => {
               return (
-                <Draggable key={participant.id} type="participant" item={participant} callback={(isSelf: boolean) => setAssigned(isSelf, participant)}>
+                <Draggable key={participant.id} type="participant" item={participant}>
                   <DashboardParticipantCard key={participant.id} participant={participant} />
                 </Draggable>
               );

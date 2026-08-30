@@ -246,6 +246,38 @@ export const BasicEventReducers: EventReducers = {
     activity.teams = (activity.teams ?? []).filter((t) => t.id !== updates.id);
   },
 
+  [DomainEvents.TeamMemberAssigned.type]: function assignTeamMember(state, { payload }) {
+    const { activityId, participantId, target } = payload;
+    const activity = state.list.find((f) => f.id === activityId);
+    if (!activity) return;
+
+    // Remove the participant from wherever they currently are. A team that loses
+    // its leader promotes whoever is now first (null if the team is emptied).
+    for (const team of activity.teams ?? []) {
+      if (!team.assignedParticipants.includes(participantId)) continue;
+      team.assignedParticipants = team.assignedParticipants.filter((id) => id !== participantId);
+      team.teamLeaderParticipantId = team.assignedParticipants[0] ?? null;
+    }
+    for (const place of activity.places ?? []) {
+      if (place.assignedParticipants.includes(participantId)) {
+        place.assignedParticipants = place.assignedParticipants.filter((id) => id !== participantId);
+      }
+    }
+
+    // Add to the target. For a team, `asLeader` puts them first so they become
+    // the lead (the first member is always the lead).
+    if (target?.type === 'team') {
+      const team = (activity.teams ?? []).find((t) => t.id === target.id);
+      if (team) {
+        team.assignedParticipants = target.asLeader ? [participantId, ...team.assignedParticipants] : [...team.assignedParticipants, participantId];
+        team.teamLeaderParticipantId = team.assignedParticipants[0] ?? null;
+      }
+    } else if (target?.type === 'place') {
+      const place = (activity.places ?? []).find((p) => p.id === target.id);
+      if (place) place.assignedParticipants = [...place.assignedParticipants, participantId];
+    }
+  },
+
   [DomainEvents.StaffUpdated.type]: function updateStaff(state, { payload }) {
     const { activityId, staff } = payload;
     const activity = state.list.find((f) => f.id === activityId);

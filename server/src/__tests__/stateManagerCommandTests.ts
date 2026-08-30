@@ -1,12 +1,13 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import { LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
-import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, StampedEvent, userAuthor } from '@shared/events';
+import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
 import { ParticipantStatus } from '@shared/types/activity';
 import { createNewLocation } from '@shared/types/location';
 import { createNewPlace, createNewTeam } from '@shared/types/operations';
 
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
+import { teamAssignmentReactor } from '../reactors/teamAssignmentReactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';
 
 // StateManager and mongodb are imported dynamically in beforeAll so that
@@ -132,6 +133,28 @@ describe('StateManager.handleCommand', () => {
     // The tag event is authored by the reactor (service), not the user.
     const tagged = await (await mongoPromise).db().collection('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantTagged.type });
     expect(tagged?.meta.author).toEqual({ type: 'service', id: 'participant-tag-reactor' });
+  });
+
+  it('assigns a member to a team and flips them to Assigned in one broadcast', async () => {
+    const sm = new StateManager([teamAssignmentReactor]);
+    const batches = collectBatches(sm);
+
+    await sm.handleCommand(PlaceCommands.CreatePlace('act-assign', createNewPlace('CP')), userAuthor('u1'));
+    const team = createNewTeam('Alpha');
+    await sm.handleCommand(TeamCommands.CreateTeam('act-assign', team), userAuthor('u1'));
+    // The responder arrives at base (Available) before being put on the team.
+    await sm.handleCommand(ParticipantCommands.UpdateParticipant('act-assign', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available), userAuthor('u1'));
+
+    batches.length = 0; // ignore the setup broadcasts; focus on the assignment
+    await sm.handleCommand(TeamCommands.AssignTeamMember('act-assign', 'p1', { type: 'team', id: team.id }), userAuthor('u1'));
+
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-assign');
+    expect(activity?.teams.find((t) => t.id === team.id)?.assignedParticipants).toEqual(['p1']);
+    expect(activity?.participants['p1'].timeline[0].status).toBe(ParticipantStatus.Assigned);
+
+    // The assignment and the reactor's status change arrive together, in one broadcast.
+    expect(batches).toHaveLength(1);
+    expect(batches[0].map((e) => e.type)).toEqual([TeamEvents.TeamMemberAssigned.type, ParticipantEvents.ParticipantTimelineAdded.type]);
   });
 
   it('logs a team status-change comm via the team-comms reactor', async () => {

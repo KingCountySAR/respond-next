@@ -1,12 +1,13 @@
 import { ActivityCommands, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
 import { ActivityEvents, CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
-import { createNewActivity, ParticipantStatus } from '@shared/types/activity';
+import { Activity, createNewActivity, ParticipantStatus } from '@shared/types/activity';
 import { createNewPlace, createNewTeam, DEFAULT_PLACES } from '@shared/types/operations';
 
 import { produceEvents } from '../commandHandlers';
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { placeCommsReactor } from '../reactors/placeCommsReactor';
 import { ReactorContext } from '../reactors/reactor';
+import { teamAssignmentReactor } from '../reactors/teamAssignmentReactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';
 
 const activityId = 'a1';
@@ -36,6 +37,12 @@ describe('produceEvents', () => {
   it('maps DeleteTeam -> TeamDeleted', () => {
     const [event] = produceEvents(TeamCommands.DeleteTeam(activityId, 'team-1'));
     expect(event).toEqual(TeamEvents.TeamDeleted(activityId, { id: 'team-1' }));
+  });
+
+  it('maps AssignTeamMember -> TeamMemberAssigned (thin: reducer does the move)', () => {
+    const target = { type: 'team', id: 'bravo', asLeader: true } as const;
+    const events = produceEvents(TeamCommands.AssignTeamMember(activityId, 'p1', target));
+    expect(events).toEqual([TeamEvents.TeamMemberAssigned(activityId, 'p1', target)]);
   });
 
   it('maps location commands -> location events', () => {
@@ -186,5 +193,51 @@ describe('placeCommsReactor', () => {
 
   it('ignores comm events (no infinite loop)', () => {
     expect(placeCommsReactor.react(CommsEvents.CommLogged(activityId, { id: 'c1', message: 'x', timestamp: 1 }), emptyCtx)).toEqual([]);
+  });
+});
+
+describe('teamAssignmentReactor', () => {
+  // Build an activity where p1 has `status` and (optionally) sits on a team and/or place.
+  function activityWith(status: ParticipantStatus, { onTeam = false, onPlace = false }: { onTeam?: boolean; onPlace?: boolean } = {}): Activity {
+    const activity = createNewActivity();
+    activity.id = activityId;
+    activity.participants = { p1: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: 'o1', timeline: [{ time: 1, organizationId: 'o1', status }] } };
+    activity.teams = [{ ...createNewTeam('Alpha'), id: 'alpha', assignedParticipants: onTeam ? ['p1'] : [] }];
+    activity.places = [{ ...createNewPlace('CP'), id: 'cp', assignedParticipants: onPlace ? ['p1'] : [] }];
+    return activity;
+  }
+  const ctxWith = (activity: Activity): ReactorContext => ({ priorActivities: {}, currentActivities: { [activityId]: activity } });
+  const assignedToTeam = TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'team', id: 'alpha' });
+  const assignedToPlace = TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'place', id: 'cp' });
+
+  it('flips an Available responder to Assigned when they land on a team', async () => {
+    const [command] = await teamAssignmentReactor.react(assignedToTeam, ctxWith(activityWith(ParticipantStatus.Available, { onTeam: true })));
+    if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
+    expect(command.payload.update.status).toBe(ParticipantStatus.Assigned);
+    expect(command.payload.update.organizationId).toBe('o1');
+  });
+
+  it('flips an Available responder to Assigned when they land on a place', async () => {
+    const [command] = await teamAssignmentReactor.react(assignedToPlace, ctxWith(activityWith(ParticipantStatus.Available, { onPlace: true })));
+    if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
+    expect(command.payload.update.status).toBe(ParticipantStatus.Assigned);
+  });
+
+  it('flips an Assigned responder to Available when they leave every team and place', async () => {
+    const [command] = await teamAssignmentReactor.react(TeamEvents.TeamMemberAssigned(activityId, 'p1'), ctxWith(activityWith(ParticipantStatus.Assigned)));
+    if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
+    expect(command.payload.update.status).toBe(ParticipantStatus.Available);
+  });
+
+  it('leaves an already-Assigned member alone on a team→place move (still assigned)', async () => {
+    expect(await teamAssignmentReactor.react(assignedToPlace, ctxWith(activityWith(ParticipantStatus.Assigned, { onPlace: true })))).toEqual([]);
+  });
+
+  it('does not override a non-checked-in status (e.g. SignedIn)', async () => {
+    expect(await teamAssignmentReactor.react(assignedToTeam, ctxWith(activityWith(ParticipantStatus.SignedIn, { onTeam: true })))).toEqual([]);
+  });
+
+  it('ignores unrelated events', async () => {
+    expect(await teamAssignmentReactor.react(TeamEvents.TeamCreated(activityId, createNewTeam('Bravo')), emptyCtx)).toEqual([]);
   });
 });

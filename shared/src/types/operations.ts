@@ -6,6 +6,9 @@ import { Activity } from './activity';
 
 export type TeamStatus = 'In Base' | 'In Transit' | 'On Assignment' | 'On Scene' | 'Returning To Base' | 'Disbanded';
 
+/** Where a responder is being assigned: a team (optionally as its leader), a place, or nowhere (undefined = unassign / available). */
+export type AssignmentTarget = { type: 'place'; id: string } | { type: 'team'; id: string; asLeader?: boolean };
+
 export type SarGar = 'green' | 'amber' | 'red';
 
 export interface Team {

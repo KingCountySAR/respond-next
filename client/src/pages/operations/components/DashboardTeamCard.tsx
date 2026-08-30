@@ -62,8 +62,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same team, cancel.
       if (team.assignedParticipants.includes(item.id)) return;
-      callback?.();
-      addTeamMember(item);
+      teams.assignTeamMember(activity.id, item.id, { type: 'team', id: team.id });
     } else if (type === 'equipment') {
       if (!!callback && item.type === 'Custom' && item.name === 'Custom Item') {
         callback({ item, onSave: (newItem: EquipmentItem) => addEquipment(newItem) });
@@ -74,25 +73,6 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
       addEquipment(item);
     } else {
       return;
-    }
-  };
-
-  const addTeamMember = (participant: Participant) => {
-    if (team.assignedParticipants.find((id) => id === participant.id)) return;
-    // Update the Team to include the new participant
-    const updatedTeam = { ...team, assignedParticipants: [...team.assignedParticipants, participant.id], teamLeaderParticipantId: team.teamLeaderParticipantId || participant.id };
-    updateTeam(updatedTeam);
-  };
-
-  const removeTeamMember = (participantId: string) => {
-    if (team.assignedParticipants.includes(participantId)) {
-      // Remove the participant from the team
-      const updatedTeam = {
-        ...team,
-        assignedParticipants: team.assignedParticipants.filter((id) => id !== participantId),
-        teamLeaderParticipantId: team.teamLeaderParticipantId === participantId ? null : team.teamLeaderParticipantId,
-      };
-      updateTeam(updatedTeam);
     }
   };
 
@@ -149,7 +129,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
                   </Typography>
                   <DashboardErrorIndicator message={hasTeamMemberError ? 'One or more team members are not assigned to the activity.' : undefined} size={16} />
                   {teamLeader && (
-                    <Draggable type="participant" item={teamLeader} callback={() => removeTeamMember(teamLeader.id)}>
+                    <Draggable type="participant" item={teamLeader}>
                       <DashboardTeamMember key={teamLeader.id} participant={teamLeader} />
                     </Draggable>
                   )}
@@ -176,7 +156,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
                       ) : (
                         teamMembers.map((participant) => {
                           return (
-                            <Draggable key={participant.id} type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
+                            <Draggable key={participant.id} type="participant" item={participant}>
                               <DashboardTeamMember key={participant.id} participant={participant} onPromote={() => updateTeamLeader(participant.id)} />
                             </Draggable>
                           );

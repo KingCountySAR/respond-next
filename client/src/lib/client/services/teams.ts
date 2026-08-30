@@ -1,5 +1,5 @@
 import { TeamCommands } from '@respond/shared/commands';
-import { Team } from '@respond/shared/types/operations';
+import { AssignmentTarget, Team } from '@respond/shared/types/operations';
 
 import { useAppDispatch } from '../store';
 
@@ -16,5 +16,6 @@ export function useTeamCommands() {
     updateTeam: (activityId: string, updates: Partial<Team> & { id: string }) => dispatch(TeamCommands.UpdateTeam(activityId, updates)),
     deleteTeam: (activityId: string, id: string) => dispatch(TeamCommands.DeleteTeam(activityId, id)),
     updateStaff: (activityId: string, staff: Record<string, string>) => dispatch(TeamCommands.UpdateStaff(activityId, staff)),
+    assignTeamMember: (activityId: string, participantId: string, target?: AssignmentTarget) => dispatch(TeamCommands.AssignTeamMember(activityId, participantId, target)),
   };
 }

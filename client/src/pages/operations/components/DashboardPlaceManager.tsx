@@ -6,7 +6,8 @@ import { Box, Button, Typography } from '@mui/material';
 import { useEffect } from 'react';
 
 import { usePlaceCommands } from '@respond/lib/client/services/places';
-import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
+import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { ParticipantStatus } from '@respond/shared/types/activity';
 import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -72,6 +73,7 @@ export function DashboardPlaceManager() {
 
 function PlaceTile({ place }: { place: Place }) {
   const places = usePlaceCommands();
+  const teams = useTeamCommands();
   const activity = useActivityContext();
   const { open, confirm } = useDialogs();
 
@@ -148,8 +150,7 @@ function PlaceTile({ place }: { place: Place }) {
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same place, cancel.
       if (place.assignedParticipants.includes(item.id)) return;
-      callback?.();
-      addTeamMember(item);
+      teams.assignTeamMember(activity.id, item.id, { type: 'place', id: place.id });
     } else if (type === 'equipment') {
       if (!!callback && item.type === 'Custom' && item.name === 'Custom Item') {
         callback({ item, onSave: (newItem: EquipmentItem) => addEquipment(newItem) });
@@ -160,16 +161,6 @@ function PlaceTile({ place }: { place: Place }) {
       addEquipment(item);
     } else {
       return;
-    }
-  };
-
-  const addTeamMember = (participant: Participant) => {
-    dispatchUpdate({ ...place, assignedParticipants: [...place.assignedParticipants, participant.id] });
-  };
-
-  const removeTeamMember = (participantId: string) => {
-    if (place.assignedParticipants.includes(participantId)) {
-      dispatchUpdate({ ...place, assignedParticipants: place.assignedParticipants.filter((id) => id !== participantId) });
     }
   };
 
@@ -206,7 +197,7 @@ function PlaceTile({ place }: { place: Place }) {
               <Stack spacing={0.5}>
                 {participants.map((participant) => {
                   return (
-                    <Draggable key={participant.id} type="participant" item={participant} callback={() => removeTeamMember(participant.id)}>
+                    <Draggable key={participant.id} type="participant" item={participant}>
                       <DashboardTeamMember key={participant.id} participant={participant} />
                     </Draggable>
                   );

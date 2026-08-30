@@ -1,28 +1,26 @@
 import { createAction } from '@reduxjs/toolkit';
 
-import { Team } from '../types/operations';
+import { AssignmentTarget, Team } from '../types/operations';
 
 // Facts about teams + staff assignments, minted by the server.
-
-const TeamCreated = createAction('evt/team/created', (activityId: string, team: Team) => ({
-  payload: { activityId, team },
-}));
-
-const TeamUpdated = createAction('evt/team/updated', (activityId: string, updates: Partial<Team> & { id: string }) => ({
-  payload: { activityId, updates },
-}));
-
-const TeamDeleted = createAction('evt/team/deleted', (activityId: string, updates: Partial<Team> & { id: string }) => ({
-  payload: { activityId, updates },
-}));
-
-const StaffUpdated = createAction('evt/team/staffUpdated', (activityId: string, staff: Record<string, string>) => ({
-  payload: { activityId, staff },
-}));
-
 export const TeamEvents = {
-  TeamCreated,
-  TeamUpdated,
-  TeamDeleted,
-  StaffUpdated,
+  TeamCreated: createAction('evt/team/created', (activityId: string, team: Team) => ({
+    payload: { activityId, team },
+  })),
+  TeamUpdated: createAction('evt/team/updated', (activityId: string, updates: Partial<Team> & { id: string }) => ({
+    payload: { activityId, updates },
+  })),
+  TeamDeleted: createAction('evt/team/deleted', (activityId: string, updates: Partial<Team> & { id: string }) => ({
+    payload: { activityId, updates },
+  })),
+  StaffUpdated: createAction('evt/team/staffUpdated', (activityId: string, staff: Record<string, string>) => ({
+    payload: { activityId, staff },
+  })),
+  // A single responder's assignment changed: the reducer removes them from
+  // wherever they were and adds them to `target` (undefined = unassigned).
+  // Naming a specific participant lets reactors act on *who* moved (e.g. flip
+  // their Assigned/Available status).
+  TeamMemberAssigned: createAction('evt/team/memberAssigned', (activityId: string, participantId: string, target?: AssignmentTarget) => ({
+    payload: { activityId, participantId, target },
+  })),
 };

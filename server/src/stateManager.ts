@@ -140,9 +140,10 @@ export class StateManager {
           deferred.push({ name: reactor.name, result: reaction });
         } else {
           // Sync reactor — fold its follow-up events into this same batch.
+          const followupAuthor = serviceAuthor(reactor.name);
           for (const followup of reaction) {
             for (const followupEvent of produceEvents(followup)) {
-              pending.push(this.stamp(followupEvent, serviceAuthor(reactor.name)));
+              pending.push(this.stamp(followupEvent, followupAuthor));
             }
           }
         }

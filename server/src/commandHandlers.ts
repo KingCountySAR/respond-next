@@ -71,6 +71,10 @@ export function produceEvents(command: Command): DomainEvent[] {
   if (TeamCommands.UpdateStaff.match(command)) {
     return [TeamEvents.StaffUpdated(command.payload.activityId, command.payload.staff)];
   }
+  if (TeamCommands.AssignTeamMember.match(command)) {
+    // Thin event: name the participant + target and let the reducer move them.
+    return [TeamEvents.TeamMemberAssigned(command.payload.activityId, command.payload.participantId, command.payload.target)];
+  }
   if (LocationCommands.UpdateLocation.match(command)) {
     return [LocationEvents.LocationUpdated(command.payload.location)];
   }
