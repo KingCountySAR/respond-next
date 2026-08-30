@@ -113,7 +113,7 @@ describe('StatusUpdateFormModel', () => {
 
     it('warns but does not block an already-assigned responder', () => {
       const { form, recordStatusUpdate } = build();
-      form.reset(participant({ timeline: [{ time: 1000, organizationId: 'o1', status: ParticipantStatus.Assigned }] }), ParticipantStatus.Available);
+      form.reset(participant({ timeline: [{ time: 1000, organizationId: 'o1', status: ParticipantStatus.Assigned, organizationName: 'SAR', statusText: 'Assigned' }] }), ParticipantStatus.Available);
       form.setStatusTime(9000);
 
       expect(form.errors.top?.some((e) => e.severity === 'error')).toBe(false);
