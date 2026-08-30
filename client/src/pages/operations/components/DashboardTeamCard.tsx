@@ -51,29 +51,32 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   const sortedTeamEquipment = [...team.assignedEquipment].sort(sortEquipmentAlphabetically);
 
-  const updateTeamLeader = (newLeaderId: string) => {
-    teams.updateTeam(activity.id, { ...team, teamLeaderParticipantId: newLeaderId });
-  };
-
   const hasTeamMemberError = teamParticipants.some((participant) => participant.timeline?.[0]?.status !== ParticipantStatus.Assigned);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDrop = (item: any, type: string, callback?: (...args: any[]) => void) => {
+  const handleExpandedDrop = (item: Participant | EquipmentItem, type: string, callback?: (...args: unknown[]) => void, asLeader?: boolean) => {
     if (type === 'participant') {
-      // If the item was dragged and dropped back to the same team, cancel.
-      if (team.assignedParticipants.includes(item.id)) return;
-      teams.assignTeamMember(activity.id, item.id, { type: 'team', id: team.id });
+      // If the item was dragged and dropped back to the same team (without changing leadership), cancel.
+      if (team.assignedParticipants.includes(item.id)) {
+        const isLeader = team.assignedParticipants[0] === item.id;
+        if (isLeader === (asLeader ?? false)) return;
+      }
+      teams.assignTeamMember(activity.id, item.id, { type: 'team', id: team.id, asLeader });
     } else if (type === 'equipment') {
-      if (!!callback && item.type === 'Custom' && item.name === 'Custom Item') {
+      const equipment = item as EquipmentItem;
+      if (!!callback && equipment.type === 'Custom' && equipment.name === 'Custom Item') {
         callback({ item, onSave: (newItem: EquipmentItem) => addEquipment(newItem) });
         return;
       }
       // If the item was dragged and dropped back to the same place, cancel.
-      if (team.assignedEquipment.find((equipment) => item.uuid === equipment.uuid)) return;
-      addEquipment(item);
+      if (team.assignedEquipment.find((e) => e.uuid === e.uuid)) return;
+      addEquipment(equipment);
     } else {
       return;
     }
+  };
+
+  const handleHeaderDrop = (item: Participant | EquipmentItem, type: string, callback?: (...args: unknown[]) => void) => {
+    handleExpandedDrop(item, type, callback, (type === 'participant' && isExpanded) || undefined);
   };
 
   const addEquipment = (equipment: EquipmentItem) => {
@@ -115,9 +118,9 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   return (
     <>
-      <Droppable accepts={isDisbanded ? [] : ['participant', 'equipment']} onDrop={handleDrop}>
-        <StatusContainer color={team.status === 'Disbanded' ? 'grey' : statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
+      <StatusContainer color={team.status === 'Disbanded' ? 'grey' : statusColor} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2, p: 1, pl: 0.5, bgcolor: 'background.paper', height: '100%' }}>
+          <Droppable accepts={isDisbanded ? [] : ['participant', 'equipment']} onDrop={handleHeaderDrop}>
             <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Stack direction="row" sx={{ alignItems: 'center' }}>
                 <IconButton onClick={handleExpandClick} size="small" sx={{ width: 32, height: 32 }}>
@@ -140,82 +143,82 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
                 <Chip label={`${teamParticipants.length} members`} size="small" variant="outlined" />
               </Stack>
             </Stack>
-            {isExpanded && (
-              <>
-                <Divider sx={{ my: 1 }} />
-                <Stack direction="row" spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', pl: 1 }}>
-                      Team Members
-                    </Typography>
-                    <Stack spacing={0.75} sx={{ mt: 0.5 }}>
-                      {teamMembers.length === 0 ? (
-                        <Typography variant="body2" sx={{ color: 'text.secondary', pl: 1 }}>
-                          None
-                        </Typography>
-                      ) : (
-                        teamMembers.map((participant) => {
-                          return (
-                            <Draggable key={participant.id} type="participant" item={participant}>
-                              <DashboardTeamMember key={participant.id} participant={participant} onPromote={() => updateTeamLeader(participant.id)} />
-                            </Draggable>
-                          );
-                        })
-                      )}
-                    </Stack>
-                  </Box>
-                  <Box sx={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Details
-                    </Typography>
-                    <Stack spacing={0.75} sx={{ mt: 0.5 }}>
-                      <Typography variant="body2">GAR: {team.gar}</Typography>
-                      {team.assignment && <Typography variant="body2">Assignment: {team.assignment}</Typography>}
-                    </Stack>
-                  </Box>
-                  <Box sx={{ textAlign: 'right', flex: 1, minWidth: 0 }}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', pr: 1 }}>
-                      Equipment
-                    </Typography>
-                    <Stack spacing={0.75} sx={{ mt: 0.5 }}>
-                      {sortedTeamEquipment.length === 0 ? (
-                        <Typography variant="body2" sx={{ color: 'text.secondary', pr: 1 }}>
-                          None
-                        </Typography>
-                      ) : (
-                        sortedTeamEquipment.map((item) => {
-                          return (
-                            <Draggable
-                              key={item.uuid}
-                              type="equipment"
-                              item={item}
-                              callback={() => {
-                                if (item.uuid) removeEquipment(item.uuid);
-                              }}
-                            >
-                              <DashboardTeamEquipment key={item.uuid} item={item} />
-                            </Draggable>
-                          );
-                        })
-                      )}
-                    </Stack>
-                  </Box>
-                </Stack>
-                {team.notes?.trim() && (
-                  <Box sx={{ width: '100%', mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
-                      Notes
-                    </Typography>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {team.notes}
-                    </Typography>
-                  </Box>
-                )}
-              </>
-            )}
-          </Box>
-        </StatusContainer>
-      </Droppable>
+          </Droppable>
+          {isExpanded && (
+            <Droppable accepts={isDisbanded ? [] : ['participant', 'equipment']} onDrop={handleExpandedDrop}>
+              <Divider sx={{ my: 1 }} />
+              <Stack direction="row" spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', pl: 1 }}>
+                    Team Members
+                  </Typography>
+                  <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+                    {teamMembers.length === 0 ? (
+                      <Typography variant="body2" sx={{ color: 'text.secondary', pl: 1 }}>
+                        None
+                      </Typography>
+                    ) : (
+                      teamMembers.map((participant) => {
+                        return (
+                          <Draggable key={participant.id} type="participant" item={participant}>
+                            <DashboardTeamMember key={participant.id} participant={participant} />
+                          </Draggable>
+                        );
+                      })
+                    )}
+                  </Stack>
+                </Box>
+                <Box sx={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Details
+                  </Typography>
+                  <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+                    <Typography variant="body2">GAR: {team.gar}</Typography>
+                    {team.assignment && <Typography variant="body2">Assignment: {team.assignment}</Typography>}
+                  </Stack>
+                </Box>
+                <Box sx={{ textAlign: 'right', flex: 1, minWidth: 0 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', pr: 1 }}>
+                    Equipment
+                  </Typography>
+                  <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+                    {sortedTeamEquipment.length === 0 ? (
+                      <Typography variant="body2" sx={{ color: 'text.secondary', pr: 1 }}>
+                        None
+                      </Typography>
+                    ) : (
+                      sortedTeamEquipment.map((item) => {
+                        return (
+                          <Draggable
+                            key={item.uuid}
+                            type="equipment"
+                            item={item}
+                            callback={() => {
+                              if (item.uuid) removeEquipment(item.uuid);
+                            }}
+                          >
+                            <DashboardTeamEquipment key={item.uuid} item={item} />
+                          </Draggable>
+                        );
+                      })
+                    )}
+                  </Stack>
+                </Box>
+              </Stack>
+              {team.notes?.trim() && (
+                <Box sx={{ width: '100%', mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                    Notes
+                  </Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {team.notes}
+                  </Typography>
+                </Box>
+              )}
+            </Droppable>
+          )}
+        </Box>
+      </StatusContainer>
     </>
   );
 }
