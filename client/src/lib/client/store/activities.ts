@@ -7,6 +7,23 @@ import { ReducerBuilderStub } from '../types';
 
 import { RootState } from '.';
 
+/** Every event type that must be reduced into ActivityState. */
+type ActivityEventType = keyof typeof BasicEventReducers;
+
+/**
+ * Compile-time exhaustiveness guard for the .addCase chain below. `Registered`
+ * is the union of type-strings the builder actually handled. If any
+ * ActivityEventType is missing, `unhandled` becomes a required argument and the
+ * call fails to compile, naming the events still needing an .addCase.
+ */
+function assertAllEventsHandled<Registered extends ActivityEventType>(
+  builder: ReducerBuilderStub<ActivityState, Registered>,
+  ...unhandled: [ActivityEventType] extends [Registered] ? [] : [missingAddCaseFor: Exclude<ActivityEventType, Registered>]
+): void {
+  void builder;
+  void unhandled;
+}
+
 let initialState: ActivityState = {
   list: [],
 };
@@ -26,7 +43,9 @@ const activitySliceArgs = {
     },
   },
   extraReducers: (builder: ReducerBuilderStub<ActivityState>) => {
-    builder //
+    // The chain is passed to assertAllEventsHandled so a forgotten event becomes
+    // a compile error. Keep the explicit .addCase per event (greppable / find-refs).
+    const registered = builder //
       // Phase 2 command/event path: reduce server-minted place + comm events.
       .addCase(PlaceEvents.PlaceCreated, BasicEventReducers[PlaceEvents.PlaceCreated.type])
       .addCase(PlaceEvents.PlaceUpdated, BasicEventReducers[PlaceEvents.PlaceUpdated.type])
@@ -52,6 +71,7 @@ const activitySliceArgs = {
       .addCase(ActivityEvents.ActivityReactivated, BasicEventReducers[ActivityEvents.ActivityReactivated.type])
       .addCase(ActivityEvents.OrganizationTimelineAppended, BasicEventReducers[ActivityEvents.OrganizationTimelineAppended.type])
       .addCase(ActivityEvents.OperationsDecorated, BasicEventReducers[ActivityEvents.OperationsDecorated.type]);
+    assertAllEventsHandled(registered);
   },
 };
 
