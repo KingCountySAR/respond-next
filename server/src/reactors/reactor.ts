@@ -21,8 +21,17 @@ export interface ReactorContext {
 /**
  * A reactor is the single home for "when X happens, also do Y." It observes
  * server-minted events and may emit follow-up commands (which re-enter the
- * command pipeline, authored by the reactor as a service). `react` may be async
- * (e.g. the tagging reactor looks up member info).
+ * command pipeline, authored by the reactor as a service).
+ *
+ * Sync vs async is inferred from the return type of `react`:
+ *  - Returning `Command[]` (synchronous) folds the follow-up events into the
+ *    *same* atomic batch as the triggering command — one Mongo write, one
+ *    broadcast, one client render. Use this for immediate business rules (e.g.
+ *    auto-logging a comms entry alongside a place/team change).
+ *  - Returning `Promise<Command[]>` runs the reactor fire-and-forget *after* the
+ *    batch commits; its follow-up commands re-enter the pipeline as their own
+ *    later broadcast. Use this for slow work (e.g. the tagging reactor's
+ *    member-provider lookup) that must not block or delay the batch.
  */
 export interface Reactor {
   /** Stable id used as the service author of any follow-up commands. */

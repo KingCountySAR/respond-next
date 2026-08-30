@@ -27,6 +27,17 @@ function collect(sm: InstanceType<StateManagerCtor>): StampedEvent[] {
   return captured;
 }
 
+/** Capture each broadcast as its own batch (to assert how many broadcasts a command made). */
+function collectBatches(sm: InstanceType<StateManagerCtor>): StampedEvent[][] {
+  const batches: StampedEvent[][] = [];
+  sm.addClient({
+    broadcastEvent(events) {
+      batches.push(events);
+    },
+  });
+  return batches;
+}
+
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
   process.env.MONGODB_URI = mongod.getUri();
@@ -66,6 +77,22 @@ describe('StateManager.handleCommand', () => {
     expect(evDocs.find((d) => d.type === CommsEvents.CommLogged.type)?.meta.author).toEqual({ type: 'service', id: 'place-comms-reactor' });
   });
 
+  it('collapses a command and its sync reactor into a single broadcast', async () => {
+    const sm = new StateManager();
+    const batches = collectBatches(sm);
+
+    await sm.handleCommand(PlaceCommands.CreatePlace('act-collapse', createNewPlace('Staging')), userAuthor('u1'));
+
+    // Exactly one broadcast carrying both the command's event and the reactor's.
+    expect(batches).toHaveLength(1);
+    expect(batches[0].map((e) => e.type)).toEqual([PlaceEvents.PlaceCreated.type, CommsEvents.CommLogged.type]);
+
+    // Both events landed in the audit log — written by a single insertMany, not
+    // a second reactor round-trip.
+    const evDocs = await (await mongoPromise).db().collection('events').find({ activityId: 'act-collapse' }).toArray();
+    expect(evDocs).toHaveLength(2);
+  });
+
   it('deletes a place and logs a terminated comm', async () => {
     const sm = new StateManager();
     collect(sm);
@@ -90,6 +117,10 @@ describe('StateManager.handleCommand', () => {
     // participantUpdate needs the activity to exist; create it via a place command first.
     await sm.handleCommand(PlaceCommands.CreatePlace('act-3', createNewPlace('CP')), userAuthor('u1'));
     await sm.handleCommand(ParticipantCommands.UpdateParticipant('act-3', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn), userAuthor('u1'));
+
+    // Tagging is a fire-and-forget async reactor: it resolves after handleCommand
+    // returns, so wait for the deferred work before asserting on tags.
+    await sm.settle();
 
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-3');
     expect(activity?.participants['p1']?.tags).toEqual(['Snow', 'OL']);

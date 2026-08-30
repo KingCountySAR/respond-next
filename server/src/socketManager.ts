@@ -52,9 +52,9 @@ export default class SocketManager {
         }
 
         const emitter = toRooms ? manager.io.to(toRooms) : manager.io;
-        for (const event of events) {
-          emitter.emit('event', event);
-        }
+        // One socket message carrying the whole batch, so the client applies it
+        // in a single render.
+        emitter.emit('events', events);
       },
     });
   }

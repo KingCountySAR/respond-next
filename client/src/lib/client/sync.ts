@@ -36,7 +36,7 @@ export class ClientSync {
     // nothing to "wake up" on connect_error — socket.io's own reconnection handles it.
 
     this.socket.on('snapshot', (payload) => this.handleSnapshot(payload));
-    this.socket.on('event', (event) => this.handleServerEvent(event));
+    this.socket.on('events', (events) => this.handleServerEvents(events));
     this.dispatch = store.dispatch;
   }
 
@@ -148,9 +148,13 @@ export class ClientSync {
     this.socket.emit('command', command);
   }
 
-  // Server-minted facts. Applied by every client, including the one that issued
-  // the command (no reporter exclusion — the client did not optimistically apply it).
-  handleServerEvent(event: StampedEvent) {
-    this.dispatch(event as unknown as Action);
+  // A batch of server-minted facts from one command. Applied by every client,
+  // including the one that issued the command (no reporter exclusion — the client
+  // did not optimistically apply it). Dispatching the batch within this single
+  // socket callback lets React 18 auto-batching collapse it into one render.
+  handleServerEvents(events: StampedEvent[]) {
+    for (const event of events) {
+      this.dispatch(event as unknown as Action);
+    }
   }
 }

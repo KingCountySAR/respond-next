@@ -8,9 +8,11 @@ export interface ServerToClientEvents {
   // Full-state snapshot pushed on connect: activities scoped to the user, plus
   // the locations catalog. Applied directly into the client read model.
   snapshot: (payload: { activities: ActivityState; locations: LocationState }) => void;
-  // Command/event path: a server-minted, authored fact. Every connected client
-  // (including the one that issued the command) applies it.
-  event: (event: StampedEvent) => void;
+  // Command/event path: a batch of server-minted, authored facts from one
+  // command (its own events plus any synchronous reactors'). Every connected
+  // client (including the one that issued the command) applies them together, in
+  // a single render. Always an array, even for a single event.
+  events: (events: StampedEvent[]) => void;
 }
 
 export interface ClientToServerEvents {

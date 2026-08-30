@@ -23,11 +23,21 @@ export interface ActionListener {
 
 const LOCATION_COLLECTION_NAME = 'locations';
 
+function isPromise<T>(value: T[] | Promise<T[]>): value is Promise<T[]> {
+  return typeof (value as Promise<T[]>)?.then === 'function';
+}
+
 export class StateManager {
   private listeners: ActionListener[] = [];
   private activityState: ActivityState = { list: [] };
   private locationsState: LocationState = { list: [] };
   private organizationsState: OrganizationState = { list: [] };
+  /**
+   * In-flight fire-and-forget async-reactor chains. Production never awaits
+   * these (that's the point — they're deferred); tests call `settle()` to wait
+   * for them before asserting on the resulting state.
+   */
+  private pendingReactions = new Set<Promise<void>>();
 
   constructor(private readonly reactors: Reactor[] = defaultReactors) {}
 
@@ -80,65 +90,121 @@ export class StateManager {
   /**
    * Command/event pipeline (Phase 2). Validate a command into event(s), stamp
    * author + timestamp, reduce into memory, append to the `events` audit log,
-   * persist the changed activity snapshot, broadcast the events, then run
-   * reactors whose follow-up commands re-enter this same pipeline.
+   * persist the changed snapshot, and broadcast — all as a single atomic batch.
+   *
+   * A command and its *synchronous* reactors collapse into one transaction: the
+   * command's events plus every sync reactor's follow-up events are folded into a
+   * single `insertMany` / persist / broadcast, so the client applies them in one
+   * render (no per-reactor Mongo round-trip flicker). *Asynchronous* reactors
+   * (those returning a promise, e.g. a member-provider tag lookup) are deferred:
+   * they run fire-and-forget after the commit and their follow-up commands
+   * re-enter this pipeline as a later, separate broadcast.
    */
   async handleCommand(command: Command, author: EventAuthor): Promise<void> {
     const events = produceEvents(command);
     if (!events.length) return;
 
-    const stamped: StampedEvent[] = events.map((event) => ({ ...event, meta: { author, timestamp: Date.now() } }));
+    // A command is single-domain. Location events reduce into LocationState
+    // (broadcast to all, no reactors); everything else is an activity command.
+    if (events.every((event) => isLocationEvent(event))) {
+      await this.handleLocationEvents(events.map((event) => this.stamp(event, author)));
+      return;
+    }
 
-    // Append every event to the audit log (both domains).
     const mongo = await mongoPromise;
-    await mongo
-      .db()
-      .collection('events')
-      .insertMany(stamped.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
+    const priorActivities = this.snapshotActivities();
+    let workingState = this.activityState;
+    const batch: StampedEvent[] = [];
+    // FIFO work-list, seeded with the command's already-produced events. Sync
+    // reactors append their follow-up events here; the loop drains it so a sync
+    // reactor's event can itself trigger further sync reactors.
+    const pending: StampedEvent[] = events.map((event) => this.stamp(event, author));
+    // Async reactors: captured here (name + in-flight promise) and drained after
+    // the commit so their slow work never blocks the batch.
+    const deferred: { name: string; result: Promise<Command[]> }[] = [];
 
-    // A command is single-domain, but partition defensively: activity events
-    // reduce into ActivityState (org-scoped broadcast + reactors); location
-    // events reduce into LocationState (broadcast to all, no reactors).
-    const locationEvents = stamped.filter((event) => isLocationEvent(event));
-    const activityEvents = stamped.filter((event) => !isLocationEvent(event));
-
-    if (activityEvents.length) {
-      const priorActivities = this.snapshotActivities();
-      this.activityState = produce(this.activityState, (draft) => {
-        for (const event of activityEvents) {
-          BasicEventReducers[event.type as keyof typeof BasicEventReducers](draft, event as never);
-        }
+    while (pending.length) {
+      if (batch.length > 5000) throw new Error('reactor fold exceeded 5000 events — likely a self-triggering reactor');
+      const event = pending.shift()!;
+      workingState = produce(workingState, (draft) => {
+        BasicEventReducers[event.type as keyof typeof BasicEventReducers](draft, event as never);
       });
+      batch.push(event);
 
-      const rooms = await this.persistActivityChanges(priorActivities, false);
-      for (const listener of this.listeners) {
-        listener.broadcastEvent(activityEvents, rooms);
-      }
-
-      // Reactors observe activity events; follow-up commands re-enter the
-      // pipeline authored as the reactor (a service).
-      const ctx = { priorActivities, currentActivities: this.snapshotActivities() };
-      for (const event of activityEvents) {
-        for (const reactor of this.reactors) {
-          for (const followup of await reactor.react(event, ctx)) {
-            await this.handleCommand(followup, serviceAuthor(reactor.name));
+      const ctx = { priorActivities, currentActivities: this.snapshotOf(workingState) };
+      for (const reactor of this.reactors) {
+        const reaction = reactor.react(event, ctx);
+        if (isPromise(reaction)) {
+          // Async reactor — defer; it read `ctx` synchronously up to its first
+          // await, so it sees the correct state at this event.
+          deferred.push({ name: reactor.name, result: reaction });
+        } else {
+          // Sync reactor — fold its follow-up events into this same batch.
+          for (const followup of reaction) {
+            for (const followupEvent of produceEvents(followup)) {
+              pending.push(this.stamp(followupEvent, serviceAuthor(reactor.name)));
+            }
           }
         }
       }
     }
 
-    if (locationEvents.length) {
-      const priorLocations = this.snapshotLocations();
-      this.locationsState = produce(this.locationsState, (draft) => {
-        for (const event of locationEvents) {
-          BasicLocationReducers[event.type as keyof typeof BasicLocationReducers](draft, event as never);
-        }
-      });
+    // Commit the whole batch once: audit log, in-memory state, Mongo, broadcast.
+    await mongo
+      .db()
+      .collection('events')
+      .insertMany(batch.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
+    this.activityState = workingState;
+    const rooms = await this.persistActivityChanges(priorActivities, false);
+    for (const listener of this.listeners) {
+      listener.broadcastEvent(batch, rooms);
+    }
 
-      await this.persistLocationChanges(priorLocations);
-      for (const listener of this.listeners) {
-        listener.broadcastEvent(locationEvents, undefined); // locations are broadcast to all clients
+    // Fire-and-forget the deferred async reactors: their follow-up commands
+    // re-enter this pipeline as their own (later) atomic batch.
+    for (const { name, result } of deferred) {
+      const chain = result
+        .then((followups) => Promise.all(followups.map((followup) => this.handleCommand(followup, serviceAuthor(name)))))
+        .then(() => undefined)
+        .catch((err) => console.error(`async reactor ${name} failed`, err));
+      this.pendingReactions.add(chain);
+      chain.finally(() => this.pendingReactions.delete(chain));
+    }
+  }
+
+  /**
+   * Test support: await all in-flight fire-and-forget async-reactor chains.
+   * Loops because a deferred command can spawn further deferred work. Not used
+   * in production (the whole point of async reactors is that nothing awaits them).
+   */
+  async settle(): Promise<void> {
+    while (this.pendingReactions.size) {
+      await Promise.all(this.pendingReactions);
+    }
+  }
+
+  private stamp(event: ReturnType<typeof produceEvents>[number], author: EventAuthor): StampedEvent {
+    return { ...event, meta: { author, timestamp: Date.now() } };
+  }
+
+  /** Reduce + persist + broadcast location events (broadcast to all clients, no reactors). */
+  private async handleLocationEvents(events: StampedEvent[]): Promise<void> {
+    const mongo = await mongoPromise;
+    await mongo
+      .db()
+      .collection('events')
+      .insertMany(events.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
+
+    const priorLocations = this.snapshotLocations();
+    this.locationsState = produce(this.locationsState, (draft) => {
+      for (const event of events) {
+        BasicLocationReducers[event.type as keyof typeof BasicLocationReducers](draft, event as never);
       }
+    });
+
+    await this.persistLocationChanges(priorLocations);
+    for (const listener of this.listeners) {
+      listener.broadcastEvent(events, undefined);
     }
   }
 
@@ -183,7 +249,11 @@ export class StateManager {
   }
 
   private snapshotActivities(): Record<string, Activity> {
-    return this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
+    return this.snapshotOf(this.activityState);
+  }
+
+  private snapshotOf(state: ActivityState): Record<string, Activity> {
+    return state.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
   }
 
   private snapshotLocations(): Record<string, Location> {
