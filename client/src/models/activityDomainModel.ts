@@ -24,7 +24,7 @@ import { pickStatusOptions, statusTransitions, Transition } from './statusTransi
  *    activity out of the list projection the {@link ActivityListDomainModel}
  *    already subscribes to (so rows are cheap — no per-row subscription).
  */
-interface ActivitySource {
+export interface ActivitySource {
   readonly activity: Activity | undefined;
   readonly readOnly: boolean;
   readonly dispatch: AppDispatch;
@@ -143,20 +143,30 @@ export class ActivityDomainModel {
   // Same stable-per-id memoization for participating organizations.
   private readonly organizationModels = new Map<string, ParticipatingOrgDomainModel>();
 
-  private constructor(
+  protected constructor(
     private readonly source: ActivitySource,
     private readonly activityId: string,
-    private readonly clock: ObservableClock,
+    protected readonly clock: ObservableClock,
   ) {}
+
+  // Source construction, kept here (StoreActivitySource / ProjectedActivitySource
+  // stay module-private) but reachable by subclass factories via `protected static`.
+  protected static storeSource(store: AppStore, activityId: string): ActivitySource {
+    return new StoreActivitySource(store, activityId);
+  }
+
+  protected static projectedSource(projection: ReduxProjection<Activity[]>, activityId: string): ActivitySource {
+    return new ProjectedActivitySource(projection, activityId);
+  }
 
   /** Store-backed model for the activity page (owns a store subscription + fallback). */
   static forStore(store: AppStore, activityId: string, clock: ObservableClock): ActivityDomainModel {
-    return new ActivityDomainModel(new StoreActivitySource(store, activityId), activityId, clock);
+    return new ActivityDomainModel(ActivityDomainModel.storeSource(store, activityId), activityId, clock);
   }
 
   /** Row model over a shared list projection — cheap, no per-row subscription. */
   static projected(projection: ReduxProjection<Activity[]>, activityId: string, clock: ObservableClock): ActivityDomainModel {
-    return new ActivityDomainModel(new ProjectedActivitySource(projection, activityId), activityId, clock);
+    return new ActivityDomainModel(ActivityDomainModel.projectedSource(projection, activityId), activityId, clock);
   }
 
   /** Dispatch a command into the Redux timeline (delegated to the source). */
@@ -231,6 +241,12 @@ export class ActivityDomainModel {
   /** Active but not yet open for sign in. */
   get isPending(): boolean {
     return this.isActive && !this.isOpen;
+  }
+
+  /** True once the activity carries its operations properties (legacy rows may not). */
+  get hasOperations(): boolean {
+    const activity = this.activity;
+    return !!(activity?.teams && activity?.comms && activity?.staff && activity?.places);
   }
 
   /** True while the activity's start time is still in the future. */
