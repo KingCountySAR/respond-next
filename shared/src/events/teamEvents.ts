@@ -10,6 +10,9 @@ export const TeamEvents = {
   TeamUpdated: createAction('evt/team/updated', (activityId: string, updates: Partial<Team> & { id: string }) => ({
     payload: { activityId, updates },
   })),
+  TeamDisbanded: createAction('evt/team/disbanded', (activityId: string, id: string, target: AssignmentTarget) => ({
+    payload: { activityId, id, target },
+  })),
   TeamDeleted: createAction('evt/team/deleted', (activityId: string, updates: Partial<Team> & { id: string }) => ({
     payload: { activityId, updates },
   })),
@@ -22,5 +25,8 @@ export const TeamEvents = {
   // their Assigned/Available status).
   TeamMemberAssigned: createAction('evt/team/memberAssigned', (activityId: string, participantId: string, target?: AssignmentTarget) => ({
     payload: { activityId, participantId, target },
+  })),
+  EquipmentAssigned: createAction('evt/team/equipmentAssigned', (activityId: string, itemId: string, target?: AssignmentTarget) => ({
+    payload: { activityId, itemId, target },
   })),
 };

@@ -7,7 +7,6 @@ import { type AppStore } from '../lib/client/store';
 import { ActivityDomainModel } from './activityDomainModel';
 import { LogDomainModel } from './logDomainModel';
 import { ObservableClock } from './observableClock';
-import { ParticipantDomainModel } from './participantDomainModel';
 import { PlaceDomainModel } from './placeDomainModel';
 import { ReduxProjection } from './reduxProjection';
 import { TeamDomainModel } from './teamDomainModel';

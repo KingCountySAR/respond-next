@@ -239,6 +239,15 @@ export const BasicEventReducers: EventReducers = {
     Object.assign(team, pickTeamProperties(updates));
   },
 
+  [DomainEvents.TeamDisbanded.type]: function disbandTeam(state, { payload }) {
+    const { activityId, id } = payload;
+    const activity = state.list.find((f) => f.id === activityId);
+    if (!activity || !activity.teams) return;
+    const team = activity.teams.find((t) => t.id === id);
+    if (!team) return;
+    team.status = 'Disbanded';
+  },
+
   [DomainEvents.TeamDeleted.type]: function deleteTeam(state, { payload }) {
     const { activityId, updates } = payload;
     const activity = state.list.find((f) => f.id === activityId);
@@ -247,6 +256,35 @@ export const BasicEventReducers: EventReducers = {
   },
 
   [DomainEvents.TeamMemberAssigned.type]: function assignTeamMember(state, { payload }) {
+    const { activityId, participantId, target } = payload;
+    const activity = state.list.find((f) => f.id === activityId);
+    if (!activity) return;
+
+    // Remove the participant from wherever they currently are.
+    for (const team of activity.teams ?? []) {
+      if (!team.assignedParticipants.includes(participantId)) continue;
+      team.assignedParticipants = team.assignedParticipants.filter((id) => id !== participantId);
+    }
+    for (const place of activity.places ?? []) {
+      if (place.assignedParticipants.includes(participantId)) {
+        place.assignedParticipants = place.assignedParticipants.filter((id) => id !== participantId);
+      }
+    }
+
+    // Add to the target. For a team, `asLeader` puts them first so they become
+    // the lead (the first member is always the lead).
+    if (target?.type === 'team') {
+      const team = (activity.teams ?? []).find((t) => t.id === target.id);
+      if (team) {
+        team.assignedParticipants = target.asLeader ? [participantId, ...team.assignedParticipants] : [...team.assignedParticipants, participantId];
+      }
+    } else if (target?.type === 'place') {
+      const place = (activity.places ?? []).find((p) => p.id === target.id);
+      if (place) place.assignedParticipants = [...place.assignedParticipants, participantId];
+    }
+  },
+
+  [DomainEvents.TeamEquipmentAssigned.type]: function assignTeamMember(state, { payload }) {
     const { activityId, participantId, target } = payload;
     const activity = state.list.find((f) => f.id === activityId);
     if (!activity) return;

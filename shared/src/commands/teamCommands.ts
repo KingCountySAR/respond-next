@@ -12,6 +12,9 @@ export const TeamCommands = {
   UpdateTeam: createAction('cmd/team/update', (activityId: string, updates: Partial<Team> & { id: string }) => ({
     payload: { activityId, updates },
   })),
+  DisbandTeam: createAction('cmd/team/disband', (activityId: string, id: string, target: AssignmentTarget) => ({
+    payload: { activityId, id, target },
+  })),
   DeleteTeam: createAction('cmd/team/delete', (activityId: string, id: string) => ({
     payload: { activityId, id },
   })),
@@ -20,5 +23,8 @@ export const TeamCommands = {
   })),
   AssignTeamMember: createAction('cmd/team/assignMember', (activityId: string, participantId: string, target?: AssignmentTarget) => ({
     payload: { activityId, participantId, target },
+  })),
+  AssignEquipment: createAction('cmd/team/assignEquipment', (activityId: string, itemId: string, target?: AssignmentTarget) => ({
+    payload: { activityId, itemId, target },
   })),
 };
