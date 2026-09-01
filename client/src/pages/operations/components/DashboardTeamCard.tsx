@@ -53,7 +53,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   const hasTeamMemberError = teamParticipants.some((participant) => participant.timeline?.[0]?.status !== ParticipantStatus.Assigned);
 
-  const handleExpandedDrop = (item: Participant | EquipmentItem, type: string, callback?: (...args: unknown[]) => void, asLeader?: boolean) => {
+  const handleExpandedDrop = (item: Participant | EquipmentItem, type: string, asLeader?: boolean) => {
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same team (without changing leadership), cancel.
       if (team.assignedParticipants.includes(item.id)) {
@@ -63,36 +63,15 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
       teams.assignTeamMember(activity.id, item.id, { type: 'team', id: team.id, asLeader });
     } else if (type === 'equipment') {
       const equipment = item as EquipmentItem;
-      if (!!callback && equipment.type === 'Custom' && equipment.name === 'Custom Item') {
-        callback({ item, onSave: (newItem: EquipmentItem) => addEquipment(newItem) });
-        return;
-      }
-      // If the item was dragged and dropped back to the same place, cancel.
-      if (team.assignedEquipment.find((e) => e.uuid === e.uuid)) return;
-      addEquipment(equipment);
-    } else {
-      return;
+      // Custom items arrive already hydrated (named) via the Draggable's transform.
+      // If the item was dragged and dropped back to the same team, cancel.
+      if (team.assignedEquipment.find((e) => e.uuid === equipment.uuid)) return;
+      teams.assignEquipment(activity.id, equipment, { type: 'team', id: team.id });
     }
   };
 
-  const handleHeaderDrop = (item: Participant | EquipmentItem, type: string, callback?: (...args: unknown[]) => void) => {
-    handleExpandedDrop(item, type, callback, (type === 'participant' && isExpanded) || undefined);
-  };
-
-  const addEquipment = (equipment: EquipmentItem) => {
-    // If the item was dragged and dropped back to the same team, cancel.
-    if (team.assignedEquipment.find((item) => item.uuid === equipment.uuid)) return;
-    // Update the Team to include the new participant
-    const updatedTeam = { ...team, assignedEquipment: [...team.assignedEquipment, equipment] };
-    updateTeam(updatedTeam);
-  };
-
-  const removeEquipment = (id: string) => {
-    if (team.assignedEquipment.some((item) => item.uuid === id)) {
-      // Remove the equipment from the team
-      const updatedTeam = { ...team, assignedEquipment: team.assignedEquipment.filter((item) => item.uuid !== id) };
-      updateTeam(updatedTeam);
-    }
+  const handleHeaderDrop = (item: Participant | EquipmentItem, type: string) => {
+    handleExpandedDrop(item, type, (type === 'participant' && isExpanded) || undefined);
   };
 
   const editTeam = async () => {
@@ -189,14 +168,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
                     ) : (
                       sortedTeamEquipment.map((item) => {
                         return (
-                          <Draggable
-                            key={item.uuid}
-                            type="equipment"
-                            item={item}
-                            callback={() => {
-                              if (item.uuid) removeEquipment(item.uuid);
-                            }}
-                          >
+                          <Draggable key={item.uuid} type="equipment" item={item}>
                             <DashboardTeamEquipment key={item.uuid} item={item} />
                           </Draggable>
                         );

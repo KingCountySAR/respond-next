@@ -65,6 +65,7 @@ const activitySliceArgs = {
       .addCase(TeamEvents.TeamDeleted, BasicEventReducers[TeamEvents.TeamDeleted.type])
       .addCase(TeamEvents.StaffUpdated, BasicEventReducers[TeamEvents.StaffUpdated.type])
       .addCase(TeamEvents.TeamMemberAssigned, BasicEventReducers[TeamEvents.TeamMemberAssigned.type])
+      .addCase(TeamEvents.TeamEquipmentAssigned, BasicEventReducers[TeamEvents.TeamEquipmentAssigned.type])
       .addCase(ActivityEvents.ActivityUpdated, BasicEventReducers[ActivityEvents.ActivityUpdated.type])
       .addCase(ActivityEvents.ActivityRemoved, BasicEventReducers[ActivityEvents.ActivityRemoved.type])
       .addCase(ActivityEvents.ActivityCompleted, BasicEventReducers[ActivityEvents.ActivityCompleted.type])

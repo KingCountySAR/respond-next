@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewPlace, DEFAULT_PLACES, EquipmentItem, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
+import { createNewPlace, DEFAULT_PLACES, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
 import { useDialogs } from '@/client/components/DialogProvider';
@@ -146,36 +146,19 @@ function PlaceTile({ place }: { place: Place }) {
   const actions = isDefaultPlace(place) ? [editAction] : [editAction, deleteAction];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDrop = (item: any, type: string, callback?: (...args: any[]) => void) => {
+  const handleDrop = (item: any, type: string) => {
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same place, cancel.
       if (place.assignedParticipants.includes(item.id)) return;
       teams.assignTeamMember(activity.id, item.id, { type: 'place', id: place.id });
     } else if (type === 'equipment') {
-      if (!!callback && item.type === 'Custom' && item.name === 'Custom Item') {
-        callback({ item, onSave: (newItem: EquipmentItem) => addEquipment(newItem) });
-        return;
-      }
+      // Custom items arrive already hydrated (named) via the Draggable's transform.
       // If the item was dragged and dropped back to the same place, cancel.
       if (place.assignedEquipment.find((equipment) => item.uuid === equipment.uuid)) return;
-      addEquipment(item);
+      teams.assignEquipment(activity.id, item, { type: 'place', id: place.id });
     } else {
       return;
     }
-  };
-
-  const addEquipment = (equipment: EquipmentItem) => {
-    dispatchUpdate({ ...place, assignedEquipment: [...place.assignedEquipment, equipment] });
-  };
-
-  const removeEquipment = (id: string) => {
-    if (place.assignedEquipment.some((item) => item.uuid === id)) {
-      dispatchUpdate({ ...place, assignedEquipment: place.assignedEquipment.filter((item) => item.uuid !== id) });
-    }
-  };
-
-  const dispatchUpdate = (updated: Place) => {
-    places.updatePlace(activity.id, updated);
   };
 
   const hasContent = place.assignedParticipants.length > 0 || place.assignedEquipment.length > 0 || (place.lat?.trim() && place.lon?.trim()) || (place.notes?.trim() && place.notes.trim().length > 0);
@@ -210,14 +193,7 @@ function PlaceTile({ place }: { place: Place }) {
               <Stack spacing={0.5}>
                 {sortedTeamEquipment.map((item) => {
                   return (
-                    <Draggable
-                      key={item.uuid}
-                      type="equipment"
-                      item={item}
-                      callback={() => {
-                        if (item.uuid) removeEquipment(item.uuid);
-                      }}
-                    >
+                    <Draggable key={item.uuid} type="equipment" item={item}>
                       <DashboardTeamEquipment key={item.uuid} item={item} />
                     </Draggable>
                   );

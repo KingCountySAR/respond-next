@@ -1,6 +1,6 @@
 import { createAction } from '@reduxjs/toolkit';
 
-import { AssignmentTarget, Team } from '../types/operations';
+import { AssignmentTarget, EquipmentItem, Team } from '../types/operations';
 
 // Intent to change teams + the staff (role assignment) map, client -> server.
 // The team-comms reactor turns status/GAR/assignment changes into comms.
@@ -20,5 +20,8 @@ export const TeamCommands = {
   })),
   AssignTeamMember: createAction('cmd/team/assignMember', (activityId: string, participantId: string, target?: AssignmentTarget) => ({
     payload: { activityId, participantId, target },
+  })),
+  AssignEquipment: createAction('cmd/team/assignEquipment', (activityId: string, item: EquipmentItem, target?: AssignmentTarget) => ({
+    payload: { activityId, item, target },
   })),
 };

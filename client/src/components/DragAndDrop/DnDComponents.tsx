@@ -5,15 +5,15 @@ import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { DraggedItem, useDnD } from './DnDProvider';
 
 // --- <Draggable /> ---
-interface DraggableProps<T> {
+interface DraggableProps<Thin, Thick = Thin> {
   type: string;
-  item: T;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  callback?: (...args: any[]) => void;
+  item: Thin;
+  // Optional async hydration run by the accepting Droppable on drop; return null to cancel.
+  transform?: (item: Thin) => Promise<Thick | null> | Thick | null;
   children: ReactNode;
 }
 
-export function Draggable<T>({ type, item, callback, children }: DraggableProps<T>) {
+export function Draggable<Thin, Thick = Thin>({ type, item, transform, children }: DraggableProps<Thin, Thick>) {
   const { startDrag, updateDrag, endDrag } = useDnD();
   const [isDraggingPointer, setIsDraggingPointer] = useState(false);
   const dragStartPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -40,7 +40,7 @@ export function Draggable<T>({ type, item, callback, children }: DraggableProps<
 
       hasStartedDragRef.current = true;
       setIsDraggingPointer(true);
-      startDrag({ type, data: item, callback, previewNode: children }, e);
+      startDrag({ type, data: item, transform, previewNode: children }, e);
     }
 
     updateDrag(e);
@@ -56,7 +56,7 @@ export function Draggable<T>({ type, item, callback, children }: DraggableProps<
           droppable.dispatchEvent(
             new CustomEvent('custom-drop', {
               bubbles: true,
-              detail: { type, data: item, callback },
+              detail: { type, data: item, transform },
             }),
           );
         }
@@ -95,7 +95,7 @@ export function DragHandle({ sx }: { sx?: SxProps<Theme> }) {
 interface DroppableProps {
   accepts?: string | string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onDrop: (draggedItem: any, type: string, callback?: () => void) => void; // Accepts any dropped payload
+  onDrop: (draggedItem: any, type: string) => void; // Accepts any (optionally hydrated) dropped payload
   children: ReactNode;
   grow?: boolean;
 }
@@ -114,12 +114,14 @@ export function Droppable({ accepts, onDrop, children, grow }: DroppableProps) {
     };
 
     const handleCustomDrop = (e: Event) => {
-      const customEvent = e as CustomEvent<DraggedItem>;
+      const { type, data, transform } = (e as CustomEvent<DraggedItem>).detail;
       // Only handle the event if this element is the original target the event was dispatched on.
       if (e.target !== element) return;
-      if (isAccepted(customEvent.detail.type)) {
-        onDrop(customEvent.detail.data, customEvent.detail.type, customEvent.detail.callback);
-      }
+      if (!isAccepted(type)) return;
+      // Hydrate (possibly async) before delivering; a null result cancels the drop.
+      Promise.resolve(transform ? transform(data) : data).then((resolved) => {
+        if (resolved != null) onDrop(resolved, type);
+      });
     };
 
     element.addEventListener('custom-drop', handleCustomDrop);

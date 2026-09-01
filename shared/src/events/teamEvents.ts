@@ -1,6 +1,6 @@
 import { createAction } from '@reduxjs/toolkit';
 
-import { AssignmentTarget, Team } from '../types/operations';
+import { AssignmentTarget, EquipmentItem, Team } from '../types/operations';
 
 // Facts about teams + staff assignments, minted by the server.
 export const TeamEvents = {
@@ -22,5 +22,10 @@ export const TeamEvents = {
   // their Assigned/Available status).
   TeamMemberAssigned: createAction('evt/team/memberAssigned', (activityId: string, participantId: string, target?: AssignmentTarget) => ({
     payload: { activityId, participantId, target },
+  })),
+  // A single piece of equipment moved: the reducer removes it (by uuid) from
+  // wherever it was and adds it to `target` (undefined = back to inventory).
+  TeamEquipmentAssigned: createAction('evt/team/equipmentAssigned', (activityId: string, item: EquipmentItem, target?: AssignmentTarget) => ({
+    payload: { activityId, item, target },
   })),
 };

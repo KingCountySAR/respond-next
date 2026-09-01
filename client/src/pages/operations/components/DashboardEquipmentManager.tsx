@@ -3,8 +3,10 @@ import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import { useDialogs } from '@respond/components/DialogProvider';
+import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { EquipmentItem } from '@respond/shared/types/operations';
 
+import { useActivityContext } from '@/client/components/activities/ActivityProvider';
 import { Draggable, Droppable } from '@/client/components/DragAndDrop/DnDComponents';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
@@ -55,19 +57,12 @@ const inventory = [
   { id: 'inventory-38', type: 'Packaging', name: 'Packaging' },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
-const checkOutEquipmentItem = (item: EquipmentItem): EquipmentItem => {
-  return { ...item, uuid: uuid() };
-};
-
 type GroupedInventory = Record<string, EquipmentItem[]>;
-
-type EditingState = {
-  item: EquipmentItem;
-  onSave: (item: EquipmentItem) => void;
-};
 
 export function DashboardEquipmentManager() {
   const { open } = useDialogs();
+  const teams = useTeamCommands();
+  const activity = useActivityContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [groupBy, setGroupBy] = useState<EquipmentGrouping>('Type');
 
@@ -92,24 +87,19 @@ export function DashboardEquipmentManager() {
     }, {});
   }, [filteredEquipment]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDrop = (item: any, type: string, callback?: () => void) => {
-    callback?.();
-  };
-
-  const initializeCustomItem = async (editingState: EditingState | undefined) => {
-    if (!editingState) return;
+  // A "Custom Item" needs to be named before it can be assigned; prompt for the name
+  // on drop and hydrate it. Returning null (dialog dismissed) cancels the drop.
+  const hydrateEquipment = async (item: EquipmentItem): Promise<EquipmentItem | null> => {
+    if (item.type !== 'Custom' || item.name !== 'Custom Item') return { ...item, uuid: uuid() };
     const name = await open(DashboardEquipmentCreateDialog, {});
-    if (name != null) {
-      editingState.onSave({ ...editingState.item, name });
-    }
+    return name == null ? null : { ...item, name, uuid: uuid() };
   };
 
   function EquipmentAphabetical({ items }: { items: EquipmentItem[] }) {
     return (
       <>
         {items.map((item) => (
-          <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)} callback={initializeCustomItem}>
+          <Draggable key={item.id} type="equipment" item={item} transform={hydrateEquipment}>
             <EquipmentTile item={item} />
           </Draggable>
         ))}
@@ -126,7 +116,7 @@ export function DashboardEquipmentManager() {
             <DashboardBoxWithTitle key={groupName} title={groupName} collapsible>
               <Stack spacing={0.5}>
                 {list.map((item) => (
-                  <Draggable key={item.id} type="equipment" item={checkOutEquipmentItem(item)} callback={initializeCustomItem}>
+                  <Draggable key={item.id} type="equipment" item={item} transform={hydrateEquipment}>
                     <EquipmentTile item={item} />
                   </Draggable>
                 ))}
@@ -139,7 +129,7 @@ export function DashboardEquipmentManager() {
 
   return (
     <>
-      <Droppable accepts="equipment" onDrop={handleDrop} grow>
+      <Droppable accepts="equipment" onDrop={(item: EquipmentItem) => teams.assignEquipment(activity.id, item, undefined)} grow>
         <Stack spacing={2} sx={{ overflow: 'auto' }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <DashboardSearchBox onChange={setSearchQuery} sx={{ flex: 1 }} />

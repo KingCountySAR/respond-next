@@ -275,6 +275,29 @@ export const BasicEventReducers: EventReducers = {
     }
   },
 
+  [DomainEvents.TeamEquipmentAssigned.type]: function assignEquipment(state, { payload }) {
+    const { activityId, item, target } = payload;
+    const activity = state.list.find((f) => f.id === activityId);
+    if (!activity) return;
+
+    // Remove the item (matched by uuid) from wherever it currently is.
+    for (const team of activity.teams ?? []) {
+      team.assignedEquipment = team.assignedEquipment.filter((e) => e.uuid !== item.uuid);
+    }
+    for (const place of activity.places ?? []) {
+      place.assignedEquipment = place.assignedEquipment.filter((e) => e.uuid !== item.uuid);
+    }
+
+    // Add to the target. An undefined target means it returns to inventory.
+    if (target?.type === 'team') {
+      const team = (activity.teams ?? []).find((t) => t.id === target.id);
+      if (team) team.assignedEquipment = [...team.assignedEquipment, item];
+    } else if (target?.type === 'place') {
+      const place = (activity.places ?? []).find((p) => p.id === target.id);
+      if (place) place.assignedEquipment = [...place.assignedEquipment, item];
+    }
+  },
+
   [DomainEvents.StaffUpdated.type]: function updateStaff(state, { payload }) {
     const { activityId, staff } = payload;
     const activity = state.list.find((f) => f.id === activityId);

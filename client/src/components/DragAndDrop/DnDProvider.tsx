@@ -1,11 +1,12 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface DraggedItem<T = any> {
+export interface DraggedItem<Thin = any, Thick = Thin> {
   type: string;
-  data: T;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  callback?: (...args: any[]) => void;
+  data: Thin;
+  // Optional async hydration: runs in the accepting Droppable before onDrop.
+  // Return null to cancel the drop (e.g. the user dismissed a form).
+  transform?: (item: Thin) => Promise<Thick | null> | Thick | null;
   previewNode?: ReactNode;
   previewOffset?: Position;
 }
