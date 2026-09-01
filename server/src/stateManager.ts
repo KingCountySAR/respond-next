@@ -104,6 +104,11 @@ export class StateManager {
     const events = produceEvents(command);
     if (!events.length) return;
 
+    const activityId = command.type.startsWith('cmd/activity/') ? (command.payload as { id: string }).id : (command.payload as { activityId?: string }).activityId;
+
+    const mongo = await mongoPromise;
+    await mongo.db().collection('history').insertOne({ activityId, action: command, time: new Date(), author });
+
     // A command is single-domain. Location events reduce into LocationState
     // (broadcast to all, no reactors); everything else is an activity command.
     if (events.every((event) => isLocationEvent(event))) {
@@ -111,7 +116,6 @@ export class StateManager {
       return;
     }
 
-    const mongo = await mongoPromise;
     const priorActivities = this.snapshotActivities();
     let workingState = this.activityState;
     const batch: StampedEvent[] = [];
@@ -150,11 +154,7 @@ export class StateManager {
       }
     }
 
-    // Commit the whole batch once: audit log, in-memory state, Mongo, broadcast.
-    await mongo
-      .db()
-      .collection('events')
-      .insertMany(batch.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
+    // Commit the whole batch once: in-memory state, Mongo, broadcast.
     this.activityState = workingState;
     const rooms = await this.persistActivityChanges(priorActivities, false);
     for (const listener of this.listeners) {

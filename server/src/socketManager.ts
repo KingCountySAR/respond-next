@@ -69,7 +69,7 @@ export default class SocketManager {
     });
 
     socket.on('command', async (command) => {
-      await (await getServices()).stateManager.handleCommand(command, userAuthor(auth.userId, auth.name ?? auth.email));
+      await (await getServices()).stateManager.handleCommand(command, userAuthor(auth.userId, auth.email));
     });
 
     const stateManager = (await getServices()).stateManager;

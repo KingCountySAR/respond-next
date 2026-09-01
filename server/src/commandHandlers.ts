@@ -85,22 +85,22 @@ export function produceEvents(command: Command): DomainEvent[] {
     return [ActivityEvents.ActivityUpdated(command.payload.updates)];
   }
   if (ActivityCommands.RemoveActivity.match(command)) {
-    return [ActivityEvents.ActivityRemoved(command.payload.activityId)];
+    return [ActivityEvents.ActivityRemoved(command.payload.id)];
   }
   if (ActivityCommands.CompleteActivity.match(command)) {
-    return [ActivityEvents.ActivityCompleted(command.payload.activityId, command.payload.endTime)];
+    return [ActivityEvents.ActivityCompleted(command.payload.id, command.payload.endTime)];
   }
   if (ActivityCommands.ReactivateActivity.match(command)) {
-    return [ActivityEvents.ActivityReactivated(command.payload.activityId)];
+    return [ActivityEvents.ActivityReactivated(command.payload.id)];
   }
   if (ActivityCommands.AppendOrganizationTimeline.match(command)) {
-    return [ActivityEvents.OrganizationTimelineAppended(command.payload.activityId, command.payload.orgId, command.payload.org, command.payload.status)];
+    return [ActivityEvents.OrganizationTimelineAppended(command.payload.id, command.payload.orgId, command.payload.org, command.payload.status)];
   }
   if (ActivityCommands.DecorateOperations.match(command)) {
     // The server is the authority for the default operations state (including
     // the default places' ids), so it builds them here rather than trusting the
     // client. The mutator only fills unset fields, so this stays idempotent.
-    return [ActivityEvents.OperationsDecorated(command.payload.activityId, createDefaultOperations())];
+    return [ActivityEvents.OperationsDecorated(command.payload.id, createDefaultOperations())];
   }
   return [];
 }
