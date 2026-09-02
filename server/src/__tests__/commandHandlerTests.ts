@@ -35,9 +35,10 @@ describe('produceEvents', () => {
     expect(ParticipantEvents.ParticipantUpdated.match(event)).toBe(true);
   });
 
-  it('maps DeleteTeam -> TeamDeleted', () => {
-    const [event] = produceEvents(TeamCommands.DeleteTeam(activityId, 'team-1'));
-    expect(event).toEqual(TeamEvents.TeamDeleted(activityId, { id: 'team-1' }));
+  it('maps DeleteTeam -> TeamDeleted, carrying the chosen target', () => {
+    const target = { type: 'place', id: 'cp' } as const;
+    const [event] = produceEvents(TeamCommands.DeleteTeam(activityId, 'team-1', target));
+    expect(event).toEqual(TeamEvents.TeamDeleted(activityId, 'team-1', target));
   });
 
   it('maps DisbandTeam -> TeamDisbanded, carrying the chosen target', () => {
@@ -259,7 +260,10 @@ describe('teamDisbandReactor', () => {
     activity.places = onPlace ? [{ ...createNewPlace('CP'), id: 'cp' }] : [];
     return { activity, equipment };
   }
-  const ctxWith = (activity: Activity): ReactorContext => ({ priorActivities: {}, currentActivities: { [activityId]: activity } });
+  // The reactor reads from `priorActivities`: correct for TeamDisbanded
+  // (reducer leaves the team in place) and required for TeamDeleted (reducer
+  // removes the team, so only `prior` still has it).
+  const ctxWith = (activity: Activity): ReactorContext => ({ priorActivities: { [activityId]: activity }, currentActivities: {} });
 
   it('reassigns every member and equipment item to the given target', async () => {
     const { activity, equipment } = activityWithDisbandedTeam({ onPlace: true });
@@ -274,6 +278,14 @@ describe('teamDisbandReactor', () => {
     const commands = await teamDisbandReactor.react(TeamEvents.TeamDisbanded(activityId, 'alpha', undefined), ctxWith(activity));
 
     expect(commands).toEqual([TeamCommands.AssignTeamMember(activityId, 'p1', undefined), TeamCommands.AssignEquipment(activityId, equipment, undefined)]);
+  });
+
+  it('does the same for TeamDeleted, since the deleted team only survives in priorActivities', async () => {
+    const { activity, equipment } = activityWithDisbandedTeam({ onPlace: true });
+    const target = { type: 'place', id: 'cp' } as const;
+    const commands = await teamDisbandReactor.react(TeamEvents.TeamDeleted(activityId, 'alpha', target), ctxWith(activity));
+
+    expect(commands).toEqual([TeamCommands.AssignTeamMember(activityId, 'p1', target), TeamCommands.AssignEquipment(activityId, equipment, target)]);
   });
 
   it('does nothing for a team it cannot resolve', () => {

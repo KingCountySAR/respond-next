@@ -88,6 +88,13 @@ describe('Event Reducers', () => {
     expect(next.list[0].teams[0].assignedParticipants).toEqual(['p1']);
   });
 
+  it('TeamDeleted removes the team entirely', () => {
+    const team = createNewTeam('Team 1');
+    let next = apply(stateWithActivity(activityId), TeamEvents.TeamCreated(activityId, team));
+    next = apply(next, TeamEvents.TeamDeleted(activityId, team.id, undefined));
+    expect(next.list[0].teams).toEqual([]);
+  });
+
   describe('TeamMemberAssigned', () => {
     // Two teams (Alpha holds p1 as lead) plus a place, on one activity.
     function stateWithTeams(): ActivityState {

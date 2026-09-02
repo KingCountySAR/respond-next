@@ -206,6 +206,29 @@ describe('StateManager.handleCommand', () => {
     expect(batches[0].map((e) => e.type)).toEqual([TeamEvents.TeamDisbanded.type, TeamEvents.TeamMemberAssigned.type, ParticipantEvents.ParticipantTimelineAdded.type]);
   });
 
+  it('deletes a team, cascading member/equipment reassignment and the Available status flip', async () => {
+    const sm = new StateManager([teamDisbandReactor, teamAssignmentReactor]);
+    const batches = collectBatches(sm);
+
+    const cp = createNewPlace('CP');
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-delete', cp)), userAuthor('u1'));
+    const team = createNewTeam('Alpha');
+    await sm.handleCommand(c(TeamCommands.CreateTeam('act-delete', team)), userAuthor('u1'));
+    await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-delete', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
+    await sm.handleCommand(c(TeamCommands.AssignTeamMember('act-delete', 'p1', { type: 'team', id: team.id })), userAuthor('u1'));
+
+    batches.length = 0; // ignore setup broadcasts; focus on the delete
+    await sm.handleCommand(c(TeamCommands.DeleteTeam('act-delete', team.id, undefined)), userAuthor('u1'));
+
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-delete');
+    expect(activity?.teams.some((t) => t.id === team.id)).toBe(false);
+    expect(activity?.participants['p1'].timeline[0].status).toBe(ParticipantStatus.Available);
+
+    // TeamDeleted -> (reactor) TeamMemberAssigned -> (reactor) ParticipantTimelineAdded, all one broadcast.
+    expect(batches).toHaveLength(1);
+    expect(batches[0].map((e) => e.type)).toEqual([TeamEvents.TeamDeleted.type, TeamEvents.TeamMemberAssigned.type, ParticipantEvents.ParticipantTimelineAdded.type]);
+  });
+
   it('logs a team status-change comm via the team-comms reactor', async () => {
     const sm = new StateManager([teamCommsReactor]);
     collect(sm);

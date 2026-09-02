@@ -6,18 +6,20 @@ import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 import { Activity } from '@respond/shared/types/activity';
 import { AssignmentTarget, Team } from '@respond/shared/types/operations';
 
-export interface DisbandTeamDialogResult {
+export interface RemoveTeamDialogResult {
   target: AssignmentTarget;
 }
 
-interface DisbandTeamDialogProps extends MuiDialogProps<DisbandTeamDialogResult> {
+interface RemoveTeamDialogProps extends MuiDialogProps<RemoveTeamDialogResult> {
   activity: Activity;
   team: Team;
+  /** Which action is prompting this dialog — only changes copy, not behavior. */
+  action: 'Disband' | 'Delete';
 }
 
 type Mode = 'available' | 'place' | 'team';
 
-export function DisbandTeamDialog({ activity, team, onClose }: DisbandTeamDialogProps) {
+export function RemoveTeamDialog({ activity, team, action, onClose }: RemoveTeamDialogProps) {
   const otherTeams = (activity.teams ?? []).filter((t) => t.id !== team.id && t.status !== 'Disbanded');
   const places = activity.places ?? [];
 
@@ -39,7 +41,9 @@ export function DisbandTeamDialog({ activity, team, onClose }: DisbandTeamDialog
 
   return (
     <AppDialog fullWidth open onClose={onClose}>
-      <DialogTitle>Disband {team.name}</DialogTitle>
+      <DialogTitle>
+        {action} {team.name}
+      </DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>{team.name} isn&apos;t in base. Choose what happens to its remaining members and equipment.</DialogContentText>
         <RadioGroup value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
@@ -67,7 +71,7 @@ export function DisbandTeamDialog({ activity, team, onClose }: DisbandTeamDialog
       <DialogActions>
         <Button onClick={() => onClose(null)}>Cancel</Button>
         <Button variant="contained" color="primary" onClick={handleConfirm} disabled={confirmDisabled}>
-          Disband
+          {action}
         </Button>
       </DialogActions>
     </AppDialog>

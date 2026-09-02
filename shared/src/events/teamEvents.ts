@@ -13,8 +13,8 @@ export const TeamEvents = {
   TeamDisbanded: createAction('evt/team/disbanded', (activityId: string, id: string, target: AssignmentTarget) => ({
     payload: { activityId, id, target },
   })),
-  TeamDeleted: createAction('evt/team/deleted', (activityId: string, updates: Partial<Team> & { id: string }) => ({
-    payload: { activityId, updates },
+  TeamDeleted: createAction('evt/team/deleted', (activityId: string, id: string, target: AssignmentTarget) => ({
+    payload: { activityId, id, target },
   })),
   StaffUpdated: createAction('evt/team/staffUpdated', (activityId: string, staff: Record<string, string>) => ({
     payload: { activityId, staff },

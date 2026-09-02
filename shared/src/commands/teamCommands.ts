@@ -15,8 +15,8 @@ export const TeamCommands = {
   DisbandTeam: createAction('cmd/team/disband', (activityId: string, id: string, target?: AssignmentTarget) => ({
     payload: { activityId, id, target },
   })),
-  DeleteTeam: createAction('cmd/team/delete', (activityId: string, id: string) => ({
-    payload: { activityId, id },
+  DeleteTeam: createAction('cmd/team/delete', (activityId: string, id: string, target?: AssignmentTarget) => ({
+    payload: { activityId, id, target },
   })),
   UpdateStaff: createAction('cmd/team/updateStaff', (activityId: string, staff: Record<string, string>) => ({
     payload: { activityId, staff },

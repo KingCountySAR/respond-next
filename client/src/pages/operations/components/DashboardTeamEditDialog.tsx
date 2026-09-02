@@ -3,13 +3,14 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
-import { usePlaceCommands } from '@respond/lib/client/services/places';
 import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { Activity } from '@respond/shared/types/activity';
-import { createNewPlace, DEFAULT_PLACES, SarGar, Team } from '@respond/shared/types/operations';
+import { SarGar, Team } from '@respond/shared/types/operations';
 
 import { MuiDialogProps, useDialogs } from '@/client/components/DialogProvider';
 import { Stack } from '@/client/components/Material';
+
+import { RemoveTeamDialog } from './RemoveTeamDialog';
 
 interface DashboardTeamEditDialogProps extends MuiDialogProps<Team | null> {
   team: Team | null;
@@ -41,8 +42,7 @@ export function validateTeamName(teams: Team[], currentTeamId: string, name: str
 
 export function DashboardTeamEditDialog({ team, activity, onClose }: DashboardTeamEditDialogProps) {
   const teamCommands = useTeamCommands();
-  const places = usePlaceCommands();
-  const { confirm } = useDialogs();
+  const { open } = useDialogs();
 
   const teams = activity.teams ?? [];
 
@@ -98,35 +98,27 @@ export function DashboardTeamEditDialog({ team, activity, onClose }: DashboardTe
   // Prevent rendering dialog contents if team is null/undefined
   if (!team) return null;
 
-  const hasAssignedResources = team.assignedParticipants.length > 0 || team.assignedEquipment.length > 0;
-
+  // Close this dialog first so it isn't stacked behind the disband/delete
+  // dialog, then run the same reassignment flow DashboardTeamStatusSelect
+  // uses for disbanding. onClose() pops browser history to dismiss this
+  // dialog, but that pop only reaches DialogProvider's popstate handler
+  // asynchronously; opening the next dialog synchronously right after would
+  // push a new history entry first, so the pending pop then closes *that*
+  // one instead. Yielding a tick first lets the pop land before we push.
   const deleteTeam = async () => {
-    const confirmed = await confirm({
-      prompt: hasAssignedResources ? `Deleting ${team.name} will move remaining members and equipment to ${DEFAULT_PLACES.field}. Continue?` : `Delete ${team.name}?`,
-      destructive: true,
-      label: 'Delete',
-    });
-    if (!confirmed) return;
-    if (hasAssignedResources) reassignResources();
-    teamCommands.deleteTeam(activity.id, team.id);
     onClose(null);
-  };
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-  const reassignResources = () => {
-    const fieldPlace = activity.places?.find((place) => place.name === DEFAULT_PLACES.field);
-    const mergedParticipants = Array.from(new Set([...(fieldPlace?.assignedParticipants ?? []), ...team.assignedParticipants]));
-    const existingEquipmentIds = new Set((fieldPlace?.assignedEquipment ?? []).map((item) => item.uuid));
-    const mergedEquipment = [...(fieldPlace?.assignedEquipment ?? []), ...team.assignedEquipment.filter((item) => !existingEquipmentIds.has(item.uuid))];
-
-    const updatedFieldPlace = fieldPlace
-      ? { ...fieldPlace, assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment }
-      : { ...createNewPlace(DEFAULT_PLACES.field), assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment };
-
-    if (fieldPlace) {
-      places.updatePlace(activity.id, updatedFieldPlace);
-    } else {
-      places.createPlace(activity.id, updatedFieldPlace);
+    const isInBase = team.status === 'In Base';
+    const hasResources = team.assignedParticipants.length + team.assignedEquipment.length > 0;
+    if (isInBase || !hasResources) {
+      teamCommands.deleteTeam(activity.id, team.id, undefined);
+      return;
     }
+
+    const result = await open(RemoveTeamDialog, { activity, team, action: 'Delete' });
+    if (!result) return;
+    teamCommands.deleteTeam(activity.id, team.id, result.target);
   };
 
   return (

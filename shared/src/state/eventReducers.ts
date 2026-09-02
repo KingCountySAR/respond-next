@@ -247,10 +247,10 @@ export const BasicEventReducers: EventReducers = {
   },
 
   [DomainEvents.TeamDeleted.type]: function deleteTeam(state, { payload }) {
-    const { activityId, updates } = payload;
+    const { activityId, id } = payload;
     const activity = state.list.find((f) => f.id === activityId);
     if (!activity) return;
-    activity.teams = (activity.teams ?? []).filter((t) => t.id !== updates.id);
+    activity.teams = (activity.teams ?? []).filter((t) => t.id !== id);
   },
 
   [DomainEvents.TeamMemberAssigned.type]: function assignTeamMember(state, { payload }) {

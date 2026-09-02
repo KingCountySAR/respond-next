@@ -69,7 +69,7 @@ export function produceEvents(command: Command): DomainEvent[] {
     return [TeamEvents.TeamDisbanded(command.payload.activityId, command.payload.id, command.payload.target)];
   }
   if (TeamCommands.DeleteTeam.match(command)) {
-    return [TeamEvents.TeamDeleted(command.payload.activityId, { id: command.payload.id })];
+    return [TeamEvents.TeamDeleted(command.payload.activityId, command.payload.id, command.payload.target)];
   }
   if (TeamCommands.UpdateStaff.match(command)) {
     return [TeamEvents.StaffUpdated(command.payload.activityId, command.payload.staff)];
