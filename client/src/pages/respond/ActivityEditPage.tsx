@@ -176,7 +176,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
 
     // We're optimistic that the submitted event will be processed successfully. With partially offline clients,
     // we may not know of a conflict/etc. until later and will have to have UI for that anyways.
-    navigate(`/${updated.isMission ? 'mission' : 'event'}/${updated.id}`);
+    navigate(`~/${updated.isMission ? 'mission' : 'event'}/${updated.id}`);
   };
 
   return (
