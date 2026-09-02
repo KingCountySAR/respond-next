@@ -1,10 +1,13 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { v4 as uuid } from 'uuid';
 
-import { ActivityCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
+import { ActivityCommands, Command, LocationCommands, ParticipantCommands, PlaceCommands, StampedCommand, TeamCommands } from '@shared/commands';
 import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
 import { OrganizationStatus, ParticipantStatus } from '@shared/types/activity';
 import { createNewLocation } from '@shared/types/location';
 import { createNewPlace, createNewTeam } from '@shared/types/operations';
+
+import { EventDoc } from '@server/data/eventDoc';
 
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { teamAssignmentReactor } from '../reactors/teamAssignmentReactor';
@@ -17,6 +20,10 @@ type StateManagerCtor = typeof import('../stateManager').StateManager;
 let mongod: MongoMemoryServer;
 let StateManager: StateManagerCtor;
 let mongoPromise: typeof import('../mongodb').default;
+
+function c(command: Command): StampedCommand {
+  return { ...command, id: uuid() };
+}
 
 function collect(sm: InstanceType<StateManagerCtor>): StampedEvent[] {
   const captured: StampedEvent[] = [];
@@ -57,7 +64,7 @@ describe('StateManager.handleCommand', () => {
     const captured = collect(sm);
 
     const place = createNewPlace('Staging');
-    await sm.handleCommand(PlaceCommands.CreatePlace('act-1', place), userAuthor('u1', 'Tester'));
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-1', place)), userAuthor('u1', 'Tester'));
 
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-1');
     expect(activity?.places?.map((p) => p.name)).toContain('Staging');
@@ -72,17 +79,28 @@ describe('StateManager.handleCommand', () => {
     expect(types).toEqual([PlaceEvents.PlaceCreated.type, CommsEvents.CommLogged.type]);
 
     // Audit log: both events persisted, authored by the user and the reactor respectively.
-    const evDocs = await (await mongoPromise).db().collection('events').find({ activityId: 'act-1' }).sort({ 'meta.timestamp': 1 }).toArray();
+    const evDocs = await (await mongoPromise).db().collection<EventDoc>('events').find({ activityId: 'act-1' }).sort({ 'meta.timestamp': 1 }).toArray();
     expect(evDocs).toHaveLength(2);
     expect(evDocs.find((d) => d.type === PlaceEvents.PlaceCreated.type)?.meta.author).toEqual({ type: 'user', id: 'u1', name: 'Tester' });
     expect(evDocs.find((d) => d.type === CommsEvents.CommLogged.type)?.meta.author).toEqual({ type: 'service', id: 'place-comms-reactor' });
+
+    // id/commandId/cause: root and reactor follow-up have unique ids but share
+    // one commandId; only the follow-up records a cause, pointing at the root.
+    const root = evDocs.find((d) => d.type === PlaceEvents.PlaceCreated.type)!;
+    const followup = evDocs.find((d) => d.type === CommsEvents.CommLogged.type)!;
+    expect(root.id).toBeTruthy();
+    expect(followup.id).toBeTruthy();
+    expect(root.id).not.toEqual(followup.id);
+    expect(followup.meta.commandId).toEqual(root.meta.commandId);
+    expect(root.meta.cause).toBeUndefined();
+    expect(followup.meta.cause).toEqual(root.id);
   });
 
   it('collapses a command and its sync reactor into a single broadcast', async () => {
     const sm = new StateManager();
     const batches = collectBatches(sm);
 
-    await sm.handleCommand(PlaceCommands.CreatePlace('act-collapse', createNewPlace('Staging')), userAuthor('u1'));
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-collapse', createNewPlace('Staging'))), userAuthor('u1'));
 
     // Exactly one broadcast carrying both the command's event and the reactor's.
     expect(batches).toHaveLength(1);
@@ -90,7 +108,7 @@ describe('StateManager.handleCommand', () => {
 
     // Both events landed in the audit log — written by a single insertMany, not
     // a second reactor round-trip.
-    const evDocs = await (await mongoPromise).db().collection('events').find({ activityId: 'act-collapse' }).toArray();
+    const evDocs = await (await mongoPromise).db().collection<EventDoc>('events').find({ activityId: 'act-collapse' }).toArray();
     expect(evDocs).toHaveLength(2);
   });
 
@@ -99,8 +117,8 @@ describe('StateManager.handleCommand', () => {
     collect(sm);
 
     const place = createNewPlace('OP-2');
-    await sm.handleCommand(PlaceCommands.CreatePlace('act-2', place), userAuthor('u1'));
-    await sm.handleCommand(PlaceCommands.DeletePlace('act-2', place.id), userAuthor('u1'));
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-2', place)), userAuthor('u1'));
+    await sm.handleCommand(c(PlaceCommands.DeletePlace('act-2', place.id)), userAuthor('u1'));
 
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-2');
     expect(activity?.places?.some((p) => p.id === place.id)).toBe(false);
@@ -116,8 +134,8 @@ describe('StateManager.handleCommand', () => {
     const captured = collect(sm);
 
     // participantUpdate needs the activity to exist; create it via a place command first.
-    await sm.handleCommand(PlaceCommands.CreatePlace('act-3', createNewPlace('CP')), userAuthor('u1'));
-    await sm.handleCommand(ParticipantCommands.UpdateParticipant('act-3', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn), userAuthor('u1'));
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-3', createNewPlace('CP'))), userAuthor('u1'));
+    await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-3', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn)), userAuthor('u1'));
 
     // Tagging is a fire-and-forget async reactor: it resolves after handleCommand
     // returns, so wait for the deferred work before asserting on tags.
@@ -131,22 +149,27 @@ describe('StateManager.handleCommand', () => {
     expect(types).toContain(ParticipantEvents.ParticipantTagged.type);
 
     // The tag event is authored by the reactor (service), not the user.
-    const tagged = await (await mongoPromise).db().collection('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantTagged.type });
+    const tagged = await (await mongoPromise).db().collection<EventDoc>('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantTagged.type });
     expect(tagged?.meta.author).toEqual({ type: 'service', id: 'participant-tag-reactor' });
+
+    // Async reactor follow-up: uses new commandId and its cause is the triggering event's id.
+    const updated = await (await mongoPromise).db().collection<EventDoc>('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantUpdated.type });
+    expect(tagged?.meta.commandId).not.toEqual(updated?.meta.commandId);
+    expect(tagged?.meta.cause).toEqual(updated?.id);
   });
 
   it('assigns a member to a team and flips them to Assigned in one broadcast', async () => {
     const sm = new StateManager([teamAssignmentReactor]);
     const batches = collectBatches(sm);
 
-    await sm.handleCommand(PlaceCommands.CreatePlace('act-assign', createNewPlace('CP')), userAuthor('u1'));
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-assign', createNewPlace('CP'))), userAuthor('u1'));
     const team = createNewTeam('Alpha');
-    await sm.handleCommand(TeamCommands.CreateTeam('act-assign', team), userAuthor('u1'));
+    await sm.handleCommand(c(TeamCommands.CreateTeam('act-assign', team)), userAuthor('u1'));
     // The responder arrives at base (Available) before being put on the team.
-    await sm.handleCommand(ParticipantCommands.UpdateParticipant('act-assign', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available), userAuthor('u1'));
+    await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-assign', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
 
     batches.length = 0; // ignore the setup broadcasts; focus on the assignment
-    await sm.handleCommand(TeamCommands.AssignTeamMember('act-assign', 'p1', { type: 'team', id: team.id }), userAuthor('u1'));
+    await sm.handleCommand(c(TeamCommands.AssignTeamMember('act-assign', 'p1', { type: 'team', id: team.id })), userAuthor('u1'));
 
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-assign');
     expect(activity?.teams.find((t) => t.id === team.id)?.assignedParticipants).toEqual(['p1']);
@@ -161,12 +184,12 @@ describe('StateManager.handleCommand', () => {
     const sm = new StateManager([teamCommsReactor]);
     collect(sm);
 
-    await sm.handleCommand(PlaceCommands.CreatePlace('act-4', createNewPlace('CP')), userAuthor('u1')); // create the activity
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-4', createNewPlace('CP'))), userAuthor('u1')); // create the activity
     const team = createNewTeam('Alpha');
-    await sm.handleCommand(TeamCommands.CreateTeam('act-4', team), userAuthor('u1'));
+    await sm.handleCommand(c(TeamCommands.CreateTeam('act-4', team)), userAuthor('u1'));
     // The UI always sends the full team object (pickTeamProperties copies all listed
     // keys, so a partial update would wipe omitted fields).
-    await sm.handleCommand(TeamCommands.UpdateTeam('act-4', { ...team, status: 'On Assignment' }), userAuthor('u1'));
+    await sm.handleCommand(c(TeamCommands.UpdateTeam('act-4', { ...team, status: 'On Assignment' })), userAuthor('u1'));
 
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-4');
     expect(activity?.teams.find((t) => t.id === team.id)?.status).toBe('On Assignment');
@@ -183,8 +206,8 @@ describe('StateManager.handleCommand', () => {
     // memory (Mongo stayed correct; only the in-memory copy was corrupted).
     const sm = new StateManager([]);
 
-    const updatePromise = sm.handleCommand(ActivityCommands.UpdateActivity({ id: 'act-race', title: 'New Mission' }), userAuthor('u1'));
-    const appendPromise = sm.handleCommand(ActivityCommands.AppendOrganizationTimeline('act-race', { id: 'org-1', title: 'Org One' }, { time: Date.now(), status: OrganizationStatus.Responding }), userAuthor('u1'));
+    const updatePromise = sm.handleCommand(c(ActivityCommands.UpdateActivity({ id: 'act-race', title: 'New Mission' })), userAuthor('u1'));
+    const appendPromise = sm.handleCommand(c(ActivityCommands.AppendOrganizationTimeline('act-race', { id: 'org-1', title: 'Org One' }, { time: Date.now(), status: OrganizationStatus.Responding })), userAuthor('u1'));
     await Promise.all([updatePromise, appendPromise]);
 
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-race');
@@ -198,7 +221,7 @@ describe('StateManager.handleCommand', () => {
     const captured = collect(sm);
 
     const loc = { ...createNewLocation(), id: 'L1', title: 'Trailhead', isSaved: true };
-    await sm.handleCommand(LocationCommands.UpdateLocation(loc), userAuthor('u1'));
+    await sm.handleCommand(c(LocationCommands.UpdateLocation(loc)), userAuthor('u1'));
 
     expect(sm.getLocationState().list.map((l) => l.title)).toContain('Trailhead');
     // Location events broadcast to all clients (no room scoping).
@@ -207,7 +230,7 @@ describe('StateManager.handleCommand', () => {
     // Persisted to the locations collection.
     expect(await (await mongoPromise).db().collection('locations').findOne({ id: 'L1' })).toBeTruthy();
 
-    await sm.handleCommand(LocationCommands.RemoveLocation('L1'), userAuthor('u1'));
+    await sm.handleCommand(c(LocationCommands.RemoveLocation('L1')), userAuthor('u1'));
     expect(sm.getLocationState().list.find((l) => l.id === 'L1')).toBeUndefined();
     expect(await (await mongoPromise).db().collection('locations').findOne({ id: 'L1' })).toBeNull();
   });

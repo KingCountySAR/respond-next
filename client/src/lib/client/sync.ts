@@ -1,5 +1,6 @@
 import { Action, isAnyOf } from '@reduxjs/toolkit';
 import io, { Socket } from 'socket.io-client';
+import { v4 as uuid } from 'uuid';
 
 import { type ActivityState, filterInitialActivities, type LocationState } from '@respond/shared';
 import { Command, isCommand } from '@respond/shared/commands';
@@ -145,7 +146,7 @@ export class ClientSync {
   }
 
   emitCommand(command: Command) {
-    this.socket.emit('command', command);
+    this.socket.emit('command', { ...command, id: uuid() });
   }
 
   // A batch of server-minted facts from one command. Applied by every client,

@@ -1,6 +1,7 @@
 import { produce } from 'immer';
+import { v4 as uuid } from 'uuid';
 
-import { Command } from '@shared/commands';
+import { Command, StampedCommand } from '@shared/commands';
 import { EventAuthor, isLocationEvent, serviceAuthor, StampedEvent } from '@shared/events';
 import { BasicEventReducers, BasicLocationReducers } from '@shared/state';
 import type { ActivityState, LocationState, OrganizationState } from '@shared/state';
@@ -12,6 +13,7 @@ import { Organization } from '@shared/types/organization';
 import type UserAuth from '@shared/types/userAuth';
 
 import { produceEvents } from './commandHandlers';
+import { EventDoc } from './data/eventDoc';
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import { defaultReactors, Reactor } from './reactors';
 
@@ -111,22 +113,22 @@ export class StateManager {
    * they run fire-and-forget after the commit and their follow-up commands
    * re-enter this pipeline as a later, separate broadcast.
    */
-  async handleCommand(command: Command, author: EventAuthor): Promise<void> {
-    const run = this.queue.then(() => this.processCommand(command, author));
+  async handleCommand(command: StampedCommand, author: EventAuthor, cause?: string): Promise<void> {
+    const run = this.queue.then(() => this.processCommand(command, author, cause));
     // Keep the queue alive even if this command throws, so later-queued
     // commands still run; the rejection itself still propagates to this caller.
     this.queue = run.catch(() => undefined);
     return run;
   }
 
-  private async processCommand(command: Command, author: EventAuthor): Promise<void> {
+  private async processCommand(command: StampedCommand, author: EventAuthor, cause?: string): Promise<void> {
     const events = produceEvents(command);
     if (!events.length) return;
 
     // A command is single-domain. Location events reduce into LocationState
     // (broadcast to all, no reactors); everything else is an activity command.
     if (events.every((event) => isLocationEvent(event))) {
-      await this.handleLocationEvents(events.map((event) => this.stamp(event, author)));
+      await this.handleLocationEvents(events.map((event) => this.stamp(event, author, command.id, cause)));
       return;
     }
 
@@ -137,10 +139,11 @@ export class StateManager {
     // FIFO work-list, seeded with the command's already-produced events. Sync
     // reactors append their follow-up events here; the loop drains it so a sync
     // reactor's event can itself trigger further sync reactors.
-    const pending: StampedEvent[] = events.map((event) => this.stamp(event, author));
-    // Async reactors: captured here (name + in-flight promise) and drained after
-    // the commit so their slow work never blocks the batch.
-    const deferred: { name: string; result: Promise<Command[]> }[] = [];
+    const pending: StampedEvent[] = events.map((event) => this.stamp(event, author, command.id, cause));
+    // Async reactors: captured here (name + in-flight promise + the event that
+    // triggered them) and drained after the commit so their slow work never
+    // blocks the batch.
+    const deferred: { name: string; result: Promise<Command[]>; causeEventId: string }[] = [];
 
     while (pending.length) {
       if (batch.length > 5000) throw new Error('reactor fold exceeded 5000 events — likely a self-triggering reactor');
@@ -156,13 +159,13 @@ export class StateManager {
         if (isPromise(reaction)) {
           // Async reactor — defer; it read `ctx` synchronously up to its first
           // await, so it sees the correct state at this event.
-          deferred.push({ name: reactor.name, result: reaction });
+          deferred.push({ name: reactor.name, result: reaction, causeEventId: event.id });
         } else {
           // Sync reactor — fold its follow-up events into this same batch.
           const followupAuthor = serviceAuthor(reactor.name);
           for (const followup of reaction) {
             for (const followupEvent of produceEvents(followup)) {
-              pending.push(this.stamp(followupEvent, followupAuthor));
+              pending.push(this.stamp(followupEvent, followupAuthor, command.id, event.id));
             }
           }
         }
@@ -172,7 +175,7 @@ export class StateManager {
     // Commit the whole batch once: audit log, in-memory state, Mongo, broadcast.
     await mongo
       .db()
-      .collection('events')
+      .collection<EventDoc>('events')
       .insertMany(batch.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
     this.activityState = workingState;
     const rooms = await this.persistActivityChanges(priorActivities, false);
@@ -181,10 +184,11 @@ export class StateManager {
     }
 
     // Fire-and-forget the deferred async reactors: their follow-up commands
-    // re-enter this pipeline as their own (later) atomic batch.
-    for (const { name, result } of deferred) {
+    // re-enter this pipeline as their own (later) atomic batch, carrying the
+    // original commandId and the id of the event that triggered them.
+    for (const { name, result, causeEventId } of deferred) {
       const chain = result
-        .then((followups) => Promise.all(followups.map((followup) => this.handleCommand(followup, serviceAuthor(name)))))
+        .then((followups) => Promise.all(followups.map((followup) => this.handleCommand({ ...followup, id: uuid() }, serviceAuthor(name), causeEventId))))
         .then(() => undefined)
         .catch((err) => console.error(`async reactor ${name} failed`, err));
       this.pendingReactions.add(chain);
@@ -203,8 +207,8 @@ export class StateManager {
     }
   }
 
-  private stamp(event: ReturnType<typeof produceEvents>[number], author: EventAuthor): StampedEvent {
-    return { ...event, meta: { author, timestamp: Date.now() } };
+  private stamp(event: ReturnType<typeof produceEvents>[number], author: EventAuthor, commandId: string, cause?: string): StampedEvent {
+    return { ...event, id: uuid(), meta: { author, timestamp: Date.now(), commandId, ...(cause ? { cause } : {}) } };
   }
 
   /** Reduce + persist + broadcast location events (broadcast to all clients, no reactors). */
@@ -212,7 +216,7 @@ export class StateManager {
     const mongo = await mongoPromise;
     await mongo
       .db()
-      .collection('events')
+      .collection<EventDoc>('events')
       .insertMany(events.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
 
     const priorLocations = this.snapshotLocations();

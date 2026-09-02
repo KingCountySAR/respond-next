@@ -1,4 +1,4 @@
-import type { Command } from '../commands';
+import type { StampedCommand } from '../commands';
 import type { StampedEvent } from '../events';
 import type { ActivityState, LocationState } from '../state';
 
@@ -18,7 +18,7 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   // Command/event path: intent. The server authenticates the socket and pairs
   // the command with the session's author before producing events.
-  command: (command: Command) => void;
+  command: (command: StampedCommand) => void;
   logout: () => void;
 }
 

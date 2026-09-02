@@ -33,3 +33,6 @@ export type Command = AllCommands[keyof CommandsType];
 export function isCommand(object: { type: string }): object is Command {
   return Object.values(Commands).some((c) => c.type === object.type);
 }
+
+/** A command as sent over the wire: the domain command plus a client-minted id. */
+export type StampedCommand = Command & { id: string };

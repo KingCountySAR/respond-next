@@ -10,6 +10,10 @@ export interface EventMeta {
   author: EventAuthor;
   /** Epoch millis the server minted the event. */
   timestamp: number;
+  /** Top-level `id` of the event that caused a reactor to emit this one (reactor follow-ups only). */
+  cause?: string;
+  /** Id of the client command that (directly or via reactor chain) produced this event. */
+  commandId: string;
 }
 
 export function userAuthor(id: string, name?: string): EventAuthor {
