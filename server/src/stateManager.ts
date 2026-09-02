@@ -38,6 +38,17 @@ export class StateManager {
    * for them before asserting on the resulting state.
    */
   private pendingReactions = new Set<Promise<void>>();
+  /**
+   * Serializes handleCommand: each call snapshots `this.activityState`/
+   * `this.locationsState` before its own awaits and writes back after them, so
+   * two concurrent calls (e.g. a client firing several commands back-to-back)
+   * would otherwise race — a later-starting-but-earlier-finishing call can
+   * clobber the other's in-memory update with a stale snapshot (Mongo stays
+   * correct since each call's own persist step runs synchronously off its own
+   * commit; only the in-memory copy gets corrupted). Chaining every call onto
+   * this queue guarantees full serialization.
+   */
+  private queue: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly reactors: Reactor[] = defaultReactors) {}
 
@@ -101,6 +112,14 @@ export class StateManager {
    * re-enter this pipeline as a later, separate broadcast.
    */
   async handleCommand(command: Command, author: EventAuthor): Promise<void> {
+    const run = this.queue.then(() => this.processCommand(command, author));
+    // Keep the queue alive even if this command throws, so later-queued
+    // commands still run; the rejection itself still propagates to this caller.
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async processCommand(command: Command, author: EventAuthor): Promise<void> {
     const events = produceEvents(command);
     if (!events.length) return;
 

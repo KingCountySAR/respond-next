@@ -1,8 +1,8 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-import { LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
+import { ActivityCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
 import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
-import { ParticipantStatus } from '@shared/types/activity';
+import { OrganizationStatus, ParticipantStatus } from '@shared/types/activity';
 import { createNewLocation } from '@shared/types/location';
 import { createNewPlace, createNewTeam } from '@shared/types/operations';
 
@@ -171,6 +171,26 @@ describe('StateManager.handleCommand', () => {
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-4');
     expect(activity?.teams.find((t) => t.id === team.id)?.status).toBe('On Assignment');
     expect(activity?.comms?.map((c) => c.message)).toContain('Starting Assignment');
+  });
+
+  it('does not lose a newly-created activity when commands race (unawaited, fired back-to-back)', async () => {
+    // Regression test: creating a new activity via UpdateActivity followed
+    // immediately by AppendOrganizationTimeline (as ActivityEditPage does, both
+    // dispatched in the same synchronous tick) used to race — handleCommand
+    // snapshotted `this.activityState` before its own awaits and wrote it back
+    // unconditionally afterward, so the second command's stale (pre-creation)
+    // snapshot could clobber the first command's newly-created activity out of
+    // memory (Mongo stayed correct; only the in-memory copy was corrupted).
+    const sm = new StateManager([]);
+
+    const updatePromise = sm.handleCommand(ActivityCommands.UpdateActivity({ id: 'act-race', title: 'New Mission' }), userAuthor('u1'));
+    const appendPromise = sm.handleCommand(ActivityCommands.AppendOrganizationTimeline('act-race', { id: 'org-1', title: 'Org One' }, { time: Date.now(), status: OrganizationStatus.Responding }), userAuthor('u1'));
+    await Promise.all([updatePromise, appendPromise]);
+
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-race');
+    expect(activity).toBeTruthy();
+    expect(activity?.title).toBe('New Mission');
+    expect(activity?.organizations['org-1']).toBeTruthy();
   });
 
   it('routes location commands into the locations slice + collection (broadcast to all)', async () => {
