@@ -239,6 +239,13 @@ export const BasicEventReducers: EventReducers = {
     Object.assign(team, pickTeamProperties(updates));
   },
 
+  [DomainEvents.TeamDisbanded.type]: function disbandTeam(state, { payload }) {
+    const { activityId, id } = payload;
+    const team = state.list.find((f) => f.id === activityId)?.teams?.find((t) => t.id === id);
+    if (!team) return;
+    team.status = 'Disbanded';
+  },
+
   [DomainEvents.TeamDeleted.type]: function deleteTeam(state, { payload }) {
     const { activityId, updates } = payload;
     const activity = state.list.find((f) => f.id === activityId);

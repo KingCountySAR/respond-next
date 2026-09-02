@@ -80,6 +80,14 @@ describe('Event Reducers', () => {
     expect(next.list[0].teams[0].status).toBe('On Assignment');
   });
 
+  it('TeamDisbanded marks the team Disbanded without touching its assignments', () => {
+    const team = { ...createNewTeam('Team 1'), assignedParticipants: ['p1'] };
+    let next = apply(stateWithActivity(activityId), TeamEvents.TeamCreated(activityId, team));
+    next = apply(next, TeamEvents.TeamDisbanded(activityId, team.id, undefined));
+    expect(next.list[0].teams[0].status).toBe('Disbanded');
+    expect(next.list[0].teams[0].assignedParticipants).toEqual(['p1']);
+  });
+
   describe('TeamMemberAssigned', () => {
     // Two teams (Alpha holds p1 as lead) plus a place, on one activity.
     function stateWithTeams(): ActivityState {

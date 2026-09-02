@@ -9,6 +9,7 @@ import { placeCommsReactor } from '../reactors/placeCommsReactor';
 import { ReactorContext } from '../reactors/reactor';
 import { teamAssignmentReactor } from '../reactors/teamAssignmentReactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';
+import { teamDisbandReactor } from '../reactors/teamDisbandedReactor';
 
 const activityId = 'a1';
 const emptyCtx: ReactorContext = { priorActivities: {}, currentActivities: {} };
@@ -37,6 +38,12 @@ describe('produceEvents', () => {
   it('maps DeleteTeam -> TeamDeleted', () => {
     const [event] = produceEvents(TeamCommands.DeleteTeam(activityId, 'team-1'));
     expect(event).toEqual(TeamEvents.TeamDeleted(activityId, { id: 'team-1' }));
+  });
+
+  it('maps DisbandTeam -> TeamDisbanded, carrying the chosen target', () => {
+    const target = { type: 'place', id: 'cp' } as const;
+    const [event] = produceEvents(TeamCommands.DisbandTeam(activityId, 'team-1', target));
+    expect(event).toEqual(TeamEvents.TeamDisbanded(activityId, 'team-1', target));
   });
 
   it('maps AssignTeamMember -> TeamMemberAssigned (thin: reducer does the move)', () => {
@@ -239,5 +246,41 @@ describe('teamAssignmentReactor', () => {
 
   it('ignores unrelated events', async () => {
     expect(await teamAssignmentReactor.react(TeamEvents.TeamCreated(activityId, createNewTeam('Bravo')), emptyCtx)).toEqual([]);
+  });
+});
+
+describe('teamDisbandReactor', () => {
+  function activityWithDisbandedTeam({ onPlace = false }: { onPlace?: boolean } = {}) {
+    const activity = createNewActivity();
+    activity.id = activityId;
+    const equipment = { id: 'e1', uuid: 'eq1', name: 'Radio 1', type: 'radio' };
+    const team = { ...createNewTeam('Alpha'), id: 'alpha', status: 'Disbanded' as const, assignedParticipants: ['p1'], assignedEquipment: [equipment] };
+    activity.teams = [team];
+    activity.places = onPlace ? [{ ...createNewPlace('CP'), id: 'cp' }] : [];
+    return { activity, equipment };
+  }
+  const ctxWith = (activity: Activity): ReactorContext => ({ priorActivities: {}, currentActivities: { [activityId]: activity } });
+
+  it('reassigns every member and equipment item to the given target', async () => {
+    const { activity, equipment } = activityWithDisbandedTeam({ onPlace: true });
+    const target = { type: 'place', id: 'cp' } as const;
+    const commands = await teamDisbandReactor.react(TeamEvents.TeamDisbanded(activityId, 'alpha', target), ctxWith(activity));
+
+    expect(commands).toEqual([TeamCommands.AssignTeamMember(activityId, 'p1', target), TeamCommands.AssignEquipment(activityId, equipment, target)]);
+  });
+
+  it('reassigns to nowhere (available pool) when no target is given', async () => {
+    const { activity, equipment } = activityWithDisbandedTeam();
+    const commands = await teamDisbandReactor.react(TeamEvents.TeamDisbanded(activityId, 'alpha', undefined), ctxWith(activity));
+
+    expect(commands).toEqual([TeamCommands.AssignTeamMember(activityId, 'p1', undefined), TeamCommands.AssignEquipment(activityId, equipment, undefined)]);
+  });
+
+  it('does nothing for a team it cannot resolve', () => {
+    expect(teamDisbandReactor.react(TeamEvents.TeamDisbanded(activityId, 'gone', undefined), emptyCtx)).toEqual([]);
+  });
+
+  it('ignores unrelated events', () => {
+    expect(teamDisbandReactor.react(TeamEvents.TeamCreated(activityId, createNewTeam('Bravo')), emptyCtx)).toEqual([]);
   });
 });

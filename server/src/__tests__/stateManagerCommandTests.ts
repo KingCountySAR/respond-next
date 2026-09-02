@@ -12,6 +12,7 @@ import { EventDoc } from '@server/data/eventDoc';
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { teamAssignmentReactor } from '../reactors/teamAssignmentReactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';
+import { teamDisbandReactor } from '../reactors/teamDisbandedReactor';
 
 // StateManager and mongodb are imported dynamically in beforeAll so that
 // MONGODB_URI points at the in-memory server before mongodb.ts connects.
@@ -178,6 +179,31 @@ describe('StateManager.handleCommand', () => {
     // The assignment and the reactor's status change arrive together, in one broadcast.
     expect(batches).toHaveLength(1);
     expect(batches[0].map((e) => e.type)).toEqual([TeamEvents.TeamMemberAssigned.type, ParticipantEvents.ParticipantTimelineAdded.type]);
+  });
+
+  it('disbands a team, cascading member/equipment reassignment and the Available status flip', async () => {
+    const sm = new StateManager([teamDisbandReactor, teamAssignmentReactor]);
+    const batches = collectBatches(sm);
+
+    const cp = createNewPlace('CP');
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-disband', cp)), userAuthor('u1'));
+    const team = createNewTeam('Alpha');
+    await sm.handleCommand(c(TeamCommands.CreateTeam('act-disband', team)), userAuthor('u1'));
+    await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-disband', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
+    await sm.handleCommand(c(TeamCommands.AssignTeamMember('act-disband', 'p1', { type: 'team', id: team.id })), userAuthor('u1'));
+
+    batches.length = 0; // ignore setup broadcasts; focus on the disband
+    await sm.handleCommand(c(TeamCommands.DisbandTeam('act-disband', team.id, undefined)), userAuthor('u1'));
+
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-disband');
+    const disbandedTeam = activity?.teams.find((t) => t.id === team.id);
+    expect(disbandedTeam?.status).toBe('Disbanded');
+    expect(disbandedTeam?.assignedParticipants).toEqual([]);
+    expect(activity?.participants['p1'].timeline[0].status).toBe(ParticipantStatus.Available);
+
+    // TeamDisbanded -> (reactor) TeamMemberAssigned -> (reactor) ParticipantTimelineAdded, all one broadcast.
+    expect(batches).toHaveLength(1);
+    expect(batches[0].map((e) => e.type)).toEqual([TeamEvents.TeamDisbanded.type, TeamEvents.TeamMemberAssigned.type, ParticipantEvents.ParticipantTimelineAdded.type]);
   });
 
   it('logs a team status-change comm via the team-comms reactor', async () => {
