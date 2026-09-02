@@ -243,8 +243,6 @@ export class StateManager {
     const affectedOrgs = new Set<string>();
     const currentActivities: Record<string, Activity> = this.activityState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
     for (const updatedId of Object.keys(currentActivities).filter((k) => oldActivities[k] !== currentActivities[k])) {
-      console.log('MONGO update activity', updatedId);
-
       (await this.getOrgsInterestedInAction(isSummaryLevelUpdate, oldActivities[updatedId])).forEach((o) => affectedOrgs.add(o));
       (await this.getOrgsInterestedInAction(isSummaryLevelUpdate, currentActivities[updatedId])).forEach((o) => affectedOrgs.add(o));
 
@@ -293,7 +291,6 @@ export class StateManager {
     const mongo = await mongoPromise;
     const currentLocations = this.snapshotLocations();
     for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
-      console.log('MONGO update location', updatedId);
       await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).replaceOne({ id: updatedId }, currentLocations[updatedId], {
         upsert: true,
       });
