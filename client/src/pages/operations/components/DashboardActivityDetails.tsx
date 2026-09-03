@@ -10,7 +10,7 @@ export function DashboardActivityDetails() {
       <Typography
         variant="h5"
         component={Link}
-        href={`/${activity.isMission ? 'mission' : 'event'}/${activity.id}`}
+        href={`~/${activity.isMission ? 'mission' : 'event'}/${activity.id}`}
         sx={{ fontWeight: 700, lineHeight: 1.2, color: 'inherit', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
       >
         {activity.title}
