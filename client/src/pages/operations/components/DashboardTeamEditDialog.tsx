@@ -42,7 +42,7 @@ export function validateTeamName(teams: Team[], currentTeamId: string, name: str
 
 export function DashboardTeamEditDialog({ team, activity, onClose }: DashboardTeamEditDialogProps) {
   const teamCommands = useTeamCommands();
-  const { open } = useDialogs();
+  const { open, confirm } = useDialogs();
 
   const teams = activity.teams ?? [];
 
@@ -112,6 +112,10 @@ export function DashboardTeamEditDialog({ team, activity, onClose }: DashboardTe
     const isInBase = team.status === 'In Base';
     const hasResources = team.assignedParticipants.length + team.assignedEquipment.length > 0;
     if (isInBase || !hasResources) {
+      // Nothing to reassign, so a lightweight confirm is enough — no need for
+      // the disband/delete dialog's reassignment options.
+      const confirmed = await confirm({ prompt: `Delete ${team.name}?`, destructive: true, label: 'Delete' });
+      if (!confirmed) return;
       teamCommands.deleteTeam(activity.id, team.id, undefined);
       return;
     }
