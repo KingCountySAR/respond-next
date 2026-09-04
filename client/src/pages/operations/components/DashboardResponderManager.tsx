@@ -1,14 +1,15 @@
-import { Box, Typography } from '@mui/material';
-import { useEffect, useMemo } from 'react';
+import { Box, Stack, Typography } from '@mui/material';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTeamCommands } from '@respond/lib/client/services/teams';
-import { Participant } from '@respond/shared/types/activity';
+import { getOrganizationName, Participant } from '@respond/shared/types/activity';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
 import { Draggable, Droppable } from '@/client/components/DragAndDrop/DnDComponents';
 
 import DashboardParticipantCard from './DashboardParticipantCard';
+import { DashboardSearchBox } from './DashboardSearchBox';
 
 function sortParticipantsAlphabetically(left: Participant, right: Participant) {
   const leftName = `${left.firstname} ${left.lastname}`.trim();
@@ -22,6 +23,19 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
   const activity = useActivityContext();
 
   const teams = useMemo(() => activity.teams?.filter((team) => team.status !== 'Disbanded') ?? [], [activity]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const matchesParticipantSearch = useCallback(
+    (participant: Participant) => {
+      const normalizedQuery = searchQuery.trim().toLowerCase();
+      if (!normalizedQuery) return true;
+
+      const searchableText = [participant.firstname, participant.lastname, getOrganizationName(activity, participant.organizationId), ...(participant.tags ?? [])].filter(Boolean).join(' ').toLowerCase();
+
+      return searchableText.includes(normalizedQuery);
+    },
+    [activity, searchQuery],
+  );
 
   const assignedParticipantIds = useMemo(() => {
     const assignedIds = new Set<string>();
@@ -40,10 +54,10 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
   const availableParticipants = useMemo(() => {
     return Object.values(activity.participants)
       .filter((participant) => {
-        return participant.timeline[0].status === ParticipantStatus.Available && !assignedParticipantIds.has(participant.id);
+        return participant.timeline[0].status === ParticipantStatus.Available && !assignedParticipantIds.has(participant.id) && matchesParticipantSearch(participant);
       })
-      .sort((a, b) => a.firstname.localeCompare(b.firstname));
-  }, [activity.participants, assignedParticipantIds]);
+      .sort(sortParticipantsAlphabetically);
+  }, [activity.participants, assignedParticipantIds, matchesParticipantSearch]);
 
   useEffect(() => {
     availableCallback?.(availableParticipants.length);
@@ -53,7 +67,7 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
     return (
       Object.values(activity.participants)
         .filter((participant) => {
-          return participant.timeline[0].status === ParticipantStatus.SignedIn && !assignedParticipantIds.has(participant.id);
+          return participant.timeline[0].status === ParticipantStatus.SignedIn && !assignedParticipantIds.has(participant.id) && matchesParticipantSearch(participant);
         })
         // Signed-in responders are ordered by earliest ETA first; unknown ETA entries sort last and are alphabetized.
         .sort((left, right) => {
@@ -79,7 +93,7 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
           return sortParticipantsAlphabetically(left, right);
         })
     );
-  }, [activity.participants, assignedParticipantIds]);
+  }, [activity.participants, assignedParticipantIds, matchesParticipantSearch]);
 
   const handleDrop = (participant: Participant) => {
     // If the participant is not in Assigned status, do not overwrite the current status.
@@ -90,7 +104,8 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
 
   return (
     <Droppable accepts="participant" onDrop={handleDrop} grow>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <DashboardSearchBox onChange={setSearchQuery} />
         {availableParticipants.length === 0 && signedInParticipants.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
@@ -99,16 +114,18 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
           </Box>
         ) : (
           <>
-            {availableParticipants.map((participant) => {
-              return (
-                <Draggable key={participant.id} type="participant" item={participant}>
-                  <DashboardParticipantCard key={participant.id} participant={participant} />
-                </Draggable>
-              );
-            })}
-            {signedInParticipants.map((participant) => (
-              <DashboardParticipantCard key={participant.id} participant={participant} />
-            ))}
+            <Stack spacing={1} sx={{ overflow: 'auto' }}>
+              {availableParticipants.map((participant) => {
+                return (
+                  <Draggable key={participant.id} type="participant" item={participant}>
+                    <DashboardParticipantCard key={participant.id} participant={participant} />
+                  </Draggable>
+                );
+              })}
+              {signedInParticipants.map((participant) => (
+                <DashboardParticipantCard key={participant.id} participant={participant} />
+              ))}
+            </Stack>
           </>
         )}
       </Box>
