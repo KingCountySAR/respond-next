@@ -2,9 +2,7 @@
 
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import GroupsIcon from '@mui/icons-material/Groups';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import { Badge, Box, Stack, Tab, Tabs, useMediaQuery } from '@mui/material';
+import { Box, Stack, Tab, Tabs, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -13,57 +11,16 @@ import { ToolbarPage } from '@/client/components/ToolbarPage';
 
 import { DashboardActivityDescription } from './DashboardActivityDescription';
 import { DashboardCommsManager } from './DashboardCommsManager';
-import { DashboardEquipmentManager } from './DashboardEquipmentManager';
 import { DashboardEquipmentSummary } from './DashboardEquipmentSummary';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardPanel } from './DashboardPanel';
 import { DashboardAddPlaceButton, DashboardPlaceManager } from './DashboardPlaceManager';
 import { DashboardReadOnlyTeams } from './DashboardReadOnlyTeams';
-import { DashboardResponderManager } from './DashboardResponderManager';
+import { DashboardResourcesPanel } from './DashboardResourcesPanel';
 import { DashboardResponderSummary } from './DashboardResponderSummary';
 import { DashboardRoleTile } from './DashboardRoleTile';
 import { DashboardTeamManager } from './DashboardTeamManager';
 import { DashboardWeatherTile } from './DashboardWeather';
-
-/**
- * Combined Responders + Equipment Component
- */
-function CombinedResourcesPanel() {
-  const [tab, setTab] = useState<'responders' | 'equipment'>('responders');
-  const [available, setAvailable] = useState(0);
-
-  return (
-    <DashboardPanel title="Resources" grow>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
-        <Tabs
-          value={tab}
-          onChange={(_, val) => setTab(val)}
-          variant="fullWidth"
-          sx={{ minHeight: 36, height: 36 }} // Compact height replacing invalid size prop
-        >
-          <Tab
-            icon={
-              <Badge badgeContent={available} color="info" sx={{ m: 0.5 }}>
-                <PeopleAltIcon fontSize="small" />
-              </Badge>
-            }
-            iconPosition="start"
-            label={<Box sx={{ ml: 1 }}>Responders</Box>}
-            value="responders"
-            sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }}
-          />
-          <Tab icon={<Inventory2Icon fontSize="small" />} iconPosition="start" label={<Box sx={{ ml: 1 }}>Equipment</Box>} value="equipment" sx={{ minHeight: 40, py: 0, fontSize: '0.8125rem' }} />
-        </Tabs>
-      </Box>
-
-      {/* Kept mounted (instead of conditionally rendered) so the available-count badge keeps updating while this tab isn't visible. */}
-      <Box sx={{ display: tab === 'responders' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
-        <DashboardResponderManager availableCallback={setAvailable} />
-      </Box>
-      {tab === 'equipment' && <DashboardEquipmentManager />}
-    </DashboardPanel>
-  );
-}
 
 /**
  * Combined Team Manager + Communications Component (tablet view)
@@ -144,7 +101,7 @@ function DashboardContent() {
         >
           {/* LEFT COLUMN: Resource Pool & Places */}
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, minHeight: 0 }}>
-            <CombinedResourcesPanel />
+            <DashboardResourcesPanel />
           </Box>
 
           {/* CENTER COLUMN: Team Manager (PRIMARY FOCUS) */}

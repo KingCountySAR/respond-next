@@ -1,12 +1,11 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { getOrganizationName, Participant } from '@respond/shared/types/activity';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
-import { Draggable, Droppable } from '@/client/components/DragAndDrop/DnDComponents';
+import { Draggable } from '@/client/components/DragAndDrop/DnDComponents';
 
 import DashboardParticipantCard from './DashboardParticipantCard';
 import { DashboardSearchBox } from './DashboardSearchBox';
@@ -18,8 +17,6 @@ function sortParticipantsAlphabetically(left: Participant, right: Participant) {
 }
 
 export function DashboardResponderManager({ availableCallback }: { availableCallback: (count: number) => void }) {
-  const teamCommands = useTeamCommands();
-
   const activity = useActivityContext();
 
   const teams = useMemo(() => activity.teams?.filter((team) => team.status !== 'Disbanded') ?? [], [activity]);
@@ -95,40 +92,29 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
     );
   }, [activity.participants, assignedParticipantIds, matchesParticipantSearch]);
 
-  const handleDrop = (participant: Participant) => {
-    // If the participant is not in Assigned status, do not overwrite the current status.
-    if (participant.timeline[0].status === ParticipantStatus.Assigned) {
-      teamCommands.assignTeamMember(activity.id, participant.id);
-    }
-  };
-
   return (
-    <Droppable accepts="participant" onDrop={handleDrop} grow>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <DashboardSearchBox onChange={setSearchQuery} />
-        {availableParticipants.length === 0 && signedInParticipants.length === 0 ? (
-          <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-              All responders are assigned.
-            </Typography>
-          </Box>
-        ) : (
-          <>
-            <Stack spacing={1} sx={{ overflow: 'auto' }}>
-              {availableParticipants.map((participant) => {
-                return (
-                  <Draggable key={participant.id} type="participant" item={participant}>
-                    <DashboardParticipantCard key={participant.id} participant={participant} />
-                  </Draggable>
-                );
-              })}
-              {signedInParticipants.map((participant) => (
-                <DashboardParticipantCard key={participant.id} participant={participant} />
-              ))}
-            </Stack>
-          </>
-        )}
-      </Box>
-    </Droppable>
+    <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <DashboardSearchBox onChange={setSearchQuery} />
+      {availableParticipants.length === 0 && signedInParticipants.length === 0 ? (
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+            All responders are assigned.
+          </Typography>
+        </Box>
+      ) : (
+        <Stack spacing={1} sx={{ overflow: 'auto' }}>
+          {availableParticipants.map((participant) => {
+            return (
+              <Draggable key={participant.id} type="participant" item={participant}>
+                <DashboardParticipantCard participant={participant} />
+              </Draggable>
+            );
+          })}
+          {signedInParticipants.map((participant) => (
+            <DashboardParticipantCard key={participant.id} participant={participant} />
+          ))}
+        </Stack>
+      )}
+    </Box>
   );
 }

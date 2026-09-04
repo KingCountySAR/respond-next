@@ -3,11 +3,9 @@ import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import { useDialogs } from '@respond/components/DialogProvider';
-import { useTeamCommands } from '@respond/lib/client/services/teams';
 import { EquipmentItem } from '@respond/shared/types/operations';
 
-import { useActivityContext } from '@/client/components/activities/ActivityProvider';
-import { Draggable, Droppable } from '@/client/components/DragAndDrop/DnDComponents';
+import { Draggable } from '@/client/components/DragAndDrop/DnDComponents';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 import { DashboardDraggableContainer } from './DashboardDraggableContainer';
@@ -61,8 +59,6 @@ type GroupedInventory = Record<string, EquipmentItem[]>;
 
 export function DashboardEquipmentManager() {
   const { open } = useDialogs();
-  const teams = useTeamCommands();
-  const activity = useActivityContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [groupBy, setGroupBy] = useState<EquipmentGrouping>('Type');
 
@@ -128,19 +124,15 @@ export function DashboardEquipmentManager() {
   }
 
   return (
-    <>
-      <Droppable accepts="equipment" onDrop={(item: EquipmentItem) => teams.assignEquipment(activity.id, item, undefined)} grow>
-        <Stack spacing={2} sx={{ overflow: 'auto' }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <DashboardSearchBox onChange={setSearchQuery} sx={{ flex: 1 }} />
-            <EquipmentGroupToggleButton onChange={(value) => setGroupBy(value)} />
-          </Stack>
-          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {groupBy === 'All' ? <EquipmentAphabetical items={filteredEquipment} /> : <EquipmentGroups groups={groupedEquipment} />}
-          </Box>
-        </Stack>
-      </Droppable>
-    </>
+    <Stack spacing={2} sx={{ overflow: 'auto' }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        <DashboardSearchBox onChange={setSearchQuery} sx={{ flex: 1 }} />
+        <EquipmentGroupToggleButton onChange={(value) => setGroupBy(value)} />
+      </Stack>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {groupBy === 'All' ? <EquipmentAphabetical items={filteredEquipment} /> : <EquipmentGroups groups={groupedEquipment} />}
+      </Box>
+    </Stack>
   );
 }
 
