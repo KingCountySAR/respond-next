@@ -48,7 +48,7 @@ export function DashboardResourcesPanel() {
               iconPosition="start"
               label={<Box sx={{ ml: 1 }}>Responders</Box>}
               value="responders"
-              sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }}
+              sx={{ minHeight: 42, py: 0, fontSize: '0.8125rem' }}
             />
             <Tab icon={<Inventory2Icon fontSize="small" />} iconPosition="start" label={<Box sx={{ ml: 1 }}>Equipment</Box>} value="equipment" sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }} />
           </Tabs>
