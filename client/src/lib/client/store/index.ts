@@ -7,6 +7,7 @@ import authReducer from './auth';
 import configReducer from './config';
 import locationsReducer from './locations';
 import organizationReducer from './organization';
+import presenceReducer from './presence';
 import syncReducer from './sync';
 
 export const logMiddleware: Middleware<unknown, RootState> = (_storeApi) => (next) => (action) => {
@@ -24,6 +25,7 @@ function buildClientReducers() {
     organization: organizationReducer,
     locations: locationsReducer,
     sync: syncReducer,
+    presence: presenceReducer,
   });
   return rootReducer;
 }

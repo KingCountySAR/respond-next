@@ -1,7 +1,7 @@
 import { Server as IOServer, Socket } from 'socket.io';
 
 import { userAuthor } from '@shared/events';
-import type { ClientToServerEvents, InterServerEvents, ServerToClientEvents, SocketData } from '@shared/types/syncSocket';
+import type { ClientToServerEvents, InterServerEvents, PresenceUpdate, ServerToClientEvents, SocketData } from '@shared/types/syncSocket';
 
 import { getAuthFromCookieHeader } from './auth';
 import { getRelatedOrgIds } from './mongodb';
@@ -11,9 +11,19 @@ export type SocketInterface = Socket<ClientToServerEvents, ServerToClientEvents,
 
 export class SocketServer extends IOServer<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData> {}
 
+// How long a presence entry is offered to a newly-subscribing client before
+// it's considered stale (mirrors the client's own freshness window).
+const PRESENCE_WINDOW_MS = 30_000;
+
 export default class SocketManager {
   private readonly connectedSockets: Record<string, SocketInterface> = {};
   private io?: SocketServer;
+  // Ephemeral, in-memory only (lost on restart by design, never persisted):
+  // topic -> editor (user id) -> their latest ping.
+  private readonly presenceByTopic = new Map<string, Map<string, PresenceUpdate>>();
+  // Which topics a socket has pinged, so its disconnect cleanup doesn't have
+  // to scan every topic.
+  private readonly topicsBySocket = new Map<string, Set<string>>();
 
   /**
    * Bind this manager to a socket.io server created by the process entry point
@@ -66,10 +76,39 @@ export default class SocketManager {
 
     socket.on('disconnect', async () => {
       delete this.connectedSockets[socket.id];
+      this.clearPresenceForSocket(socket);
     });
 
     socket.on('command', async (command) => {
       await (await getServices()).stateManager.handleCommand(command, userAuthor(auth.userId, auth.name ?? auth.email));
+    });
+
+    // Relayed directly to the org room, bypassing StateManager: this is a
+    // transient presence signal, not a durable fact to persist or replay.
+    socket.on('presencePing', (payload) => {
+      const update: PresenceUpdate = { ...payload, editorId: auth.userId, editorName: auth.name ?? auth.email, at: Date.now() };
+
+      let topicMap = this.presenceByTopic.get(payload.topic);
+      if (!topicMap) {
+        topicMap = new Map();
+        this.presenceByTopic.set(payload.topic, topicMap);
+      }
+      topicMap.set(auth.userId, update);
+
+      let topics = this.topicsBySocket.get(socket.id);
+      if (!topics) {
+        topics = new Set();
+        this.topicsBySocket.set(socket.id, topics);
+      }
+      topics.add(payload.topic);
+
+      socket.to(`org:${auth.organizationId}`).emit('presenceUpdate', update);
+    });
+
+    // Catch-up for a client that opened the form after others already pinged,
+    // so it doesn't have to wait for their next ping to learn they're active.
+    socket.on('presenceSubscribe', ({ topic }) => {
+      socket.emit('presenceSnapshot', { topic, entries: this.getFreshPresence(topic, auth.userId) });
     });
 
     const stateManager = (await getServices()).stateManager;
@@ -82,5 +121,31 @@ export default class SocketManager {
       activities: await stateManager.getStateForUser(auth),
       locations: stateManager.getLocationState(),
     });
+  }
+
+  private clearPresenceForSocket(socket: SocketInterface) {
+    const auth = socket.data.auth;
+    const topics = this.topicsBySocket.get(socket.id);
+    this.topicsBySocket.delete(socket.id);
+    if (!topics || !auth) return;
+    for (const topic of topics) {
+      this.presenceByTopic.get(topic)?.delete(auth.userId);
+    }
+  }
+
+  private getFreshPresence(topic: string, excludeEditorId: string): PresenceUpdate[] {
+    const topicMap = this.presenceByTopic.get(topic);
+    if (!topicMap) return [];
+
+    const now = Date.now();
+    const fresh: PresenceUpdate[] = [];
+    for (const [editorId, update] of topicMap) {
+      if (now - update.at >= PRESENCE_WINDOW_MS) {
+        topicMap.delete(editorId); // opportunistic cleanup of stale entries
+        continue;
+      }
+      if (editorId !== excludeEditorId) fresh.push(update);
+    }
+    return fresh;
   }
 }

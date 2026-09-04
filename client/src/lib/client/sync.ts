@@ -5,12 +5,13 @@ import { v4 as uuid } from 'uuid';
 import { type ActivityState, filterInitialActivities, type LocationState } from '@respond/shared';
 import { Command, isCommand } from '@respond/shared/commands';
 import { ActivityEvents, type StampedEvent } from '@respond/shared/events';
-import type { ClientToServerEvents, ServerToClientEvents } from '@respond/shared/types/syncSocket';
+import type { ClientToServerEvents, PresencePing, PresenceSnapshot, PresenceUpdate, ServerToClientEvents } from '@respond/shared/types/syncSocket';
 
 import { addAppListener, AppDispatch, AppStore } from './store';
 import { activitiesReloaded } from './store/activities';
 import { AuthActions } from './store/auth';
 import { locationsReloaded } from './store/locations';
+import { PresenceActions, presencePingSent, presenceSubscribeRequested } from './store/presence';
 import { Actions as SyncActions } from './store/sync';
 
 export class ClientSync {
@@ -38,6 +39,8 @@ export class ClientSync {
 
     this.socket.on('snapshot', (payload) => this.handleSnapshot(payload));
     this.socket.on('events', (events) => this.handleServerEvents(events));
+    this.socket.on('presenceUpdate', (payload) => this.handlePresenceUpdate(payload));
+    this.socket.on('presenceSnapshot', (payload) => this.handlePresenceSnapshot(payload));
     this.dispatch = store.dispatch;
   }
 
@@ -80,6 +83,31 @@ export class ClientSync {
       }),
     );
     this.unsubscribeListeners.push(commandListener as unknown as () => void);
+
+    // Ephemeral presence pings never go through the command/event pipeline —
+    // forward straight to the socket, nothing to apply locally.
+    const presencePingListener = this.dispatch(
+      addAppListener({
+        actionCreator: presencePingSent,
+        effect: (action) => {
+          this.emitPresencePing(action.payload);
+        },
+      }),
+    );
+    this.unsubscribeListeners.push(presencePingListener as unknown as () => void);
+
+    // Ask the server who's already present for a topic, so a newly opened
+    // form learns of an active editor immediately instead of waiting for
+    // their next ping.
+    const presenceSubscribeListener = this.dispatch(
+      addAppListener({
+        actionCreator: presenceSubscribeRequested,
+        effect: (action) => {
+          this.socket.emit('presenceSubscribe', action.payload);
+        },
+      }),
+    );
+    this.unsubscribeListeners.push(presenceSubscribeListener as unknown as () => void);
 
     // Cache the activities list to localStorage so a reload can render immediately,
     // on the initial snapshot (reload) and on activity summary changes.
@@ -147,6 +175,18 @@ export class ClientSync {
 
   emitCommand(command: Command) {
     this.socket.emit('command', { ...command, id: uuid() });
+  }
+
+  emitPresencePing(payload: PresencePing) {
+    this.socket.emit('presencePing', payload);
+  }
+
+  handlePresenceUpdate(payload: PresenceUpdate) {
+    this.dispatch(PresenceActions.presenceUpdateReceived(payload));
+  }
+
+  handlePresenceSnapshot(payload: PresenceSnapshot) {
+    this.dispatch(PresenceActions.presenceSnapshotReceived(payload));
   }
 
   // A batch of server-minted facts from one command. Applied by every client,

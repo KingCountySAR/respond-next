@@ -1,6 +1,6 @@
 import AddLocation from '@mui/icons-material/AddLocation';
 import Edit from '@mui/icons-material/Edit';
-import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
+import { Alert, Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useMemo, useRef } from 'react';
 import { Controller, Resolver, ResolverResult, SubmitHandler, useForm } from 'react-hook-form';
@@ -10,6 +10,7 @@ import { useDialogs } from '@respond/components/DialogProvider';
 import { LocationAutocomplete } from '@respond/components/locations/LocationAutocomplete';
 import { LocationEditDialog } from '@respond/components/locations/LocationEditDialog';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
+import { usePresence } from '@respond/hooks/usePresence';
 import { useActivityCommands } from '@respond/lib/client/services/activity';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
@@ -112,6 +113,9 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
     focusRef.current?.focus();
   }, [focusRef]);
 
+  const watchAll = watch();
+  const { others: otherDrafts } = usePresence(`activity:draft:${activityType}`, isNew ? watchAll : null);
+
   useEffect(() => {
     if (!ownerOptions.length) {
       return;
@@ -184,6 +188,16 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
       <Paper>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={2} sx={{ padding: 2, alignItems: 'center' }}>
+            {otherDrafts.length > 0 && (
+              <Grid size={12}>
+                <Alert severity="warning">
+                  {otherDrafts.length === 1
+                    ? `${otherDrafts[0].editorName} is creating a new ${activityType === 'missions' ? 'mission' : 'event'}${otherDrafts[0].data.title ? ` titled "${otherDrafts[0].data.title}"` : ''}.`
+                    : `${otherDrafts.length} other people are creating a new ${activityType === 'missions' ? 'mission' : 'event'}.`}{' '}
+                  Check with them before saving to avoid a duplicate.
+                </Alert>
+              </Grid>
+            )}
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
                 name="title"
