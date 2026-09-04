@@ -42,7 +42,7 @@ export function DashboardResponderManager({ availableCallback }: { availableCall
       .filter((participant) => {
         return participant.timeline[0].status === ParticipantStatus.Available && !assignedParticipantIds.has(participant.id);
       })
-      .sort((a, b) => a.firstname.localeCompare(b.lastname));
+      .sort((a, b) => a.firstname.localeCompare(b.firstname));
   }, [activity.participants, assignedParticipantIds]);
 
   useEffect(() => {
