@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Respond">
+  <rect width="512" height="512" fill="#c86464" />
+  <!-- location pin -->
+  <path fill="#ffffff" d="M256 108c-70.7 0-128 57.3-128 128 0 89 128 168 128 168s128-79 128-168c0-70.7-57.3-128-128-128zm0 180a56 56 0 1 1 0-112 56 56 0 0 1 0 112z" />
+</svg>
