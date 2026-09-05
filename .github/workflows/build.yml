@@ -17,9 +17,9 @@ jobs:
           cache: 'npm'
       - name: Install
         run: npm ci
-      - name: Type-check
-        run: npm run typecheck
-      - name: Build client
+      - name: Quality check
+        run: npm run check
+      - name: Build
         run: npm run build
-      - name: Test
-        run: npm test
+      - name: Package
+        run: npm run package
