@@ -1,5 +1,4 @@
 import { Activity } from '../types/activity';
-import { Location } from '../types/location';
 import { Organization } from '../types/organization';
 
 export interface ActivityState {
@@ -8,10 +7,6 @@ export interface ActivityState {
 
 export interface OrganizationState {
   list: Organization[];
-}
-
-export interface LocationState {
-  list: Location[];
 }
 
 export { BasicEventReducers } from './eventReducers';

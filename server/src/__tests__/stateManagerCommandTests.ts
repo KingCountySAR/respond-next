@@ -2,9 +2,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { v4 as uuid } from 'uuid';
 
 import { ActivityCommands, Command, ParticipantCommands, PlaceCommands, StampedCommand, TeamCommands } from '@shared/commands';
-import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
+import { CommsEvents, ParticipantEvents, PlaceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
 import { OrganizationStatus, ParticipantStatus } from '@shared/types/activity';
-import { createNewLocation } from '@shared/types/location';
 import { createNewPlace, createNewTeam } from '@shared/types/operations';
 
 import { EventDoc } from '@server/data/eventDoc';
@@ -263,22 +262,5 @@ describe('StateManager.handleCommand', () => {
     expect(activity).toBeTruthy();
     expect(activity?.title).toBe('New Mission');
     expect(activity?.organizations['org-1']).toBeTruthy();
-  });
-
-  it('broadcastEvents logs to the audit collection and notifies listeners, without touching any in-memory state', async () => {
-    // Locations (and any other REST-driven writer) persist their own domain
-    // data directly to Mongo and only hand StateManager the resulting event —
-    // StateManager doesn't cache a read model for them (see server/routes.ts).
-    const sm = new StateManager([]);
-    const captured = collect(sm);
-
-    const loc = { ...createNewLocation(), id: 'L1', title: 'Trailhead', isSaved: true };
-    const event = { ...LocationEvents.LocationUpdated(loc), id: uuid(), meta: { author: userAuthor('u1'), timestamp: Date.now(), commandId: uuid() } };
-
-    await sm.broadcastEvents([event], undefined);
-
-    expect(captured.find((e) => e.type === LocationEvents.LocationUpdated.type)).toBeTruthy();
-    // Appended to the audit log.
-    expect(await (await mongoPromise).db().collection<EventDoc>('events').findOne({ id: event.id })).toBeTruthy();
   });
 });

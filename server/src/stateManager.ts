@@ -193,26 +193,6 @@ export class StateManager {
   }
 
   /**
-   * Record a fact some other code path already persisted itself (e.g. a REST
-   * route writing straight to Mongo instead of going through the command
-   * pipeline): append it to the audit log and notify listeners. There's
-   * nothing to reduce into memory here — StateManager doesn't cache a read
-   * model for these callers, unlike `processCommand`'s activity state.
-   */
-  async broadcastEvents(events: StampedEvent[], rooms: string[] | undefined): Promise<void> {
-    if (!events.length) return;
-    const mongo = await mongoPromise;
-    await mongo
-      .db()
-      .collection<EventDoc>('events')
-      .insertMany(events.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
-
-    for (const listener of this.listeners) {
-      listener.broadcastEvent(events, rooms);
-    }
-  }
-
-  /**
    * Diff the current in-memory activities against a pre-reduce snapshot, persist
    * every changed/removed activity to Mongo (soft-delete via `removeTime`), and
    * return the `org:<id>` rooms that should receive the resulting broadcast.

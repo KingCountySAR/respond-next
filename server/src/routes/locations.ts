@@ -1,12 +1,9 @@
 import { Hono } from 'hono';
-import { v4 as uuid } from 'uuid';
 
-import { LocationEvents, userAuthor } from '@shared/events';
 import type { Location } from '@shared/types/location';
 
 import { getAuthFromContext, userFromAuth } from '../auth';
 import mongoPromise from '../mongodb';
-import { getServices } from '../services';
 
 const LOCATIONS_COLLECTION = 'locations';
 
@@ -34,9 +31,8 @@ locationsRoutes.get('/v1/locations', async (c) => {
 });
 
 // Mutations write straight to Mongo here instead of going through the command
-// pipeline (locations aren't part of the live activity sync), then hand the
-// resulting event to StateManager.broadcastEvents, which just logs it and
-// notifies listeners — it doesn't reduce it into any in-memory state.
+// pipeline (locations aren't part of the live activity sync). The catalog
+// changes rarely, so clients just re-fetch; no change broadcast yet.
 locationsRoutes.put('/v1/locations', async (c) => {
   const auth = await getAuthFromContext(c);
   if (!auth) return c.json({ status: 'not authenticated' }, 401);
@@ -45,8 +41,6 @@ locationsRoutes.put('/v1/locations', async (c) => {
   const mongo = await mongoPromise;
   await mongo.db().collection<Location>(LOCATIONS_COLLECTION).replaceOne({ id: location.id }, location, { upsert: true });
 
-  const event = { ...LocationEvents.LocationUpdated(location), id: uuid(), meta: { author: userAuthor(auth.userId, auth.name ?? auth.email), timestamp: Date.now(), commandId: uuid() } };
-  await (await getServices()).stateManager.broadcastEvents([event], undefined);
   return c.json({ status: 'ok' });
 });
 
@@ -58,7 +52,5 @@ locationsRoutes.delete('/v1/locations/:id', async (c) => {
   const mongo = await mongoPromise;
   await mongo.db().collection<Location>(LOCATIONS_COLLECTION).deleteOne({ id });
 
-  const event = { ...LocationEvents.LocationRemoved(id), id: uuid(), meta: { author: userAuthor(auth.userId, auth.name ?? auth.email), timestamp: Date.now(), commandId: uuid() } };
-  await (await getServices()).stateManager.broadcastEvents([event], undefined);
   return c.json({ status: 'ok' });
 });
