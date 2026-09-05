@@ -1,16 +1,21 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.js
 
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
+# built SPA
+/server/static
+
+# bundled server
+/server/dist
+
+# packaged deploy artifact
+/package
 
 # production
 /build
@@ -30,6 +35,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+.next
 
 # typescript
 *.tsbuildinfo

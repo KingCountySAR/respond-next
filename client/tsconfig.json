@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "ignoreDeprecations": "5.0",
+    "moduleResolution": "node",
+    "types": ["vite/client", "vitest/globals"],
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@respond/shared": ["../shared/src"],
+      "@respond/shared/*": ["../shared/src/*"],
+      "@respond/components/*": ["./src/components/*"],
+      "@respond/lib/*": ["./src/lib/*"],
+      "@respond/hooks/*": ["./src/hooks/*"],
+      "@/client": ["./src"],
+      "@/client/*": ["./src/*"],
+    }
+  },
+  "include": ["src"]
+}

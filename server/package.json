@@ -1,0 +1,31 @@
+{
+  "name": "@respond/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env.development src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.0",
+    "@reduxjs/toolkit": "^2.3.0",
+    "@respond/shared": "*",
+    "dotenv": "^16.4.5",
+    "google-auth-library": "^8.7.0",
+    "hono": "^4.6.14",
+    "immer": "^11.0.0",
+    "mongodb": "^5.1.0",
+    "socket.io": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.28.2",
+    "mongodb-memory-server": "^11.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.5.0"
+  }
+}

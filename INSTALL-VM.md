@@ -59,67 +59,120 @@ sudo certbot --nginx -d respond-dev.kcesar.org -d respond-smr.kcesar.org -d resp
 sudo systemctl restart nginx
 ```
 
-## Installing Node.js and other build/run tools
+## Installing Node.js and run tools
+The server is shipped as a single bundled `.js` file, so the VM only needs the
+Node.js runtime and pm2 to run it (no build toolchain is required just to run the
+app — see "Build the app" below for where the bundle comes from).
 ```bash
-curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-
-sudo apt update # to pick up the new sources
-sudo apt install yarn nodejs
-node -v # should be 16.x or higher
-yarn --version # should not throw an error about missing scenarios (there's another yarn command in default Ubuntu)
+# Node.js 20 LTS (ships with npm); the server bundle targets node20+
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v # should be 20.x or higher
 sudo npm install -g pm2
- ```
-
- ### Install and build the app
- We'll put the app in a folder where admins have write permissions. Assumes admins are in the `sudo` group.
- ```
- mkdir /web
- sudo chgrp sudo /web
- sudo chmod 775 /web
- cd /web
- git clone https://github.com/kingcountysar/respond-next
- cd respond-next
- ```
-
-Write the following to `.env.local`:
 ```
+
+## Build the app
+`npm run build` produces the entire deployable app as just two outputs:
+- **`server/dist/index.js`** — the server as one self-contained (~2MB) file with
+  every dependency inlined. No `node_modules` is copied to or installed on the VM.
+- **`server/static/`** — the built client SPA that the server serves.
+
+You can build on the VM, or build on a dev machine / CI and copy the two outputs
+over. Building elsewhere means the VM needs neither the repo nor a swap file.
+
+To build on the VM:
+```bash
+mkdir /web
+sudo chgrp sudo /web
+sudo chmod 775 /web
+cd /web
+git clone https://github.com/kingcountysar/respond-next
+cd respond-next
+npm ci
+npm run build
+```
+
+## Deploy layout
+Copy the two build outputs into an app directory on the VM — nothing else is
+needed. For example `/web/app`:
+```
+/web/app/
+├── index.js        # copied from server/dist/index.js
+└── static/         # copied from server/static/
+```
+The server resolves `./static` and its env files relative to its working
+directory (cwd), so pm2 must launch it with `cwd` set to this directory (see
+"Run with pm2" below).
+
+## Configure environment variables
+Provide config to the server in **either** of these ways — or both, in which case
+Option B wins (see the note):
+
+### Option A — env files in the app directory
+The server reads `.env.local` (secrets, git-ignored) and `.env` (committed
+defaults) from its working directory **at runtime**; they are not part of the
+bundle, so they simply live next to `index.js` on the server. Create
+`/web/app/.env.local`:
+```
+NODE_ENV=production
 GOOGLE_ID=<GOOGLE-CLIENT-ID>.apps.googleusercontent.com
-GOOGLE_SECRET=<app secret>
-AUTH_TRUST_HOST=true
-SECRET_COOKIE_PASSWORD=<secret from `openssl rand -base64 32`>
-SESSION_COOKIE_NAME=appSession
 MONGODB_URI="mongodb+srv://<username>:<password>@<my-server>.mongodb.net/<my-database>?retryWrites=true&w=majority"
 ```
 
-Now, complete a build using the configured environment:
- ```
- yarn install
- yarn build
- ```
+### Option B — pm2 ecosystem file
+Set the same variables in pm2's `env` block instead (see the ecosystem file
+below). These take **precedence** over any `.env` files: pm2 sets them before
+Node starts, and the loader never overwrites a variable that is already set.
 
- Start the app on `http://localhost:3000`:
- ```bash
- pm2 start npm --name respond-dev -- start
- ```
+## Run with pm2
+Create `/web/app/ecosystem.config.cjs`:
+```js
+module.exports = {
+  apps: [
+    {
+      name: 'respond-dev',
+      script: 'index.js',
+      cwd: '/web/app', // so ./static and the .env files resolve
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        // Option B: set config here instead of (or on top of) .env.local
+        // GOOGLE_ID: '<GOOGLE-CLIENT-ID>.apps.googleusercontent.com',
+        // MONGODB_URI: 'mongodb+srv://...',
+      },
+    },
+  ],
+};
+```
+Start the app (serves on `http://localhost:3000`):
+```bash
+cd /web/app
+pm2 start ecosystem.config.cjs
+```
 
 ## Iterative Deploy
-```
-cd /web
+Rebuild, refresh the two outputs, and restart pm2.
+
+Building on the VM:
+```bash
+cd /web/respond-next
 git pull
-yarn build
+npm ci
+npm run build
+cp server/dist/index.js /web/app/index.js
+rm -rf /web/app/static && cp -r server/static /web/app/static
 pm2 restart respond-dev
 ```
+Building elsewhere: copy `server/dist/index.js` and `server/static/` into
+`/web/app/`, then `pm2 restart respond-dev`.
 
 ### TODO
-- Define user for running the next.js app
-- Configure `pm2` to run at startup
+- Define user for running the app
+- Configure `pm2` to run at startup (`pm2 startup` + `pm2 save`)
 - Better instructions for updating site
   - git pull
   - (turn swap on)
-  - yarn install && yarn build
+  - npm ci && npm run build
   - (turn swap off)
   - pm2 restart respond-dev
 

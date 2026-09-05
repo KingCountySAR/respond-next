@@ -1,0 +1,68 @@
+'use client';
+
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import { Divider, IconButton, Menu, MenuItem } from '@mui/material';
+import * as React from 'react';
+
+import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
+import { AuthActions } from '@respond/lib/client/store/auth';
+
+import { useDialogs } from './DialogProvider';
+import { PreferencesDialog } from './Preferences';
+
+export function AppMenu() {
+  const dispatch = useAppDispatch();
+  const { userInfo } = useAppSelector((state) => state.auth);
+  const { open } = useDialogs();
+  const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement | null>(null);
+  const handleMenu = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => setMenuAnchor(event.currentTarget);
+  const handleClose = () => setMenuAnchor(null);
+
+  return (
+    <>
+      <div style={{ display: 'inline-block' }}>
+        <IconButton size="large" aria-label="account of current user" aria-controls="menu-appbar" aria-haspopup="true" onClick={handleMenu} color="inherit">
+          <AccountCircle />
+        </IconButton>
+        <Menu
+          id="menu-appbar"
+          anchorEl={menuAnchor}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          keepMounted
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          open={Boolean(menuAnchor)}
+          onClose={handleClose}
+        >
+          {userInfo ? <MenuItem disabled>{userInfo.name}</MenuItem> : undefined}
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              open(PreferencesDialog, {});
+            }}
+          >
+            Preferences
+          </MenuItem>
+          <MenuItem
+            disabled={!userInfo}
+            onClick={() => {
+              handleClose();
+              dispatch(AuthActions.logout());
+            }}
+          >
+            Sign Out
+          </MenuItem>
+          <Divider />
+          <MenuItem component="a" target="_blank" rel="noreferrer" href="https://github.com/KingCountySAR/respond-next/wiki/Quick-Start:-Mission-Responder">
+            Quick Start Guide
+          </MenuItem>
+        </Menu>
+      </div>
+    </>
+  );
+}
