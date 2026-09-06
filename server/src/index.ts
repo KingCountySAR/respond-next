@@ -1,24 +1,17 @@
 import './env'; // must be first: populate process.env before mongodb.ts reads it
 
 import type { Server as HTTPServer } from 'http';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
 
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 
+import { CLIENT_DIST } from './packageFiles';
 import { api } from './routes';
 import { getServices } from './services';
 import { SocketServer } from './socketManager';
 
 const PORT = Number(process.env.PORT ?? 3000);
-// Serve the built client from ./static NEXT TO this bundle (dist/static), resolved
-// relative to the bundle file rather than cwd. This lets the app be launched from a
-// parent dir — where the operator's .env.local lives and where env.ts reads it from
-// cwd — while the replaceable client assets ship inside dist/. In dev this points at
-// a nonexistent server/src/static, but the static handler below is prod-only anyway.
-const CLIENT_DIST = resolve(dirname(fileURLToPath(import.meta.url)), 'static');
 
 async function main() {
   const app = new Hono();

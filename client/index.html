@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- /api/manifest.webmanifest and /api/icon/:size.png resolve per-org from the request's Host header;
+         document.title/theme-color are the generic defaults until App.tsx overwrites them from /api/bootstrap -->
+    <link rel="manifest" href="/api/manifest.webmanifest" />
+    <link rel="icon" href="/api/icon/32.png" />
+    <link rel="apple-touch-icon" href="/api/icon/180.png" />
+    <meta name="theme-color" content="rgb(200, 100, 100)" />
     <title>Respond</title>
   </head>
   <body>

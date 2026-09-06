@@ -7,6 +7,7 @@
 //       index.js        #   server bundle (all pure-JS deps inlined)
 //       index.js.map    #   readable production stack traces
 //       static/         #   built client SPA (with .gz/.br)
+//       assets/   #   server-consumed assets (e.g. default brand icon), source-controlled
 //       package.json    #   { type: module } so the bundle loads as ESM anywhere
 //
 // Run via `npm run package` (which builds first). No `npm install` on the server —
@@ -33,6 +34,7 @@ const outDir = join(repoRoot, 'package');
 const distDir = join(outDir, 'dist');
 const serverBundle = join(repoRoot, 'server', 'dist', 'index.js');
 const clientStatic = join(repoRoot, 'server', 'static');
+const assets = join(repoRoot, 'server', 'assets');
 
 const rel = (p) => p.slice(repoRoot.length + 1).replaceAll('\\', '/');
 
@@ -42,7 +44,7 @@ function copy(from, to) {
 }
 
 // Fail loudly if `npm run build` hasn't produced the inputs we assemble.
-for (const required of [serverBundle, clientStatic]) {
+for (const required of [serverBundle, clientStatic, assets]) {
   try {
     readFileSync(required); // file: reads bytes; dir: throws EISDIR (which means it exists)
   } catch (err) {
@@ -69,6 +71,7 @@ mkdirSync(distDir, { recursive: true });
 copy(serverBundle, join(distDir, 'index.js'));
 copy(`${serverBundle}.map`, join(distDir, 'index.js.map'));
 copy(clientStatic, join(distDir, 'static'));
+copy(assets, join(distDir, 'assets'));
 
 const rootPkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
 
