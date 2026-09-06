@@ -1,4 +1,5 @@
 import { Box, DialogContent, DialogTitle } from '@mui/material';
+import { v4 as uuid } from 'uuid';
 
 import { createNewLocation, Location } from '@respond/shared/types/location';
 
@@ -17,6 +18,9 @@ export function LocationEditDialog({ location = createNewLocation(), open, onSub
   // entry and closing whatever page opened the dialog (e.g. New Mission).
   const handleSubmit = async (location: Location) => {
     if (location.toSaved) {
+      if (!location.isSaved) {
+        location.id = uuid();
+      }
       await locationsStore.update(location);
     }
     onSubmit(location);
