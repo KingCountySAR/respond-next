@@ -117,9 +117,9 @@ export default class SocketManager {
     for (const orgId of userOrgIds) {
       socket.join(`org:${orgId}`);
     }
+
     socket.emit('snapshot', {
       activities: await stateManager.getStateForUser(auth),
-      locations: stateManager.getLocationState(),
     });
   }
 

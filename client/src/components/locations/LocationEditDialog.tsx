@@ -1,20 +1,25 @@
 import { Box, DialogContent, DialogTitle } from '@mui/material';
 
-import { useLocationCommands } from '@respond/lib/client/services/locations';
 import { createNewLocation, Location } from '@respond/shared/types/location';
 
 import { AppDialog } from '../DialogProvider/AppDialog';
 
 import { LocationEditForm } from './LocationEditForm';
+import { useLocationsStore } from './LocationsProvider';
 
 export function LocationEditDialog({ location = createNewLocation(), open, onSubmit, onClose }: { location?: Location; open: boolean; onSubmit: (location: Location) => void; onClose: () => void }) {
-  const locations = useLocationCommands();
-  const handleSubmit = (location: Location) => {
+  const locationsStore = useLocationsStore();
+  // LocationEditForm already calls `onClose` itself right after `onSubmit`
+  // resolves (LocationManager relies on that to dismiss its inline form) — do
+  // not also call it here. Doing so fired the dialog's close/history-pop twice
+  // in a row, and the second `history.back()` got queued before the first
+  // one's popstate had resolved, over-popping past this page's own navigation
+  // entry and closing whatever page opened the dialog (e.g. New Mission).
+  const handleSubmit = async (location: Location) => {
     if (location.toSaved) {
-      locations.updateLocation(location);
+      await locationsStore.update(location);
     }
     onSubmit(location);
-    onClose();
   };
   return (
     <AppDialog open={open} onClose={onClose}>

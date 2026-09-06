@@ -1,29 +1,33 @@
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 
-import { useAppSelector } from '@respond/lib/client/store';
-import { buildLocationsSelector } from '@respond/lib/client/store/locations';
+import { useDebounce } from '@respond/hooks/useDebounce';
+import { useLocationSearch } from '@respond/hooks/useLocationSearch';
 import { Location } from '@respond/shared/types/location';
 
 type TextFieldVariant = 'filled' | 'outlined' | 'standard';
 
 export function LocationAutocomplete({ required, value, variant = 'filled', onChange }: { required?: boolean; value?: Location; variant?: TextFieldVariant; onChange: (location: Location | null) => void }) {
-  const locations = useAppSelector(buildLocationsSelector());
+  const [selected, setSelected] = useState<Location | null>(value?.title ? value : null);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
 
-  const [selected, setSelected] = useState<Location | null>(null);
+  // Search the catalog over HTTP.
+  const { data: results = [], isFetching } = useLocationSearch(debouncedSearch);
 
   useEffect(() => {
-    const locationOptions = [...locations];
-    if (value && !locations.some((l) => l.id === value.id)) {
-      locationOptions.push(value);
-    }
     setSelected(value?.title ? value : null);
-    setOptions(locationOptions.sort((a, b) => (a.title >= b.title ? 1 : -1)));
-  }, [locations, value]);
+  }, [value]);
 
-  const [options, setOptions] = useState<Location[]>([]);
+  // Make sure a preselected value stays selectable even if it's not in the
+  // current search results.
+  const options = [...results];
+  if (value && !results.some((l) => l.id === value.id)) {
+    options.push(value);
+  }
+  options.sort((a, b) => (a.title >= b.title ? 1 : -1));
+
   const [isOpen, setIsOpen] = useState(false);
-  const loadingLocations = isOpen && options.length === 0;
 
   return (
     <Autocomplete
@@ -32,7 +36,8 @@ export function LocationAutocomplete({ required, value, variant = 'filled', onCh
       onClose={() => setIsOpen(false)}
       disablePortal
       options={options}
-      onChange={(event, value) => {
+      onInputChange={(_, value) => setSearch(value)}
+      onChange={(_, value) => {
         onChange(value);
       }}
       isOptionEqualToValue={(option, value) => option.id === value?.id}
@@ -40,7 +45,7 @@ export function LocationAutocomplete({ required, value, variant = 'filled', onCh
       value={selected}
       renderOption={(props, option) => {
         return (
-          <li {...props} key={option.title}>
+          <li {...props} key={option.id}>
             {option.title}
           </li>
         );
@@ -57,7 +62,7 @@ export function LocationAutocomplete({ required, value, variant = 'filled', onCh
               ...params.slotProps.input,
               endAdornment: (
                 <>
-                  {loadingLocations ? <CircularProgress color="inherit" size={20} /> : null}
+                  {isFetching ? <CircularProgress color="inherit" size={20} /> : null}
                   {params.slotProps.input.endAdornment}
                 </>
               ),

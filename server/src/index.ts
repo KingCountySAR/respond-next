@@ -31,7 +31,7 @@ async function main() {
   }
 
   // Constructing services also runs StateManager.start(), which loads current
-  // activities/locations/organizations from MongoDB into memory.
+  // activities/organizations from MongoDB into memory.
   const services = await getServices();
 
   const httpServer = serve({ fetch: app.fetch, port: PORT }, (info) => {

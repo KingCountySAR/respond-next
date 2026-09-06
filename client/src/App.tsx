@@ -7,6 +7,7 @@ import { useAppSelector } from '@respond/lib/client/store';
 import type { BootstrapResponse } from '@respond/shared/types/bootstrap';
 
 import { DialogProvider } from './components/DialogProvider';
+import { LocationsProvider } from './components/locations/LocationsProvider';
 import { AppRoutes } from './routes';
 
 function setMetaThemeColor(color: string) {
@@ -47,9 +48,11 @@ export function App() {
   return (
     <ClientProviders googleClient={boot.googleClient} config={boot.config} user={boot.user} myOrg={boot.myOrg}>
       <MainGate>
-        <DialogProvider>
-          <AppRoutes />
-        </DialogProvider>
+        <LocationsProvider>
+          <DialogProvider>
+            <AppRoutes />
+          </DialogProvider>
+        </LocationsProvider>
       </MainGate>
     </ClientProviders>
   );

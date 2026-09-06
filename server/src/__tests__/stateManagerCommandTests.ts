@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { v4 as uuid } from 'uuid';
 
-import { ActivityCommands, Command, LocationCommands, ParticipantCommands, PlaceCommands, StampedCommand, TeamCommands } from '@shared/commands';
+import { ActivityCommands, Command, ParticipantCommands, PlaceCommands, StampedCommand, TeamCommands } from '@shared/commands';
 import { CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
 import { OrganizationStatus, ParticipantStatus } from '@shared/types/activity';
 import { createNewLocation } from '@shared/types/location';
@@ -265,22 +265,20 @@ describe('StateManager.handleCommand', () => {
     expect(activity?.organizations['org-1']).toBeTruthy();
   });
 
-  it('routes location commands into the locations slice + collection (broadcast to all)', async () => {
+  it('broadcastEvents logs to the audit collection and notifies listeners, without touching any in-memory state', async () => {
+    // Locations (and any other REST-driven writer) persist their own domain
+    // data directly to Mongo and only hand StateManager the resulting event —
+    // StateManager doesn't cache a read model for them (see server/routes.ts).
     const sm = new StateManager([]);
     const captured = collect(sm);
 
     const loc = { ...createNewLocation(), id: 'L1', title: 'Trailhead', isSaved: true };
-    await sm.handleCommand(c(LocationCommands.UpdateLocation(loc)), userAuthor('u1'));
+    const event = { ...LocationEvents.LocationUpdated(loc), id: uuid(), meta: { author: userAuthor('u1'), timestamp: Date.now(), commandId: uuid() } };
 
-    expect(sm.getLocationState().list.map((l) => l.title)).toContain('Trailhead');
-    // Location events broadcast to all clients (no room scoping).
-    const updateBroadcast = captured.find((e) => e.type === LocationEvents.LocationUpdated.type);
-    expect(updateBroadcast).toBeTruthy();
-    // Persisted to the locations collection.
-    expect(await (await mongoPromise).db().collection('locations').findOne({ id: 'L1' })).toBeTruthy();
+    await sm.broadcastEvents([event], undefined);
 
-    await sm.handleCommand(c(LocationCommands.RemoveLocation('L1')), userAuthor('u1'));
-    expect(sm.getLocationState().list.find((l) => l.id === 'L1')).toBeUndefined();
-    expect(await (await mongoPromise).db().collection('locations').findOne({ id: 'L1' })).toBeNull();
+    expect(captured.find((e) => e.type === LocationEvents.LocationUpdated.type)).toBeTruthy();
+    // Appended to the audit log.
+    expect(await (await mongoPromise).db().collection<EventDoc>('events').findOne({ id: event.id })).toBeTruthy();
   });
 });

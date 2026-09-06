@@ -10,8 +10,7 @@ import { ActivityState } from '.';
 /**
  * Pure event-appliers keyed by event type. Unlike the legacy action reducers,
  * these only ever run on server-minted events, so they need no client/server
- * branching. They reuse the same domain mutators as the action path. Location
- * events are reduced separately (BasicLocationReducers) into LocationState.
+ * branching. They reuse the same domain mutators as the action path.
  */
 type EventReducers = {
   [K in keyof ActivityDomainEventsType as ActivityDomainEventsType[K]['type']]: (state: Draft<ActivityState>, event: { payload: ReturnType<ActivityDomainEventsType[K]>['payload'] }) => void;

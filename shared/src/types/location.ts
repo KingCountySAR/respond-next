@@ -1,7 +1,4 @@
 import { v4 as uuid } from 'uuid';
-
-import { pickSafely } from '../pickSafely';
-
 export interface Location {
   id: string;
   title: string;
@@ -26,5 +23,3 @@ export const createNewLocation = (toSaved?: boolean): Location => {
   if (toSaved) newLocation.toSaved = true;
   return newLocation;
 };
-
-export const pickLocationProperties = pickSafely<Partial<Location>>(['id', 'title', 'lat', 'lon', 'address', 'description', 'isSaved']);

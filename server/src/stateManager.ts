@@ -2,13 +2,12 @@ import { produce } from 'immer';
 import { v4 as uuid } from 'uuid';
 
 import { Command, StampedCommand } from '@shared/commands';
-import { EventAuthor, isLocationEvent, serviceAuthor, StampedEvent } from '@shared/events';
-import { BasicEventReducers, BasicLocationReducers } from '@shared/state';
-import type { ActivityState, LocationState, OrganizationState } from '@shared/state';
+import { EventAuthor, serviceAuthor, StampedEvent } from '@shared/events';
+import { BasicEventReducers } from '@shared/state';
+import type { ActivityState, OrganizationState } from '@shared/state';
 import { filterInitialActivities } from '@shared/state/activityVisibility';
 import type { Activity } from '@shared/types/activity';
 import { ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
-import { Location } from '@shared/types/location';
 import { Organization } from '@shared/types/organization';
 import type UserAuth from '@shared/types/userAuth';
 
@@ -23,8 +22,6 @@ export interface ActionListener {
   broadcastEvent(events: StampedEvent[], toRooms: string[] | undefined): void;
 }
 
-const LOCATION_COLLECTION_NAME = 'locations';
-
 function isPromise<T>(value: T[] | Promise<T[]>): value is Promise<T[]> {
   return typeof (value as Promise<T[]>)?.then === 'function';
 }
@@ -32,7 +29,6 @@ function isPromise<T>(value: T[] | Promise<T[]>): value is Promise<T[]> {
 export class StateManager {
   private listeners: ActionListener[] = [];
   private activityState: ActivityState = { list: [] };
-  private locationsState: LocationState = { list: [] };
   private organizationsState: OrganizationState = { list: [] };
   /**
    * In-flight fire-and-forget async-reactor chains. Production never awaits
@@ -41,8 +37,8 @@ export class StateManager {
    */
   private pendingReactions = new Set<Promise<void>>();
   /**
-   * Serializes handleCommand: each call snapshots `this.activityState`/
-   * `this.locationsState` before its own awaits and writes back after them, so
+   * Serializes handleCommand: each call snapshots `this.activityState`
+   * before its own awaits and writes back after them, so
    * two concurrent calls (e.g. a client firing several commands back-to-back)
    * would otherwise race — a later-starting-but-earlier-finishing call can
    * clobber the other's in-memory update with a stale snapshot (Mongo stays
@@ -68,10 +64,6 @@ export class StateManager {
     this.activityState = {
       list: allActivities.filter((a) => !a.removeTime),
     };
-    const allLocations = await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).find().toArray();
-    this.locationsState = {
-      list: allLocations,
-    };
     const allOrganizations = (await mongo.db().collection<Organization>(ORGS_COLLECTION).find().project({ id: 1, title: 1, rosterName: 1 }).toArray()) as Organization[];
     this.organizationsState = {
       list: allOrganizations,
@@ -86,10 +78,6 @@ export class StateManager {
     return {
       list: filterInitialActivities(this.activityState.list.filter((a) => myOrgIds.includes(a.ownerOrgId))),
     };
-  }
-
-  getLocationState() {
-    return this.locationsState;
   }
 
   async getAllOrganizations() {
@@ -124,13 +112,6 @@ export class StateManager {
   private async processCommand(command: StampedCommand, author: EventAuthor, cause?: string): Promise<void> {
     const events = produceEvents(command);
     if (!events.length) return;
-
-    // A command is single-domain. Location events reduce into LocationState
-    // (broadcast to all, no reactors); everything else is an activity command.
-    if (events.every((event) => isLocationEvent(event))) {
-      await this.handleLocationEvents(events.map((event) => this.stamp(event, author, command.id, cause)));
-      return;
-    }
 
     const mongo = await mongoPromise;
     const priorActivities = this.snapshotActivities();
@@ -211,24 +192,23 @@ export class StateManager {
     return { ...event, id: uuid(), meta: { author, timestamp: Date.now(), commandId, ...(cause ? { cause } : {}) } };
   }
 
-  /** Reduce + persist + broadcast location events (broadcast to all clients, no reactors). */
-  private async handleLocationEvents(events: StampedEvent[]): Promise<void> {
+  /**
+   * Record a fact some other code path already persisted itself (e.g. a REST
+   * route writing straight to Mongo instead of going through the command
+   * pipeline): append it to the audit log and notify listeners. There's
+   * nothing to reduce into memory here — StateManager doesn't cache a read
+   * model for these callers, unlike `processCommand`'s activity state.
+   */
+  async broadcastEvents(events: StampedEvent[], rooms: string[] | undefined): Promise<void> {
+    if (!events.length) return;
     const mongo = await mongoPromise;
     await mongo
       .db()
       .collection<EventDoc>('events')
       .insertMany(events.map((event) => ({ ...event, activityId: (event.payload as { activityId?: string }).activityId })));
 
-    const priorLocations = this.snapshotLocations();
-    this.locationsState = produce(this.locationsState, (draft) => {
-      for (const event of events) {
-        BasicLocationReducers[event.type as keyof typeof BasicLocationReducers](draft, event as never);
-      }
-    });
-
-    await this.persistLocationChanges(priorLocations);
     for (const listener of this.listeners) {
-      listener.broadcastEvent(events, undefined);
+      listener.broadcastEvent(events, rooms);
     }
   }
 
@@ -276,30 +256,6 @@ export class StateManager {
 
   private snapshotOf(state: ActivityState): Record<string, Activity> {
     return state.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
-  }
-
-  private snapshotLocations(): Record<string, Location> {
-    return this.locationsState.list.reduce((accum, cur) => ({ ...accum, [cur.id]: cur }), {});
-  }
-
-  /**
-   * Diff the current locations against a pre-reduce snapshot and persist changed
-   * (upsert) / removed (delete) locations to Mongo. Shared by the legacy action
-   * path and the command/event pipeline.
-   */
-  private async persistLocationChanges(oldLocations: Record<string, Location>): Promise<void> {
-    const mongo = await mongoPromise;
-    const currentLocations = this.snapshotLocations();
-    for (const updatedId of Object.keys(currentLocations).filter((k) => oldLocations[k] !== currentLocations[k])) {
-      await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).replaceOne({ id: updatedId }, currentLocations[updatedId], {
-        upsert: true,
-      });
-    }
-
-    for (const removedId of Object.keys(oldLocations).filter((k) => currentLocations[k] == undefined)) {
-      console.log('MONGO remove location', removedId);
-      await mongo.db().collection<Location>(LOCATION_COLLECTION_NAME).deleteOne({ id: removedId });
-    }
   }
 
   private async getOrgsInterestedInAction(summaryLevelUpdate: boolean, activity?: Activity): Promise<string[]> {
