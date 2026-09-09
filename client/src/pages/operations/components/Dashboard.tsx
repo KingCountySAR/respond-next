@@ -46,6 +46,7 @@ function CombinedTeamCommsPanel() {
 function DashboardContent() {
   const activity = useActivityContext();
   const hasLocation = activity.location?.lat && activity.location?.lon;
+  const hasGroups = activity.groups && activity.groups.length > 0;
 
   useEffect(() => {
     document.title = `${activity.idNumber} ${activity.title} - Dashboard`;
@@ -135,7 +136,7 @@ function DashboardContent() {
               <Stack direction="column" spacing={1} sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
                 {hasLocation && <DashboardWeatherTile lat={activity.location.lat} lon={activity.location.lon} />}
                 <DashboardActivityDescription activity={activity} />
-                <DashboardGroupManager />
+                {hasGroups && <DashboardGroupManager />}
                 <DashboardPlaceManager />
                 <DashboardEquipmentSummary />
               </Stack>

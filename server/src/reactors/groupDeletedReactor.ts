@@ -3,11 +3,6 @@ import { GroupEvents } from '@shared/events';
 
 import { Reactor, ReactorContext } from './reactor';
 
-// TeamDisbanded and TeamDeleted are both "a team is going away, reassign its
-// people/equipment to `target`" — same payload shape, same follow-up
-// commands. Read from `priorActivities` rather than `currentActivities`: it
-// works for both (TeamDisbanded's reducer leaves the team in place, only
-// TeamDeleted's reducer removes it — `prior` always still has it).
 export const groupDeleteReactor: Reactor = {
   name: 'group-deleted-reactor',
 
