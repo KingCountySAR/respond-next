@@ -43,7 +43,7 @@ export function DashboardEquipmentSummary() {
 
   return (
     <Stack spacing={1}>
-      <DashboardBoxWithTitle expanded title="On Scene" icon={<Inventory2Icon fontSize="small" />} collapsible={!!onSceneEntries.length}>
+      <DashboardBoxWithTitle title="On Scene" icon={<Inventory2Icon fontSize="small" />} collapsible={!!onSceneEntries.length}>
         {!!onSceneEntries.length &&
           onSceneEntries.map(([name, count]) => (
             <Typography key={name} variant="subtitle1" sx={{ whiteSpace: 'pre-line' }}>
@@ -51,7 +51,7 @@ export function DashboardEquipmentSummary() {
             </Typography>
           ))}
       </DashboardBoxWithTitle>
-      <DashboardBoxWithTitle expanded title="Assigned" icon={<Inventory2Icon fontSize="small" />} collapsible={!!assignedEntries.length}>
+      <DashboardBoxWithTitle title="Assigned" icon={<Inventory2Icon fontSize="small" />} collapsible={!!assignedEntries.length}>
         {!!assignedEntries.length &&
           assignedEntries.map(([name, details]) => (
             <Box key={name} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -64,7 +64,7 @@ export function DashboardEquipmentSummary() {
             </Box>
           ))}
       </DashboardBoxWithTitle>
-      <DashboardBoxWithTitle expanded title="Staged" icon={<Inventory2Icon fontSize="small" />} collapsible={!!placesWithEquipment.length}>
+      <DashboardBoxWithTitle title="Staged" icon={<Inventory2Icon fontSize="small" />} collapsible={!!placesWithEquipment.length}>
         {!!placesWithEquipment.length &&
           placesWithEquipment.map((place) => {
             const counts = place.assignedEquipment.reduce<Record<string, number>>((acc, item) => {

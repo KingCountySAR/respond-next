@@ -160,6 +160,7 @@ function GroupTile({ group }: { group: Group }) {
         title={group.name}
         subtitle={subtitle}
         actions={actions}
+        collapse
         collapsible
         icon={<GroupsIcon fontSize="small" />}
         adornment={hasPersonnelError ? <DashboardErrorIndicator message="One or more personnel are not assigned to the activity." size={16} /> : undefined}

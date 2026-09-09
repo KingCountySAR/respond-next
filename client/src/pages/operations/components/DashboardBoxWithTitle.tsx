@@ -7,7 +7,7 @@ interface DashboardBoxWithTitleProps {
   title: string;
   subtitle?: React.ReactNode;
   actions?: DashboardBoxWithTitleAction[];
-  expanded?: boolean;
+  collapse?: boolean;
   collapsible?: boolean;
   children: React.ReactNode;
   icon?: React.ReactNode;
@@ -21,8 +21,8 @@ interface DashboardBoxWithTitleAction {
   onClick: () => void;
 }
 
-export function DashboardBoxWithTitle({ title, subtitle, actions = [], expanded = false, collapsible = false, children, icon, adornment, sx }: DashboardBoxWithTitleProps): JSX.Element {
-  const [collapsed, setCollapsed] = useState(!expanded);
+export function DashboardBoxWithTitle({ title, subtitle, actions = [], collapse = false, collapsible = false, children, icon, adornment, sx }: DashboardBoxWithTitleProps): JSX.Element {
+  const [collapsed, setCollapsed] = useState(collapse);
   const [hovered, setHovered] = useState(false);
 
   return (
