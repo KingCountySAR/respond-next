@@ -199,17 +199,6 @@ export const BasicEventReducers: EventReducers = {
     activity.groups = (activity.groups ?? []).filter((p) => p.id !== id);
   },
 
-  [DomainEvents.GroupsBatchChanged.type]: function batchUpdateGroups(state, { payload }) {
-    const { activityId, deleteIds, upserts } = payload;
-    const activity = state.list.find((a) => a.id === activityId);
-    if (!activity) return;
-    const deleteSet = new Set(deleteIds);
-    const upsertMap = new Map(upserts.map((p) => [p.id, p]));
-    const kept = (activity.groups ?? []).filter((p) => !deleteSet.has(p.id)).map((p) => upsertMap.get(p.id) ?? p);
-    const created = upserts.filter((p) => !(activity.groups ?? []).some((existing) => existing.id === p.id));
-    activity.groups = [...kept, ...created];
-  },
-
   [DomainEvents.CommLogged.type]: function addComm(state, { payload }) {
     const { activityId, comm } = payload;
     const activity = state.list.find((a) => a.id === activityId);

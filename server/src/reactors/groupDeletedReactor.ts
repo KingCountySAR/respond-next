@@ -18,17 +18,6 @@ export const groupDeleteReactor: Reactor = {
       ];
     }
 
-    if (GroupEvents.GroupsBatchChanged.match(event)) {
-      const { activityId, deleteIds, target } = event.payload;
-      const deletedIds = new Set(deleteIds);
-      const deletedGroups = ctx.priorActivities[activityId]?.groups.filter((group) => deletedIds.has(group.id)) ?? [];
-
-      return deletedGroups.flatMap((group) => [
-        ...group.assignedParticipants.map((participantId) => ResourceCommands.AssignParticipant(activityId, participantId, target)),
-        ...group.assignedEquipment.map((item) => ResourceCommands.AssignEquipment(activityId, item, target)),
-      ]);
-    }
-
     return [];
   },
 };

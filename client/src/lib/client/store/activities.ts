@@ -54,7 +54,6 @@ const activitySliceArgs = {
       .addCase(GroupEvents.GroupCreated, BasicEventReducers[GroupEvents.GroupCreated.type])
       .addCase(GroupEvents.GroupUpdated, BasicEventReducers[GroupEvents.GroupUpdated.type])
       .addCase(GroupEvents.GroupDeleted, BasicEventReducers[GroupEvents.GroupDeleted.type])
-      .addCase(GroupEvents.GroupsBatchChanged, BasicEventReducers[GroupEvents.GroupsBatchChanged.type])
       .addCase(CommsEvents.CommLogged, BasicEventReducers[CommsEvents.CommLogged.type])
       .addCase(CommsEvents.CommUpdated, BasicEventReducers[CommsEvents.CommUpdated.type])
       .addCase(ParticipantEvents.ParticipantUpdated, BasicEventReducers[ParticipantEvents.ParticipantUpdated.type])

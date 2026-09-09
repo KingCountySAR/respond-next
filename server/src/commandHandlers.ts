@@ -36,9 +36,6 @@ export function produceEvents(command: Command): DomainEvent[] {
   if (GroupCommands.DeleteGroup.match(command)) {
     return [GroupEvents.GroupDeleted(command.payload.activityId, command.payload.id, command.payload.target)];
   }
-  if (GroupCommands.BatchUpdateGroups.match(command)) {
-    return [GroupEvents.GroupsBatchChanged(command.payload.activityId, command.payload.upserts, command.payload.deleteIds, command.payload.target)];
-  }
   if (CommsCommands.LogComm.match(command)) {
     const comm = createNewCommsEntry(command.payload.entry);
     return [CommsEvents.CommLogged(command.payload.activityId, comm)];

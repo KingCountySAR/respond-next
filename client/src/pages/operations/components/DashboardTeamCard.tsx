@@ -54,20 +54,16 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
   const hasTeamMemberError = teamParticipants.some((participant) => participant.timeline?.[0]?.status !== ParticipantStatus.Assigned);
 
   const handleDrop = (item: Participant | EquipmentItem, type: string, asLeader?: boolean) => {
-    if (type === 'participant' && asLeader) {
-      // cancel if the participant is already the team leader
-      if (asLeader && team.assignedParticipants[0] === item.id) return;
-      teams.assignParticipant(activity.id, item.id, { type: 'team', id: team.id, asLeader });
-    }
     if (type === 'participant') {
-      // cancel if the participant already belongs to this team
-      if (team.assignedParticipants.includes(item.id)) return;
+      if (asLeader && team.assignedParticipants[0] === item.id) return;
+      if (!asLeader && team.assignedParticipants.includes(item.id)) return;
       teams.assignParticipant(activity.id, item.id, { type: 'team', id: team.id, asLeader });
     }
     if (type === 'equipment') {
       const equipment = item as EquipmentItem;
       // cancel if the equipment already belongs to this team
       if (team.assignedEquipment.find((e) => e.uuid === equipment.uuid)) return;
+      teams.assignEquipment(activity.id, equipment, { type: 'team', id: team.id });
     }
   };
 

@@ -10,7 +10,6 @@ export function useGroupCommands() {
     createGroup: (activityId: string, group: Group) => dispatch(GroupCommands.CreateGroup(activityId, group)),
     updateGroup: (activityId: string, group: Group) => dispatch(GroupCommands.UpdateGroup(activityId, group)),
     deleteGroup: (activityId: string, id: string, target?: AssignmentTarget) => dispatch(GroupCommands.DeleteGroup(activityId, id, target)),
-    batchUpdateGroup: (activityId: string, upserts: Group[], deleteIds: string[]) => dispatch(GroupCommands.BatchUpdateGroups(activityId, upserts, deleteIds)),
     assignParticipant: (activityId: string, participantId: string, target: AssignmentTarget) => dispatch(ResourceCommands.AssignParticipant(activityId, participantId, target)),
     assignEquipment: (activityId: string, item: EquipmentItem, target: AssignmentTarget) => dispatch(ResourceCommands.AssignEquipment(activityId, item, target)),
   };

@@ -12,7 +12,4 @@ export const GroupEvents = {
   GroupDeleted: createAction('evt/group/deleted', (activityId: string, id: string, target: AssignmentTarget) => ({
     payload: { activityId, id, target },
   })),
-  GroupsBatchChanged: createAction('evt/group/batchChanged', (activityId: string, upserts: Group[], deleteIds: string[], target: AssignmentTarget) => ({
-    payload: { activityId, upserts, deleteIds, target },
-  })),
 };

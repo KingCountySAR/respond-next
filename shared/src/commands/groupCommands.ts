@@ -12,7 +12,4 @@ export const GroupCommands = {
   DeleteGroup: createAction('cmd/group/delete', (activityId: string, id: string, target?: AssignmentTarget) => ({
     payload: { activityId, id, target },
   })),
-  BatchUpdateGroups: createAction('cmd/group/batchUpdate', (activityId: string, upserts: Group[], deleteIds: string[], target?: AssignmentTarget) => ({
-    payload: { activityId, upserts, deleteIds, target },
-  })),
 };
