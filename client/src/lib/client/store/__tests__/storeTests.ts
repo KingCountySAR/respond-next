@@ -22,7 +22,7 @@ describe('Client Store', () => {
   it('includes reducers for all activity-domain events', () => {
     // If we forget to add an event to the .addCase()'s in activitySliceArgs, we'll silently ignore it
     // in the client store. This test makes sure the slice's extraReducers register every activity-domain
-    // event (location events go in the locations slice; the reload snapshot is a slice-local reducer).
+    // event (the reload snapshot is a slice-local reducer).
     const expectedActionTypes = Object.values(ActivityDomainEvents)
       .map((ac) => ac.type)
       .sort();

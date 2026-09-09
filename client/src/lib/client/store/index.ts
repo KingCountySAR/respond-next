@@ -5,7 +5,6 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import activitiesReducer from './activities';
 import authReducer from './auth';
 import configReducer from './config';
-import locationsReducer from './locations';
 import organizationReducer from './organization';
 import presenceReducer from './presence';
 import syncReducer from './sync';
@@ -23,7 +22,6 @@ function buildClientReducers() {
     auth: authReducer,
     config: configReducer,
     organization: organizationReducer,
-    locations: locationsReducer,
     sync: syncReducer,
     presence: presenceReducer,
   });

@@ -2,7 +2,7 @@ import { Action, isAnyOf } from '@reduxjs/toolkit';
 import io, { Socket } from 'socket.io-client';
 import { v4 as uuid } from 'uuid';
 
-import { type ActivityState, filterInitialActivities, type LocationState } from '@respond/shared';
+import { type ActivityState, filterInitialActivities } from '@respond/shared';
 import { Command, isCommand } from '@respond/shared/commands';
 import { ActivityEvents, type StampedEvent } from '@respond/shared/events';
 import type { ClientToServerEvents, PresencePing, PresenceSnapshot, PresenceUpdate, ServerToClientEvents } from '@respond/shared/types/syncSocket';
@@ -10,7 +10,6 @@ import type { ClientToServerEvents, PresencePing, PresenceSnapshot, PresenceUpda
 import { addAppListener, AppDispatch, AppStore } from './store';
 import { activitiesReloaded } from './store/activities';
 import { AuthActions } from './store/auth';
-import { locationsReloaded } from './store/locations';
 import { PresenceActions, presencePingSent, presenceSubscribeRequested } from './store/presence';
 import { Actions as SyncActions } from './store/sync';
 
@@ -167,10 +166,9 @@ export class ClientSync {
   }
 
   // Full-state snapshot pushed by the server on connect. Applied directly into
-  // the read model (activities scoped to this user, plus the locations catalog).
-  handleSnapshot(payload: { activities: ActivityState; locations: LocationState }) {
+  // the read model (activities scoped to this user).
+  handleSnapshot(payload: { activities: ActivityState }) {
     this.dispatch(activitiesReloaded(payload.activities));
-    this.dispatch(locationsReloaded(payload.locations));
   }
 
   emitCommand(command: Command) {

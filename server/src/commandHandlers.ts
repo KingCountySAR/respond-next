@@ -1,7 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
-import { ActivityCommands, Command, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
-import { ActivityEvents, CommsEvents, DomainEvent, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
+import { ActivityCommands, Command, CommsCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
+import { ActivityEvents, CommsEvents, DomainEvent, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
 import { createDefaultOperations, createNewCommsEntry } from '@shared/types/operations';
 
 /**
@@ -81,12 +81,6 @@ export function produceEvents(command: Command): DomainEvent[] {
   if (TeamCommands.AssignEquipment.match(command)) {
     // Thin event: name the item + target and let the reducer move it.
     return [TeamEvents.TeamEquipmentAssigned(command.payload.activityId, command.payload.item, command.payload.target)];
-  }
-  if (LocationCommands.UpdateLocation.match(command)) {
-    return [LocationEvents.LocationUpdated(command.payload.location)];
-  }
-  if (LocationCommands.RemoveLocation.match(command)) {
-    return [LocationEvents.LocationRemoved(command.payload.locationId)];
   }
   if (ActivityCommands.UpdateActivity.match(command)) {
     return [ActivityEvents.ActivityUpdated(command.payload.updates)];

@@ -1,5 +1,5 @@
-import { ActivityCommands, CommsCommands, LocationCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
-import { ActivityEvents, CommsEvents, LocationEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
+import { ActivityCommands, CommsCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
+import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
 import { Activity, createNewActivity, ParticipantStatus } from '@shared/types/activity';
 import { createNewPlace, createNewTeam, DEFAULT_PLACES } from '@shared/types/operations';
 
@@ -51,11 +51,6 @@ describe('produceEvents', () => {
     const target = { type: 'team', id: 'bravo', asLeader: true } as const;
     const events = produceEvents(TeamCommands.AssignTeamMember(activityId, 'p1', target));
     expect(events).toEqual([TeamEvents.TeamMemberAssigned(activityId, 'p1', target)]);
-  });
-
-  it('maps location commands -> location events', () => {
-    expect(LocationEvents.LocationUpdated.match(produceEvents(LocationCommands.UpdateLocation({ id: 'L1', title: 'x' }))[0])).toBe(true);
-    expect(LocationEvents.LocationRemoved.match(produceEvents(LocationCommands.RemoveLocation('L1'))[0])).toBe(true);
   });
 
   it('DecorateOperations -> OperationsDecorated with server-built default operations', () => {

@@ -13,5 +13,4 @@ export interface BootstrapResponse {
   config: SiteConfig;
   user?: UserInfo;
   myOrg?: MyOrganization;
-  brand: { faviconUrl?: string; homeScreenIconUrl?: string };
 }

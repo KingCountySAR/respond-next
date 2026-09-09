@@ -52,7 +52,7 @@ export function LocationEditForm({
   location: Location;
   enableTemporary?: boolean;
   variant?: InputVariant;
-  onSubmit: (location: Location) => void;
+  onSubmit: (location: Location) => Promise<void>;
   onClose?: () => void;
 }) {
   // Legacy activity.location records will only have title. We need to initialize
@@ -73,9 +73,9 @@ export function LocationEditForm({
   // Delete should only be available in contexts where temporary is not an option; i.e. we are not editing an activity location.
   const enableDelete = location.isSaved && !enableTemporary;
 
-  const handleFormSubmit = (location: Location) => {
+  const handleFormSubmit = async (location: Location) => {
     if (location.toSaved) location.isSaved = true;
-    onSubmit(location);
+    await onSubmit(location);
     onClose?.();
   };
 
@@ -85,7 +85,7 @@ export function LocationEditForm({
       destructive: true,
       label: 'Delete',
     });
-    if (confirmed) handleFormSubmit({ ...location, isSaved: false });
+    if (confirmed) await handleFormSubmit({ ...location, toSaved: false, isSaved: false });
   };
 
   const handleFormClose = () => {

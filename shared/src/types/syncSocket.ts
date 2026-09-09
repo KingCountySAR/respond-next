@@ -1,6 +1,6 @@
 import type { StampedCommand } from '../commands';
 import type { StampedEvent } from '../events';
-import type { ActivityState, LocationState } from '../state';
+import type { ActivityState } from '../state';
 
 import type UserAuth from './userAuth';
 
@@ -29,9 +29,8 @@ export interface PresenceSnapshot {
 }
 
 export interface ServerToClientEvents {
-  // Full-state snapshot pushed on connect: activities scoped to the user, plus
-  // the locations catalog. Applied directly into the client read model.
-  snapshot: (payload: { activities: ActivityState; locations: LocationState }) => void;
+  // Full-state snapshot pushed on connect: activities scoped to the user.
+  snapshot: (payload: { activities: ActivityState }) => void;
   // Command/event path: a batch of server-minted, authored facts from one
   // command (its own events plus any synchronous reactors'). Every connected
   // client (including the one that issued the command) applies them together, in

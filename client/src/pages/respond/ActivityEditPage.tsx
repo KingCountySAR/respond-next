@@ -15,6 +15,7 @@ import { useActivityCommands } from '@respond/lib/client/services/activity';
 import { useAppSelector } from '@respond/lib/client/store';
 import { buildActivitySelector } from '@respond/lib/client/store/activities';
 import { Activity, ActivityType, createNewActivity, defaultEarlySigninWindow, earlySignInWindowOptions, OrganizationStatus } from '@respond/shared/types/activity';
+import { createNewLocation } from '@respond/shared/types/location';
 
 /**
  * Validation resolver
@@ -244,7 +245,7 @@ export const ActivityEditPage = ({ activityType, activityId }: { activityType: A
                     color="default"
                     onClick={() => {
                       open(LocationEditDialog, {
-                        location: watchLocation,
+                        location: watchLocation ?? createNewLocation(),
                         onSubmit: (location) => {
                           setValue('location', location);
                         },

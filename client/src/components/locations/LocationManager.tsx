@@ -1,7 +1,6 @@
 import { Box } from '@mui/material';
 import { useState } from 'react';
 
-import { useLocationCommands } from '@respond/lib/client/services/locations';
 import { createNewLocation, Location } from '@respond/shared/types/location';
 
 import { Button, Paper, Stack, Typography } from '../Material';
@@ -9,20 +8,21 @@ import { ToolbarPage } from '../ToolbarPage';
 
 import { LocationAutocomplete } from './LocationAutocomplete';
 import { LocationEditForm } from './LocationEditForm';
+import { useLocationsStore } from './LocationsProvider';
 
 export const LocationManager = () => {
-  const locations = useLocationCommands();
+  const locationsStore = useLocationsStore();
   const [selected, setSelected] = useState<Location>();
 
   const handleSelection = (location: Location | null) => {
     setSelected(location ?? undefined);
   };
 
-  const handleFormSubmit = (location: Location) => {
+  const handleFormSubmit = async (location: Location) => {
     if (location.isSaved) {
-      locations.updateLocation(location);
+      await locationsStore.update(location);
     } else {
-      locations.removeLocation(location.id);
+      await locationsStore.remove(location.id);
     }
   };
 
