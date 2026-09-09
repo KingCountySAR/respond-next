@@ -5,9 +5,9 @@ import { getServices } from '../services';
 
 import { groupCommsReactor } from './groupCommsReactor';
 import { groupDeleteReactor } from './groupDeletedReactor';
+import { participantAssignmentReactor } from './participantAssignmentReactor';
 import { createParticipantTagReactor, ResolveOrgTags } from './participantTagReactor';
 import { placeCommsReactor } from './placeCommsReactor';
-import { participantAssignmentReactor } from './participantAssignmentReactor';
 import { teamCommsReactor } from './teamCommsReactor';
 import { teamDisbandReactor } from './teamDisbandedReactor';
 
