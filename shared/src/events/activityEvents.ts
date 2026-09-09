@@ -1,7 +1,7 @@
 import { createAction } from '@reduxjs/toolkit';
 
 import { Activity, OrganizationStatus } from '../types/activity';
-import { OperationsSpecificFields } from '../types/operations';
+import { Operations } from '../types/operations';
 
 // Activity summary + lifecycle facts.
 
@@ -31,7 +31,7 @@ const OrganizationTimelineAppended = createAction(
 // The server has stamped the default operations state onto an activity. The
 // payload carries the fully-built operations (server-minted place ids) so every
 // client applies identical state.
-const OperationsDecorated = createAction('evt/activity/operationsDecorated', (activityId: string, operations: OperationsSpecificFields) => ({
+const OperationsDecorated = createAction('evt/activity/operationsDecorated', (activityId: string, operations: Operations) => ({
   payload: { activityId, operations },
 }));
 

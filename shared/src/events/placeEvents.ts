@@ -1,6 +1,6 @@
 import { createAction } from '@reduxjs/toolkit';
 
-import { Place } from '../types/operations';
+import { AssignmentTarget, Place } from '../types/operations';
 
 // Facts about places, minted by the server and broadcast to all clients.
 // Reduced by event type in shared/state/eventReducers.
@@ -13,12 +13,12 @@ const PlaceUpdated = createAction('evt/place/updated', (activityId: string, plac
   payload: { activityId, place },
 }));
 
-const PlaceDeleted = createAction('evt/place/deleted', (activityId: string, placeId: string) => ({
-  payload: { activityId, placeId },
+const PlaceDeleted = createAction('evt/place/deleted', (activityId: string, placeId: string, target: AssignmentTarget) => ({
+  payload: { activityId, placeId, target },
 }));
 
-const PlacesBatchChanged = createAction('evt/place/batchChanged', (activityId: string, upserts: Place[], deleteIds: string[]) => ({
-  payload: { activityId, upserts, deleteIds },
+const PlacesBatchChanged = createAction('evt/place/batchChanged', (activityId: string, upserts: Place[], deleteIds: string[], target: AssignmentTarget) => ({
+  payload: { activityId, upserts, deleteIds, target },
 }));
 
 export const PlaceEvents = {

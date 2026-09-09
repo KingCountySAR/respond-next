@@ -2,8 +2,8 @@ import type { Draft } from '@reduxjs/toolkit';
 import merge from 'lodash.merge';
 
 import { ActivityDomainEventsType, DomainEvents } from '../events';
-import { createNewActivity, ParticipantStatus, pickActivityProperties } from '../types/activity';
-import { pickTeamProperties } from '../types/operations';
+import { Activity, createNewActivity, ParticipantStatus, pickActivityProperties } from '../types/activity';
+import { AssignmentTarget, EquipmentItem, pickTeamProperties } from '../types/operations';
 
 import { ActivityState } from '.';
 
@@ -29,6 +29,59 @@ function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: str
         });
       }
     });
+}
+
+function addParticipantAssignment(activity: Draft<Activity>, participantId: string, target: AssignmentTarget) {
+  if (target?.type === 'team') {
+    const team = (activity.teams ?? []).find((t) => t.id === target.id);
+    if (team) {
+      // For a team, `asLeader` puts them first so they become the lead (the first member is always the lead).
+      team.assignedParticipants = target.asLeader ? [participantId, ...team.assignedParticipants] : [...team.assignedParticipants, participantId];
+    }
+  } else if (target?.type === 'place') {
+    const place = (activity.places ?? []).find((p) => p.id === target.id);
+    if (place) place.assignedParticipants = [...place.assignedParticipants, participantId];
+  } else if (target?.type === 'group') {
+    const group = (activity.groups ?? []).find((p) => p.id === target.id);
+    if (group) group.assignedParticipants = [...group.assignedParticipants, participantId];
+  }
+}
+
+function removeParticipantAssignment(activity: Draft<Activity>, participantId: string) {
+  for (const team of activity.teams ?? []) {
+    team.assignedParticipants = team.assignedParticipants.filter((id) => id !== participantId);
+  }
+  for (const place of activity.places ?? []) {
+    place.assignedParticipants = place.assignedParticipants.filter((id) => id !== participantId);
+  }
+  for (const group of activity.groups ?? []) {
+    group.assignedParticipants = group.assignedParticipants.filter((id) => id !== participantId);
+  }
+}
+
+function addEquipmentAssignment(activity: Draft<Activity>, item: EquipmentItem, target: AssignmentTarget) {
+  if (target?.type === 'team') {
+    const team = (activity.teams ?? []).find((t) => t.id === target.id);
+    if (team) team.assignedEquipment = [...team.assignedEquipment, item];
+  } else if (target?.type === 'place') {
+    const place = (activity.places ?? []).find((p) => p.id === target.id);
+    if (place) place.assignedEquipment = [...place.assignedEquipment, item];
+  } else if (target?.type === 'group') {
+    const group = (activity.groups ?? []).find((p) => p.id === target.id);
+    if (group) group.assignedEquipment = [...group.assignedEquipment, item];
+  }
+}
+
+function removeEquipmentAssignment(activity: Draft<Activity>, item: EquipmentItem) {
+  for (const team of activity.teams ?? []) {
+    team.assignedEquipment = team.assignedEquipment.filter((e) => e.uuid !== item.uuid);
+  }
+  for (const place of activity.places ?? []) {
+    place.assignedEquipment = place.assignedEquipment.filter((e) => e.uuid !== item.uuid);
+  }
+  for (const group of activity.groups ?? []) {
+    group.assignedEquipment = group.assignedEquipment.filter((e) => e.uuid !== item.uuid);
+  }
 }
 
 const participantUpdate: EventReducers[typeof DomainEvents.ParticipantUpdated.type] = (state, { payload }) => {
@@ -116,6 +169,45 @@ export const BasicEventReducers: EventReducers = {
     const kept = (activity.places ?? []).filter((p) => !deleteSet.has(p.id)).map((p) => upsertMap.get(p.id) ?? p);
     const created = upserts.filter((p) => !(activity.places ?? []).some((existing) => existing.id === p.id));
     activity.places = [...kept, ...created];
+  },
+
+  [DomainEvents.GroupCreated.type]: function createGroup(state, { payload }) {
+    const { activityId, group } = payload;
+    const activity = state.list.find((a) => a.id === activityId);
+    if (activity) {
+      activity.groups = [...(activity.groups ?? []), group];
+      return;
+    }
+
+    const newActivity = createNewActivity();
+    newActivity.id = activityId;
+    newActivity.groups = [group];
+    state.list.push(newActivity);
+  },
+
+  [DomainEvents.GroupUpdated.type]: function updateGroup(state, { payload }) {
+    const { activityId, group } = payload;
+    const activity = state.list.find((a) => a.id === activityId);
+    if (!activity) return;
+    activity.groups = (activity.groups ?? []).map((p) => (p.id === group.id ? group : p));
+  },
+
+  [DomainEvents.GroupDeleted.type]: function deleteGroup(state, { payload }): void {
+    const { activityId, id } = payload;
+    const activity = state.list.find((a) => a.id === activityId);
+    if (!activity) return;
+    activity.groups = (activity.groups ?? []).filter((p) => p.id !== id);
+  },
+
+  [DomainEvents.GroupsBatchChanged.type]: function batchUpdateGroups(state, { payload }) {
+    const { activityId, deleteIds, upserts } = payload;
+    const activity = state.list.find((a) => a.id === activityId);
+    if (!activity) return;
+    const deleteSet = new Set(deleteIds);
+    const upsertMap = new Map(upserts.map((p) => [p.id, p]));
+    const kept = (activity.groups ?? []).filter((p) => !deleteSet.has(p.id)).map((p) => upsertMap.get(p.id) ?? p);
+    const created = upserts.filter((p) => !(activity.groups ?? []).some((existing) => existing.id === p.id));
+    activity.groups = [...kept, ...created];
   },
 
   [DomainEvents.CommLogged.type]: function addComm(state, { payload }) {
@@ -252,56 +344,24 @@ export const BasicEventReducers: EventReducers = {
     activity.teams = (activity.teams ?? []).filter((t) => t.id !== id);
   },
 
-  [DomainEvents.TeamMemberAssigned.type]: function assignTeamMember(state, { payload }) {
+  [DomainEvents.ParticipantAssigned.type]: function assignTeamMember(state, { payload }) {
     const { activityId, participantId, target } = payload;
     const activity = state.list.find((f) => f.id === activityId);
     if (!activity) return;
-
     // Remove the participant from wherever they currently are.
-    for (const team of activity.teams ?? []) {
-      if (!team.assignedParticipants.includes(participantId)) continue;
-      team.assignedParticipants = team.assignedParticipants.filter((id) => id !== participantId);
-    }
-    for (const place of activity.places ?? []) {
-      if (place.assignedParticipants.includes(participantId)) {
-        place.assignedParticipants = place.assignedParticipants.filter((id) => id !== participantId);
-      }
-    }
-
-    // Add to the target. For a team, `asLeader` puts them first so they become
-    // the lead (the first member is always the lead).
-    if (target?.type === 'team') {
-      const team = (activity.teams ?? []).find((t) => t.id === target.id);
-      if (team) {
-        team.assignedParticipants = target.asLeader ? [participantId, ...team.assignedParticipants] : [...team.assignedParticipants, participantId];
-      }
-    } else if (target?.type === 'place') {
-      const place = (activity.places ?? []).find((p) => p.id === target.id);
-      if (place) place.assignedParticipants = [...place.assignedParticipants, participantId];
-    }
+    removeParticipantAssignment(activity, participantId);
+    // Add to the target.
+    addParticipantAssignment(activity, participantId, target);
   },
 
-  [DomainEvents.TeamEquipmentAssigned.type]: function assignEquipment(state, { payload }) {
+  [DomainEvents.EquipmentAssigned.type]: function assignEquipment(state, { payload }) {
     const { activityId, item, target } = payload;
     const activity = state.list.find((f) => f.id === activityId);
     if (!activity) return;
-
     // Remove the item (matched by uuid) from wherever it currently is.
-    for (const team of activity.teams ?? []) {
-      team.assignedEquipment = team.assignedEquipment.filter((e) => e.uuid !== item.uuid);
-    }
-    for (const place of activity.places ?? []) {
-      place.assignedEquipment = place.assignedEquipment.filter((e) => e.uuid !== item.uuid);
-    }
-
+    removeEquipmentAssignment(activity, item);
     // Add to the target. An undefined target means it returns to inventory.
-    if (target?.type === 'team') {
-      const team = (activity.teams ?? []).find((t) => t.id === target.id);
-      if (team) team.assignedEquipment = [...team.assignedEquipment, item];
-    } else if (target?.type === 'place') {
-      const place = (activity.places ?? []).find((p) => p.id === target.id);
-      if (place) place.assignedEquipment = [...place.assignedEquipment, item];
-    }
+    addEquipmentAssignment(activity, item, target);
   },
 
   [DomainEvents.StaffUpdated.type]: function updateStaff(state, { payload }) {

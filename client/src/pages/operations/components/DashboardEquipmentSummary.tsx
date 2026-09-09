@@ -10,6 +10,7 @@ export function DashboardEquipmentSummary() {
   const activity = useActivityContext();
   const teams = activity?.teams ?? [];
   const places = activity?.places ?? [];
+  const groups = activity?.groups ?? [];
 
   const countTeamEquipment = (filteredTeams: typeof teams) =>
     filteredTeams
@@ -21,14 +22,14 @@ export function DashboardEquipmentSummary() {
 
   const assignedTeams = teams.filter((team) => team.status !== 'On Scene');
 
-  // Map item names to count and unique team names holding that item
-  const assignedEquipmentDetails = assignedTeams.reduce<Record<string, { count: number; teams: Set<string> }>>((acc, team) => {
-    (team.assignedEquipment ?? []).forEach((item) => {
+  // Map item names to count and unique team/group names holding that item
+  const assignedEquipmentDetails = [...assignedTeams, ...groups].reduce<Record<string, { count: number; teams: Set<string> }>>((acc, holder) => {
+    (holder.assignedEquipment ?? []).forEach((item) => {
       if (!acc[item.name]) {
         acc[item.name] = { count: 0, teams: new Set() };
       }
       acc[item.name].count += 1;
-      acc[item.name].teams.add(team.name);
+      acc[item.name].teams.add(holder.name);
     });
     return acc;
   }, {});
@@ -42,7 +43,7 @@ export function DashboardEquipmentSummary() {
 
   return (
     <Stack spacing={1}>
-      <DashboardBoxWithTitle title="On Scene" icon={<Inventory2Icon fontSize="small" />} collapsible={!!onSceneEntries.length}>
+      <DashboardBoxWithTitle expanded title="On Scene" icon={<Inventory2Icon fontSize="small" />} collapsible={!!onSceneEntries.length}>
         {!!onSceneEntries.length &&
           onSceneEntries.map(([name, count]) => (
             <Typography key={name} variant="subtitle1" sx={{ whiteSpace: 'pre-line' }}>
@@ -50,7 +51,7 @@ export function DashboardEquipmentSummary() {
             </Typography>
           ))}
       </DashboardBoxWithTitle>
-      <DashboardBoxWithTitle title="Assigned" icon={<Inventory2Icon fontSize="small" />} collapsible={!!assignedEntries.length}>
+      <DashboardBoxWithTitle expanded title="Assigned" icon={<Inventory2Icon fontSize="small" />} collapsible={!!assignedEntries.length}>
         {!!assignedEntries.length &&
           assignedEntries.map(([name, details]) => (
             <Box key={name} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -63,7 +64,7 @@ export function DashboardEquipmentSummary() {
             </Box>
           ))}
       </DashboardBoxWithTitle>
-      <DashboardBoxWithTitle title="Staged" icon={<Inventory2Icon fontSize="small" />} collapsible={!!placesWithEquipment.length}>
+      <DashboardBoxWithTitle expanded title="Staged" icon={<Inventory2Icon fontSize="small" />} collapsible={!!placesWithEquipment.length}>
         {!!placesWithEquipment.length &&
           placesWithEquipment.map((place) => {
             const counts = place.assignedEquipment.reduce<Record<string, number>>((acc, item) => {

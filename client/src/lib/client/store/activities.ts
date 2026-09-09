@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { ActivityState, BasicEventReducers } from '@respond/shared';
-import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@respond/shared/events';
+import { ActivityEvents, CommsEvents, GroupEvents, ParticipantEvents, PlaceEvents, ResourceEvents, TeamEvents } from '@respond/shared/events';
 
 import { ReducerBuilderStub } from '../types';
 
@@ -51,6 +51,10 @@ const activitySliceArgs = {
       .addCase(PlaceEvents.PlaceUpdated, BasicEventReducers[PlaceEvents.PlaceUpdated.type])
       .addCase(PlaceEvents.PlaceDeleted, BasicEventReducers[PlaceEvents.PlaceDeleted.type])
       .addCase(PlaceEvents.PlacesBatchChanged, BasicEventReducers[PlaceEvents.PlacesBatchChanged.type])
+      .addCase(GroupEvents.GroupCreated, BasicEventReducers[GroupEvents.GroupCreated.type])
+      .addCase(GroupEvents.GroupUpdated, BasicEventReducers[GroupEvents.GroupUpdated.type])
+      .addCase(GroupEvents.GroupDeleted, BasicEventReducers[GroupEvents.GroupDeleted.type])
+      .addCase(GroupEvents.GroupsBatchChanged, BasicEventReducers[GroupEvents.GroupsBatchChanged.type])
       .addCase(CommsEvents.CommLogged, BasicEventReducers[CommsEvents.CommLogged.type])
       .addCase(CommsEvents.CommUpdated, BasicEventReducers[CommsEvents.CommUpdated.type])
       .addCase(ParticipantEvents.ParticipantUpdated, BasicEventReducers[ParticipantEvents.ParticipantUpdated.type])
@@ -65,8 +69,8 @@ const activitySliceArgs = {
       .addCase(TeamEvents.TeamDisbanded, BasicEventReducers[TeamEvents.TeamDisbanded.type])
       .addCase(TeamEvents.TeamDeleted, BasicEventReducers[TeamEvents.TeamDeleted.type])
       .addCase(TeamEvents.StaffUpdated, BasicEventReducers[TeamEvents.StaffUpdated.type])
-      .addCase(TeamEvents.TeamMemberAssigned, BasicEventReducers[TeamEvents.TeamMemberAssigned.type])
-      .addCase(TeamEvents.TeamEquipmentAssigned, BasicEventReducers[TeamEvents.TeamEquipmentAssigned.type])
+      .addCase(ResourceEvents.ParticipantAssigned, BasicEventReducers[ResourceEvents.ParticipantAssigned.type])
+      .addCase(ResourceEvents.EquipmentAssigned, BasicEventReducers[ResourceEvents.EquipmentAssigned.type])
       .addCase(ActivityEvents.ActivityUpdated, BasicEventReducers[ActivityEvents.ActivityUpdated.type])
       .addCase(ActivityEvents.ActivityRemoved, BasicEventReducers[ActivityEvents.ActivityRemoved.type])
       .addCase(ActivityEvents.ActivityCompleted, BasicEventReducers[ActivityEvents.ActivityCompleted.type])

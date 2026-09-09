@@ -10,7 +10,7 @@ import { SarGar, Team } from '@respond/shared/types/operations';
 import { MuiDialogProps, useDialogs } from '@/client/components/DialogProvider';
 import { Stack } from '@/client/components/Material';
 
-import { RemoveTeamDialog } from './RemoveTeamDialog';
+import { DashboardResourceReassignmentDialog } from './DashboardResourceReassignmentDialog';
 
 interface DashboardTeamEditDialogProps extends MuiDialogProps<Team | null> {
   team: Team | null;
@@ -116,11 +116,11 @@ export function DashboardTeamEditDialog({ team, activity, onClose }: DashboardTe
       // the disband/delete dialog's reassignment options.
       const confirmed = await confirm({ prompt: `Delete ${team.name}?`, destructive: true, label: 'Delete' });
       if (!confirmed) return;
-      teamCommands.deleteTeam(activity.id, team.id, undefined);
+      teamCommands.deleteTeam(activity.id, team.id);
       return;
     }
 
-    const result = await open(RemoveTeamDialog, { activity, team, action: 'Delete' });
+    const result = await open(DashboardResourceReassignmentDialog, { activity, origin: team, title: `Delete ${team.name}`, action: 'Delete' });
     if (!result) return;
     teamCommands.deleteTeam(activity.id, team.id, result.target);
   };

@@ -1,4 +1,4 @@
-import { TeamCommands } from '@shared/commands';
+import { ResourceCommands } from '@shared/commands';
 import { TeamEvents } from '@shared/events';
 
 import { Reactor, ReactorContext } from './reactor';
@@ -20,8 +20,8 @@ export const teamDisbandReactor: Reactor = {
 
     return [
       //
-      ...team.assignedParticipants.map((pId) => TeamCommands.AssignTeamMember(activityId, pId, target)),
-      ...team.assignedEquipment.map((item) => TeamCommands.AssignEquipment(activityId, item, target)),
+      ...team.assignedParticipants.map((pId) => ResourceCommands.AssignParticipant(activityId, pId, target)),
+      ...team.assignedEquipment.map((item) => ResourceCommands.AssignEquipment(activityId, item, target)),
     ];
   },
 };

@@ -1,7 +1,7 @@
 import { produce } from 'immer';
 
 import { ActivityState } from '..';
-import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '../../events';
+import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, ResourceEvents, TeamEvents } from '../../events';
 import { createNewActivity, ParticipantStatus } from '../../types/activity';
 import { CommunicationsLogEntry, createDefaultOperations, createNewPlace, createNewTeam, DEFAULT_PLACES } from '../../types/operations';
 import { BasicEventReducers } from '../eventReducers';
@@ -29,7 +29,7 @@ describe('Event Reducers', () => {
   it('PlaceDeleted removes a place by id', () => {
     const place = createNewPlace('Staging');
     let next = apply(stateWithActivity(activityId), PlaceEvents.PlaceCreated(activityId, place));
-    next = apply(next, PlaceEvents.PlaceDeleted(activityId, place.id));
+    next = apply(next, PlaceEvents.PlaceDeleted(activityId, place.id, undefined));
     expect(next.list[0].places).toEqual([]);
   });
 
@@ -108,7 +108,7 @@ describe('Event Reducers', () => {
     }
 
     it('moves a member between teams, updating both lists and the source lead', () => {
-      const next = apply(stateWithTeams(), TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'team', id: 'bravo' }));
+      const next = apply(stateWithTeams(), ResourceEvents.ParticipantAssigned(activityId, 'p1', { type: 'team', id: 'bravo' }));
       const [alpha, bravo] = next.list[0].teams;
       expect(alpha.assignedParticipants).toEqual([]);
       expect(bravo.assignedParticipants).toEqual(['p1']);
@@ -117,26 +117,26 @@ describe('Event Reducers', () => {
     it('asLeader puts the member first (becomes the team lead)', () => {
       const state = stateWithTeams();
       state.list[0].teams[1].assignedParticipants = ['p2', 'p3'];
-      const next = apply(state, TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'team', id: 'bravo', asLeader: true }));
+      const next = apply(state, ResourceEvents.ParticipantAssigned(activityId, 'p1', { type: 'team', id: 'bravo', asLeader: true }));
       const bravo = next.list[0].teams[1];
       expect(bravo.assignedParticipants).toEqual(['p1', 'p2', 'p3']);
     });
 
     it('moves a member from a team to a place', () => {
-      const next = apply(stateWithTeams(), TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'place', id: 'cp' }));
+      const next = apply(stateWithTeams(), ResourceEvents.ParticipantAssigned(activityId, 'p1', { type: 'place', id: 'cp' }));
       expect(next.list[0].teams[0].assignedParticipants).toEqual([]);
       expect(next.list[0].places?.[0].assignedParticipants).toEqual(['p1']);
     });
 
     it('unassigns (no target) by removing the member from its team', () => {
-      const next = apply(stateWithTeams(), TeamEvents.TeamMemberAssigned(activityId, 'p1'));
+      const next = apply(stateWithTeams(), ResourceEvents.ParticipantAssigned(activityId, 'p1'));
       expect(next.list[0].teams[0].assignedParticipants).toEqual([]);
     });
 
     it('promoting within the same team reorders without duplicating', () => {
       const state = stateWithTeams();
       state.list[0].teams[0].assignedParticipants = ['p0', 'p1', 'p2'];
-      const next = apply(state, TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'team', id: 'alpha', asLeader: true }));
+      const next = apply(state, ResourceEvents.ParticipantAssigned(activityId, 'p1', { type: 'team', id: 'alpha', asLeader: true }));
       expect(next.list[0].teams[0].assignedParticipants).toEqual(['p1', 'p0', 'p2']);
     });
   });

@@ -3,7 +3,7 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { Badge, Box, Tab, Tabs } from '@mui/material';
 import { useState } from 'react';
 
-import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { useResourceCommands } from '@respond/lib/client/services/resources';
 import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
 import { EquipmentItem } from '@respond/shared/types/operations';
 
@@ -18,19 +18,19 @@ export function DashboardResourcesPanel() {
   const [tab, setTab] = useState<'responders' | 'equipment'>('responders');
   const [available, setAvailable] = useState(0);
   const activity = useActivityContext();
-  const teamCommands = useTeamCommands();
+  const resourceCommands = useResourceCommands();
 
   const handleDrop = (item: Participant | EquipmentItem, type: string) => {
     if (type === 'participant') {
       const participant = item as Participant;
       if (participant.timeline[0].status === ParticipantStatus.Assigned) {
-        teamCommands.assignTeamMember(activity.id, participant.id);
+        resourceCommands.assignParticipant(activity.id, participant.id, undefined);
       }
       return;
     }
 
     if (type === 'equipment') {
-      teamCommands.assignEquipment(activity.id, item as EquipmentItem, undefined);
+      resourceCommands.assignEquipment(activity.id, item as EquipmentItem, undefined);
     }
   };
 

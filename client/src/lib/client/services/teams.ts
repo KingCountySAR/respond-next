@@ -1,4 +1,4 @@
-import { TeamCommands } from '@respond/shared/commands';
+import { ResourceCommands, TeamCommands } from '@respond/shared/commands';
 import { AssignmentTarget, EquipmentItem, Team } from '@respond/shared/types/operations';
 
 import { useAppDispatch } from '../store';
@@ -17,7 +17,7 @@ export function useTeamCommands() {
     disbandTeam: (activityId: string, id: string, target?: AssignmentTarget) => dispatch(TeamCommands.DisbandTeam(activityId, id, target)),
     deleteTeam: (activityId: string, id: string, target?: AssignmentTarget) => dispatch(TeamCommands.DeleteTeam(activityId, id, target)),
     updateStaff: (activityId: string, staff: Record<string, string>) => dispatch(TeamCommands.UpdateStaff(activityId, staff)),
-    assignTeamMember: (activityId: string, participantId: string, target?: AssignmentTarget) => dispatch(TeamCommands.AssignTeamMember(activityId, participantId, target)),
-    assignEquipment: (activityId: string, item: EquipmentItem, target?: AssignmentTarget) => dispatch(TeamCommands.AssignEquipment(activityId, item, target)),
+    assignParticipant: (activityId: string, participantId: string, target: AssignmentTarget) => dispatch(ResourceCommands.AssignParticipant(activityId, participantId, target)),
+    assignEquipment: (activityId: string, item: EquipmentItem, target: AssignmentTarget) => dispatch(ResourceCommands.AssignEquipment(activityId, item, target)),
   };
 }

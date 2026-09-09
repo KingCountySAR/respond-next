@@ -1,5 +1,5 @@
-import { PlaceCommands } from '@respond/shared/commands';
-import { Place } from '@respond/shared/types/operations';
+import { PlaceCommands, ResourceCommands } from '@respond/shared/commands';
+import { AssignmentTarget, EquipmentItem, Place } from '@respond/shared/types/operations';
 
 import { useAppDispatch } from '../store';
 
@@ -16,7 +16,9 @@ export function usePlaceCommands() {
   return {
     createPlace: (activityId: string, place: Place) => dispatch(PlaceCommands.CreatePlace(activityId, place)),
     updatePlace: (activityId: string, place: Place) => dispatch(PlaceCommands.UpdatePlace(activityId, place)),
-    deletePlace: (activityId: string, placeId: string) => dispatch(PlaceCommands.DeletePlace(activityId, placeId)),
+    deletePlace: (activityId: string, placeId: string, target?: AssignmentTarget) => dispatch(PlaceCommands.DeletePlace(activityId, placeId, target)),
     batchUpdatePlaces: (activityId: string, upserts: Place[], deleteIds: string[]) => dispatch(PlaceCommands.BatchUpdatePlaces(activityId, upserts, deleteIds)),
+    assignParticipant: (activityId: string, participantId: string, target: AssignmentTarget) => dispatch(ResourceCommands.AssignParticipant(activityId, participantId, target)),
+    assignEquipment: (activityId: string, item: EquipmentItem, target: AssignmentTarget) => dispatch(ResourceCommands.AssignEquipment(activityId, item, target)),
   };
 }

@@ -4,48 +4,50 @@ import { useState } from 'react';
 import { MuiDialogProps } from '@respond/components/DialogProvider';
 import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 import { Activity } from '@respond/shared/types/activity';
-import { AssignmentTarget, Team } from '@respond/shared/types/operations';
+import { AssignmentTarget, Group, Place, Team } from '@respond/shared/types/operations';
 
-export interface RemoveTeamDialogResult {
+export interface DashboardResourceReassignmentResult {
   target: AssignmentTarget;
 }
 
-interface RemoveTeamDialogProps extends MuiDialogProps<RemoveTeamDialogResult> {
+interface DashboardResourceReassignmentDialogProps extends MuiDialogProps<DashboardResourceReassignmentResult> {
   activity: Activity;
-  team: Team;
-  /** Which action is prompting this dialog — only changes copy, not behavior. */
-  action: 'Disband' | 'Delete';
+  origin: Team | Place | Group;
+  action: string;
+  title: string;
 }
 
-type Mode = 'available' | 'place' | 'team';
+type Mode = 'available' | 'place' | 'team' | 'group';
 
-export function RemoveTeamDialog({ activity, team, action, onClose }: RemoveTeamDialogProps) {
-  const otherTeams = (activity.teams ?? []).filter((t) => t.id !== team.id && t.status !== 'Disbanded');
-  const places = activity.places ?? [];
+export function DashboardResourceReassignmentDialog({ activity, origin, title, action, onClose }: DashboardResourceReassignmentDialogProps) {
+  const teams = (activity.teams ?? []).filter((t) => t.id !== origin.id && t.status !== 'Disbanded');
+  const places = (activity.places ?? []).filter((p) => p.id !== origin.id);
+  const groups = (activity.groups ?? []).filter((g) => g.id !== origin.id);
 
   const [mode, setMode] = useState<Mode>('available');
   const [placeId, setPlaceId] = useState(places[0]?.id ?? '');
-  const [teamId, setTeamId] = useState(otherTeams[0]?.id ?? '');
+  const [teamId, setTeamId] = useState(teams[0]?.id ?? '');
+  const [groupId, setGroupId] = useState(groups[0]?.id ?? '');
 
   const handleConfirm = () => {
     if (mode === 'place' && placeId) {
       onClose({ target: { type: 'place', id: placeId } });
     } else if (mode === 'team' && teamId) {
       onClose({ target: { type: 'team', id: teamId } });
+    } else if (mode === 'group' && groupId) {
+      onClose({ target: { type: 'group', id: groupId } });
     } else {
       onClose({ target: undefined });
     }
   };
 
-  const confirmDisabled = (mode === 'place' && !placeId) || (mode === 'team' && !teamId);
+  const confirmDisabled = (mode === 'place' && !placeId) || (mode === 'team' && !teamId) || (mode === 'group' && !groupId);
 
   return (
     <AppDialog fullWidth open onClose={onClose}>
-      <DialogTitle>
-        {action} {team.name}
-      </DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ mb: 2 }}>{team.name} isn&apos;t in base. Choose what happens to its remaining members and equipment.</DialogContentText>
+        <DialogContentText sx={{ mb: 2 }}>Choose what happens to remaining resources.</DialogContentText>
         <RadioGroup value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
           <FormControlLabel value="available" control={<Radio />} label="Everyone is in base and assignable" />
 
@@ -58,9 +60,18 @@ export function RemoveTeamDialog({ activity, team, action, onClose }: RemoveTeam
             ))}
           </Select>
 
-          <FormControlLabel value="team" control={<Radio />} label="Merge into another team" disabled={otherTeams.length === 0} />
+          <FormControlLabel value="team" control={<Radio />} label="Move to a team" disabled={teams.length === 0} />
           <Select size="small" disabled={mode !== 'team'} value={teamId} onChange={(e) => setTeamId(e.target.value)} sx={{ ml: 4 }}>
-            {otherTeams.map((t) => (
+            {teams.map((t) => (
+              <MenuItem key={t.id} value={t.id}>
+                {t.name}
+              </MenuItem>
+            ))}
+          </Select>
+
+          <FormControlLabel value="group" control={<Radio />} label="Move to a group" disabled={groups.length === 0} />
+          <Select size="small" disabled={mode !== 'group'} value={groupId} onChange={(e) => setGroupId(e.target.value)} sx={{ ml: 4 }}>
+            {groups.map((t) => (
               <MenuItem key={t.id} value={t.id}>
                 {t.name}
               </MenuItem>

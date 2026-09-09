@@ -3,9 +3,11 @@ import { OrganizationDoc, ORGS_COLLECTION } from '@shared/types/data/organizatio
 import mongoPromise from '../mongodb';
 import { getServices } from '../services';
 
+import { groupCommsReactor } from './groupCommsReactor';
+import { groupDeleteReactor } from './groupDeletedReactor';
 import { createParticipantTagReactor, ResolveOrgTags } from './participantTagReactor';
 import { placeCommsReactor } from './placeCommsReactor';
-import { teamAssignmentReactor } from './teamAssignmentReactor';
+import { participantAssignmentReactor } from './participantAssignmentReactor';
 import { teamCommsReactor } from './teamCommsReactor';
 import { teamDisbandReactor } from './teamDisbandedReactor';
 
@@ -31,4 +33,13 @@ const resolveOrgTags: ResolveOrgTags = async (organizationId, participantId) => 
 };
 
 /** The production reactor registry, run in order for every minted event. */
-export const defaultReactors = [placeCommsReactor, teamCommsReactor, teamAssignmentReactor, teamDisbandReactor, createParticipantTagReactor(resolveOrgTags)];
+export const defaultReactors = [
+  //
+  placeCommsReactor,
+  teamCommsReactor,
+  participantAssignmentReactor,
+  teamDisbandReactor,
+  groupCommsReactor,
+  groupDeleteReactor,
+  createParticipantTagReactor(resolveOrgTags),
+];

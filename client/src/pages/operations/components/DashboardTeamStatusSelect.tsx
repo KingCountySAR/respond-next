@@ -7,7 +7,7 @@ import { Team, TeamStatus } from '@respond/shared/types/operations';
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
 import { useDialogs } from '@/client/components/DialogProvider';
 
-import { RemoveTeamDialog } from './RemoveTeamDialog';
+import { DashboardResourceReassignmentDialog } from './DashboardResourceReassignmentDialog';
 
 const TEAM_STATUSES: TeamStatus[] = ['In Base', 'In Transit', 'On Assignment', 'On Scene', 'Returning To Base', 'Disbanded'];
 
@@ -47,9 +47,9 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
     const isInBase = team.status === 'In Base';
     const hasResources = team.assignedParticipants.length + team.assignedEquipment.length > 0;
     if (isInBase || !hasResources) {
-      teams.disbandTeam(activity.id, team.id, undefined);
+      teams.disbandTeam(activity.id, team.id);
     } else {
-      const result = await open(RemoveTeamDialog, { activity, team, action: 'Disband' });
+      const result = await open(DashboardResourceReassignmentDialog, { activity, origin: team, title: `Disband ${team.name}`, action: 'Disband' });
       if (!result) return;
       teams.disbandTeam(activity.id, team.id, result.target);
     }

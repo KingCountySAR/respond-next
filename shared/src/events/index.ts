@@ -1,8 +1,10 @@
 import { ActivityEvents } from './activityEvents';
 import type { EventMeta } from './author';
 import { CommsEvents } from './commsEvents';
+import { GroupEvents } from './groupEvents';
 import { ParticipantEvents } from './participantEvents';
 import { PlaceEvents } from './placeEvents';
+import { ResourceEvents } from './resourceEvents';
 import { TeamEvents } from './teamEvents';
 
 export * from './author';
@@ -11,6 +13,8 @@ export { CommsEvents } from './commsEvents';
 export { ParticipantEvents } from './participantEvents';
 export { TeamEvents } from './teamEvents';
 export { ActivityEvents } from './activityEvents';
+export { GroupEvents } from './groupEvents';
+export { ResourceEvents } from './resourceEvents';
 
 /** Event creators reduced into ActivityState. */
 export const ActivityDomainEvents = {
@@ -19,6 +23,8 @@ export const ActivityDomainEvents = {
   ...ParticipantEvents,
   ...TeamEvents,
   ...ActivityEvents,
+  ...GroupEvents,
+  ...ResourceEvents,
 };
 
 export type ActivityDomainEventsType = typeof ActivityDomainEvents;

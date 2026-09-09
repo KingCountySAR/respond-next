@@ -1,7 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
-import { ActivityCommands, Command, CommsCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
-import { ActivityEvents, CommsEvents, DomainEvent, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
+import { ActivityCommands, Command, CommsCommands, GroupCommands, ParticipantCommands, PlaceCommands, ResourceCommands, TeamCommands } from '@shared/commands';
+import { ActivityEvents, CommsEvents, DomainEvent, GroupEvents, ParticipantEvents, PlaceEvents, ResourceEvents, TeamEvents } from '@shared/events';
 import { createDefaultOperations, createNewCommsEntry } from '@shared/types/operations';
 
 /**
@@ -22,10 +22,22 @@ export function produceEvents(command: Command): DomainEvent[] {
     return [PlaceEvents.PlaceUpdated(command.payload.activityId, command.payload.place)];
   }
   if (PlaceCommands.DeletePlace.match(command)) {
-    return [PlaceEvents.PlaceDeleted(command.payload.activityId, command.payload.placeId)];
+    return [PlaceEvents.PlaceDeleted(command.payload.activityId, command.payload.placeId, command.payload.target)];
   }
   if (PlaceCommands.BatchUpdatePlaces.match(command)) {
-    return [PlaceEvents.PlacesBatchChanged(command.payload.activityId, command.payload.upserts, command.payload.deleteIds)];
+    return [PlaceEvents.PlacesBatchChanged(command.payload.activityId, command.payload.upserts, command.payload.deleteIds, command.payload.target)];
+  }
+  if (GroupCommands.CreateGroup.match(command)) {
+    return [GroupEvents.GroupCreated(command.payload.activityId, command.payload.group)];
+  }
+  if (GroupCommands.UpdateGroup.match(command)) {
+    return [GroupEvents.GroupUpdated(command.payload.activityId, command.payload.group)];
+  }
+  if (GroupCommands.DeleteGroup.match(command)) {
+    return [GroupEvents.GroupDeleted(command.payload.activityId, command.payload.id, command.payload.target)];
+  }
+  if (GroupCommands.BatchUpdateGroups.match(command)) {
+    return [GroupEvents.GroupsBatchChanged(command.payload.activityId, command.payload.upserts, command.payload.deleteIds, command.payload.target)];
   }
   if (CommsCommands.LogComm.match(command)) {
     const comm = createNewCommsEntry(command.payload.entry);
@@ -74,13 +86,13 @@ export function produceEvents(command: Command): DomainEvent[] {
   if (TeamCommands.UpdateStaff.match(command)) {
     return [TeamEvents.StaffUpdated(command.payload.activityId, command.payload.staff)];
   }
-  if (TeamCommands.AssignTeamMember.match(command)) {
+  if (ResourceCommands.AssignParticipant.match(command)) {
     // Thin event: name the participant + target and let the reducer move them.
-    return [TeamEvents.TeamMemberAssigned(command.payload.activityId, command.payload.participantId, command.payload.target)];
+    return [ResourceEvents.ParticipantAssigned(command.payload.activityId, command.payload.participantId, command.payload.target)];
   }
-  if (TeamCommands.AssignEquipment.match(command)) {
+  if (ResourceCommands.AssignEquipment.match(command)) {
     // Thin event: name the item + target and let the reducer move it.
-    return [TeamEvents.TeamEquipmentAssigned(command.payload.activityId, command.payload.item, command.payload.target)];
+    return [ResourceEvents.EquipmentAssigned(command.payload.activityId, command.payload.item, command.payload.target)];
   }
   if (ActivityCommands.UpdateActivity.match(command)) {
     return [ActivityEvents.ActivityUpdated(command.payload.updates)];
