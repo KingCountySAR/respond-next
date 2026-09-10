@@ -30,8 +30,7 @@ function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: str
 
 /**
  * Standalone (not inlined into defineEvent) because it's both ParticipantUpdated's
- * reduce AND called directly from bulkParticipantUpdate below and from
- * activityEvents.ts's ActivityCompleted reduce.
+ * reduce AND called directly from activityEvents.ts's ActivityCompleted reduce.
  */
 export function participantUpdate(state: Draft<ActivityState>, { payload }: { payload: ParticipantUpdatedPayload }) {
   const { activityId, participant, update } = payload;
@@ -143,35 +142,6 @@ export const ParticipantEvents = {
       if (!person) return;
       // null clears the ETA — normalize to undefined so Participant.eta stays number | undefined.
       person.eta = eta ?? undefined;
-    },
-  ),
-
-  ParticipantsBulkUpdated: defineEvent(
-    //
-    'evt/participant/bulkUpdated',
-    (state: Draft<ActivityState>, { activityId, updates }: { activityId: string; updates: Array<{ participantId: string; update: ParticipantUpdate }> }) => {
-      const activity = state.list.find((f) => f.id === activityId);
-      if (!activity) return;
-
-      for (const updateRequest of updates) {
-        const participant = activity.participants[updateRequest.participantId];
-        if (!participant) continue;
-
-        participantUpdate(state, {
-          payload: {
-            activityId,
-            participant: {
-              id: participant.id,
-              firstname: participant.firstname,
-              lastname: participant.lastname,
-              organizationId: updateRequest.update.organizationId,
-              miles: participant.miles,
-              eta: participant.eta,
-            },
-            update: updateRequest.update,
-          },
-        });
-      }
     },
   ),
 

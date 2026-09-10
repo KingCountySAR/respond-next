@@ -31,7 +31,5 @@ export const ParticipantCommands = {
 
   UpdateParticipantEta: defineCommand('cmd/participant/eta', (activityId: string, participantId: string, eta: number | null) => ({ payload: { activityId, participantId, eta } }), ParticipantEvents.ParticipantEtaUpdated),
 
-  BulkUpdateParticipants: defineCommand('cmd/participant/bulkUpdate', (activityId: string, updates: Array<{ participantId: string; update: ParticipantUpdate }>) => ({ payload: { activityId, updates } })),
-
   TagParticipant: defineCommand('cmd/participant/tag', (activityId: string, participantId: string, tags: string[]) => ({ payload: { activityId, participantId, tags } }), ParticipantEvents.ParticipantTagged),
 };

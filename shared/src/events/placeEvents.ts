@@ -50,18 +50,4 @@ export const PlaceEvents = {
       activity.places = (activity.places ?? []).filter((p) => p.id !== placeId);
     },
   ),
-
-  PlacesBatchChanged: defineEvent(
-    //
-    'evt/place/batchChanged',
-    (state: Draft<ActivityState>, { activityId, deleteIds, upserts }: { activityId: string; upserts: Place[]; deleteIds: string[]; target: AssignmentTarget }) => {
-      const activity = state.list.find((a) => a.id === activityId);
-      if (!activity) return;
-      const deleteSet = new Set(deleteIds);
-      const upsertMap = new Map(upserts.map((p) => [p.id, p]));
-      const kept = (activity.places ?? []).filter((p) => !deleteSet.has(p.id)).map((p) => upsertMap.get(p.id) ?? p);
-      const created = upserts.filter((p) => !(activity.places ?? []).some((existing) => existing.id === p.id));
-      activity.places = [...kept, ...created];
-    },
-  ),
 };

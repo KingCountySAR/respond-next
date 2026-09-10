@@ -20,12 +20,6 @@ const commsCommandHandlers = [defineCommandHandler(CommsCommands.LogComm, (paylo
 const participantCommandHandlers = [
   defineCommandHandler(ParticipantCommands.UpdateParticipant, (payload) => [ParticipantEvents.ParticipantUpdated({ ...payload, update: { ...payload.update, id: uuid() } })]),
   defineCommandHandler(ParticipantCommands.AddParticipantTimeline, (payload) => [ParticipantEvents.ParticipantTimelineAdded({ ...payload, update: { ...payload.update, id: uuid() } })]),
-  defineCommandHandler(ParticipantCommands.BulkUpdateParticipants, (payload) => [
-    ParticipantEvents.ParticipantsBulkUpdated({
-      ...payload,
-      updates: payload.updates.map((u) => ({ ...u, update: { ...u.update, id: uuid() } })),
-    }),
-  ]),
 ];
 
 const activityCommandHandlers = [defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })])];

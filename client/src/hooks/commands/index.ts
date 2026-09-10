@@ -24,7 +24,6 @@ export function useParticipantCommands(activityId: string) {
     updateTimeline: commands.updateParticipantTimeline,
     updateMiles: commands.updateParticipantMiles,
     updateEta: commands.updateParticipantEta,
-    bulkUpdate: commands.bulkUpdateParticipants,
   };
 }
 
