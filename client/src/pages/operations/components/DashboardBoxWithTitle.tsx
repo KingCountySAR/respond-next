@@ -1,11 +1,13 @@
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Box, IconButton, Stack, SxProps, Theme, Typography } from '@mui/material';
+import { IconButton, Stack, SxProps, Theme, Typography } from '@mui/material';
 import React, { useState } from 'react';
 
 interface DashboardBoxWithTitleProps {
   title: string;
+  subtitle?: React.ReactNode;
   actions?: DashboardBoxWithTitleAction[];
+  collapse?: boolean;
   collapsible?: boolean;
   children: React.ReactNode;
   icon?: React.ReactNode;
@@ -19,12 +21,12 @@ interface DashboardBoxWithTitleAction {
   onClick: () => void;
 }
 
-export function DashboardBoxWithTitle({ title, actions = [], collapsible = false, children, icon, adornment, sx }: DashboardBoxWithTitleProps): JSX.Element {
-  const [collapsed, setCollapsed] = useState(false);
+export function DashboardBoxWithTitle({ title, subtitle, actions = [], collapse = false, collapsible = false, children, icon, adornment, sx }: DashboardBoxWithTitleProps): JSX.Element {
+  const [collapsed, setCollapsed] = useState(collapse);
   const [hovered, setHovered] = useState(false);
 
   return (
-    <Box
+    <Stack
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       sx={[
@@ -37,6 +39,7 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
         },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
+      spacing={0.5}
     >
       <Stack
         direction="row"
@@ -44,7 +47,7 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
           if (!collapsible) return;
           setCollapsed((current) => !current);
         }}
-        sx={{ alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', pb: !collapsible || collapsed ? 0 : 1 }}
+        sx={{ alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           {icon}
@@ -74,7 +77,15 @@ export function DashboardBoxWithTitle({ title, actions = [], collapsible = false
           )}
         </Stack>
       </Stack>
+      {!!subtitle &&
+        (React.isValidElement(subtitle) ? (
+          subtitle
+        ) : (
+          <Typography component="div" sx={{ color: 'text.secondary' }}>
+            {subtitle}
+          </Typography>
+        ))}
       {!collapsed && children}
-    </Box>
+    </Stack>
   );
 }

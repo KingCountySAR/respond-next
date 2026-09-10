@@ -30,7 +30,7 @@ const participantCommandHandlers = [
 
 const activityCommandHandlers = [defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })])];
 
-// Only domains with at least one non-forwarding command appear here — Place
-// and Team declare their target event directly on the command (see
-// shared/src/commands/*.ts) and need no explicit handler.
+// Only domains with at least one non-forwarding command appear here — Place,
+// Team, Group, and Resource all declare their target event directly on the
+// command (see shared/src/commands/*.ts) and need no explicit handler.
 export const explicitCommandHandlers: Record<string, CommandHandler<never>> = Object.fromEntries([...commsCommandHandlers, ...participantCommandHandlers, ...activityCommandHandlers]);

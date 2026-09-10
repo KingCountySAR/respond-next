@@ -2,7 +2,7 @@ import type { Draft } from '@reduxjs/toolkit';
 
 import type { ActivityState } from '..';
 import { createNewActivity } from '../types/activity';
-import { Place } from '../types/operations';
+import { AssignmentTarget, Place } from '../types/operations';
 
 import { defineEvent } from './defineEvent';
 
@@ -38,10 +38,13 @@ export const PlaceEvents = {
     },
   ),
 
+  // `target` is threaded through but not consumed here — reassigning the
+  // place's participants/equipment happens via a follow-up reactor emitting
+  // ResourceCommands, not directly in this reducer.
   PlaceDeleted: defineEvent(
     //
     'evt/place/deleted',
-    (state: Draft<ActivityState>, { activityId, placeId }: { activityId: string; placeId: string }) => {
+    (state: Draft<ActivityState>, { activityId, placeId }: { activityId: string; placeId: string; target: AssignmentTarget }) => {
       const activity = state.list.find((a) => a.id === activityId);
       if (!activity) return;
       activity.places = (activity.places ?? []).filter((p) => p.id !== placeId);
@@ -51,7 +54,7 @@ export const PlaceEvents = {
   PlacesBatchChanged: defineEvent(
     //
     'evt/place/batchChanged',
-    (state: Draft<ActivityState>, { activityId, deleteIds, upserts }: { activityId: string; upserts: Place[]; deleteIds: string[] }) => {
+    (state: Draft<ActivityState>, { activityId, deleteIds, upserts }: { activityId: string; upserts: Place[]; deleteIds: string[]; target: AssignmentTarget }) => {
       const activity = state.list.find((a) => a.id === activityId);
       if (!activity) return;
       const deleteSet = new Set(deleteIds);

@@ -4,7 +4,7 @@ import { Box, Chip, Divider, IconButton, Stack, Typography } from '@mui/material
 import { useEffect, useState } from 'react';
 
 import { useDialogs } from '@respond/components/DialogProvider';
-import { useTeamCommands } from '@respond/hooks/commands';
+import { useResourceCommands, useTeamCommands } from '@respond/hooks/commands';
 import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
 import { EquipmentItem, Team } from '@respond/shared/types/operations';
 
@@ -29,6 +29,7 @@ const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) 
 export default function DashboardTeamCard({ team, expandCommand, onExpandedChange }: { team: Team; expandCommand?: { expanded: boolean; nonce: number }; onExpandedChange?: (expanded: boolean) => void }) {
   const activity = useActivityContext();
   const teams = useTeamCommands(activity.id);
+  const resources = useResourceCommands(activity.id);
   const { open } = useDialogs();
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -53,25 +54,23 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
 
   const hasTeamMemberError = teamParticipants.some((participant) => participant.timeline?.[0]?.status !== ParticipantStatus.Assigned);
 
-  const handleExpandedDrop = (item: Participant | EquipmentItem, type: string, asLeader?: boolean) => {
+  const handleDrop = (item: Participant | EquipmentItem, type: string, asLeader?: boolean) => {
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same team (without changing leadership), cancel.
-      if (team.assignedParticipants.includes(item.id)) {
-        const isLeader = team.assignedParticipants[0] === item.id;
-        if (isLeader === (asLeader ?? false)) return;
-      }
-      teams.assignTeamMember(item.id, { type: 'team', id: team.id, asLeader });
-    } else if (type === 'equipment') {
+      if (asLeader && team.assignedParticipants[0] === item.id) return;
+      if (!asLeader && team.assignedParticipants.includes(item.id)) return;
+      resources.assignParticipant(item.id, { type: 'team', id: team.id, asLeader });
+    }
+    if (type === 'equipment') {
       const equipment = item as EquipmentItem;
-      // Custom items arrive already hydrated (named) via the Draggable's transform.
-      // If the item was dragged and dropped back to the same team, cancel.
+      // cancel if the equipment already belongs to this team
       if (team.assignedEquipment.find((e) => e.uuid === equipment.uuid)) return;
-      teams.assignEquipment(equipment, { type: 'team', id: team.id });
+      resources.assignEquipment(equipment, { type: 'team', id: team.id });
     }
   };
 
   const handleHeaderDrop = (item: Participant | EquipmentItem, type: string) => {
-    handleExpandedDrop(item, type, (type === 'participant' && isExpanded) || undefined);
+    handleDrop(item, type, type === 'participant' && isExpanded);
   };
 
   const editTeam = async () => {
@@ -124,7 +123,7 @@ export default function DashboardTeamCard({ team, expandCommand, onExpandedChang
             </Stack>
           </Droppable>
           {isExpanded && (
-            <Droppable accepts={isDisbanded ? [] : ['participant', 'equipment']} onDrop={handleExpandedDrop}>
+            <Droppable accepts={isDisbanded ? [] : ['participant', 'equipment']} onDrop={handleDrop}>
               <Divider sx={{ my: 1 }} />
               <Stack direction="row" spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>

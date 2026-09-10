@@ -1,9 +1,9 @@
 import { produce } from 'immer';
 
 import { ActivityState, eventReducersByType } from '..';
-import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '../events';
+import { ActivityEvents, CommsEvents, GroupEvents, ParticipantEvents, PlaceEvents, ResourceEvents, TeamEvents } from '../events';
 import { createNewActivity, ParticipantStatus } from '../types/activity';
-import { CommunicationsLogEntry, createDefaultOperations, createNewPlace, createNewTeam, DEFAULT_PLACES } from '../types/operations';
+import { CommunicationsLogEntry, createDefaultOperations, createNewGroup, createNewPlace, createNewTeam, DEFAULT_PLACES } from '../types/operations';
 
 function stateWithActivity(activityId: string): ActivityState {
   const activity = createNewActivity();
@@ -28,7 +28,7 @@ describe('Event Reducers', () => {
   it('PlaceDeleted removes a place by id', () => {
     const place = createNewPlace('Staging');
     let next = apply(stateWithActivity(activityId), PlaceEvents.PlaceCreated({ activityId, place }));
-    next = apply(next, PlaceEvents.PlaceDeleted({ activityId, placeId: place.id }));
+    next = apply(next, PlaceEvents.PlaceDeleted({ activityId, placeId: place.id, target: undefined }));
     expect(next.list[0].places).toEqual([]);
   });
 
@@ -94,8 +94,23 @@ describe('Event Reducers', () => {
     expect(next.list[0].teams).toEqual([]);
   });
 
-  describe('TeamMemberAssigned', () => {
-    // Two teams (Alpha holds p1 as lead) plus a place, on one activity.
+  it('GroupCreated then GroupUpdated changes the group name/leader', () => {
+    const group = createNewGroup('Rescue Group');
+    let next = apply(stateWithActivity(activityId), GroupEvents.GroupCreated({ activityId, group }));
+    expect(next.list[0].groups.map((g) => g.name)).toEqual(['Rescue Group']);
+    next = apply(next, GroupEvents.GroupUpdated({ activityId, group: { ...group, leaderId: 'p1' } }));
+    expect(next.list[0].groups[0].leaderId).toBe('p1');
+  });
+
+  it('GroupDeleted removes the group entirely', () => {
+    const group = createNewGroup('Rescue Group');
+    let next = apply(stateWithActivity(activityId), GroupEvents.GroupCreated({ activityId, group }));
+    next = apply(next, GroupEvents.GroupDeleted({ activityId, id: group.id, target: undefined }));
+    expect(next.list[0].groups).toEqual([]);
+  });
+
+  describe('ParticipantAssigned', () => {
+    // Two teams (Alpha holds p1 as lead) plus a place and a group, on one activity.
     function stateWithTeams(): ActivityState {
       const state = stateWithActivity(activityId);
       state.list[0].teams = [
@@ -103,11 +118,12 @@ describe('Event Reducers', () => {
         { ...createNewTeam('Bravo'), id: 'bravo' },
       ];
       state.list[0].places = [{ ...createNewPlace('CP'), id: 'cp' }];
+      state.list[0].groups = [{ ...createNewGroup('Rescue Group'), id: 'rescue' }];
       return state;
     }
 
     it('moves a member between teams, updating both lists and the source lead', () => {
-      const next = apply(stateWithTeams(), TeamEvents.TeamMemberAssigned({ activityId, participantId: 'p1', target: { type: 'team', id: 'bravo' } }));
+      const next = apply(stateWithTeams(), ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: { type: 'team', id: 'bravo' } }));
       const [alpha, bravo] = next.list[0].teams;
       expect(alpha.assignedParticipants).toEqual([]);
       expect(bravo.assignedParticipants).toEqual(['p1']);
@@ -116,26 +132,32 @@ describe('Event Reducers', () => {
     it('asLeader puts the member first (becomes the team lead)', () => {
       const state = stateWithTeams();
       state.list[0].teams[1].assignedParticipants = ['p2', 'p3'];
-      const next = apply(state, TeamEvents.TeamMemberAssigned({ activityId, participantId: 'p1', target: { type: 'team', id: 'bravo', asLeader: true } }));
+      const next = apply(state, ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: { type: 'team', id: 'bravo', asLeader: true } }));
       const bravo = next.list[0].teams[1];
       expect(bravo.assignedParticipants).toEqual(['p1', 'p2', 'p3']);
     });
 
     it('moves a member from a team to a place', () => {
-      const next = apply(stateWithTeams(), TeamEvents.TeamMemberAssigned({ activityId, participantId: 'p1', target: { type: 'place', id: 'cp' } }));
+      const next = apply(stateWithTeams(), ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: { type: 'place', id: 'cp' } }));
       expect(next.list[0].teams[0].assignedParticipants).toEqual([]);
       expect(next.list[0].places?.[0].assignedParticipants).toEqual(['p1']);
     });
 
+    it('moves a member from a team to a group', () => {
+      const next = apply(stateWithTeams(), ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: { type: 'group', id: 'rescue' } }));
+      expect(next.list[0].teams[0].assignedParticipants).toEqual([]);
+      expect(next.list[0].groups?.[0].assignedParticipants).toEqual(['p1']);
+    });
+
     it('unassigns (no target) by removing the member from its team', () => {
-      const next = apply(stateWithTeams(), TeamEvents.TeamMemberAssigned({ activityId, participantId: 'p1', target: undefined }));
+      const next = apply(stateWithTeams(), ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: undefined }));
       expect(next.list[0].teams[0].assignedParticipants).toEqual([]);
     });
 
     it('promoting within the same team reorders without duplicating', () => {
       const state = stateWithTeams();
       state.list[0].teams[0].assignedParticipants = ['p0', 'p1', 'p2'];
-      const next = apply(state, TeamEvents.TeamMemberAssigned({ activityId, participantId: 'p1', target: { type: 'team', id: 'alpha', asLeader: true } }));
+      const next = apply(state, ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: { type: 'team', id: 'alpha', asLeader: true } }));
       expect(next.list[0].teams[0].assignedParticipants).toEqual(['p1', 'p0', 'p2']);
     });
   });
@@ -151,6 +173,7 @@ describe('Event Reducers', () => {
     const legacy = createNewActivity();
     legacy.id = activityId;
     legacy.teams = undefined as never;
+    legacy.groups = undefined as never;
     legacy.comms = undefined as never;
     legacy.staff = undefined as never;
     legacy.places = undefined as never;
@@ -158,6 +181,7 @@ describe('Event Reducers', () => {
 
     let next = apply(state, ActivityEvents.OperationsDecorated({ activityId, operations: createDefaultOperations() }));
     expect(next.list[0].teams).toEqual([]);
+    expect(next.list[0].groups).toEqual([]);
     expect(next.list[0].comms).toEqual([]);
     expect(next.list[0].staff).toEqual({});
     expect(next.list[0].places?.map((p) => p.name)).toEqual([DEFAULT_PLACES.base, DEFAULT_PLACES.field]);

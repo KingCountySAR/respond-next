@@ -1,4 +1,4 @@
-import { ActivityCommands, CommsCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@respond/shared/commands';
+import { ActivityCommands, CommsCommands, GroupCommands, ParticipantCommands, PlaceCommands, ResourceCommands, TeamCommands } from '@respond/shared/commands';
 
 import { useCommands } from './useCommands';
 
@@ -31,3 +31,8 @@ export function useParticipantCommands(activityId: string) {
 export const usePlaceCommands = (activityId: string) => useCommands(PlaceCommands, activityId);
 
 export const useTeamCommands = (activityId: string) => useCommands(TeamCommands, activityId);
+
+export const useGroupCommands = (activityId: string) => useCommands(GroupCommands, activityId);
+
+/** Moving a participant or piece of equipment to a team, place, group, or nowhere. */
+export const useResourceCommands = (activityId: string) => useCommands(ResourceCommands, activityId);

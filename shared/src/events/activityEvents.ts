@@ -3,7 +3,7 @@ import merge from 'lodash.merge';
 
 import type { ActivityState } from '..';
 import { Activity, createNewActivity, OrganizationStatus, ParticipantStatus, pickActivityProperties } from '../types/activity';
-import { OperationsSpecificFields } from '../types/operations';
+import { Operations } from '../types/operations';
 
 import { defineEvent } from './defineEvent';
 import { participantUpdate } from './participantEvents';
@@ -91,10 +91,11 @@ export const ActivityEvents = {
   OperationsDecorated: defineEvent(
     //
     'evt/activity/operationsDecorated',
-    (state: Draft<ActivityState>, { activityId, operations }: { activityId: string; operations: OperationsSpecificFields }) => {
+    (state: Draft<ActivityState>, { activityId, operations }: { activityId: string; operations: Operations }) => {
       const activity = state.list.find((a) => a.id === activityId);
       if (!activity) return;
       if (!activity.teams) activity.teams = operations.teams;
+      if (!activity.groups) activity.groups = operations.groups;
       if (!activity.comms) activity.comms = operations.comms;
       if (!activity.staff) activity.staff = operations.staff;
       if (!activity.places) activity.places = operations.places;

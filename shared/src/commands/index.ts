@@ -1,14 +1,18 @@
 import { ActivityCommands } from './activityCommands';
 import { CommsCommands } from './commsCommands';
+import { GroupCommands } from './groupCommands';
 import { ParticipantCommands } from './participantCommands';
 import { PlaceCommands } from './placeCommands';
+import { ResourceCommands } from './resourceCommands';
 import { TeamCommands } from './teamCommands';
 
 export { PlaceCommands } from './placeCommands';
 export { CommsCommands, type LogCommInput } from './commsCommands';
 export { ParticipantCommands } from './participantCommands';
 export { TeamCommands } from './teamCommands';
+export { GroupCommands } from './groupCommands';
 export { ActivityCommands } from './activityCommands';
+export { ResourceCommands } from './resourceCommands';
 
 /** All command creators, keyed by name. */
 export const Commands = {
@@ -16,7 +20,9 @@ export const Commands = {
   ...CommsCommands,
   ...ParticipantCommands,
   ...TeamCommands,
+  ...GroupCommands,
   ...ActivityCommands,
+  ...ResourceCommands,
 };
 
 export type CommandsType = typeof Commands;
