@@ -1,7 +1,7 @@
 import { Box, Chip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import React from 'react';
 
-import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { useTeamCommands } from '@respond/hooks/commands';
 import { Team, TeamStatus } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -29,14 +29,14 @@ interface TeamStatusSelectProps {
 }
 
 export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
-  const teams = useTeamCommands();
   const activity = useActivityContext();
+  const teams = useTeamCommands(activity.id);
   const { open } = useDialogs();
 
   const handleChange = async (event: SelectChangeEvent<string>) => {
     const newStatus = event.target.value as TeamStatus;
     if (newStatus !== 'Disbanded') {
-      teams.updateTeam(activity.id, { ...team, status: newStatus });
+      teams.updateTeam({ ...team, status: newStatus });
       return;
     }
 
@@ -47,11 +47,11 @@ export const TeamStatusSelect: React.FC<TeamStatusSelectProps> = ({ team }) => {
     const isInBase = team.status === 'In Base';
     const hasResources = team.assignedParticipants.length + team.assignedEquipment.length > 0;
     if (isInBase || !hasResources) {
-      teams.disbandTeam(activity.id, team.id, undefined);
+      teams.disbandTeam(team.id, undefined);
     } else {
       const result = await open(RemoveTeamDialog, { activity, team, action: 'Disband' });
       if (!result) return;
-      teams.disbandTeam(activity.id, team.id, result.target);
+      teams.disbandTeam(team.id, result.target);
     }
   };
 

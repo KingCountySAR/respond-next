@@ -3,7 +3,7 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useMemo, useRef } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 
-import { useCommsCommands } from '@respond/lib/client/services/comms';
+import { useCommsCommands } from '@respond/hooks/commands';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -34,8 +34,8 @@ function renderContactOption(props: React.HTMLAttributes<HTMLLIElement> & { key?
 }
 
 export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCommsComposerProps) {
-  const comms = useCommsCommands();
   const activity = useActivityContext();
+  const comms = useCommsCommands(activity.id);
   const fromRef = useRef<HTMLInputElement | null>(null);
 
   // Split by source so adding a comms entry only re-scans comms, not teams/staff/places.
@@ -80,11 +80,11 @@ export function DashboardCommsComposer({ entry, onSave, onCancel }: DashboardCom
         timestamp: values.timestamp,
         isAutomated: false, // Automated messages are toggled to false when edited
       };
-      comms.updateComm(activity.id, entry.id, updates);
+      comms.updateComm(entry.id, updates);
       onSave?.();
     } else {
       // No id/timestamp — the server stamps those when it mints CommLogged.
-      comms.logComm(activity.id, { from: values.from, to: values.to, message: values.message });
+      comms.logComm({ from: values.from, to: values.to, message: values.message });
       onSave?.();
     }
 

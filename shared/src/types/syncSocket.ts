@@ -1,6 +1,6 @@
+import type { ActivityState } from '..';
 import type { StampedCommand } from '../commands';
 import type { StampedEvent } from '../events';
-import type { ActivityState } from '../state';
 
 import type UserAuth from './userAuth';
 

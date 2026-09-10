@@ -2,14 +2,14 @@ import { Chip } from '@mui/material';
 import { type MouseEvent, type PointerEvent } from 'react';
 
 import { useDialogs } from '@respond/components/DialogProvider';
-import { useParticipantCommands } from '@respond/lib/client/services/participants';
+import { useParticipantCommands } from '@respond/hooks/commands';
 import { getStatusMuiColor, getStatusText, Participant, ParticipantStatus } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
 
 export function DashboardParticipantStatusButton({ participant, status }: { participant: Participant; status: ParticipantStatus }) {
-  const participants = useParticipantCommands();
   const activity = useActivityContext();
+  const participants = useParticipantCommands(activity.id);
   const { confirm } = useDialogs();
 
   const statusLabel = getStatusText(status);
@@ -23,7 +23,7 @@ export function DashboardParticipantStatusButton({ participant, status }: { part
     });
     if (!confirmed) return;
     const update = { time: Date.now(), status, organizationId: participant.organizationId };
-    participants.addTimeline(activity.id, participant.id, update);
+    participants.addTimeline(participant.id, update);
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {

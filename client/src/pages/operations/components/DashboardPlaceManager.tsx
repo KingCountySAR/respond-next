@@ -5,8 +5,7 @@ import MapIcon from '@mui/icons-material/Map';
 import { Box, Button, Typography } from '@mui/material';
 import { useEffect } from 'react';
 
-import { usePlaceCommands } from '@respond/lib/client/services/places';
-import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { usePlaceCommands, useTeamCommands } from '@respond/hooks/commands';
 import { ParticipantStatus } from '@respond/shared/types/activity';
 import { createNewPlace, DEFAULT_PLACES, getDefaultPlaces, isDefaultPlace, Place, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
@@ -25,13 +24,13 @@ import { DashboardTeamMember } from './DashboardTeamMember';
 import { DashboardWeatherDividedSection } from './DashboardWeather';
 
 export function DashboardAddPlaceButton() {
-  const places = usePlaceCommands();
   const activity = useActivityContext();
+  const places = usePlaceCommands(activity.id);
   const { open } = useDialogs();
 
   const handleAdd = async () => {
     const result = await open(DashboardPlaceEditDialog, { activity, place: createNewPlace('') });
-    if (result != null) places.createPlace(activity.id, result);
+    if (result != null) places.createPlace(result);
   };
 
   return (
@@ -47,15 +46,15 @@ export function DashboardAddPlaceButton() {
 }
 
 export function DashboardPlaceManager() {
-  const places = usePlaceCommands();
   const activity = useActivityContext();
+  const places = usePlaceCommands(activity.id);
 
   // For backward compatibility, if the activity does not have places
   useEffect(() => {
     const defaultPlaces = getDefaultPlaces(activity);
 
     if (defaultPlaces.length) {
-      defaultPlaces.forEach((place) => places.createPlace(activity.id, place));
+      defaultPlaces.forEach((place) => places.createPlace(place));
     }
   }, [activity, places]);
 
@@ -72,9 +71,9 @@ export function DashboardPlaceManager() {
 }
 
 function PlaceTile({ place }: { place: Place }) {
-  const places = usePlaceCommands();
-  const teams = useTeamCommands();
   const activity = useActivityContext();
+  const places = usePlaceCommands(activity.id);
+  const teams = useTeamCommands(activity.id);
   const { open, confirm } = useDialogs();
 
   const participants = (place.assignedParticipants ?? []).flatMap((id) => {
@@ -89,11 +88,11 @@ function PlaceTile({ place }: { place: Place }) {
     const exists = currentPlaces.some((p) => p.id === placeToUpsert.id);
 
     if (!exists) {
-      places.createPlace(activity.id, placeToUpsert);
+      places.createPlace(placeToUpsert);
       return;
     }
 
-    places.updatePlace(activity.id, placeToUpsert);
+    places.updatePlace(placeToUpsert);
   };
 
   const editPlace = async () => {
@@ -116,7 +115,7 @@ function PlaceTile({ place }: { place: Place }) {
     if (hasResources) {
       deleteAndReassign();
     } else {
-      places.deletePlace(activity.id, place.id);
+      places.deletePlace(place.id);
     }
   };
 
@@ -128,7 +127,7 @@ function PlaceTile({ place }: { place: Place }) {
     const updatedFieldPlace = fieldPlace
       ? { ...fieldPlace, assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment }
       : { ...createNewPlace(DEFAULT_PLACES.field), assignedParticipants: mergedParticipants, assignedEquipment: mergedEquipment };
-    places.batchUpdatePlaces(activity.id, [updatedFieldPlace], [place.id]);
+    places.batchUpdatePlaces([updatedFieldPlace], [place.id]);
   };
 
   const editAction = {
@@ -150,12 +149,12 @@ function PlaceTile({ place }: { place: Place }) {
     if (type === 'participant') {
       // If the item was dragged and dropped back to the same place, cancel.
       if (place.assignedParticipants.includes(item.id)) return;
-      teams.assignTeamMember(activity.id, item.id, { type: 'place', id: place.id });
+      teams.assignTeamMember(item.id, { type: 'place', id: place.id });
     } else if (type === 'equipment') {
       // Custom items arrive already hydrated (named) via the Draggable's transform.
       // If the item was dragged and dropped back to the same place, cancel.
       if (place.assignedEquipment.find((equipment) => item.uuid === equipment.uuid)) return;
-      teams.assignEquipment(activity.id, item, { type: 'place', id: place.id });
+      teams.assignEquipment(item, { type: 'place', id: place.id });
     } else {
       return;
     }

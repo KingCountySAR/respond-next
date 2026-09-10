@@ -6,7 +6,7 @@ import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
 
-import { useCommsCommands } from '@respond/lib/client/services/comms';
+import { useCommsCommands } from '@respond/hooks/commands';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -43,8 +43,8 @@ const parseValues = (value: string): string[] => {
 };
 
 export function DashboardCommsManager() {
-  const comms = useCommsCommands();
   const activity = useActivityContext();
+  const comms = useCommsCommands(activity.id);
   const { confirm } = useDialogs();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -75,7 +75,7 @@ export function DashboardCommsManager() {
   }, [visibleCommunications, searchQuery]);
 
   const toggleFavorite = (entry: CommunicationsLogEntry) => {
-    comms.updateComm(activity.id, entry.id, { isFavorite: !entry.isFavorite });
+    comms.updateComm(entry.id, { isFavorite: !entry.isFavorite });
   };
 
   const requestDeleteEntry = async (entry: CommunicationsLogEntry) => {
@@ -84,7 +84,7 @@ export function DashboardCommsManager() {
       destructive: true,
       label: 'Delete',
     });
-    if (confirmed) comms.updateComm(activity.id, entry.id, { isDeleted: true });
+    if (confirmed) comms.updateComm(entry.id, { isDeleted: true });
   };
 
   return (

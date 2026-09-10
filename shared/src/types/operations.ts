@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 
-import { pickSafely } from '../pickSafely';
+import { pickSafely } from '../lib/pickSafely';
 
 import { Activity } from './activity';
 

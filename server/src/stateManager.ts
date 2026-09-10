@@ -1,22 +1,40 @@
 import { produce } from 'immer';
 import { v4 as uuid } from 'uuid';
 
-import { Command, StampedCommand } from '@shared/commands';
-import { EventAuthor, serviceAuthor, StampedEvent } from '@shared/events';
-import { BasicEventReducers } from '@shared/state';
-import type { ActivityState, OrganizationState } from '@shared/state';
-import { filterInitialActivities } from '@shared/state/activityVisibility';
+import { Command, Commands, StampedCommand } from '@shared/commands';
+import { DomainEvent, EventAuthor, serviceAuthor, StampedEvent } from '@shared/events';
+import { eventReducersByType, filterInitialActivities } from '@shared/index';
+import type { ActivityState, OrganizationState } from '@shared/index';
 import type { Activity } from '@shared/types/activity';
 import { ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
 import { Organization } from '@shared/types/organization';
 import type UserAuth from '@shared/types/userAuth';
 
-import { produceEvents } from './commandHandlers';
+import { CommandHandler, CommandServices, explicitCommandHandlers } from './commands';
 import { EventDoc } from './data/eventDoc';
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import { defaultReactors, Reactor } from './reactors';
 
 type DatabaseActivity = Activity & { removeTime?: number };
+
+function forwardHandler(event: (payload: never) => DomainEvent): CommandHandler<never> {
+  return (payload) => [event(payload)];
+}
+
+// Built once from every command: explicit handler wins if present, otherwise
+// fall back to the command's own declared `.event` (Place/Team/most commands).
+export const commandHandlersByType: Record<string, CommandHandler<never> | undefined> = Object.fromEntries(
+  Object.values(Commands).map((c) => [c.type, explicitCommandHandlers[c.type] ?? (c.event ? forwardHandler(c.event as never) : undefined)]),
+);
+
+/**
+ * Validate a command and produce the resulting domain event(s). Pure and
+ * synchronous so it is trivially unit-testable independent of StateManager.
+ */
+export function produceEvents(command: Command, services: CommandServices = {}): DomainEvent[] {
+  const handle = commandHandlersByType[command.type];
+  return handle ? handle(command.payload as never, services) : [];
+}
 
 export interface ActionListener {
   broadcastEvent(events: StampedEvent[], toRooms: string[] | undefined): void;
@@ -130,7 +148,7 @@ export class StateManager {
       if (batch.length > 5000) throw new Error('reactor fold exceeded 5000 events — likely a self-triggering reactor');
       const event = pending.shift()!;
       workingState = produce(workingState, (draft) => {
-        BasicEventReducers[event.type as keyof typeof BasicEventReducers](draft, event as never);
+        eventReducersByType[event.type](draft, event.payload as never);
       });
       batch.push(event);
 

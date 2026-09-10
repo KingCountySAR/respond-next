@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 
 import { useDialogs } from '@respond/components/DialogProvider';
 import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
-import { useActivityCommands } from '@respond/lib/client/services/activity';
+import { useActivityCommands } from '@respond/hooks/commands';
 import { Activity } from '@respond/shared/types/activity';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';

@@ -1,6 +1,7 @@
-import { createAction } from '@reduxjs/toolkit';
-
+import { CommsEvents } from '../events/commsEvents';
 import { CommunicationsLogEntry } from '../types/operations';
+
+import { defineCommand } from './defineCommand';
 
 /**
  * The content of a comms entry a client (or reactor) wants logged. Deliberately
@@ -9,15 +10,7 @@ import { CommunicationsLogEntry } from '../types/operations';
  */
 export type LogCommInput = Pick<CommunicationsLogEntry, 'message'> & Partial<Pick<CommunicationsLogEntry, 'from' | 'to' | 'isAutomated' | 'isFavorite'>>;
 
-const LogComm = createAction('cmd/comm/log', (activityId: string, entry: LogCommInput) => ({
-  payload: { activityId, entry },
-}));
-
-const UpdateComm = createAction('cmd/comm/update', (activityId: string, commId: string, updates: Partial<CommunicationsLogEntry>) => ({
-  payload: { activityId, commId, updates },
-}));
-
 export const CommsCommands = {
-  LogComm,
-  UpdateComm,
+  LogComm: defineCommand('cmd/comm/log', (activityId: string, entry: LogCommInput) => ({ payload: { activityId, entry } })),
+  UpdateComm: defineCommand('cmd/comm/update', (activityId: string, commId: string, updates: Partial<CommunicationsLogEntry>) => ({ payload: { activityId, commId, updates } }), CommsEvents.CommUpdated),
 };

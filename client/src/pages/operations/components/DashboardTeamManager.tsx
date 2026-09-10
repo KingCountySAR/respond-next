@@ -2,7 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
 
-import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { useTeamCommands } from '@respond/hooks/commands';
 import { createNewTeam, Team } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -98,9 +98,9 @@ export const sortTeams = (left: Team, right: Team) => {
 };
 
 export function DashboardTeamManager() {
-  const teamCommands = useTeamCommands();
-
   const activity = useActivityContext();
+  const teamCommands = useTeamCommands(activity.id);
+
   const [expandCommand, setExpandCommand] = useState<{ expanded: boolean; nonce: number } | undefined>(undefined);
   const [expandedTeamIds, setExpandedTeamIds] = useState<Record<string, boolean>>({});
   const teams = activity.teams ?? [];
@@ -108,7 +108,7 @@ export function DashboardTeamManager() {
 
   const addTeam = () => {
     const nextTeamNumber = getNextTeamNumber(teams);
-    teamCommands.createTeam(activity.id, createNewTeam(`Team ${nextTeamNumber}`));
+    teamCommands.createTeam(createNewTeam(`Team ${nextTeamNumber}`));
   };
 
   // nonce forces each card's effect to rerun even if `expanded` repeats (e.g. a card was manually
