@@ -37,14 +37,6 @@ export const placeCommsReactor: Reactor = {
       return place ? [CommsCommands.LogComm(event.payload.activityId, terminatedEntry(place.name))] : [];
     }
 
-    if (PlaceEvents.PlacesBatchChanged.match(event)) {
-      const prior = ctx.priorActivities[event.payload.activityId];
-      return event.payload.deleteIds.flatMap((id) => {
-        const place = prior?.places?.find((p) => p.id === id);
-        return place ? [CommsCommands.LogComm(event.payload.activityId, terminatedEntry(place.name))] : [];
-      });
-    }
-
     return [];
   },
 };

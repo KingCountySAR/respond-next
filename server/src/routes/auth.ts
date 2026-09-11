@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import { AuthError } from '@shared/apiErrors';
+import { AuthError } from '@shared/lib/apiErrors';
 import type { AuthResponse } from '@shared/types/authResponse';
 import type { MyOrganization } from '@shared/types/organization';
 

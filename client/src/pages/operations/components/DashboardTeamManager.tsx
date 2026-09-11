@@ -2,7 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
 
-import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { useTeamCommands } from '@respond/hooks/commands';
 import { createNewTeam, Team } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -28,13 +28,7 @@ function getNextTeamNumber(teams: Team[]): number {
   return nextNumber;
 }
 
-export const sortTeams = (left: Team, right: Team) => {
-  // Sort order for dashboard team listing:
-  // 1. All non-disbanded teams should appear before any 'Disbanded' teams.
-  // 2. Teams with status 'Disbanded' should still be alphabetized by name.
-  // 3. For active teams, sort by GAR priority (red first, then amber, then green).
-  // 4. If GAR is the same, team names starting with "Team" come first.
-  // 5. Then sort alphabetically (case-insensitive) and by first numeric value when present.
+export function compareTeamNames(left: Team, right: Team): number {
   const normalizeName = (name: string) => name.trim();
   const startsWithTeam = (name: string) => /^team\b/i.test(normalizeName(name));
   const extractFirstNumber = (name: string): number | null => {
@@ -43,36 +37,42 @@ export const sortTeams = (left: Team, right: Team) => {
   };
   const alphaKey = (name: string) => normalizeName(name).replace(/\d+/g, '').trim();
 
-  const compareTeamNames = (leftName: string, rightName: string) => {
-    const leftIsTeamName = startsWithTeam(leftName);
-    const rightIsTeamName = startsWithTeam(rightName);
-    if (leftIsTeamName !== rightIsTeamName) {
-      return leftIsTeamName ? -1 : 1;
-    }
+  const leftIsTeamName = startsWithTeam(left.name);
+  const rightIsTeamName = startsWithTeam(right.name);
+  if (leftIsTeamName !== rightIsTeamName) {
+    return leftIsTeamName ? -1 : 1;
+  }
 
-    const alphaCompare = alphaKey(leftName).localeCompare(alphaKey(rightName), undefined, { sensitivity: 'base' });
-    if (alphaCompare !== 0) {
-      return alphaCompare;
-    }
+  const alphaCompare = alphaKey(left.name).localeCompare(alphaKey(right.name), undefined, { sensitivity: 'base' });
+  if (alphaCompare !== 0) {
+    return alphaCompare;
+  }
 
-    const leftFirstNumber = extractFirstNumber(leftName);
-    const rightFirstNumber = extractFirstNumber(rightName);
+  const leftFirstNumber = extractFirstNumber(left.name);
+  const rightFirstNumber = extractFirstNumber(right.name);
 
-    if (leftFirstNumber != null && rightFirstNumber != null && leftFirstNumber !== rightFirstNumber) {
-      return leftFirstNumber - rightFirstNumber;
-    }
+  if (leftFirstNumber != null && rightFirstNumber != null && leftFirstNumber !== rightFirstNumber) {
+    return leftFirstNumber - rightFirstNumber;
+  }
 
-    if (leftFirstNumber != null && rightFirstNumber == null) {
-      return -1;
-    }
+  if (leftFirstNumber != null && rightFirstNumber == null) {
+    return -1;
+  }
 
-    if (leftFirstNumber == null && rightFirstNumber != null) {
-      return 1;
-    }
+  if (leftFirstNumber == null && rightFirstNumber != null) {
+    return 1;
+  }
 
-    return normalizeName(leftName).localeCompare(normalizeName(rightName), undefined, { sensitivity: 'base' });
-  };
+  return normalizeName(left.name).localeCompare(normalizeName(right.name), undefined, { sensitivity: 'base' });
+}
 
+export const sortTeams = (left: Team, right: Team) => {
+  // Sort order for dashboard team listing:
+  // 1. All non-disbanded teams should appear before any 'Disbanded' teams.
+  // 2. Teams with status 'Disbanded' should still be alphabetized by name.
+  // 3. For active teams, sort by GAR priority (red first, then amber, then green).
+  // 4. If GAR is the same, team names starting with "Team" come first.
+  // 5. Then sort alphabetically (case-insensitive) and by first numeric value when present.
   if (left.status === 'Disbanded' && right.status !== 'Disbanded') {
     return 1;
   }
@@ -82,7 +82,7 @@ export const sortTeams = (left: Team, right: Team) => {
   }
 
   if (left.status === 'Disbanded' && right.status === 'Disbanded') {
-    return compareTeamNames(left.name, right.name);
+    return compareTeamNames(left, right);
   }
 
   const garPriority: Team['gar'][] = ['red', 'amber', 'green'];
@@ -94,13 +94,13 @@ export const sortTeams = (left: Team, right: Team) => {
     return leftPriority - rightPriority;
   }
 
-  return compareTeamNames(left.name, right.name);
+  return compareTeamNames(left, right);
 };
 
 export function DashboardTeamManager() {
-  const teamCommands = useTeamCommands();
-
   const activity = useActivityContext();
+  const teamCommands = useTeamCommands(activity.id);
+
   const [expandCommand, setExpandCommand] = useState<{ expanded: boolean; nonce: number } | undefined>(undefined);
   const [expandedTeamIds, setExpandedTeamIds] = useState<Record<string, boolean>>({});
   const teams = activity.teams ?? [];
@@ -108,7 +108,7 @@ export function DashboardTeamManager() {
 
   const addTeam = () => {
     const nextTeamNumber = getNextTeamNumber(teams);
-    teamCommands.createTeam(activity.id, createNewTeam(`Team ${nextTeamNumber}`));
+    teamCommands.createTeam(createNewTeam(`Team ${nextTeamNumber}`));
   };
 
   // nonce forces each card's effect to rerun even if `expanded` repeats (e.g. a card was manually

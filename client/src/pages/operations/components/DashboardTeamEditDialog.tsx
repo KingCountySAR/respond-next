@@ -3,14 +3,14 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
-import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { useTeamCommands } from '@respond/hooks/commands';
 import { Activity } from '@respond/shared/types/activity';
 import { SarGar, Team } from '@respond/shared/types/operations';
 
 import { MuiDialogProps, useDialogs } from '@/client/components/DialogProvider';
 import { Stack } from '@/client/components/Material';
 
-import { RemoveTeamDialog } from './RemoveTeamDialog';
+import { DashboardResourceReassignmentDialog } from './DashboardResourceReassignmentDialog';
 
 interface DashboardTeamEditDialogProps extends MuiDialogProps<Team | null> {
   team: Team | null;
@@ -41,7 +41,7 @@ export function validateTeamName(teams: Team[], currentTeamId: string, name: str
 }
 
 export function DashboardTeamEditDialog({ team, activity, onClose }: DashboardTeamEditDialogProps) {
-  const teamCommands = useTeamCommands();
+  const teamCommands = useTeamCommands(activity.id);
   const { open, confirm } = useDialogs();
 
   const teams = activity.teams ?? [];
@@ -116,13 +116,13 @@ export function DashboardTeamEditDialog({ team, activity, onClose }: DashboardTe
       // the disband/delete dialog's reassignment options.
       const confirmed = await confirm({ prompt: `Delete ${team.name}?`, destructive: true, label: 'Delete' });
       if (!confirmed) return;
-      teamCommands.deleteTeam(activity.id, team.id, undefined);
+      teamCommands.deleteTeam(team.id, undefined);
       return;
     }
 
-    const result = await open(RemoveTeamDialog, { activity, team, action: 'Delete' });
+    const result = await open(DashboardResourceReassignmentDialog, { activity, origin: team, title: `Delete ${team.name}`, action: 'Delete' });
     if (!result) return;
-    teamCommands.deleteTeam(activity.id, team.id, result.target);
+    teamCommands.deleteTeam(team.id, result.target);
   };
 
   return (

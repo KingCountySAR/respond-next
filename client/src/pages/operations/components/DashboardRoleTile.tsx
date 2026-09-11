@@ -2,7 +2,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
 
-import { useTeamCommands } from '@respond/lib/client/services/teams';
+import { useTeamCommands } from '@respond/hooks/commands';
 import { Participant } from '@respond/shared/types/activity';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -11,8 +11,8 @@ import { Droppable } from '@/client/components/DragAndDrop/DnDComponents';
 
 export function DashboardRoleTile({ title, id }: { title: string; id?: string }) {
   const { confirm } = useDialogs();
-  const teams = useTeamCommands();
   const activity = useActivityContext();
+  const teams = useTeamCommands(activity.id);
 
   const selectedId = activity.staff?.[title] ?? id;
   const participant = selectedId ? activity.participants[selectedId] : undefined;
@@ -22,7 +22,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
   const handleDrop = (p: Participant | null) => {
     if (!p || selectedId === p.id) return;
     if (p && activity && activity.id) {
-      teams.updateStaff(activity.id, { [title]: p.id });
+      teams.updateStaff({ [title]: p.id });
     }
   };
 
@@ -33,7 +33,7 @@ export function DashboardRoleTile({ title, id }: { title: string; id?: string })
       label: 'Unassign',
     });
     if (confirmed && activity && activity.id) {
-      teams.updateStaff(activity.id, { [title]: '' });
+      teams.updateStaff({ [title]: '' });
     }
   };
 

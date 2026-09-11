@@ -9,7 +9,7 @@ import Api from '@respond/lib/api';
 import { useAppDispatch, useAppSelector } from '@respond/lib/client/store';
 import { AuthActions } from '@respond/lib/client/store/auth';
 import { OrgActions } from '@respond/lib/client/store/organization';
-import { AuthError } from '@respond/shared/apiErrors';
+import { AuthError } from '@respond/shared/lib/apiErrors';
 import { AuthResponse } from '@respond/shared/types/authResponse';
 import { MemberProviderName } from '@respond/shared/types/data/MemberProviderType';
 

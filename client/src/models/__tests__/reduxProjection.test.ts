@@ -29,7 +29,7 @@ describe('ReduxProjection', () => {
 
       const pending = projection.dispatchAndWait(ActivityCommands.RemoveActivity('a1'), [ActivityEvents.ActivityRemoved.type]);
       // Simulate the server round-trip: the event action reaches the store.
-      store.dispatch(ActivityEvents.ActivityRemoved('a1'));
+      store.dispatch(ActivityEvents.ActivityRemoved({ activityId: 'a1' }));
 
       const resolved = await pending;
       expect(resolved.type).toBe(ActivityEvents.ActivityRemoved.type);

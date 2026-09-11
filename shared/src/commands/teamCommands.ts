@@ -1,30 +1,17 @@
-import { createAction } from '@reduxjs/toolkit';
+import { TeamEvents } from '../events/teamEvents';
+import { AssignmentTarget, Team } from '../types/operations';
 
-import { AssignmentTarget, EquipmentItem, Team } from '../types/operations';
+import { defineCommand } from './defineCommand';
 
 // Intent to change teams + the staff (role assignment) map, client -> server.
 // The team-comms reactor turns status/GAR/assignment changes into comms.
+// Every command here forwards straight through to its matching event.
+// Participant/equipment assignment moved to resourceCommands.ts.
 
 export const TeamCommands = {
-  CreateTeam: createAction('cmd/team/create', (activityId: string, team: Team) => ({
-    payload: { activityId, team },
-  })),
-  UpdateTeam: createAction('cmd/team/update', (activityId: string, updates: Partial<Team> & { id: string }) => ({
-    payload: { activityId, updates },
-  })),
-  DisbandTeam: createAction('cmd/team/disband', (activityId: string, id: string, target?: AssignmentTarget) => ({
-    payload: { activityId, id, target },
-  })),
-  DeleteTeam: createAction('cmd/team/delete', (activityId: string, id: string, target?: AssignmentTarget) => ({
-    payload: { activityId, id, target },
-  })),
-  UpdateStaff: createAction('cmd/team/updateStaff', (activityId: string, staff: Record<string, string>) => ({
-    payload: { activityId, staff },
-  })),
-  AssignTeamMember: createAction('cmd/team/assignMember', (activityId: string, participantId: string, target?: AssignmentTarget) => ({
-    payload: { activityId, participantId, target },
-  })),
-  AssignEquipment: createAction('cmd/team/assignEquipment', (activityId: string, item: EquipmentItem, target?: AssignmentTarget) => ({
-    payload: { activityId, item, target },
-  })),
+  CreateTeam: defineCommand('cmd/team/create', (activityId: string, team: Team) => ({ payload: { activityId, team } }), TeamEvents.TeamCreated),
+  UpdateTeam: defineCommand('cmd/team/update', (activityId: string, updates: Partial<Team> & { id: string }) => ({ payload: { activityId, updates } }), TeamEvents.TeamUpdated),
+  DisbandTeam: defineCommand('cmd/team/disband', (activityId: string, id: string, target?: AssignmentTarget) => ({ payload: { activityId, id, target } }), TeamEvents.TeamDisbanded),
+  DeleteTeam: defineCommand('cmd/team/delete', (activityId: string, id: string, target?: AssignmentTarget) => ({ payload: { activityId, id, target } }), TeamEvents.TeamDeleted),
+  UpdateStaff: defineCommand('cmd/team/updateStaff', (activityId: string, staff: Record<string, string>) => ({ payload: { activityId, staff } }), TeamEvents.StaffUpdated),
 };

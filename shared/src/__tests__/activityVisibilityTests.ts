@@ -1,5 +1,5 @@
-import type { Activity } from '../../types/activity';
-import { filterInitialActivities, isActivityIncludedInInitialState } from '../activityVisibility';
+import { filterInitialActivities, isActivityIncludedInInitialState } from '..';
+import type { Activity } from '../types/activity';
 
 const daysToMilliseconds = (days: number) => days * 24 * 60 * 60 * 1000;
 

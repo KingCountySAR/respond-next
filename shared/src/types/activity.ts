@@ -1,9 +1,9 @@
 import { v4 as uuid } from 'uuid';
 
-import { pickSafely } from '../pickSafely';
+import { pickSafely } from '../lib/pickSafely';
 
 import { createNewLocation, Location } from './location';
-import { CommunicationsLogEntry, getDefaultPlaces, Place, Team } from './operations';
+import { CommunicationsLogEntry, getDefaultPlaces, Group, Place, Team } from './operations';
 
 const hoursToMilliseconds = (hours: number): number => hours * 60 * 60 * 1000;
 
@@ -159,6 +159,7 @@ export interface Activity {
 
   // Operations
   teams: Team[];
+  groups: Group[];
   comms: CommunicationsLogEntry[];
   staff: Record<string, string>;
   places: Place[];
@@ -206,6 +207,7 @@ export function createNewActivity(): Activity {
     participants: {},
     organizations: {},
     teams: [],
+    groups: [],
     comms: [],
     staff: {},
     places: getDefaultPlaces(),

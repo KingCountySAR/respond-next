@@ -1,13 +1,18 @@
 import { v4 as uuid } from 'uuid';
 
-import { pickSafely } from '../pickSafely';
+import { pickSafely } from '../lib/pickSafely';
 
 import { Activity } from './activity';
 
 export type TeamStatus = 'In Base' | 'In Transit' | 'On Assignment' | 'On Scene' | 'Returning To Base' | 'Disbanded';
 
+type Target = { type: string; id: string };
+type PlaceTarget = Target & { type: 'place' };
+type GroupTarget = Target & { type: 'group' };
+type TeamTarget = Target & { type: 'team'; asLeader?: boolean };
+
 /** Where a responder is being assigned: a team (optionally as its leader), a place, or nowhere (undefined = unassign / available). */
-export type AssignmentTarget = { type: 'place'; id: string } | { type: 'team'; id: string; asLeader?: boolean } | undefined;
+export type AssignmentTarget = PlaceTarget | GroupTarget | TeamTarget | undefined;
 
 export type SarGar = 'green' | 'amber' | 'red';
 
@@ -18,6 +23,15 @@ export interface Team {
   status: TeamStatus;
   assignment?: string;
   notes?: string;
+  assignedParticipants: string[];
+  assignedEquipment: EquipmentItem[];
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  leaderId?: string;
+  assignedTeams: string[];
   assignedParticipants: string[];
   assignedEquipment: EquipmentItem[];
 }
@@ -56,6 +70,16 @@ export function createNewTeam(name: string): Team {
     name,
     gar: 'green',
     status: 'In Base',
+    assignedParticipants: [],
+    assignedEquipment: [],
+  };
+}
+
+export function createNewGroup(name: string): Group {
+  return {
+    id: uuid(),
+    name,
+    assignedTeams: [],
     assignedParticipants: [],
     assignedEquipment: [],
   };
@@ -103,17 +127,22 @@ export const getDefaultPlaces = (activity?: Activity): Place[] => {
   }, []);
 };
 
+export const OPERATIONS_FIELDS = ['teams', 'groups', 'comms', 'staff', 'places'] as const;
+
+export type OperationsFields = (typeof OPERATIONS_FIELDS)[number];
+
 /** The operations-only slice of an activity (the fields the ops dashboard needs). */
-export type OperationsSpecificFields = Pick<Activity, 'teams' | 'comms' | 'staff' | 'places'>;
+export type Operations = Pick<Activity, OperationsFields>;
 
 /**
  * The default operations state the server stamps onto an activity when it is
  * first decorated: empty teams/comms/staff plus the default places (Command Post
  * first, then Field). Built server-side so every client sees identical uuids.
  */
-export function createDefaultOperations(): OperationsSpecificFields {
+export function createDefaultOperations(): Operations {
   return {
     teams: [],
+    groups: [],
     comms: [],
     staff: {},
     places: getDefaultPlaces(),
@@ -123,7 +152,7 @@ export function createDefaultOperations(): OperationsSpecificFields {
 /** True once an activity carries all of its operations properties. Legacy
  * activities loaded from the database may be missing some or all of them. */
 export function hasOperations(activity: Activity): boolean {
-  return activity.teams !== undefined && activity.comms !== undefined && activity.staff !== undefined && activity.places !== undefined;
+  return OPERATIONS_FIELDS.every((field) => activity[field] !== undefined);
 }
 
 export const sortEquipmentAlphabetically = (left: EquipmentItem, right: EquipmentItem) => {

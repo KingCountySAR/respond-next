@@ -1,34 +1,70 @@
-import { createAction } from '@reduxjs/toolkit';
+import type { Draft } from '@reduxjs/toolkit';
 
-import { AssignmentTarget, EquipmentItem, Team } from '../types/operations';
+import type { ActivityState } from '..';
+import { AssignmentTarget, pickTeamProperties, Team } from '../types/operations';
+
+import { defineEvent } from './defineEvent';
 
 // Facts about teams + staff assignments, minted by the server.
+// Participant/equipment assignment moved to resourceEvents.ts (Resource domain),
+// since a target can now be a team, place, or group.
+
+export type TeamTargetPayload = { activityId: string; id: string; target: AssignmentTarget };
+
 export const TeamEvents = {
-  TeamCreated: createAction('evt/team/created', (activityId: string, team: Team) => ({
-    payload: { activityId, team },
-  })),
-  TeamUpdated: createAction('evt/team/updated', (activityId: string, updates: Partial<Team> & { id: string }) => ({
-    payload: { activityId, updates },
-  })),
-  TeamDisbanded: createAction('evt/team/disbanded', (activityId: string, id: string, target: AssignmentTarget) => ({
-    payload: { activityId, id, target },
-  })),
-  TeamDeleted: createAction('evt/team/deleted', (activityId: string, id: string, target: AssignmentTarget) => ({
-    payload: { activityId, id, target },
-  })),
-  StaffUpdated: createAction('evt/team/staffUpdated', (activityId: string, staff: Record<string, string>) => ({
-    payload: { activityId, staff },
-  })),
-  // A single responder's assignment changed: the reducer removes them from
-  // wherever they were and adds them to `target` (undefined = unassigned).
-  // Naming a specific participant lets reactors act on *who* moved (e.g. flip
-  // their Assigned/Available status).
-  TeamMemberAssigned: createAction('evt/team/memberAssigned', (activityId: string, participantId: string, target?: AssignmentTarget) => ({
-    payload: { activityId, participantId, target },
-  })),
-  // A single piece of equipment moved: the reducer removes it (by uuid) from
-  // wherever it was and adds it to `target` (undefined = back to inventory).
-  TeamEquipmentAssigned: createAction('evt/team/equipmentAssigned', (activityId: string, item: EquipmentItem, target?: AssignmentTarget) => ({
-    payload: { activityId, item, target },
-  })),
+  TeamCreated: defineEvent(
+    //
+    'evt/team/created',
+    (state: Draft<ActivityState>, { activityId, team }: { activityId: string; team: Team }) => {
+      const activity = state.list.find((f) => f.id === activityId);
+      if (!activity) return;
+      activity.teams = activity.teams ?? [];
+      activity.teams.push(team);
+    },
+  ),
+
+  TeamUpdated: defineEvent(
+    //
+    'evt/team/updated',
+    (state: Draft<ActivityState>, { activityId, updates }: { activityId: string; updates: Partial<Team> & { id: string } }) => {
+      const activity = state.list.find((f) => f.id === activityId);
+      if (!activity || !activity.teams) return;
+      const team = activity.teams.find((t) => t.id === updates.id);
+      if (!team) return;
+      Object.assign(team, pickTeamProperties(updates));
+    },
+  ),
+
+  TeamDisbanded: defineEvent(
+    //
+    'evt/team/disbanded',
+    (state: Draft<ActivityState>, { activityId, id }: TeamTargetPayload) => {
+      const team = state.list.find((f) => f.id === activityId)?.teams?.find((t) => t.id === id);
+      if (!team) return;
+      team.status = 'Disbanded';
+    },
+  ),
+
+  TeamDeleted: defineEvent(
+    //
+    'evt/team/deleted',
+    (state: Draft<ActivityState>, { activityId, id }: TeamTargetPayload) => {
+      const activity = state.list.find((f) => f.id === activityId);
+      if (!activity) return;
+      activity.teams = (activity.teams ?? []).filter((t) => t.id !== id);
+    },
+  ),
+
+  StaffUpdated: defineEvent(
+    //
+    'evt/team/staffUpdated',
+    (state: Draft<ActivityState>, { activityId, staff }: { activityId: string; staff: Record<string, string> }) => {
+      const activity = state.list.find((f) => f.id === activityId);
+      if (!activity) return;
+      activity.staff = {
+        ...(activity.staff ?? {}),
+        ...staff,
+      };
+    },
+  ),
 };

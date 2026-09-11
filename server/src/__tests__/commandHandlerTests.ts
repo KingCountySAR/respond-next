@@ -1,24 +1,56 @@
-import { ActivityCommands, CommsCommands, ParticipantCommands, PlaceCommands, TeamCommands } from '@shared/commands';
-import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, TeamEvents } from '@shared/events';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+import { ActivityCommands, Commands, CommsCommands, ParticipantCommands, PlaceCommands, ResourceCommands, TeamCommands } from '@shared/commands';
+import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, ResourceEvents, TeamEvents } from '@shared/events';
 import { Activity, createNewActivity, ParticipantStatus } from '@shared/types/activity';
 import { createNewPlace, createNewTeam, DEFAULT_PLACES } from '@shared/types/operations';
 
-import { produceEvents } from '../commandHandlers';
+import { participantAssignmentReactor } from '../reactors/participantAssignmentReactor';
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { placeCommsReactor } from '../reactors/placeCommsReactor';
 import { ReactorContext } from '../reactors/reactor';
-import { teamAssignmentReactor } from '../reactors/teamAssignmentReactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';
 import { teamDisbandReactor } from '../reactors/teamDisbandedReactor';
 
 const activityId = 'a1';
 const emptyCtx: ReactorContext = { priorActivities: {}, currentActivities: {} };
 
+// produceEvents/commandHandlersByType now live in stateManager.ts, which
+// imports mongodb.ts (throws at import time without MONGODB_URI) — so, like
+// stateManagerCommandTests.ts, import dynamically in beforeAll after pointing
+// MONGODB_URI at an in-memory server, even though this suite never touches Mongo.
+let mongod: MongoMemoryServer;
+let produceEvents: typeof import('../stateManager').produceEvents;
+let commandHandlersByType: typeof import('../stateManager').commandHandlersByType;
+let mongoPromise: typeof import('../mongodb').default;
+
+beforeAll(async () => {
+  mongod = await MongoMemoryServer.create();
+  process.env.MONGODB_URI = mongod.getUri();
+  ({ produceEvents, commandHandlersByType } = await import('../stateManager'));
+  mongoPromise = (await import('../mongodb')).default;
+}, 120000);
+
+afterAll(async () => {
+  if (mongoPromise) (await mongoPromise).close();
+  if (mongod) await mongod.stop();
+});
+
 describe('produceEvents', () => {
+  it('every command resolves to a handler (explicit or forwarding .event)', () => {
+    const commandTypes = Object.values(Commands)
+      .map((c) => c.type)
+      .sort();
+    const handledTypes = Object.keys(commandHandlersByType)
+      .filter((type) => commandHandlersByType[type] !== undefined)
+      .sort();
+    expect(handledTypes).toEqual(commandTypes);
+  });
+
   it('maps CreatePlace -> PlaceCreated', () => {
     const place = createNewPlace('Staging');
     const events = produceEvents(PlaceCommands.CreatePlace(activityId, place));
-    expect(events).toEqual([PlaceEvents.PlaceCreated(activityId, place)]);
+    expect(events).toEqual([PlaceEvents.PlaceCreated({ activityId, place })]);
   });
 
   it('LogComm mints a full server-authored comm (id + timestamp)', () => {
@@ -38,19 +70,19 @@ describe('produceEvents', () => {
   it('maps DeleteTeam -> TeamDeleted, carrying the chosen target', () => {
     const target = { type: 'place', id: 'cp' } as const;
     const [event] = produceEvents(TeamCommands.DeleteTeam(activityId, 'team-1', target));
-    expect(event).toEqual(TeamEvents.TeamDeleted(activityId, 'team-1', target));
+    expect(event).toEqual(TeamEvents.TeamDeleted({ activityId, id: 'team-1', target }));
   });
 
   it('maps DisbandTeam -> TeamDisbanded, carrying the chosen target', () => {
     const target = { type: 'place', id: 'cp' } as const;
     const [event] = produceEvents(TeamCommands.DisbandTeam(activityId, 'team-1', target));
-    expect(event).toEqual(TeamEvents.TeamDisbanded(activityId, 'team-1', target));
+    expect(event).toEqual(TeamEvents.TeamDisbanded({ activityId, id: 'team-1', target }));
   });
 
-  it('maps AssignTeamMember -> TeamMemberAssigned (thin: reducer does the move)', () => {
+  it('maps AssignParticipant -> ParticipantAssigned (thin: reducer does the move)', () => {
     const target = { type: 'team', id: 'bravo', asLeader: true } as const;
-    const events = produceEvents(TeamCommands.AssignTeamMember(activityId, 'p1', target));
-    expect(events).toEqual([TeamEvents.TeamMemberAssigned(activityId, 'p1', target)]);
+    const events = produceEvents(ResourceCommands.AssignParticipant(activityId, 'p1', target));
+    expect(events).toEqual([ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target })]);
   });
 
   it('DecorateOperations -> OperationsDecorated with server-built default operations', () => {
@@ -59,6 +91,7 @@ describe('produceEvents', () => {
     if (!ActivityEvents.OperationsDecorated.match(event)) throw new Error('expected OperationsDecorated');
     const { operations } = event.payload;
     expect(operations.teams).toEqual([]);
+    expect(operations.groups).toEqual([]);
     expect(operations.comms).toEqual([]);
     expect(operations.staff).toEqual({});
     // Command Post is the first default place, then Field; server-minted ids.
@@ -78,7 +111,7 @@ describe('participantTagReactor', () => {
     activity.participants = { p1: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1', tags, timeline: [{ time: 1, status: ParticipantStatus.SignedIn, organizationId: '1' }] } };
     return activity;
   }
-  const updatedEvent = ParticipantEvents.ParticipantUpdated(activityId, { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, { time: 1, status: ParticipantStatus.SignedIn });
+  const updatedEvent = ParticipantEvents.ParticipantUpdated({ activityId, participant: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, update: { time: 1, status: ParticipantStatus.SignedIn } });
 
   it('emits TagParticipant for a newly-present (untagged) participant', async () => {
     const reactor = createParticipantTagReactor(async () => ['Snow', 'OL']);
@@ -111,7 +144,7 @@ describe('teamCommsReactor', () => {
     after.activity.teams[0].id = before.teamId; // same team id across snapshots
     const ctx: ReactorContext = { priorActivities: { [activityId]: before.activity }, currentActivities: { [activityId]: after.activity } };
 
-    const commands = await teamCommsReactor.react(TeamEvents.TeamUpdated(activityId, { id: before.teamId, gar: 'red', status: 'On Assignment' }), ctx);
+    const commands = await teamCommsReactor.react(TeamEvents.TeamUpdated({ activityId, updates: { id: before.teamId, gar: 'red', status: 'On Assignment' } }), ctx);
     const messages = commands.map((c) => (CommsCommands.LogComm.match(c) ? c.payload.entry.message : ''));
     expect(messages).toContain('Starting Assignment');
     expect(messages).toContain('Alpha GAR changed to RED');
@@ -127,7 +160,7 @@ describe('teamCommsReactor', () => {
     after.activity.teams[0].status = 'On Scene'; // first (only) team on scene
     const ctx: ReactorContext = { priorActivities: { [activityId]: before.activity }, currentActivities: { [activityId]: after.activity } };
 
-    const [command] = await teamCommsReactor.react(TeamEvents.TeamUpdated(activityId, { id: before.teamId, status: 'On Scene' }), ctx);
+    const [command] = await teamCommsReactor.react(TeamEvents.TeamUpdated({ activityId, updates: { id: before.teamId, status: 'On Scene' } }), ctx);
     if (!CommsCommands.LogComm.match(command)) throw new Error('expected LogComm');
     expect(command.payload.entry.message).toBe('Subject Located');
     expect(command.payload.entry.isFavorite).toBe(true);
@@ -138,7 +171,7 @@ describe('teamCommsReactor', () => {
     const after = withTeam('green', 'In Base');
     after.activity.teams[0].id = before.teamId;
     const ctx: ReactorContext = { priorActivities: { [activityId]: before.activity }, currentActivities: { [activityId]: after.activity } };
-    expect(await teamCommsReactor.react(TeamEvents.TeamUpdated(activityId, { id: before.teamId, notes: 'x' }), ctx)).toEqual([]);
+    expect(await teamCommsReactor.react(TeamEvents.TeamUpdated({ activityId, updates: { id: before.teamId, notes: 'x' } }), ctx)).toEqual([]);
   });
 
   it('logs assign/unassign staff comms with the participant name', async () => {
@@ -150,10 +183,10 @@ describe('teamCommsReactor', () => {
     prior.id = activityId;
     prior.staff = {};
 
-    const assign = await teamCommsReactor.react(TeamEvents.StaffUpdated(activityId, { 'Rescue Group': 'p1' }), { priorActivities: { [activityId]: prior }, currentActivities: { [activityId]: activity } });
+    const assign = await teamCommsReactor.react(TeamEvents.StaffUpdated({ activityId, staff: { 'Rescue Group': 'p1' } }), { priorActivities: { [activityId]: prior }, currentActivities: { [activityId]: activity } });
     expect(assign.map((c) => (CommsCommands.LogComm.match(c) ? c.payload.entry.message : ''))).toEqual(['Ann Lee assuming Rescue Group']);
 
-    const unassign = await teamCommsReactor.react(TeamEvents.StaffUpdated(activityId, { 'Rescue Group': '' }), {
+    const unassign = await teamCommsReactor.react(TeamEvents.StaffUpdated({ activityId, staff: { 'Rescue Group': '' } }), {
       priorActivities: { [activityId]: activity },
       currentActivities: { [activityId]: { ...activity, staff: { 'Rescue Group': '' } } },
     });
@@ -164,7 +197,7 @@ describe('teamCommsReactor', () => {
 describe('placeCommsReactor', () => {
   it('emits an established LogComm on PlaceCreated', async () => {
     const place = { ...createNewPlace('OP1'), lat: '47.1', lon: '-121.2', notes: 'ridge' };
-    const commands = await placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, place), emptyCtx);
+    const commands = await placeCommsReactor.react(PlaceEvents.PlaceCreated({ activityId, place }), emptyCtx);
     expect(commands).toHaveLength(1);
     expect(CommsCommands.LogComm.match(commands[0])).toBe(true);
     if (!CommsCommands.LogComm.match(commands[0])) throw new Error('expected LogComm');
@@ -179,27 +212,27 @@ describe('placeCommsReactor', () => {
     activity.places = [place];
     const ctx: ReactorContext = { priorActivities: { [activityId]: activity }, currentActivities: {} };
 
-    const commands = await placeCommsReactor.react(PlaceEvents.PlaceDeleted(activityId, place.id), ctx);
+    const commands = await placeCommsReactor.react(PlaceEvents.PlaceDeleted({ activityId, placeId: place.id, target: undefined }), ctx);
     expect(commands).toHaveLength(1);
     if (!CommsCommands.LogComm.match(commands[0])) throw new Error('expected LogComm');
     expect(commands[0].payload.entry.message).toBe('OP1 location terminated');
   });
 
   it('does nothing for a deleted place it cannot resolve', () => {
-    expect(placeCommsReactor.react(PlaceEvents.PlaceDeleted(activityId, 'gone'), emptyCtx)).toEqual([]);
+    expect(placeCommsReactor.react(PlaceEvents.PlaceDeleted({ activityId, placeId: 'gone', target: undefined }), emptyCtx)).toEqual([]);
   });
 
   it('stays silent for default places (Command Post / Field)', () => {
-    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, createNewPlace(DEFAULT_PLACES.base)), emptyCtx)).toEqual([]);
-    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated(activityId, createNewPlace(DEFAULT_PLACES.field)), emptyCtx)).toEqual([]);
+    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated({ activityId, place: createNewPlace(DEFAULT_PLACES.base) }), emptyCtx)).toEqual([]);
+    expect(placeCommsReactor.react(PlaceEvents.PlaceCreated({ activityId, place: createNewPlace(DEFAULT_PLACES.field) }), emptyCtx)).toEqual([]);
   });
 
   it('ignores comm events (no infinite loop)', () => {
-    expect(placeCommsReactor.react(CommsEvents.CommLogged(activityId, { id: 'c1', message: 'x', timestamp: 1 }), emptyCtx)).toEqual([]);
+    expect(placeCommsReactor.react(CommsEvents.CommLogged({ activityId, comm: { id: 'c1', message: 'x', timestamp: 1 } }), emptyCtx)).toEqual([]);
   });
 });
 
-describe('teamAssignmentReactor', () => {
+describe('participantAssignmentReactor', () => {
   // Build an activity where p1 has `status` and (optionally) sits on a team and/or place.
   function activityWith(status: ParticipantStatus, { onTeam = false, onPlace = false }: { onTeam?: boolean; onPlace?: boolean } = {}): Activity {
     const activity = createNewActivity();
@@ -210,38 +243,38 @@ describe('teamAssignmentReactor', () => {
     return activity;
   }
   const ctxWith = (activity: Activity): ReactorContext => ({ priorActivities: {}, currentActivities: { [activityId]: activity } });
-  const assignedToTeam = TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'team', id: 'alpha' });
-  const assignedToPlace = TeamEvents.TeamMemberAssigned(activityId, 'p1', { type: 'place', id: 'cp' });
+  const assignedToTeam = ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: { type: 'team', id: 'alpha' } });
+  const assignedToPlace = ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: { type: 'place', id: 'cp' } });
 
   it('flips an Available responder to Assigned when they land on a team', async () => {
-    const [command] = await teamAssignmentReactor.react(assignedToTeam, ctxWith(activityWith(ParticipantStatus.Available, { onTeam: true })));
+    const [command] = await participantAssignmentReactor.react(assignedToTeam, ctxWith(activityWith(ParticipantStatus.Available, { onTeam: true })));
     if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
     expect(command.payload.update.status).toBe(ParticipantStatus.Assigned);
     expect(command.payload.update.organizationId).toBe('o1');
   });
 
   it('flips an Available responder to Assigned when they land on a place', async () => {
-    const [command] = await teamAssignmentReactor.react(assignedToPlace, ctxWith(activityWith(ParticipantStatus.Available, { onPlace: true })));
+    const [command] = await participantAssignmentReactor.react(assignedToPlace, ctxWith(activityWith(ParticipantStatus.Available, { onPlace: true })));
     if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
     expect(command.payload.update.status).toBe(ParticipantStatus.Assigned);
   });
 
   it('flips an Assigned responder to Available when they leave every team and place', async () => {
-    const [command] = await teamAssignmentReactor.react(TeamEvents.TeamMemberAssigned(activityId, 'p1'), ctxWith(activityWith(ParticipantStatus.Assigned)));
+    const [command] = await participantAssignmentReactor.react(ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: undefined }), ctxWith(activityWith(ParticipantStatus.Assigned)));
     if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
     expect(command.payload.update.status).toBe(ParticipantStatus.Available);
   });
 
   it('leaves an already-Assigned member alone on a team→place move (still assigned)', async () => {
-    expect(await teamAssignmentReactor.react(assignedToPlace, ctxWith(activityWith(ParticipantStatus.Assigned, { onPlace: true })))).toEqual([]);
+    expect(await participantAssignmentReactor.react(assignedToPlace, ctxWith(activityWith(ParticipantStatus.Assigned, { onPlace: true })))).toEqual([]);
   });
 
   it('does not override a non-checked-in status (e.g. SignedIn)', async () => {
-    expect(await teamAssignmentReactor.react(assignedToTeam, ctxWith(activityWith(ParticipantStatus.SignedIn, { onTeam: true })))).toEqual([]);
+    expect(await participantAssignmentReactor.react(assignedToTeam, ctxWith(activityWith(ParticipantStatus.SignedIn, { onTeam: true })))).toEqual([]);
   });
 
   it('ignores unrelated events', async () => {
-    expect(await teamAssignmentReactor.react(TeamEvents.TeamCreated(activityId, createNewTeam('Bravo')), emptyCtx)).toEqual([]);
+    expect(await participantAssignmentReactor.react(TeamEvents.TeamCreated({ activityId, team: createNewTeam('Bravo') }), emptyCtx)).toEqual([]);
   });
 });
 
@@ -263,31 +296,31 @@ describe('teamDisbandReactor', () => {
   it('reassigns every member and equipment item to the given target', async () => {
     const { activity, equipment } = activityWithDisbandedTeam({ onPlace: true });
     const target = { type: 'place', id: 'cp' } as const;
-    const commands = await teamDisbandReactor.react(TeamEvents.TeamDisbanded(activityId, 'alpha', target), ctxWith(activity));
+    const commands = await teamDisbandReactor.react(TeamEvents.TeamDisbanded({ activityId, id: 'alpha', target }), ctxWith(activity));
 
-    expect(commands).toEqual([TeamCommands.AssignTeamMember(activityId, 'p1', target), TeamCommands.AssignEquipment(activityId, equipment, target)]);
+    expect(commands).toEqual([ResourceCommands.AssignParticipant(activityId, 'p1', target), ResourceCommands.AssignEquipment(activityId, equipment, target)]);
   });
 
   it('reassigns to nowhere (available pool) when no target is given', async () => {
     const { activity, equipment } = activityWithDisbandedTeam();
-    const commands = await teamDisbandReactor.react(TeamEvents.TeamDisbanded(activityId, 'alpha', undefined), ctxWith(activity));
+    const commands = await teamDisbandReactor.react(TeamEvents.TeamDisbanded({ activityId, id: 'alpha', target: undefined }), ctxWith(activity));
 
-    expect(commands).toEqual([TeamCommands.AssignTeamMember(activityId, 'p1', undefined), TeamCommands.AssignEquipment(activityId, equipment, undefined)]);
+    expect(commands).toEqual([ResourceCommands.AssignParticipant(activityId, 'p1', undefined), ResourceCommands.AssignEquipment(activityId, equipment, undefined)]);
   });
 
   it('does the same for TeamDeleted, since the deleted team only survives in priorActivities', async () => {
     const { activity, equipment } = activityWithDisbandedTeam({ onPlace: true });
     const target = { type: 'place', id: 'cp' } as const;
-    const commands = await teamDisbandReactor.react(TeamEvents.TeamDeleted(activityId, 'alpha', target), ctxWith(activity));
+    const commands = await teamDisbandReactor.react(TeamEvents.TeamDeleted({ activityId, id: 'alpha', target }), ctxWith(activity));
 
-    expect(commands).toEqual([TeamCommands.AssignTeamMember(activityId, 'p1', target), TeamCommands.AssignEquipment(activityId, equipment, target)]);
+    expect(commands).toEqual([ResourceCommands.AssignParticipant(activityId, 'p1', target), ResourceCommands.AssignEquipment(activityId, equipment, target)]);
   });
 
   it('does nothing for a team it cannot resolve', () => {
-    expect(teamDisbandReactor.react(TeamEvents.TeamDisbanded(activityId, 'gone', undefined), emptyCtx)).toEqual([]);
+    expect(teamDisbandReactor.react(TeamEvents.TeamDisbanded({ activityId, id: 'gone', target: undefined }), emptyCtx)).toEqual([]);
   });
 
   it('ignores unrelated events', () => {
-    expect(teamDisbandReactor.react(TeamEvents.TeamCreated(activityId, createNewTeam('Bravo')), emptyCtx)).toEqual([]);
+    expect(teamDisbandReactor.react(TeamEvents.TeamCreated({ activityId, team: createNewTeam('Bravo') }), emptyCtx)).toEqual([]);
   });
 });

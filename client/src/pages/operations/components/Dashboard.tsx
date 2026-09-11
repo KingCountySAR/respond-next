@@ -12,13 +12,13 @@ import { ToolbarPage } from '@/client/components/ToolbarPage';
 import { DashboardActivityDescription } from './DashboardActivityDescription';
 import { DashboardCommsManager } from './DashboardCommsManager';
 import { DashboardEquipmentSummary } from './DashboardEquipmentSummary';
+import { DashboardAddGroupButton, DashboardGroupManager } from './DashboardGroupManager';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardPanel } from './DashboardPanel';
 import { DashboardAddPlaceButton, DashboardPlaceManager } from './DashboardPlaceManager';
 import { DashboardReadOnlyTeams } from './DashboardReadOnlyTeams';
 import { DashboardResourcesPanel } from './DashboardResourcesPanel';
 import { DashboardResponderSummary } from './DashboardResponderSummary';
-import { DashboardRoleTile } from './DashboardRoleTile';
 import { DashboardTeamManager } from './DashboardTeamManager';
 import { DashboardWeatherTile } from './DashboardWeather';
 
@@ -46,6 +46,7 @@ function CombinedTeamCommsPanel() {
 function DashboardContent() {
   const activity = useActivityContext();
   const hasLocation = activity.location?.lat && activity.location?.lon;
+  const hasGroups = activity.groups && activity.groups.length > 0;
 
   useEffect(() => {
     document.title = `${activity.idNumber} ${activity.title} - Dashboard`;
@@ -123,13 +124,19 @@ function DashboardContent() {
           {/* RIGHT COLUMN: Operations & Communications */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0 }}>
             {/* Operations Staffing */}
-            <DashboardPanel title="Operations" actions={<DashboardAddPlaceButton />}>
+            <DashboardPanel
+              title="Operations"
+              actions={
+                <>
+                  <DashboardAddGroupButton />
+                  <DashboardAddPlaceButton />
+                </>
+              }
+            >
               <Stack direction="column" spacing={1} sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
                 {hasLocation && <DashboardWeatherTile lat={activity.location.lat} lon={activity.location.lon} />}
                 <DashboardActivityDescription activity={activity} />
-                <DashboardRoleTile title="Rescue Group" id={activity.staff?.['Rescue Group']} />
-                <DashboardRoleTile title="Medical Group" id={activity.staff?.['Medical Group']} />
-                <DashboardRoleTile title="Rigging Group" id={activity.staff?.['Rigging Group']} />
+                {hasGroups && <DashboardGroupManager />}
                 <DashboardPlaceManager />
                 <DashboardEquipmentSummary />
               </Stack>
