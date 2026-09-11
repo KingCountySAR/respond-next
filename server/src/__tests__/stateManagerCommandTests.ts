@@ -25,6 +25,10 @@ function c(command: Command): StampedCommand {
   return { ...command, id: uuid() };
 }
 
+async function createActivity(sm: InstanceType<StateManagerCtor>, id: string): Promise<void> {
+  await sm.handleCommand(c(ActivityCommands.UpdateActivity({ id, title: 'Test Activity' })), userAuthor('u1'));
+}
+
 function collect(sm: InstanceType<StateManagerCtor>): StampedEvent[] {
   const captured: StampedEvent[] = [];
   sm.addClient({
@@ -61,6 +65,7 @@ afterAll(async () => {
 describe('StateManager.handleCommand', () => {
   it('reduces a place, runs the comms reactor, and writes the audit log', async () => {
     const sm = new StateManager();
+    await createActivity(sm, 'act-1');
     const captured = collect(sm);
 
     const place = createNewPlace('Staging');
@@ -98,6 +103,7 @@ describe('StateManager.handleCommand', () => {
 
   it('collapses a command and its sync reactor into a single broadcast', async () => {
     const sm = new StateManager();
+    await createActivity(sm, 'act-collapse');
     const batches = collectBatches(sm);
 
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-collapse', createNewPlace('Staging'))), userAuthor('u1'));
@@ -114,6 +120,7 @@ describe('StateManager.handleCommand', () => {
 
   it('deletes a place and logs a terminated comm', async () => {
     const sm = new StateManager();
+    await createActivity(sm, 'act-2');
     collect(sm);
 
     const place = createNewPlace('OP-2');
@@ -131,9 +138,10 @@ describe('StateManager.handleCommand', () => {
   it('tags a newly signed-in participant via the tagging reactor', async () => {
     // Stub the tag resolver so the reactor does not hit the live member provider.
     const sm = new StateManager([createParticipantTagReactor(async () => ['Snow', 'OL'])]);
+    await createActivity(sm, 'act-3');
     const captured = collect(sm);
 
-    // participantUpdate needs the activity to exist; create it via a place command first.
+    // participantUpdate needs the activity to exist; a place command initializes operations.
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-3', createNewPlace('CP'))), userAuthor('u1'));
     await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-3', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn)), userAuthor('u1'));
 
@@ -160,6 +168,7 @@ describe('StateManager.handleCommand', () => {
 
   it('assigns a member to a team and flips them to Assigned in one broadcast', async () => {
     const sm = new StateManager([participantAssignmentReactor]);
+    await createActivity(sm, 'act-assign');
     const batches = collectBatches(sm);
 
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-assign', createNewPlace('CP'))), userAuthor('u1'));
@@ -182,6 +191,7 @@ describe('StateManager.handleCommand', () => {
 
   it('disbands a team, cascading member/equipment reassignment and the Available status flip', async () => {
     const sm = new StateManager([teamDisbandReactor, participantAssignmentReactor]);
+    await createActivity(sm, 'act-disband');
     const batches = collectBatches(sm);
 
     const cp = createNewPlace('CP');
@@ -207,6 +217,7 @@ describe('StateManager.handleCommand', () => {
 
   it('deletes a team, cascading member/equipment reassignment and the Available status flip', async () => {
     const sm = new StateManager([teamDisbandReactor, participantAssignmentReactor]);
+    await createActivity(sm, 'act-delete');
     const batches = collectBatches(sm);
 
     const cp = createNewPlace('CP');
@@ -230,9 +241,10 @@ describe('StateManager.handleCommand', () => {
 
   it('logs a team status-change comm via the team-comms reactor', async () => {
     const sm = new StateManager([teamCommsReactor]);
+    await createActivity(sm, 'act-4');
     collect(sm);
 
-    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-4', createNewPlace('CP'))), userAuthor('u1')); // create the activity
+    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-4', createNewPlace('CP'))), userAuthor('u1'));
     const team = createNewTeam('Alpha');
     await sm.handleCommand(c(TeamCommands.CreateTeam('act-4', team)), userAuthor('u1'));
     // The UI always sends the full team object (pickTeamProperties copies all listed
