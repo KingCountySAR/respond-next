@@ -1,7 +1,6 @@
 import type { Draft } from '@reduxjs/toolkit';
 
 import type { ActivityState } from '..';
-import { createNewActivity } from '../types/activity';
 import { AssignmentTarget, Group } from '../types/operations';
 
 import { defineEvent } from './defineEvent';
@@ -16,15 +15,8 @@ export const GroupEvents = {
     'evt/group/created',
     (state: Draft<ActivityState>, { activityId, group }: GroupPayload) => {
       const activity = state.list.find((a) => a.id === activityId);
-      if (activity) {
-        activity.groups = [...(activity.groups ?? []), group];
-        return;
-      }
-
-      const newActivity = createNewActivity();
-      newActivity.id = activityId;
-      newActivity.groups = [group];
-      state.list.push(newActivity);
+      if (!activity) return;
+      activity.groups = [...(activity.groups ?? []), group];
     },
   ),
 
