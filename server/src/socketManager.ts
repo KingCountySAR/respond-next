@@ -1,6 +1,8 @@
 import { Server as IOServer, Socket } from 'socket.io';
+import { v4 as uuid } from 'uuid';
 
-import { userAuthor } from '@shared/events';
+import { CommandError } from '@shared/commands';
+import { StampedEvent, SystemEvents, toCommandFailedPayload, userAuthor } from '@shared/events';
 import type { ClientToServerEvents, InterServerEvents, PresenceUpdate, ServerToClientEvents, SocketData } from '@shared/types/syncSocket';
 
 import { getAuthFromCookieHeader } from './auth';
@@ -80,7 +82,22 @@ export default class SocketManager {
     });
 
     socket.on('command', async (command) => {
-      await (await getServices()).stateManager.handleCommand(command, userAuthor(auth.userId, auth.name ?? auth.email));
+      const author = userAuthor(auth.userId, auth.name ?? auth.email);
+      try {
+        await (await getServices()).stateManager.handleCommand(command, author);
+      } catch (err) {
+        // StateManager has no notion of sockets — it just rejects. This is the
+        // one place that knows which connection issued the command, so it's
+        // the one that turns the rejection into a reply: a transient
+        // CommandFailed event sent only to this socket, never persisted.
+        if (!(err instanceof CommandError)) console.error(`command ${command.type} failed`, err);
+        const event: StampedEvent = {
+          ...SystemEvents.CommandFailed(toCommandFailedPayload(err, command.id)),
+          id: uuid(),
+          meta: { author, timestamp: Date.now(), commandId: command.id },
+        };
+        socket.emit('events', [event]);
+      }
     });
 
     // Relayed directly to the org room, bypassing StateManager: this is a

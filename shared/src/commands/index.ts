@@ -13,6 +13,7 @@ export { TeamCommands } from './teamCommands';
 export { GroupCommands } from './groupCommands';
 export { ActivityCommands } from './activityCommands';
 export { ResourceCommands } from './resourceCommands';
+export { CommandError } from './commandError';
 
 /** All command creators, keyed by name. */
 export const Commands = {

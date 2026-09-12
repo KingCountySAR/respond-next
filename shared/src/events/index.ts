@@ -5,6 +5,7 @@ import { GroupEvents } from './groupEvents';
 import { ParticipantEvents } from './participantEvents';
 import { PlaceEvents } from './placeEvents';
 import { ResourceEvents } from './resourceEvents';
+import { SystemEvents } from './systemEvents';
 import { TeamEvents } from './teamEvents';
 
 export * from './author';
@@ -15,6 +16,7 @@ export { TeamEvents } from './teamEvents';
 export { ActivityEvents } from './activityEvents';
 export { GroupEvents } from './groupEvents';
 export { ResourceEvents } from './resourceEvents';
+export { SystemEvents, toCommandFailedPayload, type CommandFailedPayload } from './systemEvents';
 
 /** Event creators reduced into ActivityState. */
 export const ActivityDomainEvents = {
@@ -29,9 +31,12 @@ export const ActivityDomainEvents = {
 
 export type ActivityDomainEventsType = typeof ActivityDomainEvents;
 
-/** All domain event creators, keyed by name. */
+/** All domain event creators, keyed by name. Includes SystemEvents (never
+ * reduced into ActivityState, never persisted) alongside the activity-domain
+ * set, so StampedEvent/broadcastEvent stay well-typed for both. */
 export const DomainEvents = {
   ...ActivityDomainEvents,
+  ...SystemEvents,
 };
 
 export type DomainEventsType = typeof DomainEvents;

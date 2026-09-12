@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { v4 as uuid } from 'uuid';
 
-import { ActivityCommands, Command, ParticipantCommands, PlaceCommands, ResourceCommands, StampedCommand, TeamCommands } from '@shared/commands';
+import { ActivityCommands, Command, CommandError, ParticipantCommands, PlaceCommands, ResourceCommands, StampedCommand, TeamCommands } from '@shared/commands';
 import { CommsEvents, ParticipantEvents, PlaceEvents, ResourceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
 import { OrganizationStatus, ParticipantStatus } from '@shared/types/activity';
 import { createNewPlace, createNewTeam } from '@shared/types/operations';
@@ -10,6 +10,7 @@ import { EventDoc } from '@server/data/eventDoc';
 
 import { participantAssignmentReactor } from '../reactors/participantAssignmentReactor';
 import { createParticipantTagReactor } from '../reactors/participantTagReactor';
+import { Reactor } from '../reactors/reactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';
 import { teamDisbandReactor } from '../reactors/teamDisbandedReactor';
 
@@ -45,6 +46,17 @@ function collectBatches(sm: InstanceType<StateManagerCtor>): StampedEvent[][] {
   sm.addClient({
     broadcastEvent(events) {
       batches.push(events);
+    },
+  });
+  return batches;
+}
+
+/** Capture each broadcast along with the rooms it was addressed to. */
+function collectWithRooms(sm: InstanceType<StateManagerCtor>): { events: StampedEvent[]; toRooms: string[] | undefined }[] {
+  const batches: { events: StampedEvent[]; toRooms: string[] | undefined }[] = [];
+  sm.addClient({
+    broadcastEvent(events, toRooms) {
+      batches.push({ events, toRooms });
     },
   });
   return batches;
@@ -274,5 +286,53 @@ describe('StateManager.handleCommand', () => {
     expect(activity).toBeTruthy();
     expect(activity?.title).toBe('New Mission');
     expect(activity?.organizations['org-1']).toBeTruthy();
+  });
+});
+
+describe('StateManager error handling', () => {
+  // StateManager has no notion of sockets/clients — a thrown CommandError (or
+  // any other error) from a handler or sync reactor just rejects
+  // handleCommand's promise, with nothing from the batch committed. Turning
+  // that rejection into a reply for the right client is socketManager.ts's
+  // job (see its 'command' handler), not tested here.
+
+  it('rejects with the thrown CommandError and commits nothing', async () => {
+    const throwingOnPlaceCreated: Reactor = {
+      name: 'throwing-reactor',
+      react(event) {
+        if (!PlaceEvents.PlaceCreated.match(event)) return [];
+        throw new CommandError('No room at the inn', 'NO_ROOM');
+      },
+    };
+    const sm = new StateManager([throwingOnPlaceCreated]);
+    await createActivity(sm, 'act-err');
+    const batches = collectWithRooms(sm);
+
+    await expect(sm.handleCommand(c(PlaceCommands.CreatePlace('act-err', createNewPlace('CP'))), userAuthor('u1'))).rejects.toThrow('No room at the inn');
+
+    expect(batches).toHaveLength(0);
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-err');
+    expect(activity?.places?.some((p) => p.name === 'CP')).toBe(false);
+    const evDocs = await (await mongoPromise).db().collection<EventDoc>('events').find({ activityId: 'act-err', type: PlaceEvents.PlaceCreated.type }).toArray();
+    expect(evDocs).toHaveLength(0);
+  });
+
+  it('rejects with a plain Error from a reactor just as readily, still committing nothing', async () => {
+    const boomReactor: Reactor = {
+      name: 'boom-reactor',
+      react(event) {
+        if (!PlaceEvents.PlaceCreated.match(event)) return [];
+        throw new Error('something internal broke');
+      },
+    };
+    const sm = new StateManager([boomReactor]);
+    await createActivity(sm, 'act-err2');
+    const batches = collectWithRooms(sm);
+
+    await expect(sm.handleCommand(c(PlaceCommands.CreatePlace('act-err2', createNewPlace('CP'))), userAuthor('u1'))).rejects.toThrow('something internal broke');
+
+    expect(batches).toHaveLength(0);
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-err2');
+    expect(activity?.places?.some((p) => p.name === 'CP')).toBe(false);
   });
 });
