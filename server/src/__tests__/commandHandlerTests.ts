@@ -215,15 +215,15 @@ describe('AddParticipantTimeline signout rules (priorActivities-driven)', () => 
     expect(events[1].payload.update).toMatchObject({ status: ParticipantStatus.SignedOut, organizationId: '1' });
   });
 
-  it('does not sign out of an activity where the participant was not signed in', async () => {
-    // PREPARE: the participant is Available on both this activity and a2 (not SignedIn anywhere else).
+  it('does not sign out of an activity where the participant is allowed to be active elsewhere', async () => {
+    // PREPARE: the participant is Available here, but only Standby on a2 (allowed to stay active there).
     const prior = {
       [activityId]: activityWith(activityId, [{ id: 'u1', time: 50, organizationId: '1', status: ParticipantStatus.Available }]),
-      a2: activityWith('a2', [{ id: 'u2', time: 10, organizationId: '1', status: ParticipantStatus.Available }]),
+      a2: activityWith('a2', [{ id: 'u2', time: 10, organizationId: '1', status: ParticipantStatus.Standby }]),
     };
     // TEST: AddParticipantTimeline signing them in here.
     const events = await produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', { time: 200, status: ParticipantStatus.SignedIn, organizationId: '1' }), prior);
-    // VERIFY: only this activity's timeline entry — no cross-activity signout, since they weren't SignedIn on a2.
+    // VERIFY: only this activity's timeline entry — no cross-activity signout, since Standby is allowed elsewhere.
     expect(events).toHaveLength(1);
   });
 });

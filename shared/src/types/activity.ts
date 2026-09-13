@@ -34,6 +34,14 @@ export enum ParticipantStatus {
   Demobilized = 7,
 }
 
+export const PARTICIPANT_STATUS_ALLOWED_WHILE_ACTIVE_ELSEWHERE = [
+  //
+  ParticipantStatus.NotResponding,
+  ParticipantStatus.Remote,
+  ParticipantStatus.Standby,
+  ParticipantStatus.SignedOut,
+];
+
 const STATUS_MUI_COLORS: Record<ParticipantStatus, 'success' | 'error' | 'warning' | 'disabled'> = {
   [ParticipantStatus.NotResponding]: 'disabled',
   [ParticipantStatus.Standby]: 'warning',

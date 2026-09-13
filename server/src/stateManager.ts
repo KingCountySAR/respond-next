@@ -10,7 +10,7 @@ import { ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
 import { Organization } from '@shared/types/organization';
 import type UserAuth from '@shared/types/userAuth';
 
-import { CommandHandler, CommandServices, defaultServices, explicitCommandHandlers, productionCommandServices } from './commands';
+import { causeRefOf, CommandHandler, CommandServices, defaultServices, explicitCommandHandlers, productionCommandServices } from './commands';
 import { EventDoc } from './data/eventDoc';
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import { defaultReactors, Reactor } from './reactors';
@@ -144,7 +144,7 @@ export class StateManager {
     // FIFO work-list, seeded with the command's already-produced events. Sync
     // reactors append their follow-up events here; the loop drains it so a sync
     // reactor's event can itself trigger further sync reactors.
-    const pending: StampedEvent[] = events.map((event) => this.stamp(event, author, command.id, cause));
+    const pending: StampedEvent[] = this.stampBatch(events, author, command.id, cause);
     // Async reactors: captured here (name + in-flight promise + the event that
     // triggered them) and drained after the commit so their slow work never
     // blocks the batch.
@@ -214,6 +214,24 @@ export class StateManager {
 
   private stamp(event: DomainEvent, author: EventAuthor, commandId: string, cause?: string): StampedEvent {
     return { ...event, id: uuid(), meta: { author, timestamp: Date.now(), commandId, ...(cause ? { cause } : {}) } };
+  }
+
+  /**
+   * Stamp a command handler's whole returned batch at once (rather than one
+   * event at a time via `stamp`), so that an event tagged with `causedBy` (see
+   * commands.ts) — e.g. an auto-signout side effect of a status change — can
+   * have its `meta.cause` resolved to the *real, freshly-minted* id of another
+   * event in that same batch, even when that other event is emitted later in
+   * the array. Events without such a tag fall back to the outer `cause` (e.g.
+   * when this whole command is itself a reactor follow-up).
+   */
+  private stampBatch(events: DomainEvent[], author: EventAuthor, commandId: string, cause?: string): StampedEvent[] {
+    const idByEvent = new Map<DomainEvent, string>(events.map((event) => [event, uuid()]));
+    return events.map((event) => {
+      const causeEvent = causeRefOf(event);
+      const eventCause = causeEvent ? idByEvent.get(causeEvent) : cause;
+      return { ...event, id: idByEvent.get(event)!, meta: { author, timestamp: Date.now(), commandId, ...(eventCause ? { cause: eventCause } : {}) } };
+    });
   }
 
   /**

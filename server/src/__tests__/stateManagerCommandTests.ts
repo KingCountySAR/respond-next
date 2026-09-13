@@ -2,7 +2,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { v4 as uuid } from 'uuid';
 
 import { ActivityCommands, Command, CommandError, ParticipantCommands, PlaceCommands, ResourceCommands, StampedCommand, TeamCommands } from '@shared/commands';
-import { CommsEvents, ParticipantEvents, PlaceEvents, ResourceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
+import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, ResourceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
 import { OrganizationStatus, ParticipantStatus } from '@shared/types/activity';
 import { createNewPlace, createNewTeam } from '@shared/types/operations';
 
@@ -296,6 +296,62 @@ describe('StateManager.handleCommand', () => {
     expect(activity).toBeTruthy();
     expect(activity?.title).toBe('New Mission');
     expect(activity?.organizations['org-1']).toBeTruthy();
+  });
+});
+
+describe('auto-signout meta.cause', () => {
+  it('marks a CompleteActivity signout as caused by the completion event', async () => {
+    // PREPARE: a participant still SignedIn when the activity completes.
+    const sm = new StateManager([], testServices());
+    await createActivity(sm, 'act-cause-1');
+    const captured = collect(sm);
+
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-cause-1', 'p1', { organizationId: '1', status: ParticipantStatus.SignedIn, time: 100 })), userAuthor('u1'));
+    captured.length = 0; // ignore setup; focus on completion
+
+    // TEST: complete the activity.
+    await sm.handleCommand(c(ActivityCommands.CompleteActivity('act-cause-1', 200)), userAuthor('u1'));
+
+    // VERIFY: the signout's cause points at the completion event's id, even though
+    // the signout was broadcast first (a forward reference stampBatch resolves).
+    const completed = captured.find((e) => ActivityEvents.ActivityCompleted.match(e));
+    const signout = captured.find((e) => ParticipantEvents.ParticipantTimelineAdded.match(e));
+    expect(completed).toBeTruthy();
+    expect(signout?.meta.cause).toEqual(completed?.id);
+  });
+
+  it('marks an org-switch signout as caused by the new-status event', async () => {
+    // PREPARE: a participant signed in under org '1'.
+    const sm = new StateManager([], testServices());
+    await createActivity(sm, 'act-cause-2');
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-cause-2', 'p1', { organizationId: '1', status: ParticipantStatus.SignedIn, time: 100 })), userAuthor('u1'));
+    const captured = collect(sm);
+
+    // TEST: switch them to org '2' with a new status.
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-cause-2', 'p1', { organizationId: '2', status: ParticipantStatus.Available, time: 200 })), userAuthor('u1'));
+
+    // VERIFY: the old-org signout's cause points at the new-status event's id.
+    const orgAppended = captured.find((e) => ActivityEvents.OrganizationTimelineAppended.match(e));
+    const [oldOrgSignout, newStatus] = captured.filter((e) => ParticipantEvents.ParticipantTimelineAdded.match(e));
+    expect(orgAppended?.meta.cause).toBeUndefined();
+    expect(oldOrgSignout.meta.cause).toEqual(newStatus.id);
+  });
+
+  it('marks a cross-activity signout as caused by the sign-in event', async () => {
+    // PREPARE: a participant SignedIn on another activity (act-cause-3b).
+    const sm = new StateManager([], testServices());
+    await createActivity(sm, 'act-cause-3a');
+    await createActivity(sm, 'act-cause-3b');
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-cause-3b', 'p1', { organizationId: '1', status: ParticipantStatus.SignedIn, time: 50 })), userAuthor('u1'));
+    const captured = collect(sm);
+
+    // TEST: sign them in on act-cause-3a too.
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-cause-3a', 'p1', { organizationId: '1', status: ParticipantStatus.SignedIn, time: 200 })), userAuthor('u1'));
+
+    // VERIFY: the cross-activity signout's cause points at the sign-in event's id.
+    const [signIn, crossSignout] = captured.filter((e) => ParticipantEvents.ParticipantTimelineAdded.match(e));
+    expect(crossSignout.payload).toMatchObject({ activityId: 'act-cause-3b' });
+    expect(crossSignout.meta.cause).toEqual(signIn.id);
   });
 });
 

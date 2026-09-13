@@ -2,12 +2,28 @@ import { v4 as uuid } from 'uuid';
 
 import { ActivityCommands, CommandError, CommsCommands, ParticipantCommands } from '@shared/commands';
 import { ActivityEvents, CommsEvents, DomainEvent, ParticipantEvents } from '@shared/events';
-import { Activity, OrganizationStatus, ParticipantStatus, ParticipantUpdate } from '@shared/types/activity';
+import { Activity, OrganizationStatus, PARTICIPANT_STATUS_ALLOWED_WHILE_ACTIVE_ELSEWHERE, ParticipantStatus, ParticipantUpdate } from '@shared/types/activity';
 import { OrganizationDoc, ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
 import { createDefaultOperations, createNewCommsEntry } from '@shared/types/operations';
 
 import mongoPromise from './mongodb';
 import { getServices } from './services';
+
+// A command handler can return several events in one go (e.g. a status change
+// plus the auto-signouts it triggers). `causedBy` tags one with a reference to
+// another *in that same returned array* so StateManager can stamp `meta.cause`
+// with the right id once both are minted — see stamp()/stampBatch() in
+// stateManager.ts. The tag is attached to the event object itself (a hidden,
+// non-enumerable symbol) so the return type stays plain `DomainEvent[]`.
+const CAUSE = Symbol('cause');
+
+export function causedBy<E extends DomainEvent>(event: E, cause: DomainEvent): E {
+  return Object.defineProperty(event, CAUSE, { value: cause, configurable: true });
+}
+
+export function causeRefOf(event: DomainEvent): DomainEvent | undefined {
+  return (event as Partial<Record<typeof CAUSE, DomainEvent>>)[CAUSE];
+}
 
 /** A participating org's durable identity fields, as stored on the activity. */
 export type OrganizationInfo = { id: string; title: string; rosterName?: string };
@@ -62,23 +78,6 @@ function lastUpdateOf(priorActivities: Record<string, Activity>, activityId: str
   return priorActivities[activityId]?.participants[participantId]?.timeline[0];
 }
 
-/**
- * Signing in to one activity signs a participant out of every other activity
- * where they were still signed in. Emitted as trailing ParticipantTimelineAdded
- * events (after the primary event) targeting each such activity.
- */
-function crossActivitySignouts(priorActivities: Record<string, Activity>, activityId: string, participantId: string, time: number): DomainEvent[] {
-  return Object.values(priorActivities)
-    .filter((activity) => activity.id !== activityId && activity.participants[participantId]?.timeline[0]?.status === ParticipantStatus.SignedIn)
-    .map((activity) =>
-      ParticipantEvents.ParticipantTimelineAdded({
-        activityId: activity.id,
-        participantId,
-        update: { id: uuid(), time, status: ParticipantStatus.SignedOut, organizationId: activity.participants[participantId].timeline[0].organizationId },
-      }),
-    );
-}
-
 const participantCommandHandlers = [
   defineCommandHandler(ParticipantCommands.AddParticipantTimeline, async (payload, { priorActivities }, services) => {
     const { activityId, participantId, update } = payload;
@@ -107,23 +106,26 @@ const participantCommandHandlers = [
     const isNewParticipant = !activity.participants[participantId];
     const isOrgSwitch = lastUpdate !== undefined && lastUpdate?.organizationId !== update.organizationId;
 
+    // Only set once the main event below actually gets emitted — the early
+    // return just beneath (signing out while switching orgs) means it never
+    // will, so in that case this signout is uncaused, not caused by something
+    // that was never emitted.
+    let oldOrgSignout: DomainEvent | undefined;
     if (lastUpdate && isOrgSwitch) {
       const alreadyOut = lastUpdate.status === ParticipantStatus.SignedOut || lastUpdate.status === ParticipantStatus.NotResponding;
       if (update.status === ParticipantStatus.SignedOut || !alreadyOut) {
         // Switching orgs while still (or newly) active: close out the old org's timeline
         // first — it precedes the new status chronologically. Skipped if they were already
         // signed out/not-responding at the old org and aren't explicitly signing out now.
-        events.push(
-          ParticipantEvents.ParticipantTimelineAdded({
-            activityId,
-            participantId,
-            update: { id: uuid(), time: update.time, status: ParticipantStatus.SignedOut, organizationId: lastUpdate.organizationId },
-          }),
-        );
+        oldOrgSignout = ParticipantEvents.ParticipantTimelineAdded({
+          activityId,
+          participantId,
+          update: { id: uuid(), time: update.time, status: ParticipantStatus.SignedOut, organizationId: lastUpdate.organizationId },
+        });
       }
       if (update.status === ParticipantStatus.SignedOut) {
         // Signing out while switching orgs: only the old-org signout happened; nothing else to record.
-        return events;
+        return oldOrgSignout ? [...events, oldOrgSignout] : events;
       }
     } else if (lastUpdate && lastUpdate.status === update.status) {
       // No change in status — nothing to record.
@@ -141,16 +143,34 @@ const participantCommandHandlers = [
       if (!participant) throw new CommandError('Unknown participant', 'NO_PARTICIPANT');
     }
 
-    events.push(
-      ParticipantEvents.ParticipantTimelineAdded({
-        activityId,
-        participantId,
-        update: { ...update, id: uuid() },
-        participant,
-      }),
-    );
+    const mainEvent = ParticipantEvents.ParticipantTimelineAdded({
+      activityId,
+      participantId,
+      update: { ...update, id: uuid() },
+      participant,
+    });
+    if (oldOrgSignout) events.push(causedBy(oldOrgSignout, mainEvent));
+    events.push(mainEvent);
+
+    // Signing in here signs the participant out of every other activity where
+    // they were still active and not allowed to be (e.g. still SignedIn there).
     if (update.status === ParticipantStatus.SignedIn) {
-      events.push(...crossActivitySignouts(priorActivities, activityId, participantId, update.time));
+      for (const otherActivity of Object.values(priorActivities)) {
+        if (otherActivity.id === activityId) continue;
+        const otherUpdate = otherActivity.participants[participantId]?.timeline[0];
+        if (!otherUpdate || PARTICIPANT_STATUS_ALLOWED_WHILE_ACTIVE_ELSEWHERE.includes(otherUpdate.status)) continue;
+
+        events.push(
+          causedBy(
+            ParticipantEvents.ParticipantTimelineAdded({
+              activityId: otherActivity.id,
+              participantId,
+              update: { id: uuid(), time: update.time, status: ParticipantStatus.SignedOut, organizationId: otherUpdate.organizationId },
+            }),
+            mainEvent,
+          ),
+        );
+      }
     }
     return events;
   }),
@@ -160,20 +180,26 @@ const activityCommandHandlers = [
   defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })]),
 
   // Sign every still-signed-in participant out before recording completion, so
-  // the completed activity's timeline reflects everyone having left.
+  // the completed activity's timeline reflects everyone having left. Each
+  // signout is caused by the completion, even though it's emitted first —
+  // stampBatch (stateManager.ts) resolves the forward reference.
   defineCommandHandler(ActivityCommands.CompleteActivity, (payload, { priorActivities }) => {
     const { activityId, endTime } = payload;
     const activity = priorActivities[activityId];
+    const completed = ActivityEvents.ActivityCompleted({ activityId, endTime });
     const signouts = Object.values(activity?.participants ?? {})
       .filter((participant) => participant.timeline[0]?.status !== ParticipantStatus.SignedOut)
       .map((participant) =>
-        ParticipantEvents.ParticipantTimelineAdded({
-          activityId,
-          participantId: participant.id,
-          update: { id: uuid(), time: endTime, status: ParticipantStatus.SignedOut, organizationId: participant.timeline[0].organizationId },
-        }),
+        causedBy(
+          ParticipantEvents.ParticipantTimelineAdded({
+            activityId,
+            participantId: participant.id,
+            update: { id: uuid(), time: endTime, status: ParticipantStatus.SignedOut, organizationId: participant.timeline[0].organizationId },
+          }),
+          completed,
+        ),
       );
-    return [...signouts, ActivityEvents.ActivityCompleted({ activityId, endTime })];
+    return [...signouts, completed];
   }),
 ];
 
