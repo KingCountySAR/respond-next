@@ -1,13 +1,53 @@
 import { v4 as uuid } from 'uuid';
 
-import { ActivityCommands, CommsCommands, ParticipantCommands } from '@shared/commands';
+import { ActivityCommands, CommandError, CommsCommands, ParticipantCommands } from '@shared/commands';
 import { ActivityEvents, CommsEvents, DomainEvent, ParticipantEvents } from '@shared/events';
+import { Activity, OrganizationStatus, ParticipantStatus, ParticipantUpdate } from '@shared/types/activity';
+import { OrganizationDoc, ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
 import { createDefaultOperations, createNewCommsEntry } from '@shared/types/operations';
 
-/** Placeholder for future server-only dependencies (DB, external services) a handler may need. Empty today. */
-export type CommandServices = Record<string, never>;
+import mongoPromise from './mongodb';
+import { getServices } from './services';
 
-export type CommandHandler<P> = (payload: P, services: CommandServices) => DomainEvent[];
+/** A participating org's durable identity fields, as stored on the activity. */
+export type OrganizationInfo = { id: string; title: string; rosterName?: string };
+/** A participant's identity + org-specific tags, resolved from the member provider. */
+export type ParticipantInfo = { firstname: string; lastname: string; tags: string[] };
+
+export type OrganizationLookup = (organizationId: string) => Promise<OrganizationInfo | undefined>;
+export type ParticipantInfoLookup = (organizationId: string, participantId: string) => Promise<ParticipantInfo | undefined>;
+
+/**
+ * Server-only dependencies a handler may need. Injected (rather than imported
+ * directly) so handlers stay pure/testable — production wiring is at the
+ * bottom of this file, mirroring reactors/index.ts's `resolveOrgTags`.
+ */
+export type CommandServices = {
+  getOrganization: OrganizationLookup;
+  getParticipantInfo: ParticipantInfoLookup;
+};
+
+function unconfigured(name: string) {
+  return () => {
+    throw new Error(`CommandServices.${name} was not provided`);
+  };
+}
+
+/** Defaults for callers (mostly tests) that never exercise a lookup — throws loudly if one is. */
+const defaultServices: CommandServices = {
+  getOrganization: unconfigured('getOrganization') as OrganizationLookup,
+  getParticipantInfo: unconfigured('getParticipantInfo') as ParticipantInfoLookup,
+};
+
+/**
+ * State as of just before this command's events are applied. Lets a handler
+ * decide *whether* (and in what order) to emit follow-up events — e.g. an
+ * org-switch or cross-activity signout — that a pure reducer couldn't decide
+ * for itself without denormalizing that logic into every consumer of the event.
+ */
+export type CommandContext = { priorActivities: Record<string, Activity> };
+
+export type CommandHandler<P> = (payload: P, ctx: CommandContext, services: CommandServices) => DomainEvent[] | Promise<DomainEvent[]>;
 
 type AnyCommandCreator<T extends string, P> = ((...args: never[]) => { type: T; payload: P }) & { type: T };
 
@@ -17,14 +57,153 @@ function defineCommandHandler<T extends string, P>(command: AnyCommandCreator<T,
 
 const commsCommandHandlers = [defineCommandHandler(CommsCommands.LogComm, (payload) => [CommsEvents.CommLogged({ activityId: payload.activityId, comm: createNewCommsEntry(payload.entry) })])];
 
+/** The participant's most recent timeline entry, if they're currently known in this activity. */
+function lastUpdateOf(priorActivities: Record<string, Activity>, activityId: string, participantId: string): ParticipantUpdate | undefined {
+  return priorActivities[activityId]?.participants[participantId]?.timeline[0];
+}
+
+/**
+ * Signing in to one activity signs a participant out of every other activity
+ * where they were still signed in. Emitted as trailing ParticipantTimelineAdded
+ * events (after the primary event) targeting each such activity.
+ */
+function crossActivitySignouts(priorActivities: Record<string, Activity>, activityId: string, participantId: string, time: number): DomainEvent[] {
+  return Object.values(priorActivities)
+    .filter((activity) => activity.id !== activityId && activity.participants[participantId]?.timeline[0]?.status === ParticipantStatus.SignedIn)
+    .map((activity) =>
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId: activity.id,
+        participantId,
+        update: { id: uuid(), time, status: ParticipantStatus.SignedOut, organizationId: activity.participants[participantId].timeline[0].organizationId },
+      }),
+    );
+}
+
 const participantCommandHandlers = [
-  defineCommandHandler(ParticipantCommands.UpdateParticipant, (payload) => [ParticipantEvents.ParticipantUpdated({ ...payload, update: { ...payload.update, id: uuid() } })]),
-  defineCommandHandler(ParticipantCommands.AddParticipantTimeline, (payload) => [ParticipantEvents.ParticipantTimelineAdded({ ...payload, update: { ...payload.update, id: uuid() } })]),
+  defineCommandHandler(ParticipantCommands.AddParticipantTimeline, async (payload, { priorActivities }, services) => {
+    const { activityId, participantId, update } = payload;
+    const activity = priorActivities[activityId];
+    if (!activity) throw new CommandError('Activity does not exist or is not active', 'NO_ACTIVITY');
+
+    const events: DomainEvent[] = [];
+
+    // New to this org on this activity: bring the org onto the activity first,
+    // populated from its own record (never trusting whatever the client sent),
+    // so the participant event below lands on an org that already exists.
+    if (!activity.organizations[update.organizationId]) {
+      const org = await services.getOrganization(update.organizationId);
+      if (!org) throw new CommandError('Unknown organization', 'NO_ORGANIZATION');
+      events.push(
+        ActivityEvents.OrganizationTimelineAppended({
+          activityId,
+          orgId: org.id,
+          org,
+          status: { time: update.time, status: update.status === ParticipantStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding },
+        }),
+      );
+    }
+
+    const lastUpdate = lastUpdateOf(priorActivities, activityId, participantId);
+    const isNewParticipant = !activity.participants[participantId];
+    const isOrgSwitch = lastUpdate !== undefined && lastUpdate?.organizationId !== update.organizationId;
+
+    if (lastUpdate && isOrgSwitch) {
+      const alreadyOut = lastUpdate.status === ParticipantStatus.SignedOut || lastUpdate.status === ParticipantStatus.NotResponding;
+      if (update.status === ParticipantStatus.SignedOut || !alreadyOut) {
+        // Switching orgs while still (or newly) active: close out the old org's timeline
+        // first — it precedes the new status chronologically. Skipped if they were already
+        // signed out/not-responding at the old org and aren't explicitly signing out now.
+        events.push(
+          ParticipantEvents.ParticipantTimelineAdded({
+            activityId,
+            participantId,
+            update: { id: uuid(), time: update.time, status: ParticipantStatus.SignedOut, organizationId: lastUpdate.organizationId },
+          }),
+        );
+      }
+      if (update.status === ParticipantStatus.SignedOut) {
+        // Signing out while switching orgs: only the old-org signout happened; nothing else to record.
+        return events;
+      }
+    } else if (lastUpdate && lastUpdate.status === update.status) {
+      // No change in status — nothing to record.
+      return [];
+    }
+
+    // Resolve identity + org-specific tags from the member provider for a
+    // brand-new participant, or re-resolve them on an org switch (tags are
+    // org-specific, so the old org's tags don't carry over — refetching the
+    // name too is harmless). Carried together on the same ParticipantTimelineAdded
+    // event below (no separate ParticipantTagged event).
+    let participant: ParticipantInfo | undefined;
+    if (isNewParticipant || isOrgSwitch) {
+      participant = await services.getParticipantInfo(update.organizationId, participantId);
+      if (!participant) throw new CommandError('Unknown participant', 'NO_PARTICIPANT');
+    }
+
+    events.push(
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId,
+        update: { ...update, id: uuid() },
+        participant,
+      }),
+    );
+    if (update.status === ParticipantStatus.SignedIn) {
+      events.push(...crossActivitySignouts(priorActivities, activityId, participantId, update.time));
+    }
+    return events;
+  }),
 ];
 
-const activityCommandHandlers = [defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })])];
+const activityCommandHandlers = [
+  defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })]),
+
+  // Sign every still-signed-in participant out before recording completion, so
+  // the completed activity's timeline reflects everyone having left.
+  defineCommandHandler(ActivityCommands.CompleteActivity, (payload, { priorActivities }) => {
+    const { activityId, endTime } = payload;
+    const activity = priorActivities[activityId];
+    const signouts = Object.values(activity?.participants ?? {})
+      .filter((participant) => participant.timeline[0]?.status !== ParticipantStatus.SignedOut)
+      .map((participant) =>
+        ParticipantEvents.ParticipantTimelineAdded({
+          activityId,
+          participantId: participant.id,
+          update: { id: uuid(), time: endTime, status: ParticipantStatus.SignedOut, organizationId: participant.timeline[0].organizationId },
+        }),
+      );
+    return [...signouts, ActivityEvents.ActivityCompleted({ activityId, endTime })];
+  }),
+];
 
 // Only domains with at least one non-forwarding command appear here — Place,
 // Team, Group, and Resource all declare their target event directly on the
 // command (see shared/src/commands/*.ts) and need no explicit handler.
 export const explicitCommandHandlers: Record<string, CommandHandler<never>> = Object.fromEntries([...commsCommandHandlers, ...participantCommandHandlers, ...activityCommandHandlers]);
+
+export { defaultServices };
+
+/** Production CommandServices: the real Mongo + member-provider lookups, wired once for StateManager's default constructor arg. */
+export const productionCommandServices: CommandServices = {
+  async getOrganization(organizationId) {
+    const mongo = await mongoPromise;
+    const org = await mongo.db().collection<OrganizationDoc>(ORGS_COLLECTION).findOne({ id: organizationId });
+    return org ? { id: org.id, title: org.title, rosterName: org.rosterName } : undefined;
+  },
+
+  async getParticipantInfo(organizationId, participantId) {
+    const mongo = await mongoPromise;
+    const org = await mongo.db().collection<OrganizationDoc>(ORGS_COLLECTION).findOne({ id: organizationId });
+    if (!org) return undefined;
+
+    const memberProvider = (await getServices()).memberProviders.get(org.memberProvider?.provider);
+    if (!memberProvider) return undefined;
+
+    const entry = await memberProvider.getMemberInfoById(participantId);
+    if (!entry) return undefined;
+
+    const tags = org.tags?.filter((tag) => entry.groups.some((group) => group === tag.groupId)).map((tag) => tag.label) ?? [];
+    return { firstname: entry.given_name, lastname: entry.family_name, tags };
+  },
+};

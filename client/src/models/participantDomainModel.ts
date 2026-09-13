@@ -189,7 +189,7 @@ export class ParticipantDomainModel {
   }
 
   updateTimeline(update: ParticipantUpdate) {
-    this.dispatch(ParticipantCommands.UpdateParticipantTimeline(this.activityId, this.id, update));
+    this.dispatch(ParticipantCommands.CorrectParticipantTimeline(this.activityId, this.id, update));
   }
 
   dispose() {

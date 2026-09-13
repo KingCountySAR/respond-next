@@ -2,11 +2,10 @@ import type { Draft } from '@reduxjs/toolkit';
 import merge from 'lodash.merge';
 
 import type { ActivityState } from '..';
-import { Activity, createNewActivity, OrganizationStatus, ParticipantStatus, pickActivityProperties } from '../types/activity';
+import { Activity, createNewActivity, OrganizationStatus, pickActivityProperties } from '../types/activity';
 import { Operations } from '../types/operations';
 
 import { defineEvent } from './defineEvent';
-import { participantUpdate } from './participantEvents';
 
 // Activity summary + lifecycle facts.
 
@@ -34,6 +33,9 @@ export const ActivityEvents = {
     },
   ),
 
+  // Signing every still-active participant out is decided server-side (reading
+  // prior state) and arrives as separate ParticipantTimelineAdded events ahead of
+  // this one — see CompleteActivity's handler in server/src/commands.ts.
   ActivityCompleted: defineEvent(
     //
     'evt/activity/completed',
@@ -41,24 +43,6 @@ export const ActivityEvents = {
       const activity = state.list.find((f) => f.id === activityId);
       if (!activity) return;
       activity.endTime = endTime;
-      // Sign every participant out at the end time.
-      for (const pId in activity.participants) {
-        const participant = activity.participants[pId];
-        participantUpdate(state, {
-          payload: {
-            activityId: activity.id,
-            participant: {
-              id: participant.id,
-              firstname: participant.firstname,
-              lastname: participant.lastname,
-              organizationId: participant.organizationId,
-              miles: participant.miles,
-              eta: participant.eta,
-            },
-            update: { time: endTime, status: ParticipantStatus.SignedOut },
-          },
-        });
-      }
     },
   ),
 

@@ -1,26 +1,16 @@
 import { ParticipantEvents } from '../events/participantEvents';
-import { ParticipantStatus, ParticipantUpdate } from '../types/activity';
+import { ParticipantUpdate } from '../types/activity';
 
 import { defineCommand } from './defineCommand';
 
 export const ParticipantCommands = {
-  UpdateParticipant: defineCommand(
-    'cmd/participant/update',
-    (activityId: string, participantId: string, firstname: string, lastname: string, organizationId: string, time: number, status: ParticipantStatus, miles?: number, eta?: number) => ({
-      payload: {
-        activityId,
-        participant: { id: participantId, firstname, lastname, organizationId, miles, eta },
-        update: { time, status },
-      },
-    }),
-  ),
+  // `id` is minted server-side (see server commands.ts) — callers describe a new entry, not an existing one.
+  AddParticipantTimeline: defineCommand('cmd/participant/timelineAdd', (activityId: string, participantId: string, update: Omit<ParticipantUpdate, 'id'>) => ({ payload: { activityId, participantId, update } })),
 
-  AddParticipantTimeline: defineCommand('cmd/participant/timelineAdd', (activityId: string, participantId: string, update: ParticipantUpdate) => ({ payload: { activityId, participantId, update } })),
-
-  UpdateParticipantTimeline: defineCommand(
+  CorrectParticipantTimeline: defineCommand(
     'cmd/participant/timelineUpdate',
     (activityId: string, participantId: string, update: ParticipantUpdate) => ({ payload: { activityId, participantId, update } }),
-    ParticipantEvents.ParticipantTimelineUpdated,
+    ParticipantEvents.ParticipantTimelineCorrected,
   ),
 
   UpdateParticipantMiles: defineCommand(
@@ -30,6 +20,4 @@ export const ParticipantCommands = {
   ),
 
   UpdateParticipantEta: defineCommand('cmd/participant/eta', (activityId: string, participantId: string, eta: number | null) => ({ payload: { activityId, participantId, eta } }), ParticipantEvents.ParticipantEtaUpdated),
-
-  TagParticipant: defineCommand('cmd/participant/tag', (activityId: string, participantId: string, tags: string[]) => ({ payload: { activityId, participantId, tags } }), ParticipantEvents.ParticipantTagged),
 };

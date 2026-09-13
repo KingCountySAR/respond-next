@@ -6,7 +6,6 @@ import { Activity, createNewActivity, ParticipantStatus } from '@shared/types/ac
 import { createNewPlace, createNewTeam, DEFAULT_PLACES } from '@shared/types/operations';
 
 import { participantAssignmentReactor } from '../reactors/participantAssignmentReactor';
-import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { placeCommsReactor } from '../reactors/placeCommsReactor';
 import { ReactorContext } from '../reactors/reactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';
@@ -47,14 +46,14 @@ describe('produceEvents', () => {
     expect(handledTypes).toEqual(commandTypes);
   });
 
-  it('maps CreatePlace -> PlaceCreated', () => {
+  it('maps CreatePlace -> PlaceCreated', async () => {
     const place = createNewPlace('Staging');
-    const events = produceEvents(PlaceCommands.CreatePlace(activityId, place));
+    const events = await produceEvents(PlaceCommands.CreatePlace(activityId, place));
     expect(events).toEqual([PlaceEvents.PlaceCreated({ activityId, place })]);
   });
 
-  it('LogComm mints a full server-authored comm (id + timestamp)', () => {
-    const [event] = produceEvents(CommsCommands.LogComm(activityId, { from: DEFAULT_PLACES.base, message: 'radio check', isAutomated: false }));
+  it('LogComm mints a full server-authored comm (id + timestamp)', async () => {
+    const [event] = await produceEvents(CommsCommands.LogComm(activityId, { from: DEFAULT_PLACES.base, message: 'radio check', isAutomated: false }));
     expect(CommsEvents.CommLogged.match(event)).toBe(true);
     if (!CommsEvents.CommLogged.match(event)) throw new Error('expected CommLogged');
     expect(event.payload.comm.id).toBeTruthy();
@@ -62,31 +61,50 @@ describe('produceEvents', () => {
     expect(event.payload.comm.message).toBe('radio check');
   });
 
-  it('maps UpdateParticipant -> ParticipantUpdated', () => {
-    const [event] = produceEvents(ParticipantCommands.UpdateParticipant(activityId, 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn));
-    expect(ParticipantEvents.ParticipantUpdated.match(event)).toBe(true);
+  it('maps AddParticipantTimeline -> ParticipantTimelineAdded, resolving org + identity for a brand-new participant', async () => {
+    // PREPARE: an activity with no organizations or participants yet, and mock
+    // lookups standing in for the Mongo org lookup + member-provider fetch.
+    const activity = createNewActivity();
+    activity.id = activityId;
+    const prior = { [activityId]: activity };
+    const services = {
+      getOrganization: async (organizationId: string) => ({ id: organizationId, title: 'Org One' }),
+      getParticipantInfo: async () => ({ firstname: 'Ann', lastname: 'Lee', tags: ['Snow'] }),
+    };
+
+    // TEST: AddParticipantTimeline for a participant/org unknown to this activity.
+    const events = await produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', { time: 100, status: ParticipantStatus.SignedIn, organizationId: '1' }), prior, services);
+
+    // VERIFY: the org is brought onto the activity first, then the timeline entry carries
+    // the resolved identity and tags together (since the participant is new).
+    expect(events.map((e) => e.type)).toEqual([ActivityEvents.OrganizationTimelineAppended.type, ParticipantEvents.ParticipantTimelineAdded.type]);
+    const [orgAppended, timelineAdded] = events;
+    if (!ActivityEvents.OrganizationTimelineAppended.match(orgAppended)) throw new Error('expected OrganizationTimelineAppended');
+    expect(orgAppended.payload.org).toEqual({ id: '1', title: 'Org One' });
+    if (!ParticipantEvents.ParticipantTimelineAdded.match(timelineAdded)) throw new Error('expected ParticipantTimelineAdded');
+    expect(timelineAdded.payload.participant).toEqual({ firstname: 'Ann', lastname: 'Lee', tags: ['Snow'] });
   });
 
-  it('maps DeleteTeam -> TeamDeleted, carrying the chosen target', () => {
+  it('maps DeleteTeam -> TeamDeleted, carrying the chosen target', async () => {
     const target = { type: 'place', id: 'cp' } as const;
-    const [event] = produceEvents(TeamCommands.DeleteTeam(activityId, 'team-1', target));
+    const [event] = await produceEvents(TeamCommands.DeleteTeam(activityId, 'team-1', target));
     expect(event).toEqual(TeamEvents.TeamDeleted({ activityId, id: 'team-1', target }));
   });
 
-  it('maps DisbandTeam -> TeamDisbanded, carrying the chosen target', () => {
+  it('maps DisbandTeam -> TeamDisbanded, carrying the chosen target', async () => {
     const target = { type: 'place', id: 'cp' } as const;
-    const [event] = produceEvents(TeamCommands.DisbandTeam(activityId, 'team-1', target));
+    const [event] = await produceEvents(TeamCommands.DisbandTeam(activityId, 'team-1', target));
     expect(event).toEqual(TeamEvents.TeamDisbanded({ activityId, id: 'team-1', target }));
   });
 
-  it('maps AssignParticipant -> ParticipantAssigned (thin: reducer does the move)', () => {
+  it('maps AssignParticipant -> ParticipantAssigned (thin: reducer does the move)', async () => {
     const target = { type: 'team', id: 'bravo', asLeader: true } as const;
-    const events = produceEvents(ResourceCommands.AssignParticipant(activityId, 'p1', target));
+    const events = await produceEvents(ResourceCommands.AssignParticipant(activityId, 'p1', target));
     expect(events).toEqual([ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target })]);
   });
 
-  it('DecorateOperations -> OperationsDecorated with server-built default operations', () => {
-    const [event] = produceEvents(ActivityCommands.DecorateOperations(activityId));
+  it('DecorateOperations -> OperationsDecorated with server-built default operations', async () => {
+    const [event] = await produceEvents(ActivityCommands.DecorateOperations(activityId));
     expect(ActivityEvents.OperationsDecorated.match(event)).toBe(true);
     if (!ActivityEvents.OperationsDecorated.match(event)) throw new Error('expected OperationsDecorated');
     const { operations } = event.payload;
@@ -99,33 +117,134 @@ describe('produceEvents', () => {
     expect(operations.places.every((p) => !!p.id)).toBe(true);
   });
 
-  it('returns no events for an unknown command', () => {
-    expect(produceEvents({ type: 'cmd/bogus', payload: {} } as never)).toEqual([]);
+  it('returns no events for an unknown command', async () => {
+    expect(await produceEvents({ type: 'cmd/bogus', payload: {} } as never)).toEqual([]);
   });
 });
 
-describe('participantTagReactor', () => {
-  function activityWithParticipant(tags: string[] | undefined) {
+describe('AddParticipantTimeline signout rules (priorActivities-driven)', () => {
+  // Both orgs pre-seeded so these tests exercise signout chronology only —
+  // org-creation-on-first-appearance has its own dedicated test above.
+  function activityWith(id: string, timeline?: { id: string; time: number; organizationId: string; status: ParticipantStatus }[]): Activity {
     const activity = createNewActivity();
-    activity.id = activityId;
-    activity.participants = { p1: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1', tags, timeline: [{ time: 1, status: ParticipantStatus.SignedIn, organizationId: '1' }] } };
+    activity.id = id;
+    activity.organizations = {
+      '1': { id: '1', title: 'Org One', timeline: [] },
+      '2': { id: '2', title: 'Org Two', timeline: [] },
+    };
+    activity.participants = {};
+    if (timeline) activity.participants.p1 = { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: timeline[0].organizationId, timeline };
     return activity;
   }
-  const updatedEvent = ParticipantEvents.ParticipantUpdated({ activityId, participant: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, update: { time: 1, status: ParticipantStatus.SignedIn } });
 
-  it('emits TagParticipant for a newly-present (untagged) participant', async () => {
-    const reactor = createParticipantTagReactor(async () => ['Snow', 'OL']);
-    const ctx: ReactorContext = { priorActivities: {}, currentActivities: { [activityId]: activityWithParticipant(undefined) } };
-    const commands = await reactor.react(updatedEvent, ctx);
-    expect(commands).toHaveLength(1);
-    if (!ParticipantCommands.TagParticipant.match(commands[0])) throw new Error('expected TagParticipant');
-    expect(commands[0].payload.tags).toEqual(['Snow', 'OL']);
+  // An org switch re-resolves identity/tags from the member provider, so any
+  // test that actually lands a new-org timeline entry needs this.
+  const services = {
+    getOrganization: async (organizationId: string) => ({ id: organizationId, title: 'Org' }),
+    getParticipantInfo: async () => ({ firstname: 'Ann', lastname: 'Lee', tags: ['Rope'] }),
+  };
+
+  it('no-ops when org and status are unchanged', async () => {
+    // PREPARE: a participant already signed in to org '1'.
+    const prior = { [activityId]: activityWith(activityId, [{ id: 'u1', time: 100, organizationId: '1', status: ParticipantStatus.SignedIn }]) };
+    // TEST: AddParticipantTimeline with the same org and status, just a later time.
+    const events = await produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', { time: 200, status: ParticipantStatus.SignedIn, organizationId: '1' }), prior);
+    // VERIFY: no timeline entry is recorded — nothing actually changed.
+    expect(events).toEqual([]);
   });
 
-  it('does nothing when the participant is already tagged', async () => {
-    const reactor = createParticipantTagReactor(async () => ['Snow']);
-    const ctx: ReactorContext = { priorActivities: {}, currentActivities: { [activityId]: activityWithParticipant([]) } };
-    expect(await reactor.react(updatedEvent, ctx)).toEqual([]);
+  it('switching orgs while active closes out the old org first, then records the new status with refreshed identity/tags', async () => {
+    // PREPARE: a participant signed in to org '1'.
+    const prior = { [activityId]: activityWith(activityId, [{ id: 'u1', time: 100, organizationId: '1', status: ParticipantStatus.SignedIn }]) };
+    // TEST: AddParticipantTimeline switching them to org '2' with a new status.
+    const events = await produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', { time: 200, status: ParticipantStatus.Available, organizationId: '2' }), prior, services);
+    // VERIFY: two timeline entries — the old org's signout first (chronologically earlier), then the
+    // new status carrying identity/tags re-resolved for the new org (org-2's tags, not org-1's).
+    expect(events).toHaveLength(2);
+    if (!ParticipantEvents.ParticipantTimelineAdded.match(events[0])) throw new Error('expected ParticipantTimelineAdded');
+    expect(events[0].payload.update).toMatchObject({ organizationId: '1', status: ParticipantStatus.SignedOut, time: 200 });
+    expect(events[0].payload.participant).toBeUndefined();
+    if (!ParticipantEvents.ParticipantTimelineAdded.match(events[1])) throw new Error('expected ParticipantTimelineAdded');
+    expect(events[1].payload.update).toMatchObject({ organizationId: '2', status: ParticipantStatus.Available, time: 200 });
+    expect(events[1].payload.participant).toEqual({ firstname: 'Ann', lastname: 'Lee', tags: ['Rope'] });
+  });
+
+  it('switching orgs while signing out only records the old-org signout', async () => {
+    // PREPARE: a participant signed in to org '1'.
+    const prior = { [activityId]: activityWith(activityId, [{ id: 'u1', time: 100, organizationId: '1', status: ParticipantStatus.SignedIn }]) };
+    // TEST: AddParticipantTimeline switching to org '2' while signing out entirely.
+    const events = await produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', { time: 200, status: ParticipantStatus.SignedOut, organizationId: '2' }), prior);
+    // VERIFY: only the old-org signout timeline entry is recorded — no entry for org '2'.
+    expect(events).toHaveLength(1);
+    if (!ParticipantEvents.ParticipantTimelineAdded.match(events[0])) throw new Error('expected ParticipantTimelineAdded');
+    expect(events[0].payload.update).toMatchObject({ organizationId: '1', status: ParticipantStatus.SignedOut });
+  });
+
+  it('switching orgs from an already-inactive status skips the redundant old-org signout', async () => {
+    // PREPARE: a participant already NotResponding (inactive) under org '1'.
+    const prior = { [activityId]: activityWith(activityId, [{ id: 'u1', time: 100, organizationId: '1', status: ParticipantStatus.NotResponding }]) };
+    // TEST: AddParticipantTimeline switching them to org '2' with an active status.
+    const events = await produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', { time: 200, status: ParticipantStatus.Available, organizationId: '2' }), prior, services);
+    // VERIFY: no redundant old-org signout entry — only the new-org timeline entry, with refreshed identity/tags.
+    expect(events).toHaveLength(1);
+    if (!ParticipantEvents.ParticipantTimelineAdded.match(events[0])) throw new Error('expected ParticipantTimelineAdded');
+    expect(events[0].payload.update).toMatchObject({ organizationId: '2', status: ParticipantStatus.Available });
+    expect(events[0].payload.participant).toEqual({ firstname: 'Ann', lastname: 'Lee', tags: ['Rope'] });
+  });
+
+  it('signing in here signs the participant out of another activity where they were still signed in', async () => {
+    // PREPARE: p1 doesn't exist on this activity yet, but is still SignedIn on another activity (a2).
+    // Org '1' is already seeded by activityWith on both, so only the participant needs resolving.
+    const prior = {
+      [activityId]: activityWith(activityId),
+      a2: activityWith('a2', [{ id: 'u2', time: 10, organizationId: '1', status: ParticipantStatus.SignedIn }]),
+    };
+    const services = {
+      getOrganization: async (organizationId: string) => ({ id: organizationId, title: 'Org' }),
+      getParticipantInfo: async () => ({ firstname: 'Ann', lastname: 'Lee', tags: [] }),
+    };
+    // TEST: AddParticipantTimeline signing them in here for the first time.
+    const events = await produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', { time: 200, status: ParticipantStatus.SignedIn, organizationId: '1' }), prior, services);
+    // VERIFY: this activity's timeline entry (carrying the resolved identity + tags, since they're
+    // new here), plus a trailing signout timeline entry targeting activity a2.
+    expect(events).toHaveLength(2);
+    if (!ParticipantEvents.ParticipantTimelineAdded.match(events[0])) throw new Error('expected ParticipantTimelineAdded');
+    expect(events[0].payload.participant).toEqual({ firstname: 'Ann', lastname: 'Lee', tags: [] });
+    if (!ParticipantEvents.ParticipantTimelineAdded.match(events[1])) throw new Error('expected ParticipantTimelineAdded');
+    expect(events[1].payload).toMatchObject({ activityId: 'a2', participantId: 'p1' });
+    expect(events[1].payload.update).toMatchObject({ status: ParticipantStatus.SignedOut, organizationId: '1' });
+  });
+
+  it('does not sign out of an activity where the participant was not signed in', async () => {
+    // PREPARE: the participant is Available on both this activity and a2 (not SignedIn anywhere else).
+    const prior = {
+      [activityId]: activityWith(activityId, [{ id: 'u1', time: 50, organizationId: '1', status: ParticipantStatus.Available }]),
+      a2: activityWith('a2', [{ id: 'u2', time: 10, organizationId: '1', status: ParticipantStatus.Available }]),
+    };
+    // TEST: AddParticipantTimeline signing them in here.
+    const events = await produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', { time: 200, status: ParticipantStatus.SignedIn, organizationId: '1' }), prior);
+    // VERIFY: only this activity's timeline entry — no cross-activity signout, since they weren't SignedIn on a2.
+    expect(events).toHaveLength(1);
+  });
+});
+
+describe('CompleteActivity', () => {
+  it('signs out every still-active participant ahead of the completion event', async () => {
+    // PREPARE: p1 is still SignedIn; p2 is already SignedOut.
+    const activity = createNewActivity();
+    activity.id = activityId;
+    activity.participants = {
+      p1: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1', timeline: [{ id: 'u1', time: 50, organizationId: '1', status: ParticipantStatus.SignedIn }] },
+      p2: { id: 'p2', firstname: 'Bo', lastname: 'Ng', organizationId: '1', timeline: [{ id: 'u2', time: 50, organizationId: '1', status: ParticipantStatus.SignedOut }] },
+    };
+    // TEST: CompleteActivity.
+    const events = await produceEvents(ActivityCommands.CompleteActivity(activityId, 500), { [activityId]: activity });
+    // VERIFY: a timeline signout entry for p1 only (p2 is already out), followed by the completion event.
+    expect(events).toHaveLength(2);
+    if (!ParticipantEvents.ParticipantTimelineAdded.match(events[0])) throw new Error('expected ParticipantTimelineAdded');
+    expect(events[0].payload).toMatchObject({ activityId, participantId: 'p1' });
+    expect(events[0].payload.update).toMatchObject({ status: ParticipantStatus.SignedOut, time: 500 });
+    expect(ActivityEvents.ActivityCompleted.match(events[1])).toBe(true);
   });
 });
 
@@ -237,7 +356,7 @@ describe('participantAssignmentReactor', () => {
   function activityWith(status: ParticipantStatus, { onTeam = false, onPlace = false }: { onTeam?: boolean; onPlace?: boolean } = {}): Activity {
     const activity = createNewActivity();
     activity.id = activityId;
-    activity.participants = { p1: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: 'o1', timeline: [{ time: 1, organizationId: 'o1', status }] } };
+    activity.participants = { p1: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: 'o1', timeline: [{ id: 'u1', time: 1, organizationId: 'o1', status }] } };
     activity.teams = [{ ...createNewTeam('Alpha'), id: 'alpha', assignedParticipants: onTeam ? ['p1'] : [] }];
     activity.places = [{ ...createNewPlace('CP'), id: 'cp', assignedParticipants: onPlace ? ['p1'] : [] }];
     return activity;
@@ -247,29 +366,44 @@ describe('participantAssignmentReactor', () => {
   const assignedToPlace = ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: { type: 'place', id: 'cp' } });
 
   it('flips an Available responder to Assigned when they land on a team', async () => {
+    // PREPARE: p1 is Available and already assigned to a team (per activityWith's onTeam flag).
+    // TEST: react to the ParticipantAssigned event that put them there.
     const [command] = await participantAssignmentReactor.react(assignedToTeam, ctxWith(activityWith(ParticipantStatus.Available, { onTeam: true })));
+    // VERIFY: an AddParticipantTimeline command flips them to Assigned, keeping their current org.
     if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
     expect(command.payload.update.status).toBe(ParticipantStatus.Assigned);
     expect(command.payload.update.organizationId).toBe('o1');
   });
 
   it('flips an Available responder to Assigned when they land on a place', async () => {
+    // PREPARE: p1 is Available and already assigned to a place.
+    // TEST: react to the ParticipantAssigned event that put them there.
     const [command] = await participantAssignmentReactor.react(assignedToPlace, ctxWith(activityWith(ParticipantStatus.Available, { onPlace: true })));
+    // VERIFY: an AddParticipantTimeline command flips them to Assigned.
     if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
     expect(command.payload.update.status).toBe(ParticipantStatus.Assigned);
   });
 
   it('flips an Assigned responder to Available when they leave every team and place', async () => {
+    // PREPARE: p1 is Assigned but not currently on any team or place.
+    // TEST: react to a ParticipantAssigned event with no target (unassigned).
     const [command] = await participantAssignmentReactor.react(ResourceEvents.ParticipantAssigned({ activityId, participantId: 'p1', target: undefined }), ctxWith(activityWith(ParticipantStatus.Assigned)));
+    // VERIFY: an AddParticipantTimeline command flips them back to Available.
     if (!ParticipantCommands.AddParticipantTimeline.match(command)) throw new Error('expected AddParticipantTimeline');
     expect(command.payload.update.status).toBe(ParticipantStatus.Available);
   });
 
   it('leaves an already-Assigned member alone on a team→place move (still assigned)', async () => {
+    // PREPARE: p1 is already Assigned and lands on a place (moving between assignments).
+    // TEST: react to the ParticipantAssigned event for that move.
+    // VERIFY: no timeline command is emitted — their status doesn't need to change.
     expect(await participantAssignmentReactor.react(assignedToPlace, ctxWith(activityWith(ParticipantStatus.Assigned, { onPlace: true })))).toEqual([]);
   });
 
   it('does not override a non-checked-in status (e.g. SignedIn)', async () => {
+    // PREPARE: p1 is SignedIn (not Available/Assigned) and lands on a team.
+    // TEST: react to the ParticipantAssigned event for that move.
+    // VERIFY: no timeline command is emitted — SignedIn isn't a status this reactor manages.
     expect(await participantAssignmentReactor.react(assignedToTeam, ctxWith(activityWith(ParticipantStatus.SignedIn, { onTeam: true })))).toEqual([]);
   });
 

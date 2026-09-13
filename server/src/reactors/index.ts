@@ -1,36 +1,17 @@
-import { OrganizationDoc, ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
-
-import mongoPromise from '../mongodb';
-import { getServices } from '../services';
-
 import { groupCommsReactor } from './groupCommsReactor';
 import { groupDeleteReactor } from './groupDeletedReactor';
 import { participantAssignmentReactor } from './participantAssignmentReactor';
-import { createParticipantTagReactor, ResolveOrgTags } from './participantTagReactor';
 import { placeCommsReactor } from './placeCommsReactor';
 import { teamCommsReactor } from './teamCommsReactor';
 import { teamDisbandReactor } from './teamDisbandedReactor';
 
 export type { Reactor, ReactorContext } from './reactor';
 
-/**
- * Production tag lookup (formerly the body of loadTagsIfNewParticipant): find the
- * org, ask its member provider for the participant's groups, and map those to the
- * org's configured tag labels.
- */
-const resolveOrgTags: ResolveOrgTags = async (organizationId, participantId) => {
-  const mongo = await mongoPromise;
-  const organization = await mongo.db().collection<OrganizationDoc>(ORGS_COLLECTION).findOne({ id: organizationId });
-  if (!organization) return [];
-
-  const memberProvider = (await getServices()).memberProviders.get(organization.memberProvider?.provider);
-  if (!memberProvider) return [];
-
-  const entry = await memberProvider.getMemberInfoById(participantId);
-  if (!entry) return [];
-
-  return organization.tags?.filter((tag) => entry.groups.find((group) => group === tag.groupId)).map((tag) => tag.label) ?? [];
-};
+// Tagging a newly-present participant used to be a separate async reactor
+// here (participantTagReactor.ts, removed). It needed the same member-provider
+// fetch AddParticipantTimeline's handler now makes to resolve a new
+// participant's name — so tagging was folded into that handler instead,
+// landing in the same batch rather than a later, flicker-causing broadcast.
 
 /** The production reactor registry, run in order for every minted event. */
 export const defaultReactors = [
@@ -41,5 +22,4 @@ export const defaultReactors = [
   teamDisbandReactor,
   groupCommsReactor,
   groupDeleteReactor,
-  createParticipantTagReactor(resolveOrgTags),
 ];

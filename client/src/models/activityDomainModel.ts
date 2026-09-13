@@ -3,7 +3,7 @@ import { makeObservable, observableRef, runInAction } from 'mobx';
 
 import { ActivityCommands, ParticipantCommands } from '@respond/shared/commands';
 import { ActivityEvents } from '@respond/shared/events';
-import { Activity, defaultEarlySigninWindow, getOrganizationName, isActive, isActive as isParticipantActive, isResponding, OrganizationStatus, ParticipantStatus } from '@respond/shared/types/activity';
+import { Activity, defaultEarlySigninWindow, getOrganizationName, isActive, isActive as isParticipantActive, isResponding, ParticipantStatus } from '@respond/shared/types/activity';
 import { Location } from '@respond/shared/types/location';
 
 import { type AppDispatch, type AppStore } from '../lib/client/store';
@@ -425,22 +425,15 @@ export class ActivityDomainModel {
   // --- Command actions (dispatched into the Redux timeline) ---
 
   /**
-   * Record a responder's status change. The first responder for an org brings that
-   * org onto the activity, so append its timeline entry first, then the participant
-   * update. No-op when read-only or unloaded.
+   * Record a responder's status change. Identity (name) and org details (title,
+   * rosterName) are resolved server-side — from the member provider and Mongo
+   * respectively — the first time they're needed, so this is just the one
+   * AddParticipantTimeline dispatch. No-op when read-only or unloaded.
    */
   recordStatusUpdate(p: { participantId: string; firstName: string; lastName: string; org: { id: string; title: string; rosterName?: string }; time: number; status: ParticipantStatus; miles?: number; eta?: number }) {
     const activity = this.activity;
     if (!activity || this.readOnly) return;
-    if (!activity.organizations[p.org.id]) {
-      this.dispatch(
-        ActivityCommands.AppendOrganizationTimeline(activity.id, p.org, {
-          status: p.status === ParticipantStatus.Standby ? OrganizationStatus.Standby : OrganizationStatus.Responding,
-          time: p.time,
-        }),
-      );
-    }
-    this.dispatch(ParticipantCommands.UpdateParticipant(activity.id, p.participantId, p.firstName, p.lastName, p.org.id, p.time, p.status, p.miles, p.eta));
+    this.dispatch(ParticipantCommands.AddParticipantTimeline(activity.id, p.participantId, { time: p.time, status: p.status, organizationId: p.org.id }));
   }
 
   /** Mark this activity complete as of now. No-op when read-only or unloaded. */

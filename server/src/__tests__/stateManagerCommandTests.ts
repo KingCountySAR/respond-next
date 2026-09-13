@@ -8,8 +8,8 @@ import { createNewPlace, createNewTeam } from '@shared/types/operations';
 
 import { EventDoc } from '@server/data/eventDoc';
 
+import { CommandServices } from '../commands';
 import { participantAssignmentReactor } from '../reactors/participantAssignmentReactor';
-import { createParticipantTagReactor } from '../reactors/participantTagReactor';
 import { Reactor } from '../reactors/reactor';
 import { teamCommsReactor } from '../reactors/teamCommsReactor';
 import { teamDisbandReactor } from '../reactors/teamDisbandedReactor';
@@ -24,6 +24,15 @@ let mongoPromise: typeof import('../mongodb').default;
 
 function c(command: Command): StampedCommand {
   return { ...command, id: uuid() };
+}
+
+/** Mock org/participant lookups for tests whose AddParticipantTimeline calls create a brand-new participant. */
+function testServices(overrides: Partial<CommandServices> = {}): CommandServices {
+  return {
+    getOrganization: async (organizationId) => ({ id: organizationId, title: 'Org One' }),
+    getParticipantInfo: async () => ({ firstname: 'Ann', lastname: 'Lee', tags: [] }),
+    ...overrides,
+  };
 }
 
 async function createActivity(sm: InstanceType<StateManagerCtor>, id: string): Promise<void> {
@@ -147,39 +156,29 @@ describe('StateManager.handleCommand', () => {
     expect(messages).toContain('OP-2 location terminated');
   });
 
-  it('tags a newly signed-in participant via the tagging reactor', async () => {
-    // Stub the tag resolver so the reactor does not hit the live member provider.
-    const sm = new StateManager([createParticipantTagReactor(async () => ['Snow', 'OL'])]);
+  it('tags a newly-present participant in the same event as their first timeline entry', async () => {
+    // PREPARE: an activity with no participants yet, and a participant-info lookup that returns tags.
+    const sm = new StateManager([], testServices({ getParticipantInfo: async () => ({ firstname: 'Ann', lastname: 'Lee', tags: ['Snow', 'OL'] }) }));
     await createActivity(sm, 'act-3');
     const captured = collect(sm);
 
-    // participantUpdate needs the activity to exist; a place command initializes operations.
-    await sm.handleCommand(c(PlaceCommands.CreatePlace('act-3', createNewPlace('CP'))), userAuthor('u1'));
-    await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-3', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn)), userAuthor('u1'));
+    // TEST: AddParticipantTimeline for a participant unknown to this activity.
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-3', 'p1', { organizationId: '1', status: ParticipantStatus.SignedIn, time: 200 })), userAuthor('u1'));
 
-    // Tagging is a fire-and-forget async reactor: it resolves after handleCommand
-    // returns, so wait for the deferred work before asserting on tags.
-    await sm.settle();
-
+    // VERIFY: the participant is created with the resolved tags, via a single ParticipantTimelineAdded event.
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-3');
     expect(activity?.participants['p1']?.tags).toEqual(['Snow', 'OL']);
 
     const types = captured.map((e) => e.type);
-    expect(types).toContain(ParticipantEvents.ParticipantUpdated.type);
-    expect(types).toContain(ParticipantEvents.ParticipantTagged.type);
+    expect(types).toContain(ParticipantEvents.ParticipantTimelineAdded.type);
 
-    // The tag event is authored by the reactor (service), not the user.
-    const tagged = await (await mongoPromise).db().collection<EventDoc>('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantTagged.type });
-    expect(tagged?.meta.author).toEqual({ type: 'service', id: 'participant-tag-reactor' });
-
-    // Async reactor follow-up: uses new commandId and its cause is the triggering event's id.
-    const updated = await (await mongoPromise).db().collection<EventDoc>('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantUpdated.type });
-    expect(tagged?.meta.commandId).not.toEqual(updated?.meta.commandId);
-    expect(tagged?.meta.cause).toEqual(updated?.id);
+    const added = await (await mongoPromise).db().collection<EventDoc>('events').findOne({ activityId: 'act-3', type: ParticipantEvents.ParticipantTimelineAdded.type });
+    expect(added?.meta.author).toMatchObject({ type: 'user', id: 'u1' });
   });
 
   it('assigns a member to a team and flips them to Assigned in one broadcast', async () => {
-    const sm = new StateManager([participantAssignmentReactor]);
+    // PREPARE: an activity with a place, a team, and a participant already Available.
+    const sm = new StateManager([participantAssignmentReactor], testServices());
     await createActivity(sm, 'act-assign');
     const batches = collectBatches(sm);
 
@@ -187,11 +186,14 @@ describe('StateManager.handleCommand', () => {
     const team = createNewTeam('Alpha');
     await sm.handleCommand(c(TeamCommands.CreateTeam('act-assign', team)), userAuthor('u1'));
     // The responder arrives at base (Available) before being put on the team.
-    await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-assign', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-assign', 'p1', { time: 100, status: ParticipantStatus.Available, organizationId: '1' })), userAuthor('u1'));
 
     batches.length = 0; // ignore the setup broadcasts; focus on the assignment
+    // TEST: assign that participant to the team.
     await sm.handleCommand(c(ResourceCommands.AssignParticipant('act-assign', 'p1', { type: 'team', id: team.id })), userAuthor('u1'));
 
+    // VERIFY: the team roster updates, and the participantAssignmentReactor's follow-up
+    // timeline entry flips their status to Assigned — all in one broadcast.
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-assign');
     expect(activity?.teams.find((t) => t.id === team.id)?.assignedParticipants).toEqual(['p1']);
     expect(activity?.participants['p1'].timeline[0].status).toBe(ParticipantStatus.Assigned);
@@ -202,7 +204,8 @@ describe('StateManager.handleCommand', () => {
   });
 
   it('disbands a team, cascading member/equipment reassignment and the Available status flip', async () => {
-    const sm = new StateManager([teamDisbandReactor, participantAssignmentReactor]);
+    // PREPARE: an activity with a team holding one Assigned member.
+    const sm = new StateManager([teamDisbandReactor, participantAssignmentReactor], testServices());
     await createActivity(sm, 'act-disband');
     const batches = collectBatches(sm);
 
@@ -210,12 +213,15 @@ describe('StateManager.handleCommand', () => {
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-disband', cp)), userAuthor('u1'));
     const team = createNewTeam('Alpha');
     await sm.handleCommand(c(TeamCommands.CreateTeam('act-disband', team)), userAuthor('u1'));
-    await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-disband', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-disband', 'p1', { time: 100, status: ParticipantStatus.Available, organizationId: '1' })), userAuthor('u1'));
     await sm.handleCommand(c(ResourceCommands.AssignParticipant('act-disband', 'p1', { type: 'team', id: team.id })), userAuthor('u1'));
 
     batches.length = 0; // ignore setup broadcasts; focus on the disband
+    // TEST: disband the team.
     await sm.handleCommand(c(TeamCommands.DisbandTeam('act-disband', team.id)), userAuthor('u1'));
 
+    // VERIFY: the team is marked Disbanded and cleared, and the cascading
+    // reassignment's follow-up timeline entry flips the member back to Available.
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-disband');
     const disbandedTeam = activity?.teams.find((t) => t.id === team.id);
     expect(disbandedTeam?.status).toBe('Disbanded');
@@ -228,7 +234,8 @@ describe('StateManager.handleCommand', () => {
   });
 
   it('deletes a team, cascading member/equipment reassignment and the Available status flip', async () => {
-    const sm = new StateManager([teamDisbandReactor, participantAssignmentReactor]);
+    // PREPARE: an activity with a team holding one Assigned member.
+    const sm = new StateManager([teamDisbandReactor, participantAssignmentReactor], testServices());
     await createActivity(sm, 'act-delete');
     const batches = collectBatches(sm);
 
@@ -236,12 +243,15 @@ describe('StateManager.handleCommand', () => {
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-delete', cp)), userAuthor('u1'));
     const team = createNewTeam('Alpha');
     await sm.handleCommand(c(TeamCommands.CreateTeam('act-delete', team)), userAuthor('u1'));
-    await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-delete', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
+    await sm.handleCommand(c(ParticipantCommands.AddParticipantTimeline('act-delete', 'p1', { time: 100, status: ParticipantStatus.Available, organizationId: '1' })), userAuthor('u1'));
     await sm.handleCommand(c(ResourceCommands.AssignParticipant('act-delete', 'p1', { type: 'team', id: team.id })), userAuthor('u1'));
 
     batches.length = 0; // ignore setup broadcasts; focus on the delete
+    // TEST: delete the team.
     await sm.handleCommand(c(TeamCommands.DeleteTeam('act-delete', team.id)), userAuthor('u1'));
 
+    // VERIFY: the team is gone, and the cascading reassignment's follow-up
+    // timeline entry flips the member back to Available.
     const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-delete');
     expect(activity?.teams.some((t) => t.id === team.id)).toBe(false);
     expect(activity?.participants['p1'].timeline[0].status).toBe(ParticipantStatus.Available);

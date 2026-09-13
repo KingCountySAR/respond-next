@@ -18,7 +18,7 @@ function participant(overrides: Partial<ParticipantDomainModel> = {}): Participa
     firstname: 'Pat',
     lastname: 'Rescuer',
     organizationId: 'o1',
-    timeline: [{ time: 1000, organizationId: 'o1', status: ParticipantStatus.SignedIn }],
+    timeline: [{ id: 'u1', time: 1000, organizationId: 'o1', status: ParticipantStatus.SignedIn }],
     ...overrides,
   } as Participant;
   return new ParticipantDomainModel(
@@ -77,7 +77,7 @@ describe('StatusUpdateFormModel', () => {
 
     it('rejects a status time earlier than the last status change', () => {
       const { form } = build();
-      form.reset(participant({ timeline: [{ time: 5000, organizationId: 'o1', status: ParticipantStatus.SignedIn, statusText: 'Signed In', organizationName: 'ABC SAR' }] }), ParticipantStatus.SignedOut);
+      form.reset(participant({ timeline: [{ id: 'u1', time: 5000, organizationId: 'o1', status: ParticipantStatus.SignedIn, statusText: 'Signed In', organizationName: 'ABC SAR' }] }), ParticipantStatus.SignedOut);
       form.setStatusTime(4000);
       expect(form.errors.statusTime?.text).toContain('Cannot be earlier');
       expect(form.isValid).toBe('error');
@@ -113,7 +113,7 @@ describe('StatusUpdateFormModel', () => {
 
     it('warns but does not block an already-assigned responder', () => {
       const { form, recordStatusUpdate } = build();
-      form.reset(participant({ timeline: [{ time: 1000, organizationId: 'o1', status: ParticipantStatus.Assigned, organizationName: 'SAR', statusText: 'Assigned' }] }), ParticipantStatus.Available);
+      form.reset(participant({ timeline: [{ id: 'u1', time: 1000, organizationId: 'o1', status: ParticipantStatus.Assigned, organizationName: 'SAR', statusText: 'Assigned' }] }), ParticipantStatus.Available);
       form.setStatusTime(9000);
 
       expect(form.errors.top?.some((e) => e.severity === 'error')).toBe(false);

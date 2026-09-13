@@ -51,23 +51,136 @@ describe('Event Reducers', () => {
     expect(next.list[0].comms?.[0].message).toBe('final');
   });
 
-  it('ParticipantUpdated creates a new participant with an undefined tags (so tagging can fire)', () => {
+  it('ParticipantTimelineAdded creates a new participant when given an identity (name + tags together)', () => {
+    // PREPARE: a bare activity with no participants yet.
+    // TEST: apply ParticipantTimelineAdded for an unknown participant id, carrying an identity with tags.
     const next = apply(
       stateWithActivity(activityId),
-      ParticipantEvents.ParticipantUpdated({ activityId, participant: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, update: { time: 100, status: ParticipantStatus.SignedIn } }),
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId: 'p1',
+        participant: { firstname: 'Ann', lastname: 'Lee', tags: ['Snow', 'OL'] },
+        update: { id: 'u1', time: 100, status: ParticipantStatus.SignedIn, organizationId: '1' },
+      }),
     );
+    // VERIFY: the participant is created from the given identity, with the entry as their timeline and the given tags.
     const person = next.list[0].participants['p1'];
+    expect(person).toMatchObject({ firstname: 'Ann', lastname: 'Lee', organizationId: '1', tags: ['Snow', 'OL'] });
     expect(person.timeline[0].status).toBe(ParticipantStatus.SignedIn);
-    expect(person.tags).toBeUndefined();
   });
 
-  it('ParticipantTagged sets tags on an existing participant', () => {
+  it('ParticipantTimelineAdded appends a further entry for an existing participant without needing an identity', () => {
+    // PREPARE: a participant already created by a first ParticipantTimelineAdded.
     let next = apply(
       stateWithActivity(activityId),
-      ParticipantEvents.ParticipantUpdated({ activityId, participant: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, update: { time: 100, status: ParticipantStatus.SignedIn } }),
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId: 'p1',
+        participant: { firstname: 'Ann', lastname: 'Lee', tags: [] },
+        update: { id: 'u1', time: 100, status: ParticipantStatus.SignedIn, organizationId: '1' },
+      }),
     );
-    next = apply(next, ParticipantEvents.ParticipantTagged({ activityId, participantId: 'p1', tags: ['Snow', 'OL'] }));
-    expect(next.list[0].participants['p1'].tags).toEqual(['Snow', 'OL']);
+    // TEST: apply a second ParticipantTimelineAdded for the same participant, with no `participant` identity this time.
+    next = apply(next, ParticipantEvents.ParticipantTimelineAdded({ activityId, participantId: 'p1', update: { id: 'u2', time: 200, status: ParticipantStatus.Available, organizationId: '1' } }));
+    // VERIFY: the new entry is unshifted to the front of the timeline (most recent first).
+    expect(next.list[0].participants['p1'].timeline[0].status).toBe(ParticipantStatus.Available);
+  });
+
+  it("ParticipantTimelineAdded keeps the participant's organizationId in sync with the latest entry", () => {
+    // PREPARE: a participant created under org '1'.
+    let next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId: 'p1',
+        participant: { firstname: 'Ann', lastname: 'Lee', tags: [] },
+        update: { id: 'u1', time: 100, status: ParticipantStatus.SignedIn, organizationId: '1' },
+      }),
+    );
+    // TEST: apply a further entry under a different org.
+    next = apply(next, ParticipantEvents.ParticipantTimelineAdded({ activityId, participantId: 'p1', update: { id: 'u2', time: 200, status: ParticipantStatus.Available, organizationId: '2' } }));
+    // VERIFY: the participant's top-level organizationId follows the new (latest) entry.
+    expect(next.list[0].participants['p1'].organizationId).toBe('2');
+  });
+
+  it("ParticipantTimelineCorrected resyncs the participant's organizationId when correcting the latest entry", () => {
+    // PREPARE: a participant with two timeline entries — u2 (latest, org '2') then u1 (org '1').
+    let next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId: 'p1',
+        participant: { firstname: 'Ann', lastname: 'Lee', tags: [] },
+        update: { id: 'u1', time: 100, status: ParticipantStatus.SignedIn, organizationId: '1' },
+      }),
+    );
+    next = apply(next, ParticipantEvents.ParticipantTimelineAdded({ activityId, participantId: 'p1', update: { id: 'u2', time: 200, status: ParticipantStatus.Available, organizationId: '2' } }));
+    // TEST: correct the latest entry (u2) to a different org.
+    next = apply(next, ParticipantEvents.ParticipantTimelineCorrected({ activityId, participantId: 'p1', update: { id: 'u2', time: 200, status: ParticipantStatus.Available, organizationId: '3' } }));
+    // VERIFY: the edited entry is replaced, and the participant's organizationId re-syncs to match it.
+    expect(next.list[0].participants['p1'].timeline[0]).toMatchObject({ id: 'u2', organizationId: '3' });
+    expect(next.list[0].participants['p1'].organizationId).toBe('3');
+  });
+
+  it("ParticipantTimelineCorrected leaves the participant's organizationId alone when correcting an older entry", () => {
+    // PREPARE: a participant with two timeline entries — u2 (latest, org '2') then u1 (org '1').
+    let next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId: 'p1',
+        participant: { firstname: 'Ann', lastname: 'Lee', tags: [] },
+        update: { id: 'u1', time: 100, status: ParticipantStatus.SignedIn, organizationId: '1' },
+      }),
+    );
+    next = apply(next, ParticipantEvents.ParticipantTimelineAdded({ activityId, participantId: 'p1', update: { id: 'u2', time: 200, status: ParticipantStatus.Available, organizationId: '2' } }));
+    // TEST: correct the older entry (u1), not the latest.
+    next = apply(next, ParticipantEvents.ParticipantTimelineCorrected({ activityId, participantId: 'p1', update: { id: 'u1', time: 90, status: ParticipantStatus.SignedIn, organizationId: '9' } }));
+    // VERIFY: the older entry is updated, but the participant's organizationId still matches the (unaffected) latest entry.
+    expect(next.list[0].participants['p1'].timeline.find((e) => e.id === 'u1')).toMatchObject({ organizationId: '9' });
+    expect(next.list[0].participants['p1'].organizationId).toBe('2');
+  });
+
+  it('ParticipantTimelineAdded replaces name and tags with freshly-resolved values on an org switch', () => {
+    // PREPARE: a participant created under org '1' with resolved tags.
+    let next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId: 'p1',
+        participant: { firstname: 'Ann', lastname: 'Lee', tags: ['Snow', 'OL'] },
+        update: { id: 'u1', time: 100, status: ParticipantStatus.SignedIn, organizationId: '1' },
+      }),
+    );
+    // TEST: apply a further entry switching them to a different org, carrying freshly-resolved identity/tags.
+    next = apply(
+      next,
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId: 'p1',
+        participant: { firstname: 'Ann', lastname: 'Lee-Smith', tags: ['Rope'] },
+        update: { id: 'u2', time: 200, status: ParticipantStatus.Available, organizationId: '2' },
+      }),
+    );
+    // VERIFY: the org-1-specific tags (and name) are replaced by the org-2 values — not merged or cleared.
+    expect(next.list[0].participants['p1']).toMatchObject({ lastname: 'Lee-Smith', tags: ['Rope'] });
+  });
+
+  it('ParticipantTimelineAdded leaves name/tags alone when no identity is given (not an org switch)', () => {
+    // PREPARE: a participant created under org '1' with resolved tags.
+    let next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantTimelineAdded({
+        activityId,
+        participantId: 'p1',
+        participant: { firstname: 'Ann', lastname: 'Lee', tags: ['Snow', 'OL'] },
+        update: { id: 'u1', time: 100, status: ParticipantStatus.SignedIn, organizationId: '1' },
+      }),
+    );
+    // TEST: apply a further entry under the same org, with no identity (the normal, non-switching case).
+    next = apply(next, ParticipantEvents.ParticipantTimelineAdded({ activityId, participantId: 'p1', update: { id: 'u2', time: 200, status: ParticipantStatus.Available, organizationId: '1' } }));
+    // VERIFY: their name and tags are untouched.
+    expect(next.list[0].participants['p1']).toMatchObject({ lastname: 'Lee', tags: ['Snow', 'OL'] });
   });
 
   it('TeamCreated then TeamUpdated changes the team status/gar', () => {

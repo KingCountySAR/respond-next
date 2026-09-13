@@ -19,9 +19,8 @@ export function useActivityCommands() {
 export function useParticipantCommands(activityId: string) {
   const commands = useCommands(ParticipantCommands, activityId);
   return {
-    update: commands.updateParticipant,
     addTimeline: commands.addParticipantTimeline,
-    updateTimeline: commands.updateParticipantTimeline,
+    correctTimeline: commands.correctParticipantTimeline,
     updateMiles: commands.updateParticipantMiles,
     updateEta: commands.updateParticipantEta,
   };

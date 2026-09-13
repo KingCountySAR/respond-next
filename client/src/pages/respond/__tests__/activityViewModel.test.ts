@@ -24,7 +24,7 @@ import { UserDomainModel } from '@/client/models/userDomainModel';
 import { ActivityViewModel } from '../activityViewModel';
 
 function participant(id: string, firstname: string, organizationId: string, status: ParticipantStatus): Participant {
-  return { id, firstname, lastname: 'Rescuer', organizationId, timeline: [{ time: 0, organizationId, status }] };
+  return { id, firstname, lastname: 'Rescuer', organizationId, timeline: [{ id: `${id}-u0`, time: 0, organizationId, status }] };
 }
 
 function makeActivity(participants: Record<string, Participant>, organizations: Record<string, ParticipatingOrg> = {}): Activity {

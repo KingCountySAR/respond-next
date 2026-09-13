@@ -29,7 +29,7 @@ import { ObservableClock } from '../observableClock';
 import { ParticipantDomainModel } from '../participantDomainModel';
 
 function participant(id: string, firstname: string, organizationId: string, status: ParticipantStatus): Participant {
-  return { id, firstname, lastname: 'Rescuer', organizationId, timeline: [{ time: 0, organizationId, status }] };
+  return { id, firstname, lastname: 'Rescuer', organizationId, timeline: [{ id: `${id}-u0`, time: 0, organizationId, status }] };
 }
 
 const clock = new ObservableClock(false);
@@ -72,7 +72,7 @@ describe('ParticipantDomainModel', () => {
     function updateStatus(status: ParticipantStatus, time: number) {
       reduxModel = {
         ...reduxModel,
-        timeline: [{ status, time, organizationId: reduxModel.timeline[0].organizationId }, ...reduxModel.timeline],
+        timeline: [{ id: `u${time}`, status, time, organizationId: reduxModel.timeline[0].organizationId }, ...reduxModel.timeline],
       };
       box.set(reduxModel);
     }

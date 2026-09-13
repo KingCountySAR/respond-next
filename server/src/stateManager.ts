@@ -10,7 +10,7 @@ import { ORGS_COLLECTION } from '@shared/types/data/organizationDoc';
 import { Organization } from '@shared/types/organization';
 import type UserAuth from '@shared/types/userAuth';
 
-import { CommandHandler, CommandServices, explicitCommandHandlers } from './commands';
+import { CommandHandler, CommandServices, defaultServices, explicitCommandHandlers, productionCommandServices } from './commands';
 import { EventDoc } from './data/eventDoc';
 import mongoPromise, { getRelatedOrgIds } from './mongodb';
 import { defaultReactors, Reactor } from './reactors';
@@ -28,12 +28,15 @@ export const commandHandlersByType: Record<string, CommandHandler<never> | undef
 );
 
 /**
- * Validate a command and produce the resulting domain event(s). Pure and
- * synchronous so it is trivially unit-testable independent of StateManager.
+ * Validate a command and produce the resulting domain event(s). Trivially
+ * unit-testable independent of StateManager. `priorActivities` is the state
+ * as of just before this command — lets a handler conditionally emit (and
+ * order) follow-up events, e.g. signouts. `services` defaults to stubs that
+ * throw if actually called, since most handlers/tests never need them.
  */
-export function produceEvents(command: Command, services: CommandServices = {}): DomainEvent[] {
+export async function produceEvents(command: Command, priorActivities: Record<string, Activity> = {}, services: CommandServices = defaultServices): Promise<DomainEvent[]> {
   const handle = commandHandlersByType[command.type];
-  return handle ? handle(command.payload as never, services) : [];
+  return handle ? handle(command.payload as never, { priorActivities }, services) : [];
 }
 
 export interface ActionListener {
@@ -66,7 +69,10 @@ export class StateManager {
    */
   private queue: Promise<unknown> = Promise.resolve();
 
-  constructor(private readonly reactors: Reactor[] = defaultReactors) {}
+  constructor(
+    private readonly reactors: Reactor[] = defaultReactors,
+    private readonly services: CommandServices = productionCommandServices,
+  ) {}
 
   addClient(listener: ActionListener) {
     this.listeners = [...this.listeners, listener];
@@ -128,11 +134,11 @@ export class StateManager {
   }
 
   private async processCommand(command: StampedCommand, author: EventAuthor, cause?: string): Promise<void> {
-    const events = produceEvents(command);
+    const priorActivities = this.snapshotActivities();
+    const events = await produceEvents(command, priorActivities, this.services);
     if (!events.length) return;
 
     const mongo = await mongoPromise;
-    const priorActivities = this.snapshotActivities();
     let workingState = this.activityState;
     const batch: StampedEvent[] = [];
     // FIFO work-list, seeded with the command's already-produced events. Sync
@@ -163,7 +169,7 @@ export class StateManager {
           // Sync reactor — fold its follow-up events into this same batch.
           const followupAuthor = serviceAuthor(reactor.name);
           for (const followup of reaction) {
-            for (const followupEvent of produceEvents(followup)) {
+            for (const followupEvent of await produceEvents(followup, ctx.currentActivities, this.services)) {
               pending.push(this.stamp(followupEvent, followupAuthor, command.id, event.id));
             }
           }
@@ -206,7 +212,7 @@ export class StateManager {
     }
   }
 
-  private stamp(event: ReturnType<typeof produceEvents>[number], author: EventAuthor, commandId: string, cause?: string): StampedEvent {
+  private stamp(event: DomainEvent, author: EventAuthor, commandId: string, cause?: string): StampedEvent {
     return { ...event, id: uuid(), meta: { author, timestamp: Date.now(), commandId, ...(cause ? { cause } : {}) } };
   }
 

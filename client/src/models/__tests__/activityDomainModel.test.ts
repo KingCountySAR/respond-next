@@ -10,7 +10,7 @@ import { ObservableClock } from '../observableClock';
 import { ReduxProjection } from '../reduxProjection';
 
 function participant(id: string, firstname: string, organizationId: string, status: ParticipantStatus): Participant {
-  return { id, firstname, lastname: 'Rescuer', organizationId, timeline: [{ time: 0, organizationId, status }] };
+  return { id, firstname, lastname: 'Rescuer', organizationId, timeline: [{ id: `${id}-u0`, time: 0, organizationId, status }] };
 }
 
 function makeActivity(participants: Record<string, Participant>, organizations: Record<string, ParticipatingOrg> = {}): Activity {
@@ -212,21 +212,6 @@ describe('ActivityDomainModel', () => {
     }
 
     const params = { participantId: 'p1', firstName: 'Pat', lastName: 'Rescuer', org: { id: 'o1', title: 'Org One' }, time: 5, status: ParticipantStatus.SignedIn };
-
-    it('appends the org timeline for a first responder, then updates the participant', () => {
-      const { store, dispatched } = capturingStore([makeActivity({}, {})]);
-      const domain = ActivityDomainModel.forStore(store, 'a1', clock);
-      domain.recordStatusUpdate(params);
-      // Org timeline first, then the participant.
-      expect(dispatched.map((a) => a.type)).toEqual(['cmd/activity/appendOrg', 'cmd/participant/update']);
-    });
-
-    it('skips the org timeline when the org already participates', () => {
-      const { store, dispatched } = capturingStore([makeActivity({}, { o1: { id: 'o1', title: 'Org One', timeline: [] } as unknown as ParticipatingOrg })]);
-      const domain = ActivityDomainModel.forStore(store, 'a1', clock);
-      domain.recordStatusUpdate(params);
-      expect(dispatched.map((a) => a.type)).toEqual(['cmd/participant/update']);
-    });
 
     it('is a no-op when the activity is read-only', () => {
       const { store, dispatched } = capturingStore([]); // a1 absent -> read-only
