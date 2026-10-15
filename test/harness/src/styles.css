@@ -1,0 +1,193 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1d2330;
+  --muted: #5d6676;
+  --border: #d8dce3;
+  --accent: #2f6fde;
+  --warn: #c2410c;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c;
+    --panel: #1c2027;
+    --text: #e6e9ee;
+    --muted: #9aa3b2;
+    --border: #2e3440;
+    --accent: #6b9cf0;
+    --warn: #f08a4b;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+main {
+  padding: 16px;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+header h1 {
+  font-size: 18px;
+  margin: 0 12px 0 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+input,
+select,
+button {
+  font: inherit;
+  color: inherit;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.panes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 16px;
+}
+
+.pane {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pane.command {
+  border-top: 3px solid var(--accent);
+}
+
+.pane-head,
+.link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pane-head {
+  justify-content: space-between;
+}
+
+.link {
+  color: var(--muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+
+.dot.live {
+  background: #16a34a;
+}
+
+.dot.connecting {
+  background: #ca8a04;
+}
+
+.roster form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+td {
+  border-top: 1px solid var(--border);
+  padding: 4px;
+  vertical-align: middle;
+}
+
+.actions button {
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-decoration: underline dotted;
+}
+
+.pending {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+
+.error {
+  color: var(--warn);
+  margin: 4px 0;
+}
+
+.debug summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.queue,
+.log {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.log {
+  list-style: none;
+  padding-left: 0;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.log li {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log li.out {
+  color: var(--muted);
+}

@@ -1,0 +1,34 @@
+{
+  "name": "sync-app",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "server",
+    "test/harness"
+  ],
+  "scripts": {
+    "dev": "run-p --race --print-label dev:server dev:ui",
+    "dev:harness": "run-p --race --print-label dev:server dev:ui",
+    "dev:server": "npm run dev -w server",
+    "dev:ui": "npm run dev -w harness",
+    "build": "npm run build -w harness && npm run build -w server",
+    "start": "node --enable-source-maps dist/index.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "tsx test/smoke.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^22.12.0",
+    "typescript": "^5.6.3",
+    "vitest": "5.0.2",
+    "vite": "8.3.1",
+    "tsx": "^4.19.2",
+    "npm-run-all2": "9.0.3"
+  },
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": ">=22.12"
+  }
+}

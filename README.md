@@ -1,0 +1,53 @@
+# Mission Sync — phase 1 (sync core)
+
+The sync engine from the [design doc](https://claude.ai/code/artifact/5d9c89c9-2e7f-4514-a96b-71bfd37fb841), proven on a stand-in domain before any real mission features or UI move over. See the [migration doc](https://claude.ai/code/artifact/bd6bc009-563e-432b-bbce-04dde518f554) for the phase plan.
+
+Phase 1 gate: **convergence and network tests pass.**
+
+## Layout
+
+| Path | Package | What it is |
+| --- | --- | --- |
+| `packages/sync-core` | `@sync/core` | Shared by client and server: records, `Tx`/overlay, `defineMutation`, wire protocol, client event state (optimistic apply + rebase), clock sync |
+| `packages/sync-client` | `@sync/client` | `SyncClient` (connection, reconnect/backoff, ping, batching, persistence), WebSocket transport, IndexedDB persistence, React hooks (`@sync/client/react`) |
+| `packages/sync-server` | `@sync/server` | `EventActor` (one per event, serial apply, per-view fan-out), `Hub` (connections → actors), storage interface + in-memory storage |
+| `packages/toy-domain` | `@sync/toy-domain` | Stand-in domain: people, timed status entries (`at`), a command-only `note`. Replaced by `packages/domain` in phase 2 |
+| `server` | `server` | Hono app: `/api/sync` WebSocket, `/health`, dev debug endpoint, static UI. `build.mjs` bundles it to `dist/index.mjs`. Auth and REST land here |
+| `test/harness` | `harness` | Test harness: side-by-side clients with per-client latency and offline switches, pending queue, rejections, message log |
+| `test/sync` | | Rebase unit tests; seeded convergence simulation (4 clients, 20 seeds) with variable latency, jitter and dropped connections; in-order delivery, like TCP |
+| `test/smoke.ts` | | End-to-end check against a running server over real WebSockets |
+
+Planned, not created yet:
+
+- `web/`: the single SPA. `src/shell` (routing, auth, layout, the `SyncClient` provider), `src/sections/{field,ops,reports,admin}` loaded lazily by route, `src/ui` shared components. ESLint boundary rules keep sections from importing each other.
+- `packages/domain`: the mission model (records, mutations, projections), shared by `web` and `server`.
+- `packages/devtools`: `SyncPanel`, the in-app panel for connection state and outstanding changes, also used by the harness.
+
+## Commands
+
+Requires Node 22.12+ and **npm 11** (npm 10 crashes resolving this tree's peer dependencies). Use `npx npm@11 install` if your global npm is older.
+
+```sh
+npm install
+npm test                 # unit + convergence tests
+npm run typecheck
+npm run dev              # UI on :4000, API server on :5174 behind Vite's proxy (the harness until web/ exists)
+npm run dev:harness      # same, always the harness
+npm run build            # dist/index.mjs (server, all deps bundled) + dist/public (UI)
+npm run start            # node dist/index.mjs: UI and API on :4000
+docker compose up --build  # same bundle in a container on :4000
+npm run smoke            # end-to-end check against :4000; works with any of the above
+```
+
+**Ports.** The browser always uses `http://localhost:4000`, which keeps one OAuth redirect URL for every mode. In dev, Vite forwards `/api/**` (WebSocket included) and `/health` to the server on `:5174` (`server/.env.development`; `SYNC_LOG=1` logs every message).
+
+**Routes.** `/api/sync` (WebSocket), `/api/debug/events/<eventId>?view=command|field` (dev only; off in the production bundle), `/health`. Anything else serves the UI, falling back to `index.html` for client-side routes.
+
+**Deploy artifact.** `dist/` is self-contained: `node dist/index.mjs` needs no `node_modules`, and serves `public/` from next to itself (override with `UI_DIST`; port with `PORT`). The Docker image contains only `dist/` and runs as `node`.
+
+## Phase 1 shortcuts (deliberate, to revisit)
+
+- **Auth:** identity comes from `?user=&tier=` on the WebSocket URL. Replaced by the session cookie and grants in phase 2.
+- **Storage:** in-memory only. MongoDB storage (replica set, one transaction per commit) implements the same `EventStorage` interface; next step.
+- **Any client may open any event**, and events are created on first subscribe.
+- **Not yet built:** idle actor unloading, cross-actor commit batching (~10 ms), build-version `reload`, HTTP fallback transport, `permessage-deflate`, the cross-event outbox, summaries.
