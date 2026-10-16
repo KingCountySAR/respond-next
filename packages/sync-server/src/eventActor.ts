@@ -12,7 +12,7 @@ import {
   type Viewer,
   type WireMutation,
 } from '@sync/core';
-import type { EventStorage, LogEntry } from './storage';
+import { StorageConflictError, type EventStorage, type LogEntry } from './storage';
 
 /** How far in the future a mutation's `at` may be, to absorb client clock error. */
 const MAX_FUTURE_AT_MS = 2 * 60_000;
@@ -22,6 +22,8 @@ export interface ActorConn {
   readonly clientId: string;
   readonly viewer: Viewer;
   send(msg: ServerMessage): void;
+  /** Ends the connection; the client reconnects and resubscribes. */
+  close(code: number, reason: string): void;
 }
 
 export interface ActorDeps {
@@ -51,6 +53,8 @@ export class EventActor {
   private readonly lastMutationIds = new Map<string, number>();
   private readonly subs = new Map<string, Subscription>();
   private queue: Promise<unknown> = Promise.resolve();
+  /** Set when storage shows another process wrote this event; the hub then loads a fresh actor. */
+  stale = false;
 
   private constructor(
     readonly eventId: string,
@@ -99,6 +103,16 @@ export class EventActor {
     return out;
   }
 
+  /**
+   * Our in-memory state is behind storage. Disconnect every subscriber: their clients reconnect,
+   * resubscribe to a freshly loaded actor and resend anything unconfirmed.
+   */
+  private retire(): void {
+    this.stale = true;
+    for (const sub of this.subs.values()) sub.conn.close(1012, 'event reloaded');
+    this.subs.clear();
+  }
+
   private serial<T>(fn: () => Promise<T> | T): Promise<T> {
     const next = this.queue.then(fn);
     this.queue = next.catch(() => undefined);
@@ -106,6 +120,7 @@ export class EventActor {
   }
 
   private doSubscribe(conn: ActorConn, since: number): void {
+    if (this.stale) return conn.close(1012, 'event reloaded');
     const viewKey = this.deps.projector.viewKey(conn.viewer);
     const lastMutationId = this.lastMutationIds.get(conn.clientId) ?? 0;
     if (since === 0 || since > this.version) {
@@ -120,6 +135,7 @@ export class EventActor {
   }
 
   private async doPush(conn: ActorConn, mutations: WireMutation[]): Promise<void> {
+    if (this.stale) return conn.close(1012, 'event reloaded');
     if (!this.subs.has(conn.id)) {
       conn.send({ t: 'error', code: 'not_subscribed', message: `Subscribe to ${this.eventId} before pushing` });
       return;
@@ -164,7 +180,12 @@ export class EventActor {
     if (log.length === 0) return;
 
     const changed = [...batch.writes.values()];
-    await this.deps.storage.commit(this.eventId, { version, records: changed, lastMutationIds: { [conn.clientId]: lastId }, log });
+    try {
+      await this.deps.storage.commit(this.eventId, { fromVersion: this.version, version, records: changed, lastMutationIds: { [conn.clientId]: lastId }, log });
+    } catch (err) {
+      if (err instanceof StorageConflictError) this.retire();
+      throw err;
+    }
 
     for (const r of changed) this.records.set(recKey(r), r);
     this.version = version;

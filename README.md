@@ -29,13 +29,14 @@ Requires Node 22.12+ and **npm 11** (npm 10 crashes resolving this tree's peer d
 
 ```sh
 npm install
-npm test                 # unit + convergence tests
+npm run db               # Postgres 18 in Docker, host port 5433
+npm test                 # unit, convergence and storage tests (Postgres suite runs when the db is up)
 npm run typecheck
-npm run dev              # UI on :4000, API server on :5174 behind Vite's proxy (the harness until web/ exists)
+npm run dev              # starts the db, UI on :4000, API server on :5174 behind Vite's proxy (the harness until web/ exists)
 npm run dev:harness      # same, always the harness
 npm run build            # dist/index.mjs (server, all deps bundled) + dist/public (UI)
-npm run start            # node dist/index.mjs: UI and API on :4000
-docker compose up --build  # same bundle in a container on :4000
+npm run start            # node dist/index.mjs: UI and API on :4000 (set DATABASE_URL, else in-memory)
+docker compose up --build  # app + Postgres; app on :4000 (APP_PORT to change the host port)
 npm run smoke            # end-to-end check against :4000; works with any of the above
 ```
 
@@ -43,11 +44,12 @@ npm run smoke            # end-to-end check against :4000; works with any of the
 
 **Routes.** `/api/sync` (WebSocket), `/api/debug/events/<eventId>?view=command|field` (dev only; off in the production bundle), `/health`. Anything else serves the UI, falling back to `index.html` for client-side routes.
 
+**Storage.** `DATABASE_URL` selects Postgres; without it the server uses in-memory storage (and warns in production). Each commit is one transaction covering records, per-client mutation ids and the mutation log, guarded by the event's version so a second process writing the same event fails with a conflict instead of overwriting. Tables (created on startup if missing): `event_meta`, `records` (each record whole as `jsonb`), `client_mutations`, `mutation_log` (append-only; `seq` orders it). Dev uses `postgres://sync:sync@localhost:5433/sync`; storage tests create and drop a `sync_test_*` database per test (`TEST_DATABASE_URL` to point elsewhere).
+
 **Deploy artifact.** `dist/` is self-contained: `node dist/index.mjs` needs no `node_modules`, and serves `public/` from next to itself (override with `UI_DIST`; port with `PORT`). The Docker image contains only `dist/` and runs as `node`.
 
 ## Phase 1 shortcuts (deliberate, to revisit)
 
 - **Auth:** identity comes from `?user=&tier=` on the WebSocket URL. Replaced by the session cookie and grants in phase 2.
-- **Storage:** in-memory only. MongoDB storage (replica set, one transaction per commit) implements the same `EventStorage` interface; next step.
 - **Any client may open any event**, and events are created on first subscribe.
 - **Not yet built:** idle actor unloading, cross-actor commit batching (~10 ms), build-version `reload`, HTTP fallback transport, `permessage-deflate`, the cross-event outbox, summaries.

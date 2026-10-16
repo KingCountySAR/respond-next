@@ -8,7 +8,10 @@
     "test/harness"
   ],
   "scripts": {
+    "db": "docker compose up -d --wait postgres",
+    "predev": "npm run db",
     "dev": "run-p --race --print-label dev:server dev:ui",
+    "predev:harness": "npm run db",
     "dev:harness": "run-p --race --print-label dev:server dev:ui",
     "dev:server": "npm run dev -w server",
     "dev:ui": "npm run dev -w harness",

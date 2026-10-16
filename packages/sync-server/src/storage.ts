@@ -26,19 +26,40 @@ export interface StoredEvent {
 }
 
 export interface CommitBatch {
+  /** The stored version this batch builds on; a mismatch means another process wrote the event. */
+  fromVersion: number;
   version: number;
   records: Rec[];
   lastMutationIds: Record<string, number>;
   log: LogEntry[];
 }
 
-/** Persistence for event actors. Each commit must be atomic: records, client ids and log together. */
+/**
+ * The stored event moved on without us: another process owns it, or owned it briefly.
+ * The in-memory actor is stale and must be reloaded.
+ */
+export class StorageConflictError extends Error {
+  constructor(
+    readonly eventId: string,
+    readonly expectedVersion: number,
+  ) {
+    super(`Event ${eventId} is no longer at version ${expectedVersion}; another process wrote it`);
+    this.name = 'StorageConflictError';
+  }
+}
+
+/**
+ * Persistence for event actors. Each commit is atomic (records, client mutation ids and log
+ * together) and fails with StorageConflictError unless the stored version equals `fromVersion`.
+ */
 export interface EventStorage {
   load(eventId: string): Promise<StoredEvent | undefined>;
   commit(eventId: string, batch: CommitBatch): Promise<void>;
+  /** The latest log entries for an event, oldest first; for debugging tools. */
+  recentLog(eventId: string, limit: number): Promise<LogEntry[]>;
 }
 
-/** In-memory storage for development and tests. MongoDB storage implements the same interface. */
+/** In-memory storage for development and tests. PostgresStorage implements the same interface. */
 export class MemoryStorage implements EventStorage {
   private readonly events = new Map<string, { version: number; records: Map<string, Rec>; lastMutationIds: Map<string, number> }>();
   readonly log: LogEntry[] = [];
@@ -51,13 +72,18 @@ export class MemoryStorage implements EventStorage {
 
   async commit(eventId: string, batch: CommitBatch): Promise<void> {
     let e = this.events.get(eventId);
+    if ((e?.version ?? 0) !== batch.fromVersion) throw new StorageConflictError(eventId, batch.fromVersion);
     if (!e) {
       e = { version: 0, records: new Map(), lastMutationIds: new Map() };
       this.events.set(eventId, e);
     }
     e.version = batch.version;
     for (const r of batch.records) e.records.set(recKey(r), r);
-    for (const [clientId, id] of Object.entries(batch.lastMutationIds)) e.lastMutationIds.set(clientId, id);
+    for (const [clientId, id] of Object.entries(batch.lastMutationIds)) e.lastMutationIds.set(clientId, Math.max(id, e.lastMutationIds.get(clientId) ?? 0));
     this.log.push(...batch.log);
+  }
+
+  async recentLog(eventId: string, limit: number): Promise<LogEntry[]> {
+    return this.log.filter((e) => e.eventId === eventId).slice(-limit);
   }
 }

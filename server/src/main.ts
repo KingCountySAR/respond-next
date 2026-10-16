@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { toyProjector, toyRegistry } from '@sync/toy-domain';
-import { Hub, MemoryStorage } from '@sync/server';
+import { Hub, MemoryStorage, PostgresStorage, type EventStorage } from '@sync/server';
 import { createSyncApp } from './app';
 
 // 4000 is the one origin the browser sees (and the OAuth redirect target). In `npm run dev`
@@ -12,7 +12,23 @@ import { createSyncApp } from './app';
 const port = Number(process.env.PORT ?? 4000);
 // The build bundles with NODE_ENV=production; under tsx it comes from the environment.
 const production = process.env.NODE_ENV === 'production';
-const storage = new MemoryStorage();
+
+async function openStorage(): Promise<{ storage: EventStorage; label: string; close(): Promise<void> }> {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    if (production) console.warn('DATABASE_URL is not set: using in-memory storage; everything is lost on restart');
+    return { storage: new MemoryStorage(), label: 'memory', close: async () => {} };
+  }
+  try {
+    const postgres = await PostgresStorage.connect(url);
+    return { storage: postgres, label: `postgres ${new URL(url).host}`, close: () => postgres.close() };
+  } catch (err) {
+    console.error(`Cannot reach Postgres at ${new URL(url).host}. In development, start it with \`npm run db\`.`);
+    throw err;
+  }
+}
+
+const { storage, label: storageLabel, close: closeStorage } = await openStorage();
 
 /** The built UI: UI_DIST if set, else `public/` next to the server bundle. */
 function uiDir(): string | undefined {
@@ -38,7 +54,7 @@ const { app, injectWebSocket } = createSyncApp(hub, {
           version: actor.currentVersion,
           subscribers: actor.subscriberCount,
           records: actor.projectedRecords(view),
-          log: storage.log.filter((e) => e.eventId === eventId).slice(-50),
+          log: await storage.recentLog(eventId, 50),
         };
       },
 });
@@ -51,6 +67,13 @@ if (ui) {
 }
 
 const server = serve({ fetch: app.fetch, port }, (info) =>
-  console.log(`server listening on http://localhost:${info.port}${ui ? ` (UI from ${ui})` : ''}${production ? '' : ' [development]'}`),
+  console.log(`server listening on http://localhost:${info.port}; storage: ${storageLabel}${ui ? `; UI from ${ui}` : ''}${production ? '' : ' [development]'}`),
 );
 injectWebSocket(server);
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    server.close();
+    void closeStorage().finally(() => process.exit(0));
+  });
+}

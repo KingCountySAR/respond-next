@@ -1,10 +1,37 @@
 services:
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: sync
+      POSTGRES_PASSWORD: sync
+      POSTGRES_DB: sync
+    ports:
+      # 5433 on the host, to stay clear of any other local Postgres on 5432.
+      - "5433:5432"
+    volumes:
+      # Postgres 18 images keep their data under a versioned directory inside /var/lib/postgresql.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "sync", "-d", "sync"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
   app:
     build: .
     ports:
-      - "4000:4000"
+      - "${APP_PORT:-4000}:4000"
+    environment:
+      DATABASE_URL: postgres://sync:sync@postgres:5432/sync
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
       interval: 10s
       timeout: 3s
       retries: 3
+
+volumes:
+  postgres-data:

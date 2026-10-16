@@ -17,7 +17,8 @@ export type WireMutation = z.infer<typeof WireMutation>;
 export const ClientMessage = z.discriminatedUnion('t', [
   z.object({
     t: z.literal('hello'),
-    clientId: z.string().min(1),
+    // Restricted because it becomes a storage field name (lastMutationIds.<clientId>).
+    clientId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, 'clientId must be 1-64 letters, digits, _ or -'),
     build: z.string(),
     subs: z.array(z.object({ eventId: z.string().min(1), since: z.number().int().min(0) })),
   }),

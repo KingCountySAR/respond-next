@@ -1,5 +1,6 @@
 import { ClientMessage, decode, encode, randomId, type ServerMessage, type Viewer } from '@sync/core';
 import { EventActor, type ActorConn, type ActorDeps } from './eventActor';
+import { StorageConflictError } from './storage';
 
 /** The transport side of one client connection (a WebSocket in production, a fake in tests). */
 export interface HubConnection {
@@ -36,14 +37,21 @@ export class Hub {
     };
   }
 
-  actor(eventId: string): Promise<EventActor> {
-    let actor = this.actors.get(eventId);
-    if (!actor) {
-      actor = EventActor.load(eventId, this.deps);
-      this.actors.set(eventId, actor);
-      actor.catch(() => this.actors.delete(eventId));
+  async actor(eventId: string): Promise<EventActor> {
+    const cached = this.actors.get(eventId);
+    if (cached) {
+      const actor = await cached;
+      if (!actor.stale) return actor;
+      // Only replace it if no one else has already.
+      if (this.actors.get(eventId) === cached) this.actors.delete(eventId);
+      return this.actor(eventId);
     }
-    return actor;
+    const loading = EventActor.load(eventId, this.deps);
+    this.actors.set(eventId, loading);
+    loading.catch(() => {
+      if (this.actors.get(eventId) === loading) this.actors.delete(eventId);
+    });
+    return loading;
   }
 
   private receive(conn: Conn, text: string): void {
@@ -64,7 +72,9 @@ export class Hub {
     conn.queue = conn.queue
       .then(() => this.handle(conn, msg))
       .catch((err) => {
-        console.error('sync: closing connection after an error', err);
+        if (err instanceof StorageConflictError) console.warn(`sync: ${err.message}; reloading it`);
+        else console.error('sync: closing connection after an error', err);
+        if (conn.closed) return; // the actor already closed it
         conn.transport.close(1011, 'internal error');
         this.disconnect(conn);
       });
@@ -73,7 +83,16 @@ export class Hub {
   private async handle(conn: Conn, msg: ClientMessage): Promise<void> {
     if (conn.closed) return;
     if (msg.t === 'hello') {
-      conn.actorConn = { id: conn.id, clientId: msg.clientId, viewer: conn.transport.viewer, send: (m) => this.send(conn, m) };
+      conn.actorConn = {
+        id: conn.id,
+        clientId: msg.clientId,
+        viewer: conn.transport.viewer,
+        send: (m) => this.send(conn, m),
+        close: (code, reason) => {
+          conn.transport.close(code, reason);
+          this.disconnect(conn);
+        },
+      };
       for (const s of msg.subs) await this.subscribe(conn, conn.actorConn, s.eventId, s.since);
       return;
     }
