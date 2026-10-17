@@ -8,6 +8,7 @@ export * from './equipment';
 export * from './viewer';
 export * from './queries';
 export * from './statusSteps';
+export * from './site';
 export * from './projector';
 export * from './mutations/activity';
 export * from './mutations/participants';

@@ -15,8 +15,8 @@ export default defineConfig({
     },
   },
   build: {
-    // Stand-in UI until web/ exists: built next to the server bundle, which serves it.
-    outDir: '../../dist/public',
+    // Dev tool: the server bundle serves web/ from dist/public, so the harness builds elsewhere.
+    outDir: '../../dist/harness',
     emptyOutDir: true,
   },
 });

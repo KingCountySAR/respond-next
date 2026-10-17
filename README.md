@@ -13,7 +13,8 @@ Phase 1 gate: **convergence and network tests pass.**
 | `packages/sync-server` | `@sync/server` | `ActivityActor` (one per activity, serial apply, per-view fan-out), `Hub` (connections → actors), storage interface + in-memory storage |
 | `packages/domain` | `@sync/domain` | The activity model (missions, trainings and other activities): records, queries, mutations, field projections. Shared by `web` and `server`; the server and harness run on it |
 | `packages/model` | `@sync/model` | Prototype UI model: MobX store fed from client snapshots, field and command models (`FieldActivity` ← `CommandActivity`, ...) over the domain queries, a server clock, and a React provider (`@sync/model/react`) |
-| `server` | `server` | Hono app: `/api/sync` WebSocket, `/health`, dev debug endpoint, static UI. `build.mjs` bundles it to `dist/index.mjs`. Auth and REST land here |
+| `server` | `server` | Hono app: `/api/sync` WebSocket, `/api/bootstrap` (site name and colours), `/health`, dev debug endpoint, static UI. `build.mjs` bundles it to `dist/index.mjs`. Auth and REST land here |
+| `web` | `web` | The app: `src/shell` (site config, theme, dev sign-in, the session's `SyncClient`, toolbar, routes), `src/sections/{field,ops,reports,admin}` (ops, reports and admin load lazily), `src/ui` shared components. MUI and wouter, as in the legacy app. Pages are placeholders until their port; see [web/README.md](web/README.md) |
 | `test/harness` | `harness` | Test harness: side-by-side command, member and external clients on the real domain (through `@sync/model`), with per-client latency and offline switches, pending queue, rejections, message log |
 | `packages/*/__tests__` | | Unit tests next to their package: rebase and `testDomain.ts`, a small people-and-statuses domain the engine tests share (`sync-core`), storage and the Postgres suite (`sync-server`), activity rules and projections (`domain`) |
 | `test/integration` | | Tests across packages: seeded convergence simulation (4 clients, 20 seeds) with variable latency, jitter and dropped connections, in-order delivery like TCP; the activity domain on the real activity actor |
@@ -21,7 +22,6 @@ Phase 1 gate: **convergence and network tests pass.**
 
 Planned, not created yet:
 
-- `web/`: the single SPA. `src/shell` (routing, auth, layout, the `SyncClient` provider), `src/sections/{field,ops,reports,admin}` loaded lazily by route, `src/ui` shared components. ESLint boundary rules keep sections from importing each other.
 - `packages/devtools`: `SyncPanel`, the in-app panel for connection state and outstanding changes, also used by the harness.
 
 ## Commands
@@ -33,9 +33,9 @@ npm install
 npm run db               # Postgres 18 in Docker, host port 5433
 npm test                 # unit, convergence and storage tests (Postgres suite runs when the db is up)
 npm run typecheck
-npm run dev              # starts the db, UI on :4000, API server on :5174 behind Vite's proxy (the harness until web/ exists)
-npm run dev:harness      # same, always the harness
-npm run build            # dist/index.mjs (server, all deps bundled) + dist/public (UI)
+npm run dev              # starts the db, the web app on :4000, API server on :5174 behind Vite's proxy
+npm run dev:harness      # same, with the harness on :4000 instead of the web app
+npm run build            # dist/index.mjs (server, all deps bundled) + dist/public (the web app)
 npm run start            # node dist/index.mjs: UI and API on :4000 (set DATABASE_URL, else in-memory)
 docker compose up --build  # app + Postgres; app on :4000 (APP_PORT to change the host port)
 npm run smoke            # end-to-end check against :4000; works with any of the above
@@ -43,7 +43,9 @@ npm run smoke            # end-to-end check against :4000; works with any of the
 
 **Ports.** The browser always uses `http://localhost:4000`, which keeps one OAuth redirect URL for every mode. In dev, Vite forwards `/api/**` (WebSocket included) and `/health` to the server on `:5174` (`server/.env.development`; `SYNC_LOG=1` logs every message).
 
-**Routes.** `/api/sync` (WebSocket), `/api/debug/activities/<activityId>?view=command|field:member|field:external` (dev only; off in the production bundle), `/health`. Anything else serves the UI, falling back to `index.html` for client-side routes.
+**Routes.** `/api/sync` (WebSocket), `/api/bootstrap`, `/api/debug/activities/<activityId>?view=command|field:member|field:external` (dev only; off in the production bundle), `/health`. Anything else serves the UI, falling back to `index.html` for client-side routes.
+
+**Site.** Until organizations are stored, `/api/bootstrap` takes the site from `ORG_TITLE`, `ORG_SHORT_TITLE`, `THEME_PRIMARY` and `THEME_PRIMARY_DARK`, with the legacy app's defaults ("Team", `rgb(200, 100, 100)`).
 
 **Storage.** `DATABASE_URL` selects Postgres; without it the server uses in-memory storage (and warns in production). Each commit is one transaction covering records, per-client mutation ids and the mutation log, guarded by the activity's version so a second process writing the same activity fails with a conflict instead of overwriting. Tables (created on startup if missing): `activity_meta`, `records` (each record whole as `jsonb`), `client_mutations`, `mutation_log` (append-only; `seq` orders it). Dev uses `postgres://sync:sync@localhost:5433/sync`; storage tests create and drop a `sync_test_*` database per test (`TEST_DATABASE_URL` to point elsewhere).
 

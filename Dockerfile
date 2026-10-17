@@ -9,8 +9,10 @@ COPY package.json package-lock.json ./
 COPY packages/sync-core/package.json packages/sync-core/
 COPY packages/sync-client/package.json packages/sync-client/
 COPY packages/sync-server/package.json packages/sync-server/
-COPY packages/toy-domain/package.json packages/toy-domain/
+COPY packages/domain/package.json packages/domain/
+COPY packages/model/package.json packages/model/
 COPY server/package.json server/
+COPY web/package.json web/
 COPY test/harness/package.json test/harness/
 RUN npm ci
 

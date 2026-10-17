@@ -2,6 +2,6 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['packages/*/__tests__/**/*.test.{ts,tsx}', 'test/integration/**/*.test.ts'],
+    include: ['packages/*/__tests__/**/*.test.{ts,tsx}', 'web/__tests__/**/*.test.{ts,tsx}', 'test/integration/**/*.test.ts'],
   },
 });

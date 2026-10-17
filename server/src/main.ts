@@ -3,7 +3,7 @@ import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { activityProjector, activityRegistry } from '@sync/domain';
+import { activityProjector, activityRegistry, type SiteConfig } from '@sync/domain';
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 
@@ -45,7 +45,16 @@ const hub = new Hub({
   log: process.env.SYNC_LOG ? (dir, connId, msg) => console.log(dir === 'in' ? '<-' : '->', connId.slice(0, 8), JSON.stringify(msg)) : undefined,
 });
 
+/** Until organizations are stored, the site comes from the environment, with the legacy app's defaults. */
+const site: SiteConfig = {
+  organization: { title: process.env.ORG_TITLE ?? 'Team', shortTitle: process.env.ORG_SHORT_TITLE ?? process.env.ORG_TITLE ?? 'Team' },
+  theme: { primary: process.env.THEME_PRIMARY ?? 'rgb(200, 100, 100)', primaryDark: process.env.THEME_PRIMARY_DARK },
+  // No Google sign-in until phase 2: the web app offers the dev sign-in.
+  dev: { noExternalNetwork: true, buildId: process.env.BUILD_ID ?? 'dev' },
+};
+
 const { app, injectWebSocket } = createSyncApp(hub, {
+  site,
   debugActivity: production
     ? undefined
     : async (activityId, view) => {

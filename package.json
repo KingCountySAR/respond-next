@@ -5,17 +5,19 @@
   "workspaces": [
     "packages/*",
     "server",
+    "web",
     "test/harness"
   ],
   "scripts": {
     "db": "docker compose up -d --wait postgres",
     "predev": "npm run db",
-    "dev": "run-p --race --print-label dev:server dev:ui",
+    "dev": "run-p --race --print-label dev:server dev:web",
     "predev:harness": "npm run db",
-    "dev:harness": "run-p --race --print-label dev:server dev:ui",
+    "dev:harness": "run-p --race --print-label dev:server dev:harness-ui",
     "dev:server": "npm run dev -w server",
-    "dev:ui": "npm run dev -w harness",
-    "build": "npm run build -w harness && npm run build -w server",
+    "dev:web": "npm run dev -w web",
+    "dev:harness-ui": "npm run dev -w harness",
+    "build": "npm run build -w web && npm run build -w server",
     "start": "node --enable-source-maps dist/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -1,10 +1,12 @@
 import { Hono } from 'hono';
 import { createNodeWebSocket } from '@hono/node-ws';
 import { PROTOCOL } from '@sync/core';
-import { TIERS, type ActivityViewer, type Tier } from '@sync/domain';
+import { TIERS, type ActivityViewer, type BootstrapResponse, type SiteConfig, type Tier } from '@sync/domain';
 import type { Hub } from '@sync/server';
 
 export interface SyncAppOptions {
+  /** The site name and colours clients load first. */
+  site: SiteConfig;
   /** Dev-only JSON view of an activity's server state. Leave unset in production. */
   debugActivity?(activityId: string, view: string): Promise<unknown>;
 }
@@ -23,11 +25,12 @@ export function devViewer(query: (name: string) => string | undefined): Activity
   };
 }
 
-export function createSyncApp(hub: Hub, options: SyncAppOptions = {}) {
+export function createSyncApp(hub: Hub, options: SyncAppOptions) {
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
   app.get('/health', (c) => c.json({ ok: true }));
+  app.get('/api/bootstrap', (c) => c.json({ config: options.site } satisfies BootstrapResponse));
 
   app.get(
     '/api/sync',

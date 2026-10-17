@@ -70,6 +70,8 @@ export class SyncClient {
   private transport: Transport | undefined;
   private connState: ConnectionState = 'offline';
   private stopped = true;
+  /** The latest start() or stop() call: a stop() while start() waits for persistence wins. */
+  private wanted = false;
   private attempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   private pingTimer: ReturnType<typeof setInterval> | undefined;
@@ -101,13 +103,15 @@ export class SyncClient {
   }
 
   async start(): Promise<void> {
+    this.wanted = true;
     await this.ready;
-    if (!this.stopped) return;
+    if (!this.wanted || !this.stopped) return;
     this.stopped = false;
     this.connect();
   }
 
   stop(): void {
+    this.wanted = false;
     this.stopped = true;
     clearTimeout(this.reconnectTimer);
     this.dropConnection();
