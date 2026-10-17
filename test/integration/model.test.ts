@@ -90,4 +90,30 @@ describe('activity models over the network', () => {
     expect(mine.participant(anna)!.record?.eta).toBe(T0 + 3 * HOUR);
     stop();
   });
+
+  it('projects operations: names and equipment for the field, the rest for command', async () => {
+    const { mine, member, external, stop } = await connect();
+    mine.mutate('createActivity', activityArgs());
+    const anna = mine.addParticipant({ personRef: 'kcsara:1', firstname: 'Anna', lastname: 'Lee' }, CRT, 'staging', { at: T0 + HOUR });
+    const lz = mine.createPlace({ name: 'LZ', notes: 'Gravel lot' });
+    const division = mine.createGroup('Division A');
+    division.setLeader(anna);
+    mine.addEquipment('inventory-11', lz.asTarget);
+    mine.setUnitStatus(CRT, 'responding');
+    mine.logComm({ from: 'Base', to: 'LZ', message: 'Helicopter inbound' });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    for (const field of [member, external]) {
+      expect(field.places.map((p) => p.name)).toEqual(['Command Post', 'Field', 'LZ']);
+      expect(field.place(lz.id)!.record).not.toHaveProperty('notes');
+      expect(field.equipment.map((e) => [e.name, e.locationName])).toEqual([['Litter', 'LZ']]);
+      expect(field.units.map((u) => [u.name, u.status])).toEqual([['CRT', 'responding']]);
+      expect([...field.store.scan('comm')]).toEqual([]);
+    }
+    expect(member.group(division.id)!.leader?.id).toBe(anna.id);
+    expect(external.group(division.id)!.name).toBe('Division A');
+    expect(external.group(division.id)!.leader).toBeUndefined();
+    expect(mine.comms.map((c) => c.message)).toEqual(['Helicopter inbound']);
+    stop();
+  });
 });

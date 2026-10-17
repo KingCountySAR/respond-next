@@ -7,6 +7,7 @@ import {
   ACTIVITY_RECORD_ID,
   PARTICIPANT_STATUSES,
   type AssignmentRec,
+  type CommRec,
   type EquipmentRec,
   type ActivityRec,
   type GroupRec,
@@ -180,6 +181,11 @@ export const groupLedBy = (view: ReadView, participantId: string): GroupRec | un
 
 export const currentUnitStatus = (view: ReadView, unitId: string): UnitStatusRec | undefined =>
   latestEntry(scanWhere<UnitStatusRec>(view, 'unitStatus', 'unitId', unitId));
+
+// --- Comms ---------------------------------------------------------------------------------
+
+/** The comms log, oldest first; deleted entries stay stored but drop out. */
+export const commLog = (view: ReadView): CommRec[] => [...where(view.scan<CommRec>('comm'), (c) => !c.removed)].sort(compareEntries);
 
 // --- Activity lifecycle ------------------------------------------------------------------------
 

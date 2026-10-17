@@ -6,7 +6,7 @@
  * types can't drift from what the server actually sends.
  */
 import type { Projector, Rec, Viewer } from '@sync/core';
-import type { AssignmentRec, ActivityRec, GroupRec, ParticipantRec, Target, TeamRec, TeamStatusRec } from './schema';
+import type { ActivityRec, ActivityUnitRec, AssignmentRec, ContactRec, EquipmentRec, GroupRec, ParticipantRec, PlaceRec, Target, TeamRec, TeamStatusRec } from './schema';
 import { asActivityViewer, isCommand } from './viewer';
 
 export type ViewKey = 'command' | 'field:member' | 'field:external';
@@ -22,6 +22,7 @@ const ASSIGNMENT_FIELDS = fields<AssignmentRec>()(['participantId', 'at', 'by'])
 const TEAM_FIELDS = fields<TeamRec>()(['name']);
 const MEMBER_GROUP_FIELDS = fields<GroupRec>()(['name', 'leaderParticipantId']);
 const EXTERNAL_GROUP_FIELDS = fields<GroupRec>()(['name']);
+const PLACE_FIELDS = fields<PlaceRec>()(['name']);
 
 // --- Field record types -----------------------------------------------------------------------
 
@@ -39,6 +40,12 @@ export type FieldTeamRec = Visible<TeamRec, typeof TEAM_FIELDS>;
 /** Members only. */
 export type FieldTeamStatusRec = TeamStatusRec;
 export type FieldGroupRec = FieldView<GroupRec, typeof MEMBER_GROUP_FIELDS, typeof EXTERNAL_GROUP_FIELDS>;
+export type FieldPlaceRec = Visible<PlaceRec, typeof PLACE_FIELDS>;
+/** Every field viewer sees units (and their statuses) and equipment in full. */
+export type FieldUnitRec = ActivityUnitRec;
+export type FieldEquipmentRec = EquipmentRec;
+/** Members only. */
+export type FieldContactRec = ContactRec;
 
 // --- Rules ------------------------------------------------------------------------------------
 
@@ -75,7 +82,7 @@ const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
     team: only(TEAM_FIELDS),
     teamStatus: all,
     group: only(MEMBER_GROUP_FIELDS),
-    place: only(['name']),
+    place: only(PLACE_FIELDS),
     equipment: all,
     comm: none,
   },
@@ -90,7 +97,7 @@ const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
     team: only(TEAM_FIELDS),
     teamStatus: none,
     group: only(EXTERNAL_GROUP_FIELDS),
-    place: only(['name']),
+    place: only(PLACE_FIELDS),
     equipment: all,
     comm: none,
   },

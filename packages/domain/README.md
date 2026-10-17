@@ -9,7 +9,7 @@ The activity model, the same for missions, trainings and other activities: the r
 | File | What it holds |
 | --- | --- |
 | `src/schema.ts` | Record interfaces (`ActivityRec`, `ParticipantRec`, `ParticipantStatusRec`, `AssignmentRec`, `TeamRec`, ...), status lists, `Target`, `DEFAULT_PLACES` |
-| `src/queries.ts` | Pure reads over a `ReadView`: current status, unit, assignment, team members, counts, activity phase |
+| `src/queries.ts` | Pure reads over a `ReadView`: current status, unit, assignment, team members, counts, the comms log, activity phase |
 | `src/statusSteps.ts` | The status buttons offered from each status, standby-only and light-mode rules |
 | `src/equipment.ts` | The equipment catalogue (legacy ids `inventory-0..38`) |
 | `src/viewer.ts` | `ActivityViewer` (tier, class, personRef), `isCommand`, `SYSTEM_VIEWER` |
