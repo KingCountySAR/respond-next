@@ -1,6 +1,7 @@
 import { Route, Switch } from 'wouter';
 import { ToolbarPage } from '../../shell/ToolbarPage';
 import { Placeholder } from '../../ui/Placeholder';
+import { ActivityListPage } from './ActivityListPage';
 
 export function ReportRoutes() {
   return (
@@ -13,14 +14,10 @@ export function ReportRoutes() {
         )}
       </Route>
       <Route path="/missions">
-        <ToolbarPage>
-          <Placeholder title="Missions" comesWith="activity summaries on the server" />
-        </ToolbarPage>
+        <ActivityListPage activityType="missions" />
       </Route>
       <Route path="/events">
-        <ToolbarPage>
-          <Placeholder title="Events" comesWith="activity summaries on the server" />
-        </ToolbarPage>
+        <ActivityListPage activityType="events" />
       </Route>
     </Switch>
   );
