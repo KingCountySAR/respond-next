@@ -3,7 +3,7 @@ import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { toyProjector, toyRegistry } from '@sync/toy-domain';
+import { activityProjector, activityRegistry } from '@sync/domain';
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 
@@ -39,8 +39,8 @@ function uiDir(): string | undefined {
 
 const hub = new Hub({
   storage,
-  registry: toyRegistry,
-  projector: toyProjector,
+  registry: activityRegistry,
+  projector: activityProjector,
   now: Date.now,
   log: process.env.SYNC_LOG ? (dir, connId, msg) => console.log(dir === 'in' ? '<-' : '->', connId.slice(0, 8), JSON.stringify(msg)) : undefined,
 });

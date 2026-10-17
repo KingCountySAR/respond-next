@@ -1,7 +1,7 @@
 /**
- * Phase 1 stand-in domain: a roster of people with timed status entries and a command-only note.
- * Small on purpose; it exercises optimistic updates, rebasing, field-level projection and backdated
- * `at` times without the real mission model.
+ * A small domain for the sync engine's own tests (rebase, storage, convergence): a roster of people
+ * with timed status entries and a command-only note. It exercises optimistic updates, rebasing,
+ * field-level projection and backdated `at` times without depending on the activity rules.
  */
 import { z } from 'zod';
 import { MutationRegistry, Rejection, defineMutation, type Projector, type ReadView, type Rec } from '@sync/core';
@@ -85,9 +85,9 @@ export const removePerson = defineMutation({
   },
 });
 
-export const toyRegistry = new MutationRegistry([addPerson, renamePerson, setNote, setStatus, removePerson]);
+export const testRegistry = new MutationRegistry([addPerson, renamePerson, setNote, setStatus, removePerson]);
 
-export const toyProjector: Projector = {
+export const testProjector: Projector = {
   viewKey: (viewer) => (isCommand(viewer) ? 'command' : 'field'),
   project(viewKey, rec) {
     if (viewKey === 'field' && rec.type === 'person') {

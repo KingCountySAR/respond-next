@@ -37,17 +37,20 @@ export const STANDBY_ONLY_STATUSES: ReadonlySet<ParticipantStatus> = new Set(['s
 /** Light mode has no remote role and no assignments. */
 const LIGHT_MODE_EXCLUDED: ReadonlySet<ParticipantStatus> = new Set(['remote', 'assigned']);
 
+/** The activity fields the rules read; every viewer has them, so field UI can offer the same steps. */
+export type StatusRules = Pick<ActivityRec, 'startTime' | 'earlySignInWindow' | 'standbyOnly' | 'mode'>;
+
 /**
  * Self sign-in is standby-only before the sign-in window opens, and on a standby-only activity
  * unless the participant is already responding.
  */
-export function isStandbyOnly(activity: ActivityRec, current: ParticipantStatus, now: number): boolean {
+export function isStandbyOnly(activity: StatusRules, current: ParticipantStatus, now: number): boolean {
   return signInOpensAt(activity) > now || (activity.standbyOnly && !isRespondingStatus(current));
 }
 
-export function statusSteps(activity: ActivityRec, current: ParticipantStatus, now: number): ParticipantStatus[] {
+export function statusSteps(activity: StatusRules, current: ParticipantStatus, now: number): ParticipantStatus[] {
   const steps = isStandbyOnly(activity, current, now) ? STANDBY_ONLY_STEPS[current] : STEPS[current];
   return activity.mode === 'light' ? steps.filter((s) => !LIGHT_MODE_EXCLUDED.has(s)) : steps;
 }
 
-export const allowedInMode = (activity: ActivityRec, status: ParticipantStatus): boolean => activity.mode !== 'light' || !LIGHT_MODE_EXCLUDED.has(status);
+export const allowedInMode = (activity: Pick<StatusRules, 'mode'>, status: ParticipantStatus): boolean => activity.mode !== 'light' || !LIGHT_MODE_EXCLUDED.has(status);

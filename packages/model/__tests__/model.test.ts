@@ -22,6 +22,13 @@ describe('reading', () => {
     expect(activity.statusCounts).toMatchObject({ assigned: 1, staging: 1 });
   });
 
+  it('offers the next statuses the domain allows', async () => {
+    const { activity, anna } = await sampleActivity();
+    expect(activity.participant(anna)!.nextStatuses).toEqual(['demobilizing', 'assigned']);
+    activity.update({ mode: 'light' });
+    expect(activity.participant(anna)!.nextStatuses).toEqual(['demobilizing']);
+  });
+
   it('marks unconfirmed changes', async () => {
     const { activity } = await sampleActivity();
     expect(activity.participants[0]!.isPending).toBe(true); // offline: nothing is confirmed

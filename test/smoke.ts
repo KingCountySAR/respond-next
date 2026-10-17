@@ -4,14 +4,16 @@
  * Usage: npm run smoke [-- ws://host:port/api/sync]
  */
 import { SyncClient, WebSocketTransport } from '@sync/client';
-import { randomId } from '@sync/core';
-import { currentStatus, toyRegistry, type Person } from '@sync/toy-domain';
+import { activityRegistry, currentParticipantStatus, participantIdFor, type ActivityViewer, type ParticipantRec } from '@sync/domain';
 
 const base = process.argv[2] ?? 'ws://localhost:4000/api/sync';
 const activityId = `smoke-${Date.now()}`;
+const CRT = { id: 'org-crt', title: 'Cascade Rescue Team', rosterName: 'CRT' };
 
-const makeClient = (user: string, tier: string) =>
-  new SyncClient({ registry: toyRegistry, viewer: { userId: user, tier }, transport: () => new WebSocketTransport(`${base}?user=${user}&tier=${tier}`) });
+function makeClient(viewer: ActivityViewer): SyncClient {
+  const query = new URLSearchParams({ user: viewer.userId, tier: viewer.tier, class: viewer.class, ...(viewer.personRef && { person: viewer.personRef }) });
+  return new SyncClient({ registry: activityRegistry, viewer, transport: () => new WebSocketTransport(`${base}?${query}`) });
+}
 
 async function waitFor(what: string, check: () => boolean, ms = 5000): Promise<void> {
   const until = Date.now() + ms;
@@ -21,27 +23,39 @@ async function waitFor(what: string, check: () => boolean, ms = 5000): Promise<v
   }
 }
 
-const command = makeClient('alice', 'command');
-const field = makeClient('bob', 'field');
+const command = makeClient({ userId: 'alice', tier: 'command', class: 'member', personRef: 'kcsara:101' });
+const field = makeClient({ userId: 'bob', tier: 'field', class: 'member', personRef: 'kcsara:102' });
 for (const c of [command, field]) {
   await c.start();
   await c.open(activityId);
 }
 await waitFor('both clients live', () => command.status.state === 'live' && field.status.state === 'live');
 
-const id = randomId();
+const bob = participantIdFor('kcsara:102');
 const t0 = Date.now();
-command.mutate(activityId, 'addPerson', { id, name: 'Anna' });
-command.mutate(activityId, 'setNote', { id, note: 'has the radio' });
-await waitFor('field client sees Anna', () => field.snapshot(activityId).get<Person>('person', id)?.name === 'Anna');
+command.mutate(activityId, 'createActivity', {
+  idNumber: '',
+  kind: 'training',
+  title: 'Smoke test',
+  description: '',
+  location: { title: 'Nowhere', lat: null, lon: null, address: null },
+  mapId: '',
+  startTime: Date.now(),
+  ownerOrgId: CRT.id,
+  mode: 'full',
+  standbyOnly: false,
+});
+command.mutate(activityId, 'addParticipant', { personRef: 'kcsara:102', firstname: 'Bob', lastname: 'Brown', unit: CRT, status: 'responding', at: command.now() - 30 * 60_000 });
+command.mutate(activityId, 'setMiles', { participantId: bob, miles: 42 });
+await waitFor('field client sees Bob', () => field.snapshot(activityId).get<ParticipantRec>('participant', bob)?.firstname === 'Bob');
 console.log(`field client saw the new person after ${Date.now() - t0} ms`);
-if ('note' in (field.snapshot(activityId).get('person', id) ?? {})) throw new Error('field client received the command-only note');
+if ('miles' in (field.snapshot(activityId).get('participant', bob) ?? {})) throw new Error('field client received command-only mileage');
 
-field.mutate(activityId, 'setStatus', { personId: id, status: 'assigned', at: field.now() - 15 * 60_000 });
-await waitFor('command client sees the backdated status', () => currentStatus(command.snapshot(activityId), id)?.status === 'assigned');
+field.mutate(activityId, 'setParticipantStatus', { participantId: bob, status: 'staging', unit: CRT, at: field.now() - 15 * 60_000 });
+await waitFor('command client sees the backdated status', () => currentParticipantStatus(command.snapshot(activityId), bob)?.status === 'staging');
 await waitFor('all pending confirmed', () => command.status.pending === 0 && field.status.pending === 0);
-const s = currentStatus(command.snapshot(activityId), id)!;
-console.log(`command client sees status '${s.status}' at ${Math.round((command.now() - s.at) / 60_000)} min ago; note '${command.snapshot(activityId).get<Person>('person', id)?.note}'`);
+const s = currentParticipantStatus(command.snapshot(activityId), bob)!;
+console.log(`command client sees Bob '${s.status}' since ${Math.round((command.now() - s.at) / 60_000)} min ago; miles ${command.snapshot(activityId).get<ParticipantRec>('participant', bob)?.miles}`);
 
 command.stop();
 field.stop();

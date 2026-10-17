@@ -116,12 +116,6 @@ button {
   background: #ca8a04;
 }
 
-.roster form {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
 
 table {
   width: 100%;
@@ -190,4 +184,57 @@ td {
 
 .log li.out {
   color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.server-links a {
+  margin-left: 6px;
+}
+
+.activity {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.me {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.me button {
+  font-size: 12px;
+}
+
+section h3 {
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+tr.mine td:first-child {
+  font-weight: 600;
+}
+
+.teams,
+.comms {
+  margin: 4px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.teams li,
+.comms li {
+  padding: 3px 0;
+  border-top: 1px solid var(--border);
 }

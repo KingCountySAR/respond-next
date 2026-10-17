@@ -10,7 +10,8 @@
   "dependencies": {
     "@sync/client": "*",
     "@sync/core": "*",
-    "@sync/toy-domain": "*",
+    "@sync/domain": "*",
+    "@sync/model": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

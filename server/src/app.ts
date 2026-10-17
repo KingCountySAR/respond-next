@@ -1,11 +1,26 @@
 import { Hono } from 'hono';
 import { createNodeWebSocket } from '@hono/node-ws';
 import { PROTOCOL } from '@sync/core';
+import { TIERS, type ActivityViewer, type Tier } from '@sync/domain';
 import type { Hub } from '@sync/server';
 
 export interface SyncAppOptions {
   /** Dev-only JSON view of an activity's server state. Leave unset in production. */
   debugActivity?(activityId: string, view: string): Promise<unknown>;
+}
+
+/**
+ * Phase 1 dev auth: identity comes from the query string (`?user=&tier=&class=&person=`). Replaced
+ * by the session cookie and the activity's grants in phase 2.
+ */
+export function devViewer(query: (name: string) => string | undefined): ActivityViewer {
+  const tier = query('tier');
+  return {
+    userId: query('user') || 'dev',
+    tier: TIERS.includes(tier as Tier) ? (tier as Tier) : 'command',
+    class: query('class') === 'external' ? 'external' : 'member',
+    personRef: query('person') || undefined,
+  };
 }
 
 export function createSyncApp(hub: Hub, options: SyncAppOptions = {}) {
@@ -18,8 +33,7 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions = {}) {
     '/api/sync',
     upgradeWebSocket((c) => {
       const offered = (c.req.header('sec-websocket-protocol') ?? '').split(',').map((p) => p.trim());
-      // Phase 1 dev auth: identity comes from the query string. Replaced by the session cookie in phase 2.
-      const viewer = { userId: c.req.query('user') ?? 'dev', tier: c.req.query('tier') ?? 'command' };
+      const viewer = devViewer((name) => c.req.query(name));
       let handlers: ReturnType<Hub['connect']> | undefined;
       return {
         onOpen(_evt, ws) {

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SyncClient } from '@sync/client';
 import { Rejection, randomId, recKey, type Rec, type Viewer } from '@sync/core';
 import { Hub, MemoryStorage } from '@sync/server';
-import { STATUSES, toyProjector, toyRegistry, type Person } from '@sync/toy-domain';
+import { STATUSES, testProjector, testRegistry, type Person } from '../../packages/sync-core/__tests__/testDomain';
 import { SimNetwork, mulberry32 } from './sim';
 
 const ACTIVITY = 'e1';
@@ -23,7 +23,7 @@ describe('convergence over a bad network', () => {
     const rand = mulberry32(seed);
     const pick = <T>(items: readonly T[]): T | undefined => items[Math.floor(rand() * items.length)];
     const storage = new MemoryStorage();
-    const hub = new Hub({ storage, registry: toyRegistry, projector: toyProjector, now: () => Date.now() });
+    const hub = new Hub({ storage, registry: testRegistry, projector: testProjector, now: () => Date.now() });
     const net = new SimNetwork(hub, rand);
     const viewers: Viewer[] = [
       { userId: 'cmd1', tier: 'command' },
@@ -31,7 +31,7 @@ describe('convergence over a bad network', () => {
       { userId: 'fld1', tier: 'field' },
       { userId: 'fld2', tier: 'field' },
     ];
-    const clients = viewers.map((viewer, i) => new SyncClient({ registry: toyRegistry, viewer, transport: net.transportFor(i, viewer) }));
+    const clients = viewers.map((viewer, i) => new SyncClient({ registry: testRegistry, viewer, transport: net.transportFor(i, viewer) }));
     for (const c of clients) {
       await c.start();
       await c.open(ACTIVITY);
@@ -83,7 +83,7 @@ describe('convergence over a bad network', () => {
       const snap = client.snapshot(ACTIVITY);
       expect(client.status.state, `client ${i} connection`).toBe('live');
       expect(snap.pending, `client ${i} pending`).toEqual([]);
-      const expected = actor.projectedRecords(toyProjector.viewKey(viewers[i]!));
+      const expected = actor.projectedRecords(testProjector.viewKey(viewers[i]!));
       expect(sortByKey(snap.all()), `client ${i} records`).toEqual(sortByKey(expected));
       if (viewers[i]!.tier === 'field') {
         for (const p of snap.scan('person')) expect(p, 'field view must not include notes').not.toHaveProperty('note');

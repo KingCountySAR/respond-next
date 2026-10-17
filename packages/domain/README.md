@@ -2,8 +2,6 @@
 
 The activity model, the same for missions, trainings and other activities: the records an activity is made of, the queries that read them, the mutations that change them, and the projector that decides what each viewer may see. The same code runs in the browser (optimistic apply) and on the server (the real apply), so a mutation's result is identical on both.
 
-> **Not wired in yet.** `server/src/main.ts` and the harness still use `@sync/toy-domain`. To run against this package, pass `activityRegistry` and `activityProjector` to the `Hub` and `activityRegistry` to each `SyncClient`.
-
 ## What's in it
 
 | File | What it holds |

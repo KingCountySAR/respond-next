@@ -11,8 +11,8 @@
     "@hono/node-server": "^1.13.7",
     "@hono/node-ws": "^1.0.4",
     "@sync/core": "*",
+    "@sync/domain": "*",
     "@sync/server": "*",
-    "@sync/toy-domain": "*",
     "hono": "^4.6.14"
   },
   "devDependencies": {

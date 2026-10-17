@@ -1,62 +1,57 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { MemoryPersistence, SyncClient } from '@sync/client';
 import { useActivitySnapshot, useRejections, useSyncStatus } from '@sync/client/react';
-import { Rejection, keyOf, randomId } from '@sync/core';
-import { STATUSES, currentStatus, toyRegistry, type Person } from '@sync/toy-domain';
+import { activityRegistry, type ActivityViewer } from '@sync/domain';
+import { ActivityModelProvider } from '@sync/model/react';
+import { ActivityView } from './ActivityView';
 import { SimLink, SimTransport } from './simLink';
 
-interface Props {
+/** Who a pane signs in as. The server reads the same fields from the WebSocket URL (dev auth). */
+export interface PaneViewer {
   user: string;
   tier: 'command' | 'field';
+  class: 'member' | 'external';
+  person?: { ref: string; firstname: string; lastname: string };
+}
+
+interface Props {
+  viewer: PaneViewer;
   activityId: string;
   onRemove(): void;
 }
 
-const wsUrl = (user: string, tier: string) =>
-  `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/sync?user=${encodeURIComponent(user)}&tier=${tier}`;
+function wsUrl(v: PaneViewer): string {
+  const query = new URLSearchParams({ user: v.user, tier: v.tier, class: v.class, ...(v.person && { person: v.person.ref }) });
+  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/sync?${query}`;
+}
 
-export function ClientPane({ user, tier, activityId, onRemove }: Props) {
+export function ClientPane({ viewer, activityId, onRemove }: Props) {
   const [link] = useState(() => new SimLink());
-  const [client] = useState(
-    () =>
-      new SyncClient({
-        registry: toyRegistry,
-        viewer: { userId: user, tier },
-        transport: () => new SimTransport(wsUrl(user, tier), link),
-        persistence: new MemoryPersistence(),
-      }),
-  );
-  const [ready, setReady] = useState(false);
+  const [client] = useState(() => {
+    const as: ActivityViewer = { userId: viewer.user, tier: viewer.tier, class: viewer.class, personRef: viewer.person?.ref };
+    return new SyncClient({ registry: activityRegistry, viewer: as, transport: () => new SimTransport(wsUrl(viewer), link), persistence: new MemoryPersistence() });
+  });
 
   useEffect(() => {
-    let live = true;
-    void client
-      .start()
-      .then(() => client.open(activityId))
-      .then(() => live && setReady(true));
-    return () => {
-      live = false;
-      client.stop();
-    };
-  }, [client, activityId]);
+    void client.start();
+    return () => client.stop();
+  }, [client]);
 
   return (
-    <section className={`pane ${tier}`}>
+    <section className={`pane ${viewer.tier}`}>
       <div className="pane-head">
         <strong>
-          {user} · {tier}
+          {viewer.user} · {viewer.tier}
+          {viewer.class === 'external' && ' · external'}
+          {viewer.person && <span className="muted"> · {viewer.person.ref}</span>}
         </strong>
         <button onClick={onRemove}>Remove</button>
       </div>
       <LinkControls link={link} client={client} />
-      {ready ? (
-        <>
-          <Roster client={client} activityId={activityId} tier={tier} />
-          <Debug client={client} activityId={activityId} />
-        </>
-      ) : (
-        <p>Loading…</p>
-      )}
+      <ActivityModelProvider client={client} activityId={activityId} fallback={<p>Loading…</p>}>
+        <ActivityView viewer={viewer} />
+        <Debug client={client} activityId={activityId} />
+      </ActivityModelProvider>
     </section>
   );
 }
@@ -87,106 +82,6 @@ function LinkControls({ link, client }: { link: SimLink; client: SyncClient }) {
         />
         online
       </label>
-    </div>
-  );
-}
-
-function useMinuteTick() {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setTick((n) => n + 1), 15_000);
-    return () => clearInterval(t);
-  }, []);
-}
-
-function Roster({ client, activityId, tier }: { client: SyncClient; activityId: string; tier: string }) {
-  const snap = useActivitySnapshot(client, activityId);
-  const [name, setName] = useState('');
-  const [minutesAgo, setMinutesAgo] = useState(0);
-  const [error, setError] = useState<string>();
-  useMinuteTick();
-  const people = [...snap.scan<Person>('person')].sort((a, b) => a.name.localeCompare(b.name));
-
-  const act = (mutation: string, args: Record<string, unknown>) => {
-    try {
-      client.mutate(activityId, mutation, args);
-      setError(undefined);
-    } catch (err) {
-      setError(err instanceof Rejection ? err.message : String(err));
-    }
-  };
-
-  return (
-    <div className="roster">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          act('addPerson', { id: randomId(), name });
-          setName('');
-        }}
-      >
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <button type="submit">Add</button>
-        <label>
-          when
-          <select value={minutesAgo} onChange={(e) => setMinutesAgo(Number(e.target.value))}>
-            {[0, 5, 15, 30].map((m) => (
-              <option key={m} value={m}>
-                {m ? `${m} min ago` : 'now'}
-              </option>
-            ))}
-          </select>
-        </label>
-      </form>
-      {error && <p className="error">{error}</p>}
-      <table>
-        <tbody>
-          {people.map((p) => {
-            const s = currentStatus(snap, p.id);
-            const ago = s ? Math.max(0, Math.round((client.now() - s.at) / 60_000)) : undefined;
-            return (
-              <tr key={p.id}>
-                <td>
-                  {snap.pendingKeys.has(keyOf('person', p.id)) && <span className="pending" title="unsynced" />}
-                  <button
-                    className="link-button"
-                    onClick={() => {
-                      const next = prompt('New name', p.name);
-                      if (next) act('renamePerson', { id: p.id, name: next });
-                    }}
-                  >
-                    {p.name}
-                  </button>
-                </td>
-                <td>
-                  {s && snap.pendingKeys.has(keyOf('personStatus', s.id)) && <span className="pending" title="unsynced" />}
-                  {s ? `${s.status} · ${ago} min ago` : '—'}
-                </td>
-                <td className="actions">
-                  {STATUSES.map((status) => (
-                    <button key={status} onClick={() => act('setStatus', { personId: p.id, status, at: minutesAgo ? client.now() - minutesAgo * 60_000 : undefined })}>
-                      {status}
-                    </button>
-                  ))}
-                </td>
-                {tier === 'command' && (
-                  <td>
-                    <input
-                      key={`${p.id}-${p.note ?? ''}`}
-                      placeholder="note (command only)"
-                      defaultValue={p.note ?? ''}
-                      onBlur={(e) => {
-                        if (e.target.value !== (p.note ?? '')) act('setNote', { id: p.id, note: e.target.value || null });
-                      }}
-                    />
-                    <button onClick={() => act('removePerson', { id: p.id })}>✕</button>
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   currentParticipantStatus,
   fullName,
   participantTimeline,
+  statusSteps,
   targetName,
   type FieldContactRec,
   type FieldParticipantRec,
@@ -26,6 +27,7 @@ export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRe
       currentStatus: computed,
       status: computed,
       unit: computed,
+      nextStatuses: computed({ equals: compareShallow }),
       timeline: computed({ equals: compareShallow }),
       contact: computed,
       targetKind: computed,
@@ -50,6 +52,15 @@ export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRe
   get unit(): K['unit'] | undefined {
     const unitId = this.currentStatus?.unitId;
     return unitId ? this.activity.unit(unitId) : undefined;
+  }
+
+  /**
+   * The status buttons to offer, as the legacy app does: from the current status, the activity's
+   * standby-only and light-mode rules, and whether sign-in has opened yet.
+   */
+  get nextStatuses(): ParticipantStatus[] {
+    const activity = this.activity.record;
+    return activity ? statusSteps(activity, this.status, this.activity.clock.now()) : [];
   }
 
   /** Status entries, newest first. */

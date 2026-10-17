@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { encode, randomId, type ClientMessage, type Rec, type ServerMessage } from '@sync/core';
 import { Hub, MemoryStorage, PostgresStorage, StorageConflictError, type ActivityStorage, type HubConnection, type LogEntry } from '@sync/server';
-import { toyProjector, toyRegistry } from '@sync/toy-domain';
+import { testProjector, testRegistry } from '../../sync-core/__tests__/testDomain';
 
 /**
  * The same contract for every ActivityStorage. The Postgres suite runs when TEST_DATABASE_URL
@@ -164,14 +164,14 @@ describe.each(backends)('%s storage', (_name, makeBackend) => {
   });
 
   it('lets a new server process pick up an activity where the last one left off', async () => {
-    const before = new Hub({ storage, registry: toyRegistry, projector: toyProjector, now: Date.now });
+    const before = new Hub({ storage, registry: testRegistry, projector: testProjector, now: Date.now });
     const conn = fakeConnection(before);
     conn.send({ t: 'hello', clientId: 'client-a', build: 'test', subs: [{ activityId: 'e1', since: 0 }] });
     conn.send({ t: 'push', activityId: 'e1', mutations: [addPerson(1, 'Bob'), addPerson(2, 'Anna')] });
     await waitFor('both mutations confirmed', () => conn.received.some((m) => m.t === 'update' && m.lastMutationId === 2));
     const original = await before.actor('e1');
 
-    const after = new Hub({ storage, registry: toyRegistry, projector: toyProjector, now: Date.now });
+    const after = new Hub({ storage, registry: testRegistry, projector: testProjector, now: Date.now });
     const reloaded = await after.actor('e1');
     expect(reloaded.currentVersion).toBe(original.currentVersion);
     expect(reloaded.projectedRecords('command')).toEqual(original.projectedRecords('command'));
@@ -188,8 +188,8 @@ describe.each(backends)('%s storage', (_name, makeBackend) => {
 
   it('retires an actor whose activity another process wrote, and reloads it', async () => {
     // Two server processes that both think they own e1: a lease failure, or a split during failover.
-    const hubA = new Hub({ storage, registry: toyRegistry, projector: toyProjector, now: Date.now });
-    const hubB = new Hub({ storage, registry: toyRegistry, projector: toyProjector, now: Date.now });
+    const hubA = new Hub({ storage, registry: testRegistry, projector: testProjector, now: Date.now });
+    const hubB = new Hub({ storage, registry: testRegistry, projector: testProjector, now: Date.now });
     const a = fakeConnection(hubA);
     const b = fakeConnection(hubB);
     a.send({ t: 'hello', clientId: 'client-a', build: 'test', subs: [{ activityId: 'e1', since: 0 }] });
