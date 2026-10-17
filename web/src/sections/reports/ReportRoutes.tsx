@@ -1,17 +1,12 @@
 import { Route, Switch } from 'wouter';
-import { ToolbarPage } from '../../shell/ToolbarPage';
-import { Placeholder } from '../../ui/Placeholder';
 import { ActivityListPage } from './ActivityListPage';
+import { RosterReportPage } from './RosterReportPage';
 
 export function ReportRoutes() {
   return (
     <Switch>
       <Route path="/roster/:id">
-        {() => (
-          <ToolbarPage>
-            <Placeholder title="Roster" comesWith="the reports" />
-          </ToolbarPage>
-        )}
+        {(p) => <RosterReportPage activityId={p.id} />}
       </Route>
       <Route path="/missions">
         <ActivityListPage activityType="missions" />

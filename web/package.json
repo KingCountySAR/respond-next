@@ -25,6 +25,7 @@
     "linkifyjs": "4.3.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-to-print": "3.3.0",
     "wouter": "3.10.0"
   },
   "devDependencies": {
