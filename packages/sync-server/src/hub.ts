@@ -1,5 +1,5 @@
 import { ClientMessage, decode, encode, randomId, type ServerMessage, type Viewer } from '@sync/core';
-import { EventActor, type ActorConn, type ActorDeps } from './eventActor';
+import { ActivityActor, type ActorConn, type ActorDeps } from './activityActor';
 import { StorageConflictError } from './storage';
 
 /** The transport side of one client connection (a WebSocket in production, a fake in tests). */
@@ -18,38 +18,38 @@ interface Conn {
   id: string;
   transport: HubConnection;
   actorConn?: ActorConn;
-  events: Set<string>;
+  activities: Set<string>;
   queue: Promise<unknown>;
   closed: boolean;
 }
 
-/** Routes client connections to event actors. Each connection's messages are handled in order. */
+/** Routes client connections to activity actors. Each connection's messages are handled in order. */
 export class Hub {
-  private readonly actors = new Map<string, Promise<EventActor>>();
+  private readonly actors = new Map<string, Promise<ActivityActor>>();
 
   constructor(private readonly deps: HubDeps) {}
 
   connect(transport: HubConnection): { message(text: string): void; close(): void } {
-    const conn: Conn = { id: randomId(), transport, events: new Set(), queue: Promise.resolve(), closed: false };
+    const conn: Conn = { id: randomId(), transport, activities: new Set(), queue: Promise.resolve(), closed: false };
     return {
       message: (text) => this.receive(conn, text),
       close: () => this.disconnect(conn),
     };
   }
 
-  async actor(eventId: string): Promise<EventActor> {
-    const cached = this.actors.get(eventId);
+  async actor(activityId: string): Promise<ActivityActor> {
+    const cached = this.actors.get(activityId);
     if (cached) {
       const actor = await cached;
       if (!actor.stale) return actor;
       // Only replace it if no one else has already.
-      if (this.actors.get(eventId) === cached) this.actors.delete(eventId);
-      return this.actor(eventId);
+      if (this.actors.get(activityId) === cached) this.actors.delete(activityId);
+      return this.actor(activityId);
     }
-    const loading = EventActor.load(eventId, this.deps);
-    this.actors.set(eventId, loading);
+    const loading = ActivityActor.load(activityId, this.deps);
+    this.actors.set(activityId, loading);
     loading.catch(() => {
-      if (this.actors.get(eventId) === loading) this.actors.delete(eventId);
+      if (this.actors.get(activityId) === loading) this.actors.delete(activityId);
     });
     return loading;
   }
@@ -93,7 +93,7 @@ export class Hub {
           this.disconnect(conn);
         },
       };
-      for (const s of msg.subs) await this.subscribe(conn, conn.actorConn, s.eventId, s.since);
+      for (const s of msg.subs) await this.subscribe(conn, conn.actorConn, s.activityId, s.since);
       return;
     }
     const actorConn = conn.actorConn;
@@ -103,22 +103,22 @@ export class Hub {
     }
     switch (msg.t) {
       case 'sub':
-        await this.subscribe(conn, actorConn, msg.eventId, msg.since);
+        await this.subscribe(conn, actorConn, msg.activityId, msg.since);
         break;
       case 'unsub':
-        conn.events.delete(msg.eventId);
-        (await this.actor(msg.eventId)).unsubscribe(conn.id);
+        conn.activities.delete(msg.activityId);
+        (await this.actor(msg.activityId)).unsubscribe(conn.id);
         break;
       case 'push':
-        await (await this.actor(msg.eventId)).push(actorConn, msg.mutations);
+        await (await this.actor(msg.activityId)).push(actorConn, msg.mutations);
         break;
     }
   }
 
-  private async subscribe(conn: Conn, actorConn: ActorConn, eventId: string, since: number): Promise<void> {
-    // Phase 1: any connection may open any event. Grants are checked here in phase 2.
-    conn.events.add(eventId);
-    await (await this.actor(eventId)).subscribe(actorConn, since);
+  private async subscribe(conn: Conn, actorConn: ActorConn, activityId: string, since: number): Promise<void> {
+    // Phase 1: any connection may open any activity. Grants are checked here in phase 2.
+    conn.activities.add(activityId);
+    await (await this.actor(activityId)).subscribe(actorConn, since);
   }
 
   private send(conn: Conn, msg: ServerMessage): void {
@@ -130,6 +130,6 @@ export class Hub {
   private disconnect(conn: Conn): void {
     if (conn.closed) return;
     conn.closed = true;
-    for (const eventId of conn.events) void this.actors.get(eventId)?.then((a) => a.unsubscribe(conn.id));
+    for (const activityId of conn.activities) void this.actors.get(activityId)?.then((a) => a.unsubscribe(conn.id));
   }
 }

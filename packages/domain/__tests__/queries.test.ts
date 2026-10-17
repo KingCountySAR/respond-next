@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MapView, OverlayTx, mutationCtx, recKey, type Rec } from '@sync/core';
-import { eventPhase, getEvent, latestEntry, missionProjector, missionRegistry, statusCounts } from '@sync/domain';
-import { COMMAND, EXTERNAL, HOUR, T0, addMember, fieldMember, startedEvent } from './helpers';
+import { activityPhase, getActivity, latestEntry, activityProjector, activityRegistry, statusCounts } from '@sync/domain';
+import { COMMAND, EXTERNAL, HOUR, T0, addMember, fieldMember, startedActivity } from './helpers';
 
 describe('latestEntry', () => {
   const entry = (id: string, at: number, version: number) => ({ id, at, version });
@@ -21,17 +21,17 @@ describe('latestEntry', () => {
 
 describe('event lifecycle', () => {
   it('moves from not started to open for sign-in to in progress to closed', () => {
-    const e = startedEvent({ startTime: T0, earlySignInWindow: 4 * HOUR });
-    const event = getEvent(e.view)!;
-    expect(eventPhase(event, T0 - 5 * HOUR)).toBe('notStarted');
-    expect(eventPhase(event, T0 - 3 * HOUR)).toBe('openForSignIn');
-    expect(eventPhase(event, T0)).toBe('inProgress');
-    expect(eventPhase({ ...event, closed: true }, T0)).toBe('closed');
-    expect(eventPhase({ ...event, earlySignInWindow: null }, T0 - 100 * HOUR)).toBe('openForSignIn');
+    const e = startedActivity({ startTime: T0, earlySignInWindow: 4 * HOUR });
+    const activity = getActivity(e.view)!;
+    expect(activityPhase(activity, T0 - 5 * HOUR)).toBe('notStarted');
+    expect(activityPhase(activity, T0 - 3 * HOUR)).toBe('openForSignIn');
+    expect(activityPhase(activity, T0)).toBe('inProgress');
+    expect(activityPhase({ ...activity, closed: true }, T0)).toBe('closed');
+    expect(activityPhase({ ...activity, earlySignInWindow: null }, T0 - 100 * HOUR)).toBe('openForSignIn');
   });
 
   it('counts current statuses, optionally per unit', () => {
-    const e = startedEvent();
+    const e = startedActivity();
     addMember(e, 'kcsara:1', 'staging');
     addMember(e, 'kcsara:2', 'standby');
     addMember(e, 'kcsara:3', 'standby', { id: 'org-rmr', title: 'RMR', rosterName: null });
@@ -42,10 +42,10 @@ describe('event lifecycle', () => {
 
 describe('mutations are deterministic', () => {
   it('produce identical writes on client and server from the same state', () => {
-    const e = startedEvent();
+    const e = startedActivity();
     addMember(e, 'kcsara:1');
     e.run('createTeam', { id: 't1', name: 'Team 1' });
-    const def = missionRegistry.latest('disbandTeam')!;
+    const def = activityRegistry.latest('disbandTeam')!;
     const args = def.args.parse({ teamId: 't1', reassignTo: null, at: T0 + 2 * HOUR });
     const writes = (side: 'client' | 'server') => {
       const tx = new OverlayTx(new MapView(e.records));
@@ -58,7 +58,7 @@ describe('mutations are deterministic', () => {
 
 describe('projection', () => {
   function sample() {
-    const e = startedEvent();
+    const e = startedActivity();
     const pid = addMember(e, 'kcsara:1');
     e.run('setMiles', { participantId: pid, miles: 40 });
     e.run('createTeam', { id: 't1', name: 'Team 1' });
@@ -67,8 +67,8 @@ describe('projection', () => {
     e.run('addComm', { id: 'c1', from: 'Base', to: 'Team 1', message: 'Go', at: T0 + 2 * HOUR });
     return { e, pid, records: [...e.records.values()] };
   }
-  const projectAll = (key: string, records: Rec[]) => new Map(records.map((r) => [recKey(r), missionProjector.project(key, r)]));
-  const keyFor = missionProjector.viewKey;
+  const projectAll = (key: string, records: Rec[]) => new Map(records.map((r) => [recKey(r), activityProjector.project(key, r)]));
+  const keyFor = activityProjector.viewKey;
 
   it('keys views by tier and class', () => {
     expect([keyFor(COMMAND), keyFor(fieldMember('kcsara:1')), keyFor(EXTERNAL), keyFor({ ...COMMAND, tier: 'support' })]).toEqual(['command', 'field:member', 'field:external', 'command']);
@@ -76,7 +76,7 @@ describe('projection', () => {
 
   it('shows command everything', () => {
     const { records } = sample();
-    for (const r of records) expect(missionProjector.project('command', r)).toBe(r);
+    for (const r of records) expect(activityProjector.project('command', r)).toBe(r);
   });
 
   it('hides restricted records and fields from field members', () => {
@@ -89,7 +89,7 @@ describe('projection', () => {
     expect(view.get('comm/c1')).toBeNull();
     const assignment = [...view.values()].find((r) => r?.type === 'assignment')!;
     expect(assignment.target).toEqual({ kind: 'team' });
-    expect(view.get('event/event')).not.toHaveProperty('description');
+    expect(view.get('activity/activity')).not.toHaveProperty('description');
   });
 
   it('shows external people less than members', () => {
@@ -100,6 +100,6 @@ describe('projection', () => {
   });
 
   it('hides record types it has no rule for', () => {
-    expect(missionProjector.project('field:member', { type: 'somethingNew', id: 'x', version: 1, secret: 1 })).toBeNull();
+    expect(activityProjector.project('field:member', { type: 'somethingNew', id: 'x', version: 1, secret: 1 })).toBeNull();
   });
 });

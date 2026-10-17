@@ -1,53 +1,55 @@
 # @sync/domain
 
-The mission model: the records an event is made of, the queries that read them, the mutations that change them, and the projector that decides what each viewer may see. The same code runs in the browser (optimistic apply) and on the server (the real apply), so a mutation's result is identical on both.
+The activity model, the same for missions, trainings and other activities: the records an activity is made of, the queries that read them, the mutations that change them, and the projector that decides what each viewer may see. The same code runs in the browser (optimistic apply) and on the server (the real apply), so a mutation's result is identical on both.
 
-> **Not wired in yet.** `server/src/main.ts` and the harness still use `@sync/toy-domain`. To run against this package, pass `missionRegistry` and `missionProjector` to the `Hub` and `missionRegistry` to each `SyncClient`.
+> **Not wired in yet.** `server/src/main.ts` and the harness still use `@sync/toy-domain`. To run against this package, pass `activityRegistry` and `activityProjector` to the `Hub` and `activityRegistry` to each `SyncClient`.
 
 ## What's in it
 
 | File | What it holds |
 | --- | --- |
-| `src/schema.ts` | Record interfaces (`EventRec`, `ParticipantRec`, `ParticipantStatusRec`, `AssignmentRec`, `TeamRec`, ...), status lists, `Target`, `DEFAULT_PLACES` |
-| `src/queries.ts` | Pure reads over a `ReadView`: current status, unit, assignment, team members, counts, event phase |
+| `src/schema.ts` | Record interfaces (`ActivityRec`, `ParticipantRec`, `ParticipantStatusRec`, `AssignmentRec`, `TeamRec`, ...), status lists, `Target`, `DEFAULT_PLACES` |
+| `src/queries.ts` | Pure reads over a `ReadView`: current status, unit, assignment, team members, counts, activity phase |
 | `src/statusSteps.ts` | The status buttons offered from each status, standby-only and light-mode rules |
 | `src/equipment.ts` | The equipment catalogue (legacy ids `inventory-0..38`) |
-| `src/viewer.ts` | `MissionViewer` (tier, class, personRef), `isCommand`, `SYSTEM_VIEWER` |
-| `src/mutations/*.ts` | Every mutation, grouped by event, participants and operations; `common.ts` has shared checks and helpers |
-| `src/projector.ts` | `missionProjector`: field views per record type |
-| `src/index.ts` | Exports all of the above, plus `missionMutations` and `missionRegistry` |
+| `src/viewer.ts` | `ActivityViewer` (tier, class, personRef), `isCommand`, `SYSTEM_VIEWER` |
+| `src/mutations/*.ts` | Every mutation, grouped by activity, participants and operations; `common.ts` has shared checks and helpers |
+| `src/projector.ts` | `activityProjector`: field views per record type |
+| `src/index.ts` | Exports all of the above, plus `activityMutations` and `activityRegistry` |
 
-An event is a flat set of records, each `{ type, id, version, ...fields }`. There is one `event` record (id `EVENT_RECORD_ID`). Things that change over time (participant status, assignment, team status, unit status) are not fields on the thing; they are separate timed entries with an `at`. The current value is the latest entry, which is what the queries work out for you.
+An activity is a flat set of records, each `{ type, id, version, ...fields }`. There is one `activity` record (id `ACTIVITY_RECORD_ID`). Things that change over time (participant status, assignment, team status, unit status) are not fields on the thing; they are separate timed entries with an `at`. The current value is the latest entry, which is what the queries work out for you.
 
-## Getting a view of an event
+Code says **activity** (a mission, training or other activity: `kind`) so it isn't read as a programming event. Text shown to people still says "event", as the legacy app does: rejection messages and `describe` text.
 
-A client holds a **snapshot** of each event it has open: the server's confirmed records with this client's pending mutations applied on top. A snapshot is a `ReadView` (`get(type, id)`, `scan(type)`), and every query in this package takes a `ReadView`.
+## Getting a view of an activity
+
+A client holds a **snapshot** of each activity it has open: the server's confirmed records with this client's pending mutations applied on top. A snapshot is a `ReadView` (`get(type, id)`, `scan(type)`), and every query in this package takes a `ReadView`.
 
 ```ts
 import { SyncClient, WebSocketTransport, IndexedDbPersistence } from '@sync/client';
-import { missionRegistry, type MissionViewer } from '@sync/domain';
+import { activityRegistry, type ActivityViewer } from '@sync/domain';
 
-const viewer: MissionViewer = { userId: 'u-123', tier: 'command', class: 'member', personRef: 'kcsara:85205' };
+const viewer: ActivityViewer = { userId: 'u-123', tier: 'command', class: 'member', personRef: 'kcsara:85205' };
 
 const client = new SyncClient({
-  registry: missionRegistry,
+  registry: activityRegistry,
   viewer, // used for local checks only; the server decides from the session
   transport: () => new WebSocketTransport('wss://example.org/api/sync'),
   persistence: new IndexedDbPersistence(),
 });
 await client.start();
-await client.open(eventId); // subscribes; works offline from what's persisted
+await client.open(activityId); // subscribes; works offline from what's persisted
 
-const snap = client.snapshot(eventId);
+const snap = client.snapshot(activityId);
 ```
 
 Then read it with the queries rather than scanning records by hand:
 
 ```ts
-import { getEvent, eventPhase, statusOf, currentTarget, targetName, teamMembers, statusCounts, type ParticipantRec, type TeamRec } from '@sync/domain';
+import { getActivity, activityPhase, statusOf, currentTarget, targetName, teamMembers, statusCounts, type ParticipantRec, type TeamRec } from '@sync/domain';
 
-const event = getEvent(snap);                    // EventRec | undefined
-const phase = event && eventPhase(event, client.now());
+const activity = getActivity(snap);                    // ActivityRec | undefined
+const phase = activity && activityPhase(activity, client.now());
 const people = [...snap.scan<ParticipantRec>('participant')];
 for (const p of people) {
   console.log(p.firstname, statusOf(snap, p.id), targetName(snap, currentTarget(snap, p.id)));
@@ -61,16 +63,16 @@ Things to know:
 
 - **Use `client.now()`, never `Date.now()`,** for "now" and "minutes ago". It is the server's clock as corrected by the client.
 - **Most timed queries take `asOf`.** `statusOf(snap, id, asOf)`, `teamMembers(snap, teamId, asOf)` and the rest answer "as of then", for reports and timelines.
-- **A field viewer's snapshot holds projected records.** A field member sees only the fields in `src/projector.ts`: no `miles` on participants, no `comm` records, assignments with only `{ kind }` as their target. Write UI that copes with a field being absent, and read `missionProjector` to see what's there.
-- **Pending changes are marked.** `snap.pending` lists this client's unconfirmed mutations and `snap.pendingKeys` the `type/id` keys they touched, for "not synced yet" markers. `client.describe(eventId, m)` gives each one's text.
+- **A field viewer's snapshot holds projected records.** A field member sees only the fields in `src/projector.ts`: no `miles` on participants, no `comm` records, assignments with only `{ kind }` as their target. Write UI that copes with a field being absent, and read `activityProjector` to see what's there.
+- **Pending changes are marked.** `snap.pending` lists this client's unconfirmed mutations and `snap.pendingKeys` the `type/id` keys they touched, for "not synced yet" markers. `client.describe(activityId, m)` gives each one's text.
 
 In React, `@sync/client/react` re-renders on change:
 
 ```tsx
-import { useEventSnapshot, useSyncStatus, useRejections } from '@sync/client/react';
+import { useActivitySnapshot, useSyncStatus, useRejections } from '@sync/client/react';
 
-function TeamList({ client, eventId }: { client: SyncClient; eventId: string }) {
-  const snap = useEventSnapshot(client, eventId); // the event must already be open
+function TeamList({ client, activityId }: { client: SyncClient; activityId: string }) {
+  const snap = useActivitySnapshot(client, activityId); // the activity must already be open
   const teams = [...snap.scan<TeamRec>('team')];
   return <ul>{teams.map((t) => <li key={t.id}>{t.name} ({teamMembers(snap, t.id).length})</li>)}</ul>;
 }
@@ -80,16 +82,16 @@ function TeamList({ client, eventId }: { client: SyncClient; eventId: string }) 
 
 ## Making an update
 
-Call `client.mutate(eventId, name, args)`. It checks the change, applies it to the snapshot at once, queues it, and sends it when connected. The server runs the same mutation; if it refuses, the client drops it from the snapshot and reports a rejection.
+Call `client.mutate(activityId, name, args)`. It checks the change, applies it to the snapshot at once, queues it, and sends it when connected. The server runs the same mutation; if it refuses, the client drops it from the snapshot and reports a rejection.
 
 ```ts
 import { Rejection, randomId } from '@sync/core';
 
 try {
   const teamId = randomId();
-  client.mutate(eventId, 'createTeam', { id: teamId, name: 'Team 4' });
-  client.mutate(eventId, 'assign', { participantId, target: { kind: 'team', id: teamId }, asLeader: true });
-  client.mutate(eventId, 'setParticipantStatus', { participantId, unit, status: 'demobilizing', at: backdatedTime });
+  client.mutate(activityId, 'createTeam', { id: teamId, name: 'Team 4' });
+  client.mutate(activityId, 'assign', { participantId, target: { kind: 'team', id: teamId }, asLeader: true });
+  client.mutate(activityId, 'setParticipantStatus', { participantId, unit, status: 'demobilizing', at: backdatedTime });
 } catch (err) {
   if (err instanceof Rejection) showError(err.message); // refused locally: nothing was queued
   else throw err;
@@ -101,8 +103,8 @@ client.onReject((r) => showError(r.message)); // refused later by the server
 - **Names and args** are in `src/mutations/*.ts`; each mutation's `args` zod schema is the contract. Bad args throw `Rejection('bad_args')` before anything is queued.
 - **`at` is optional on timed mutations** (`timed: true`): leave it out and the client fills in `client.now()`. Pass it to backdate ("signed in at 07:40").
 - **Records you create need an id from the caller** (`createTeam`, `createPlace`, `addComm`, ...): use `randomId()`. Follow-on records a mutation makes itself (status entries, assignments) get deterministic ids from `ctx.newId()`. Participants are the exception: their id is `participantIdFor(personRef)`, so two devices adding the same person agree.
-- **Permissions:** `allow` on each mutation says which viewers may call it (most operations are command only); `run` adds finer rules, such as field users only changing themselves. Both run on the client too, so you can hide a button the server would refuse. To ask without applying, check `missionRegistry.latest(name)?.allow?.(viewer)`.
-- **Light mode and closed events** refuse most changes with `light_mode` or `closed`. `hasOperations(event)` tells you whether to show teams, places and equipment at all.
+- **Permissions:** `allow` on each mutation says which viewers may call it (most operations are command only); `run` adds finer rules, such as field users only changing themselves. Both run on the client too, so you can hide a button the server would refuse. To ask without applying, check `activityRegistry.latest(name)?.allow?.(viewer)`.
+- **Light mode and closed activities** refuse most changes with `light_mode` or `closed`. `hasOperations(activity)` tells you whether to show teams, places and equipment at all.
 
 On the server, the system acts as `SYSTEM_VIEWER` (for example `setMemberInfo` after a member lookup).
 
@@ -136,15 +138,15 @@ export const setTeamCallsign = defineMutation({
 });
 ```
 
-It's exported from the file, so `index.ts` picks it up in `missionMutations` and `missionRegistry` with no further change.
+It's exported from the file, so `index.ts` picks it up in `activityMutations` and `activityRegistry` with no further change.
 
 **3. Decide who sees it** in `src/projector.ts`. Field members see only `name` on teams today; add `callsign` to their `team` rule if they should see it. A **new record type** is hidden from field views until you add a rule for it, so forgetting fails safe.
 
-**4. Test it** in `__tests__/`, with the `TestEvent` harness from `__tests__/helpers.ts`. It applies mutations with the server's rules, without a network:
+**4. Test it** in `__tests__/`, with the `TestActivity` harness from `__tests__/helpers.ts`. It applies mutations with the server's rules, without a network:
 
 ```ts
 it('sets and clears a callsign, command only', () => {
-  const e = startedEvent();
+  const e = startedActivity();
   e.run('createTeam', { id: 't1', name: 'Team 1' });
   e.run('setTeamCallsign', { teamId: 't1', callsign: 'Rescue 4' });
   expect(e.get<TeamRec>('team', 't1')?.callsign).toBe('Rescue 4');

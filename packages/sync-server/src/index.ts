@@ -1,4 +1,4 @@
 export * from './storage';
 export * from './postgresStorage';
-export * from './eventActor';
+export * from './activityActor';
 export * from './hub';

@@ -1,10 +1,10 @@
 import { MapView, OverlayTx, Rejection, keyOf, mutationCtx, recKey, type ReadView, type Rec } from '@sync/core';
-import { missionRegistry, type MissionViewer } from '@sync/domain';
+import { activityRegistry, type ActivityViewer } from '@sync/domain';
 
-export const COMMAND: MissionViewer = { userId: 'u-command', tier: 'command', class: 'member' };
-export const fieldMember = (personRef: string): MissionViewer => ({ userId: `u-${personRef}`, tier: 'field', class: 'member', personRef });
-export const EXTERNAL: MissionViewer = { userId: 'u-external', tier: 'field', class: 'external', personRef: 'adhoc:ext-1' };
-export const SYSTEM: MissionViewer = { userId: 'system', tier: 'command', class: 'member' };
+export const COMMAND: ActivityViewer = { userId: 'u-command', tier: 'command', class: 'member' };
+export const fieldMember = (personRef: string): ActivityViewer => ({ userId: `u-${personRef}`, tier: 'field', class: 'member', personRef });
+export const EXTERNAL: ActivityViewer = { userId: 'u-external', tier: 'field', class: 'external', personRef: 'adhoc:ext-1' };
+export const SYSTEM: ActivityViewer = { userId: 'system', tier: 'command', class: 'member' };
 
 export const HOUR = 60 * 60 * 1000;
 export const T0 = Date.UTC(2026, 9, 16, 18, 0);
@@ -13,10 +13,10 @@ export const CRT = { id: 'org-crt', title: 'Cascade Rescue Team', rosterName: 'C
 export const RMR = { id: 'org-rmr', title: 'Ridgeline Mountain Rescue', rosterName: 'RMR' };
 
 /**
- * One event's records with the server's apply rules (args parsing, allow, run in a transaction),
+ * One activity's records with the server's apply rules (args parsing, allow, run in a transaction),
  * without the network. Each mutation gets the next id, so new record ids are deterministic.
  */
-export class TestEvent {
+export class TestActivity {
   readonly records = new Map<string, Rec>();
   version = 0;
   private mutationId = 0;
@@ -26,8 +26,8 @@ export class TestEvent {
   }
 
   /** Applies a mutation and returns the records it wrote; throws its Rejection. */
-  run(name: string, args: Record<string, unknown>, viewer: MissionViewer = COMMAND): Rec[] {
-    const def = missionRegistry.latest(name);
+  run(name: string, args: Record<string, unknown>, viewer: ActivityViewer = COMMAND): Rec[] {
+    const def = activityRegistry.latest(name);
     if (!def) throw new Error(`no mutation ${name}`);
     if (def.allow && !def.allow(viewer)) throw new Rejection('forbidden', 'Your role cannot make this change');
     const parsed = def.args.safeParse(args);
@@ -41,7 +41,7 @@ export class TestEvent {
   }
 
   /** The Rejection code a mutation fails with, or undefined if it applied. */
-  rejects(name: string, args: Record<string, unknown>, viewer?: MissionViewer): string | undefined {
+  rejects(name: string, args: Record<string, unknown>, viewer?: ActivityViewer): string | undefined {
     try {
       this.run(name, args, viewer);
       return undefined;
@@ -61,7 +61,7 @@ export class TestEvent {
   }
 }
 
-export const eventArgs = (overrides: Record<string, unknown> = {}) => ({
+export const activityArgs = (overrides: Record<string, unknown> = {}) => ({
   idNumber: '26-0123',
   kind: 'mission',
   title: 'Lost hiker, Mailbox Peak',
@@ -75,15 +75,15 @@ export const eventArgs = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-/** An open event starting at T0, open for sign-in (the 4-hour default window). */
-export function startedEvent(overrides: Record<string, unknown> = {}): TestEvent {
-  const e = new TestEvent();
-  e.run('createEvent', eventArgs(overrides));
+/** An open activity starting at T0, open for sign-in (the 4-hour default window). */
+export function startedActivity(overrides: Record<string, unknown> = {}): TestActivity {
+  const e = new TestActivity();
+  e.run('createActivity', activityArgs(overrides));
   return e;
 }
 
 /** Adds a member as command and returns their participant id. */
-export function addMember(e: TestEvent, personRef: string, status = 'staging', unit: { id: string; title: string; rosterName: string | null } = CRT, at = T0 + HOUR): string {
+export function addMember(e: TestActivity, personRef: string, status = 'staging', unit: { id: string; title: string; rosterName: string | null } = CRT, at = T0 + HOUR): string {
   e.run('addParticipant', { personRef, firstname: personRef.split(':')[1], lastname: 'Tester', unit, status, at });
   return e.all<{ personRef: string } & Rec>('participant').find((p) => p.personRef === personRef)!.id;
 }

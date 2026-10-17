@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { encode, type ClientMessage, type Rec, type ServerMessage } from '@sync/core';
 import { Hub, MemoryStorage, type HubConnection } from '@sync/server';
-import { missionProjector, missionRegistry, participantIdFor, type MissionViewer } from '@sync/domain';
-import { COMMAND, CRT, HOUR, T0, eventArgs, fieldMember } from '../../packages/domain/__tests__/helpers';
+import { activityProjector, activityRegistry, participantIdFor, type ActivityViewer } from '@sync/domain';
+import { COMMAND, CRT, HOUR, T0, activityArgs, fieldMember } from '../../packages/domain/__tests__/helpers';
 
-/** The real event actor with the mission domain, over fake connections. */
-function connect(hub: Hub, viewer: MissionViewer, clientId: string) {
+/** The real activity actor with the activity domain, over fake connections. */
+function connect(hub: Hub, viewer: ActivityViewer, clientId: string) {
   const received: ServerMessage[] = [];
   const transport: HubConnection = { viewer, send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} };
   const handlers = hub.connect(transport);
   const send = (msg: ClientMessage) => handlers.message(encode(msg));
-  send({ t: 'hello', clientId, build: 'test', subs: [{ eventId: 'e1', since: 0 }] });
+  send({ t: 'hello', clientId, build: 'test', subs: [{ activityId: 'e1', since: 0 }] });
   let nextId = 1;
   return {
     received,
-    push: (name: string, args: Record<string, unknown>) => send({ t: 'push', eventId: 'e1', mutations: [{ id: nextId++, name, v: 1, args, clientTime: T0 }] }),
+    push: (name: string, args: Record<string, unknown>) => send({ t: 'push', activityId: 'e1', mutations: [{ id: nextId++, name, v: 1, args, clientTime: T0 }] }),
     /** Everything this client has been sent for e1, latest copy of each record. */
     records(): Map<string, Rec> {
       const out = new Map<string, Rec>();
@@ -35,15 +35,15 @@ async function until(check: () => boolean) {
   expect(check()).toBe(true);
 }
 
-describe('mission domain on the event actor', () => {
+describe('activity domain on the activity actor', () => {
   it('applies mutations and sends each view only what it may see', async () => {
-    const hub = new Hub({ storage: new MemoryStorage(), registry: missionRegistry, projector: missionProjector, now: () => T0 + 2 * HOUR });
+    const hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: () => T0 + 2 * HOUR });
     const command = connect(hub, COMMAND, 'c-command');
     const field = connect(hub, fieldMember('kcsara:85205'), 'c-field');
 
-    command.push('createEvent', eventArgs());
-    // Separate connections: wait until the event exists before the field client signs in.
-    await until(() => field.records().has('event/event'));
+    command.push('createActivity', activityArgs());
+    // Separate connections: wait until the activity exists before the field client signs in.
+    await until(() => field.records().has('activity/activity'));
     const me = participantIdFor('kcsara:85205');
     field.push('addParticipant', { personRef: 'kcsara:85205', firstname: 'Anna', lastname: 'Lee', unit: CRT, status: 'responding', at: T0 + HOUR });
     await until(() => command.records().has(`participant/${me}`));
@@ -55,7 +55,7 @@ describe('mission domain on the event actor', () => {
     expect(field.records().get(`participant/${me}`)).toMatchObject({ firstname: 'Anna', personRef: 'kcsara:85205' });
     expect(field.records().get(`participant/${me}`)).not.toHaveProperty('miles');
     expect(field.records().has('comm/c1')).toBe(false);
-    expect(field.records().get('event/event')).toMatchObject({ title: 'Lost hiker, Mailbox Peak' });
+    expect(field.records().get('activity/activity')).toMatchObject({ title: 'Lost hiker, Mailbox Peak' });
 
     // A field member can't log comms; the actor rejects it.
     field.push('addComm', { id: 'c2', from: '', to: '', message: 'hi', at: T0 + HOUR });

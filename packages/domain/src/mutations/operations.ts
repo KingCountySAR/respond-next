@@ -30,7 +30,7 @@ export const setUnitStatus = defineMutation({
   describe: (a) => `Set ${a.unit.rosterName ?? a.unit.title} to ${a.status}`,
   run(tx, a, ctx) {
     requireOpen(tx);
-    if (!tx.get('eventUnit', a.unit.id)) tx.put({ type: 'eventUnit', id: a.unit.id, title: a.unit.title, rosterName: a.unit.rosterName });
+    if (!tx.get('activityUnit', a.unit.id)) tx.put({ type: 'activityUnit', id: a.unit.id, title: a.unit.title, rosterName: a.unit.rosterName });
     tx.put({ type: 'unitStatus', id: ctx.newId(), unitId: a.unit.id, status: a.status, at: a.at, by: ctx.viewer.userId });
   },
 });

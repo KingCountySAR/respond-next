@@ -1,7 +1,7 @@
 import { Rejection } from './errors';
 import { keyOf, recKey, type Rec, type RecInput } from './records';
 
-/** Read access to an event's records. Deleted records are invisible. */
+/** Read access to an activity's records. Deleted records are invisible. */
 export interface ReadView {
   get<T extends Rec = Rec>(type: string, id: string): T | undefined;
   scan<T extends Rec = Rec>(type: string): Iterable<T>;

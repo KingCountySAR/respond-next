@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { Rejection, defineMutation, type MutationCtx, type Tx } from '@sync/core';
 import { currentParticipantStatus, findParticipantByPersonRef, participantIdFor, participantName, statusOf } from '../queries';
-import { PARTICIPANT_STATUSES, type EventRec, type EventUnitRec, type ParticipantRec, type ParticipantStatus, type ParticipantStatusRec } from '../schema';
+import { PARTICIPANT_STATUSES, type ActivityRec, type ActivityUnitRec, type ParticipantRec, type ParticipantStatus, type ParticipantStatusRec } from '../schema';
 import { STANDBY_ONLY_STATUSES, allowedInMode, isStandbyOnly } from '../statusSteps';
-import { asMissionViewer, isCommand } from '../viewer';
+import { asActivityViewer, isCommand } from '../viewer';
 import { addStatus, at, id, idSource, requireOpen, requireParticipant, requireSelfOrCommand } from './common';
 
 const PersonRef = z.string().regex(/^[a-z0-9-]+:.+$/, 'Expected <source>:<id>');
@@ -15,16 +15,16 @@ type Unit = z.infer<typeof Unit>;
 const isSystem = (ctx: MutationCtx) => ctx.viewer.userId === 'system';
 
 function ensureUnit(tx: Tx, unit: Unit): void {
-  const existing = tx.get<EventUnitRec>('eventUnit', unit.id);
-  if (!existing) tx.put({ type: 'eventUnit', id: unit.id, title: unit.title, rosterName: unit.rosterName });
-  else if (existing.title !== unit.title || existing.rosterName !== unit.rosterName) tx.update('eventUnit', unit.id, { title: unit.title, rosterName: unit.rosterName });
+  const existing = tx.get<ActivityUnitRec>('activityUnit', unit.id);
+  if (!existing) tx.put({ type: 'activityUnit', id: unit.id, title: unit.title, rosterName: unit.rosterName });
+  else if (existing.title !== unit.title || existing.rosterName !== unit.rosterName) tx.update('activityUnit', unit.id, { title: unit.title, rosterName: unit.rosterName });
 }
 
-/** Field users signing themselves in follow the event's standby-only and light-mode rules. */
-function checkSelfStatus(ctx: MutationCtx, event: EventRec, current: ParticipantStatus, next: ParticipantStatus, at: number): void {
-  if (!allowedInMode(event, next)) throw new Rejection('light_mode', 'That status isn’t used on this event');
+/** Field users signing themselves in follow the activity's standby-only and light-mode rules. */
+function checkSelfStatus(ctx: MutationCtx, activity: ActivityRec, current: ParticipantStatus, next: ParticipantStatus, at: number): void {
+  if (!allowedInMode(activity, next)) throw new Rejection('light_mode', 'That status isn’t used on this event');
   if (isCommand(ctx.viewer)) return;
-  if (isStandbyOnly(event, current, at) && !STANDBY_ONLY_STATUSES.has(next)) {
+  if (isStandbyOnly(activity, current, at) && !STANDBY_ONLY_STATUSES.has(next)) {
     throw new Rejection('standby_only', 'This event is standby only for now');
   }
 }
@@ -47,7 +47,7 @@ function applyStatus(tx: Tx, ctx: MutationCtx, nextId: () => string, participant
 }
 
 /**
- * Adds someone to the event with their first status, or updates them if they're already on it.
+ * Adds someone to the activity with their first status, or updates them if they're already on it.
  * New participants get an id derived from their personRef, so two devices adding the same person agree.
  */
 export const addParticipant = defineMutation({
@@ -64,13 +64,13 @@ export const addParticipant = defineMutation({
   }),
   describe: (a) => `Add ${a.firstname} ${a.lastname} as ${a.status}`.replace(/\s+/g, ' '),
   run(tx, a, ctx) {
-    const event = requireOpen(tx);
-    if (!isCommand(ctx.viewer) && asMissionViewer(ctx.viewer).personRef !== a.personRef) throw new Rejection('forbidden', 'You can only sign yourself in');
+    const activity = requireOpen(tx);
+    if (!isCommand(ctx.viewer) && asActivityViewer(ctx.viewer).personRef !== a.personRef) throw new Rejection('forbidden', 'You can only sign yourself in');
     const existing = findParticipantByPersonRef(tx, a.personRef);
     const participantId = existing?.id ?? participantIdFor(a.personRef);
-    checkSelfStatus(ctx, event, existing ? statusOf(tx, participantId, a.at) : 'unknown', a.status, a.at);
+    checkSelfStatus(ctx, activity, existing ? statusOf(tx, participantId, a.at) : 'unknown', a.status, a.at);
     if (existing) tx.update('participant', participantId, { firstname: a.firstname, lastname: a.lastname });
-    else tx.put({ type: 'participant', id: participantId, personRef: a.personRef, firstname: a.firstname, lastname: a.lastname, memberTags: [], missionTags: [], eta: null, miles: null });
+    else tx.put({ type: 'participant', id: participantId, personRef: a.personRef, firstname: a.firstname, lastname: a.lastname, memberTags: [], activityTags: [], eta: null, miles: null });
     ensureUnit(tx, a.unit);
     applyStatus(tx, ctx, idSource(ctx), participantId, a.unit.id, a.status, a.at);
   },
@@ -83,10 +83,10 @@ export const setParticipantStatus = defineMutation({
   args: z.object({ participantId: id, status: Status, unit: Unit, at }),
   describe: (a, view) => `Set ${participantName(view, a.participantId)} to ${a.status}`,
   run(tx, a, ctx) {
-    const event = requireOpen(tx);
+    const activity = requireOpen(tx);
     const participant = requireParticipant(tx, a.participantId);
     requireSelfOrCommand(ctx, participant);
-    checkSelfStatus(ctx, event, statusOf(tx, a.participantId, a.at), a.status, a.at);
+    checkSelfStatus(ctx, activity, statusOf(tx, a.participantId, a.at), a.status, a.at);
     ensureUnit(tx, a.unit);
     applyStatus(tx, ctx, idSource(ctx), a.participantId, a.unit.id, a.status, a.at);
   },
@@ -100,9 +100,9 @@ export const correctParticipantStatus = defineMutation({
   allow: isCommand,
   describe: (a, view) => `Correct ${participantName(view, view.get<ParticipantStatusRec>('participantStatus', a.entryId)?.participantId)}'s timeline`,
   run(tx, a) {
-    const event = requireOpen(tx);
+    const activity = requireOpen(tx);
     if (!tx.get('participantStatus', a.entryId)) throw new Rejection('not_found', 'That timeline entry no longer exists');
-    if (a.status && !allowedInMode(event, a.status)) throw new Rejection('light_mode', 'That status isn’t used on this event');
+    if (a.status && !allowedInMode(activity, a.status)) throw new Rejection('light_mode', 'That status isn’t used on this event');
     tx.update('participantStatus', a.entryId, { ...(a.status ? { status: a.status } : {}), ...(a.at !== undefined ? { at: a.at } : {}) });
   },
 });
@@ -131,8 +131,8 @@ export const setMiles = defineMutation({
   },
 });
 
-export const setMissionTags = defineMutation({
-  name: 'setMissionTags',
+export const setActivityTags = defineMutation({
+  name: 'setActivityTags',
   version: 1,
   args: z.object({ participantId: id, tags: z.array(z.string().trim().min(1)) }),
   allow: isCommand,
@@ -140,7 +140,7 @@ export const setMissionTags = defineMutation({
   run(tx, a) {
     requireOpen(tx);
     requireParticipant(tx, a.participantId);
-    tx.update('participant', a.participantId, { missionTags: [...new Set(a.tags)] });
+    tx.update('participant', a.participantId, { activityTags: [...new Set(a.tags)] });
   },
 });
 

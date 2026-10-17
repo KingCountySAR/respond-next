@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { encode, randomId, type ClientMessage, type Rec, type ServerMessage } from '@sync/core';
-import { Hub, MemoryStorage, PostgresStorage, StorageConflictError, type EventStorage, type HubConnection, type LogEntry } from '@sync/server';
+import { Hub, MemoryStorage, PostgresStorage, StorageConflictError, type ActivityStorage, type HubConnection, type LogEntry } from '@sync/server';
 import { toyProjector, toyRegistry } from '@sync/toy-domain';
 
 /**
- * The same contract for every EventStorage. The Postgres suite runs when TEST_DATABASE_URL
+ * The same contract for every ActivityStorage. The Postgres suite runs when TEST_DATABASE_URL
  * (default: the `npm run db` container) is reachable, each test in a throwaway database.
  */
 const POSTGRES_BASE = process.env.TEST_DATABASE_URL ?? 'postgres://sync:sync@localhost:5433/sync';
@@ -25,7 +25,7 @@ async function admin<T>(sql: string): Promise<T[] | null> {
   }
 }
 
-type Backend = () => Promise<{ storage: EventStorage; cleanup(): Promise<void> }>;
+type Backend = () => Promise<{ storage: ActivityStorage; cleanup(): Promise<void> }>;
 
 const backends: [string, Backend][] = [['memory', async () => ({ storage: new MemoryStorage(), cleanup: async () => {} })]];
 if ((await admin('SELECT 1')) !== null) {
@@ -53,7 +53,7 @@ if ((await admin('SELECT 1')) !== null) {
 const rec = (type: string, id: string, version: number, fields: Record<string, unknown> = {}): Rec => ({ type, id, version, ...fields });
 
 const logEntry = (mutationId: number, version: number, outcome: LogEntry['outcome'] = 'applied'): LogEntry => ({
-  eventId: 'e1',
+  activityId: 'e1',
   version,
   mutationId,
   clientId: 'client-a',
@@ -91,7 +91,7 @@ async function waitFor(what: string, check: () => boolean | Promise<boolean>, ms
 const addPerson = (id: number, name: string) => ({ id, name: 'addPerson', v: 1, args: { id: `p${id}`, name }, clientTime: 0 });
 
 describe.each(backends)('%s storage', (_name, makeBackend) => {
-  let storage: EventStorage;
+  let storage: ActivityStorage;
   let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
@@ -101,7 +101,7 @@ describe.each(backends)('%s storage', (_name, makeBackend) => {
     await cleanup();
   });
 
-  it('has nothing for an unknown event', async () => {
+  it('has nothing for an unknown activity', async () => {
     expect(await storage.load('nope')).toBeUndefined();
   });
 
@@ -163,11 +163,11 @@ describe.each(backends)('%s storage', (_name, makeBackend) => {
     expect((await storage.recentLog('e1', 2)).map((e) => e.mutationId)).toEqual([2, 3]);
   });
 
-  it('lets a new server process pick up an event where the last one left off', async () => {
+  it('lets a new server process pick up an activity where the last one left off', async () => {
     const before = new Hub({ storage, registry: toyRegistry, projector: toyProjector, now: Date.now });
     const conn = fakeConnection(before);
-    conn.send({ t: 'hello', clientId: 'client-a', build: 'test', subs: [{ eventId: 'e1', since: 0 }] });
-    conn.send({ t: 'push', eventId: 'e1', mutations: [addPerson(1, 'Bob'), addPerson(2, 'Anna')] });
+    conn.send({ t: 'hello', clientId: 'client-a', build: 'test', subs: [{ activityId: 'e1', since: 0 }] });
+    conn.send({ t: 'push', activityId: 'e1', mutations: [addPerson(1, 'Bob'), addPerson(2, 'Anna')] });
     await waitFor('both mutations confirmed', () => conn.received.some((m) => m.t === 'update' && m.lastMutationId === 2));
     const original = await before.actor('e1');
 
@@ -178,27 +178,27 @@ describe.each(backends)('%s storage', (_name, makeBackend) => {
 
     // The reloaded server remembers which mutations it has seen: a resend is ignored.
     const again = fakeConnection(after);
-    again.send({ t: 'hello', clientId: 'client-a', build: 'test', subs: [{ eventId: 'e1', since: original.currentVersion }] });
-    again.send({ t: 'push', eventId: 'e1', mutations: [addPerson(2, 'Anna')] });
-    again.send({ t: 'push', eventId: 'e1', mutations: [addPerson(3, 'Cole')] });
+    again.send({ t: 'hello', clientId: 'client-a', build: 'test', subs: [{ activityId: 'e1', since: original.currentVersion }] });
+    again.send({ t: 'push', activityId: 'e1', mutations: [addPerson(2, 'Anna')] });
+    again.send({ t: 'push', activityId: 'e1', mutations: [addPerson(3, 'Cole')] });
     await waitFor('the new mutation confirmed', () => again.received.some((m) => m.t === 'update' && m.lastMutationId === 3));
     expect(reloaded.currentVersion).toBe(original.currentVersion + 1);
     expect(again.received.filter((m) => m.t === 'reject')).toEqual([]);
   });
 
-  it('retires an actor whose event another process wrote, and reloads it', async () => {
+  it('retires an actor whose activity another process wrote, and reloads it', async () => {
     // Two server processes that both think they own e1: a lease failure, or a split during failover.
     const hubA = new Hub({ storage, registry: toyRegistry, projector: toyProjector, now: Date.now });
     const hubB = new Hub({ storage, registry: toyRegistry, projector: toyProjector, now: Date.now });
     const a = fakeConnection(hubA);
     const b = fakeConnection(hubB);
-    a.send({ t: 'hello', clientId: 'client-a', build: 'test', subs: [{ eventId: 'e1', since: 0 }] });
-    b.send({ t: 'hello', clientId: 'client-b', build: 'test', subs: [{ eventId: 'e1', since: 0 }] });
+    a.send({ t: 'hello', clientId: 'client-a', build: 'test', subs: [{ activityId: 'e1', since: 0 }] });
+    b.send({ t: 'hello', clientId: 'client-b', build: 'test', subs: [{ activityId: 'e1', since: 0 }] });
     await waitFor('both subscribed', () => a.received.length > 0 && b.received.length > 0);
 
-    a.send({ t: 'push', eventId: 'e1', mutations: [addPerson(1, 'Bob')] });
+    a.send({ t: 'push', activityId: 'e1', mutations: [addPerson(1, 'Bob')] });
     await waitFor('A committed', () => a.received.some((m) => m.t === 'update' && m.lastMutationId === 1));
-    b.send({ t: 'push', eventId: 'e1', mutations: [addPerson(1, 'Anna')] });
+    b.send({ t: 'push', activityId: 'e1', mutations: [addPerson(1, 'Anna')] });
     await waitFor("B's connection closed", () => b.closes.length > 0);
     expect(b.closes).toEqual([1012]);
 

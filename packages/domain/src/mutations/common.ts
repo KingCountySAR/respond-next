@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { Rejection, type MutationCtx, type ReadView, type Tx } from '@sync/core';
-import { currentParticipantStatus, currentTarget, getEvent, hasOperations, sameTarget, targetExists, targetName } from '../queries';
-import { Target, type EquipmentRec, type EventRec, type ParticipantRec, type ParticipantStatus, type TeamRec } from '../schema';
-import { asMissionViewer, isCommand } from '../viewer';
+import { currentParticipantStatus, currentTarget, getActivity, hasOperations, sameTarget, targetExists, targetName } from '../queries';
+import { Target, type EquipmentRec, type ActivityRec, type ParticipantRec, type ParticipantStatus, type TeamRec } from '../schema';
+import { asActivityViewer, isCommand } from '../viewer';
 
 export const id = z.string().min(1);
 export const at = z.number().finite();
@@ -14,24 +14,24 @@ export function idSource(ctx: MutationCtx): () => string {
   return () => ctx.newId(n++);
 }
 
-export function requireEvent(view: ReadView): EventRec {
-  const event = getEvent(view);
-  if (!event || event.removedAt !== null) throw new Rejection('no_event', 'This event no longer exists');
-  return event;
+export function requireActivity(view: ReadView): ActivityRec {
+  const activity = getActivity(view);
+  if (!activity || activity.removedAt !== null) throw new Rejection('no_activity', 'This event no longer exists');
+  return activity;
 }
 
-/** Every mutation except reopening needs an open event. */
-export function requireOpen(view: ReadView): EventRec {
-  const event = requireEvent(view);
-  if (event.closed) throw new Rejection('closed', 'This event is closed');
-  return event;
+/** Every mutation except reopening needs an open activity. */
+export function requireOpen(view: ReadView): ActivityRec {
+  const activity = requireActivity(view);
+  if (activity.closed) throw new Rejection('closed', 'This event is closed');
+  return activity;
 }
 
 /** Teams, groups, places, equipment and comms exist only in full mode. */
-export function requireOperations(view: ReadView): EventRec {
-  const event = requireOpen(view);
-  if (!hasOperations(event)) throw new Rejection('light_mode', 'This event has no operations');
-  return event;
+export function requireOperations(view: ReadView): ActivityRec {
+  const activity = requireOpen(view);
+  if (!hasOperations(activity)) throw new Rejection('light_mode', 'This event has no operations');
+  return activity;
 }
 
 export function requireParticipant(view: ReadView, participantId: string): ParticipantRec {
@@ -43,7 +43,7 @@ export function requireParticipant(view: ReadView, participantId: string): Parti
 /** Command may change anyone; field users only themselves. */
 export function requireSelfOrCommand(ctx: MutationCtx, participant: ParticipantRec): void {
   if (isCommand(ctx.viewer)) return;
-  const personRef = asMissionViewer(ctx.viewer).personRef;
+  const personRef = asActivityViewer(ctx.viewer).personRef;
   if (!personRef || personRef !== participant.personRef) throw new Rejection('forbidden', 'You can only change your own entry');
 }
 

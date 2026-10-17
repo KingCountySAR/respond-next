@@ -1,8 +1,8 @@
 import { recKey, type Rec } from '@sync/core';
 
 export interface LogEntry {
-  eventId: string;
-  /** Event version after this entry; for a rejection, the unchanged version. */
+  activityId: string;
+  /** Activity version after this entry; for a rejection, the unchanged version. */
   version: number;
   mutationId: number;
   clientId: string;
@@ -18,7 +18,7 @@ export interface LogEntry {
   effects: { type: string; id: string; before?: Rec; after?: Rec }[];
 }
 
-export interface StoredEvent {
+export interface StoredActivity {
   version: number;
   /** Includes tombstones, so catch-up can send deletes. */
   records: Rec[];
@@ -26,7 +26,7 @@ export interface StoredEvent {
 }
 
 export interface CommitBatch {
-  /** The stored version this batch builds on; a mismatch means another process wrote the event. */
+  /** The stored version this batch builds on; a mismatch means another process wrote the activity. */
   fromVersion: number;
   version: number;
   records: Rec[];
@@ -35,47 +35,47 @@ export interface CommitBatch {
 }
 
 /**
- * The stored event moved on without us: another process owns it, or owned it briefly.
+ * The stored activity moved on without us: another process owns it, or owned it briefly.
  * The in-memory actor is stale and must be reloaded.
  */
 export class StorageConflictError extends Error {
   constructor(
-    readonly eventId: string,
+    readonly activityId: string,
     readonly expectedVersion: number,
   ) {
-    super(`Event ${eventId} is no longer at version ${expectedVersion}; another process wrote it`);
+    super(`Activity ${activityId} is no longer at version ${expectedVersion}; another process wrote it`);
     this.name = 'StorageConflictError';
   }
 }
 
 /**
- * Persistence for event actors. Each commit is atomic (records, client mutation ids and log
+ * Persistence for activity actors. Each commit is atomic (records, client mutation ids and log
  * together) and fails with StorageConflictError unless the stored version equals `fromVersion`.
  */
-export interface EventStorage {
-  load(eventId: string): Promise<StoredEvent | undefined>;
-  commit(eventId: string, batch: CommitBatch): Promise<void>;
-  /** The latest log entries for an event, oldest first; for debugging tools. */
-  recentLog(eventId: string, limit: number): Promise<LogEntry[]>;
+export interface ActivityStorage {
+  load(activityId: string): Promise<StoredActivity | undefined>;
+  commit(activityId: string, batch: CommitBatch): Promise<void>;
+  /** The latest log entries for an activity, oldest first; for debugging tools. */
+  recentLog(activityId: string, limit: number): Promise<LogEntry[]>;
 }
 
 /** In-memory storage for development and tests. PostgresStorage implements the same interface. */
-export class MemoryStorage implements EventStorage {
-  private readonly events = new Map<string, { version: number; records: Map<string, Rec>; lastMutationIds: Map<string, number> }>();
+export class MemoryStorage implements ActivityStorage {
+  private readonly activities = new Map<string, { version: number; records: Map<string, Rec>; lastMutationIds: Map<string, number> }>();
   readonly log: LogEntry[] = [];
 
-  async load(eventId: string): Promise<StoredEvent | undefined> {
-    const e = this.events.get(eventId);
+  async load(activityId: string): Promise<StoredActivity | undefined> {
+    const e = this.activities.get(activityId);
     if (!e) return undefined;
     return { version: e.version, records: [...e.records.values()], lastMutationIds: Object.fromEntries(e.lastMutationIds) };
   }
 
-  async commit(eventId: string, batch: CommitBatch): Promise<void> {
-    let e = this.events.get(eventId);
-    if ((e?.version ?? 0) !== batch.fromVersion) throw new StorageConflictError(eventId, batch.fromVersion);
+  async commit(activityId: string, batch: CommitBatch): Promise<void> {
+    let e = this.activities.get(activityId);
+    if ((e?.version ?? 0) !== batch.fromVersion) throw new StorageConflictError(activityId, batch.fromVersion);
     if (!e) {
       e = { version: 0, records: new Map(), lastMutationIds: new Map() };
-      this.events.set(eventId, e);
+      this.activities.set(activityId, e);
     }
     e.version = batch.version;
     for (const r of batch.records) e.records.set(recKey(r), r);
@@ -83,7 +83,7 @@ export class MemoryStorage implements EventStorage {
     this.log.push(...batch.log);
   }
 
-  async recentLog(eventId: string, limit: number): Promise<LogEntry[]> {
-    return this.log.filter((e) => e.eventId === eventId).slice(-limit);
+  async recentLog(activityId: string, limit: number): Promise<LogEntry[]> {
+    return this.log.filter((e) => e.activityId === activityId).slice(-limit);
   }
 }

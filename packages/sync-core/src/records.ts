@@ -2,7 +2,7 @@
 export interface Rec {
   type: string;
   id: string;
-  /** Event version of the record's last change; 0 while it only exists locally. */
+  /** Activity version of the record's last change; 0 while it only exists locally. */
   version: number;
   deleted?: true;
   [field: string]: unknown;

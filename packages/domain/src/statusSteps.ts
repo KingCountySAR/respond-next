@@ -4,7 +4,7 @@
  * "Depart Base" from staging.
  */
 import { isRespondingStatus, signInOpensAt } from './queries';
-import type { EventRec, ParticipantStatus } from './schema';
+import type { ActivityRec, ParticipantStatus } from './schema';
 
 const STEPS: Record<ParticipantStatus, ParticipantStatus[]> = {
   unknown: ['responding', 'standby', 'remote'],
@@ -18,7 +18,7 @@ const STEPS: Record<ParticipantStatus, ParticipantStatus[]> = {
   clear: ['responding', 'standby', 'remote'],
 };
 
-/** Before sign-in opens, or on a standby-only event: standby and back; anything else can only be reset. */
+/** Before sign-in opens, or on a standby-only activity: standby and back; anything else can only be reset. */
 const STANDBY_ONLY_STEPS: Record<ParticipantStatus, ParticipantStatus[]> = {
   unknown: ['standby'],
   notResponding: ['standby'],
@@ -38,16 +38,16 @@ export const STANDBY_ONLY_STATUSES: ReadonlySet<ParticipantStatus> = new Set(['s
 const LIGHT_MODE_EXCLUDED: ReadonlySet<ParticipantStatus> = new Set(['remote', 'assigned']);
 
 /**
- * Self sign-in is standby-only before the sign-in window opens, and on a standby-only event
+ * Self sign-in is standby-only before the sign-in window opens, and on a standby-only activity
  * unless the participant is already responding.
  */
-export function isStandbyOnly(event: EventRec, current: ParticipantStatus, now: number): boolean {
-  return signInOpensAt(event) > now || (event.standbyOnly && !isRespondingStatus(current));
+export function isStandbyOnly(activity: ActivityRec, current: ParticipantStatus, now: number): boolean {
+  return signInOpensAt(activity) > now || (activity.standbyOnly && !isRespondingStatus(current));
 }
 
-export function statusSteps(event: EventRec, current: ParticipantStatus, now: number): ParticipantStatus[] {
-  const steps = isStandbyOnly(event, current, now) ? STANDBY_ONLY_STEPS[current] : STEPS[current];
-  return event.mode === 'light' ? steps.filter((s) => !LIGHT_MODE_EXCLUDED.has(s)) : steps;
+export function statusSteps(activity: ActivityRec, current: ParticipantStatus, now: number): ParticipantStatus[] {
+  const steps = isStandbyOnly(activity, current, now) ? STANDBY_ONLY_STEPS[current] : STEPS[current];
+  return activity.mode === 'light' ? steps.filter((s) => !LIGHT_MODE_EXCLUDED.has(s)) : steps;
 }
 
-export const allowedInMode = (event: EventRec, status: ParticipantStatus): boolean => event.mode !== 'light' || !LIGHT_MODE_EXCLUDED.has(status);
+export const allowedInMode = (activity: ActivityRec, status: ParticipantStatus): boolean => activity.mode !== 'light' || !LIGHT_MODE_EXCLUDED.has(status);

@@ -4,8 +4,8 @@ import { PROTOCOL } from '@sync/core';
 import type { Hub } from '@sync/server';
 
 export interface SyncAppOptions {
-  /** Dev-only JSON view of an event's server state. Leave unset in production. */
-  debugEvent?(eventId: string, view: string): Promise<unknown>;
+  /** Dev-only JSON view of an activity's server state. Leave unset in production. */
+  debugActivity?(activityId: string, view: string): Promise<unknown>;
 }
 
 export function createSyncApp(hub: Hub, options: SyncAppOptions = {}) {
@@ -45,9 +45,9 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions = {}) {
     }),
   );
 
-  const { debugEvent } = options;
-  if (debugEvent) {
-    app.get('/api/debug/events/:id', async (c) => c.json(await debugEvent(c.req.param('id'), c.req.query('view') ?? 'command')));
+  const { debugActivity } = options;
+  if (debugActivity) {
+    app.get('/api/debug/activities/:id', async (c) => c.json(await debugActivity(c.req.param('id'), c.req.query('view') ?? 'command')));
   }
 
   // Unknown API paths get a JSON 404 rather than the UI's index.html fallback.

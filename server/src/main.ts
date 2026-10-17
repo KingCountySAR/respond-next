@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { toyProjector, toyRegistry } from '@sync/toy-domain';
-import { Hub, MemoryStorage, PostgresStorage, type EventStorage } from '@sync/server';
+import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 
 // 4000 is the one origin the browser sees (and the OAuth redirect target). In `npm run dev`
@@ -13,7 +13,7 @@ const port = Number(process.env.PORT ?? 4000);
 // The build bundles with NODE_ENV=production; under tsx it comes from the environment.
 const production = process.env.NODE_ENV === 'production';
 
-async function openStorage(): Promise<{ storage: EventStorage; label: string; close(): Promise<void> }> {
+async function openStorage(): Promise<{ storage: ActivityStorage; label: string; close(): Promise<void> }> {
   const url = process.env.DATABASE_URL;
   if (!url) {
     if (production) console.warn('DATABASE_URL is not set: using in-memory storage; everything is lost on restart');
@@ -46,15 +46,15 @@ const hub = new Hub({
 });
 
 const { app, injectWebSocket } = createSyncApp(hub, {
-  debugEvent: production
+  debugActivity: production
     ? undefined
-    : async (eventId, view) => {
-        const actor = await hub.actor(eventId);
+    : async (activityId, view) => {
+        const actor = await hub.actor(activityId);
         return {
           version: actor.currentVersion,
           subscribers: actor.subscriberCount,
           records: actor.projectedRecords(view),
-          log: await storage.recentLog(eventId, 50),
+          log: await storage.recentLog(activityId, 50),
         };
       },
 });

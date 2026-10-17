@@ -10,8 +10,8 @@ interface PaneConfig {
 let nextKey = 3;
 
 export function App() {
-  const [eventId, setEventId] = useState('demo');
-  const [draftEventId, setDraftEventId] = useState(eventId);
+  const [activityId, setActivityId] = useState('demo');
+  const [draftActivityId, setDraftActivityId] = useState(activityId);
   const [panes, setPanes] = useState<PaneConfig[]>([
     { key: 1, user: 'alice', tier: 'command' },
     { key: 2, user: 'bob', tier: 'field' },
@@ -29,23 +29,23 @@ export function App() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            setEventId(draftEventId.trim() || 'demo');
+            setActivityId(draftActivityId.trim() || 'demo');
           }}
         >
           <label>
-            Event <input value={draftEventId} onChange={(e) => setDraftEventId(e.target.value)} />
+            Activity <input value={draftActivityId} onChange={(e) => setDraftActivityId(e.target.value)} />
           </label>
           <button type="submit">Open</button>
         </form>
         <button onClick={() => addPane('command')}>+ command client</button>
         <button onClick={() => addPane('field')}>+ field client</button>
-        <a href={`/api/debug/events/${encodeURIComponent(eventId)}`} target="_blank" rel="noreferrer">
+        <a href={`/api/debug/activities/${encodeURIComponent(activityId)}`} target="_blank" rel="noreferrer">
           Server state
         </a>
       </header>
       <div className="panes">
         {panes.map((p) => (
-          <ClientPane key={`${p.key}-${eventId}`} user={p.user} tier={p.tier} eventId={eventId} onRemove={() => setPanes((all) => all.filter((x) => x.key !== p.key))} />
+          <ClientPane key={`${p.key}-${activityId}`} user={p.user} tier={p.tier} activityId={activityId} onRemove={() => setPanes((all) => all.filter((x) => x.key !== p.key))} />
         ))}
       </div>
     </main>

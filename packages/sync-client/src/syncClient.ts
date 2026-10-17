@@ -1,12 +1,12 @@
 import {
-  ClientEventState,
+  ClientActivityState,
   ClockSync,
   Rejection,
   decode,
   encode,
   randomId,
   type ClientMessage,
-  type EventSnapshot,
+  type ActivitySnapshot,
   type MutationRegistry,
   type ServerMessage,
   type Viewer,
@@ -33,7 +33,7 @@ export interface SyncStatus {
 }
 
 export interface RejectionNotice {
-  eventId: string;
+  activityId: string;
   mutation: WireMutation;
   description: string;
   reason: string;
@@ -50,8 +50,8 @@ export interface SyncClientOptions {
   build?: string;
 }
 
-interface OpenEvent {
-  state: ClientEventState;
+interface OpenActivity {
+  state: ClientActivityState;
   listeners: Set<() => void>;
   /** Highest mutation id sent on the current connection. */
   pushedUpTo: number;
@@ -59,7 +59,7 @@ interface OpenEvent {
 
 export class SyncClient {
   private readonly persistence: ClientPersistence;
-  private readonly events = new Map<string, OpenEvent>();
+  private readonly activities = new Map<string, OpenActivity>();
   private readonly statusListeners = new Set<() => void>();
   private readonly rejectListeners = new Set<(r: RejectionNotice) => void>();
   private readonly messageListeners = new Set<(dir: 'in' | 'out', msg: unknown) => void>();
@@ -116,40 +116,40 @@ export class SyncClient {
     this.connect();
   }
 
-  async open(eventId: string): Promise<void> {
+  async open(activityId: string): Promise<void> {
     await this.ready;
-    if (this.events.has(eventId)) return;
-    const state = new ClientEventState(eventId, this.opts.registry, this.opts.viewer, this.clientId);
-    const saved = await this.persistence.loadEvent(eventId);
+    if (this.activities.has(activityId)) return;
+    const state = new ClientActivityState(activityId, this.opts.registry, this.opts.viewer, this.clientId);
+    const saved = await this.persistence.loadActivity(activityId);
     if (saved) {
       state.restore(saved);
       for (const m of saved.pending) this.nextMutationId = Math.max(this.nextMutationId, m.id + 1);
     }
-    if (this.events.has(eventId)) return;
-    this.events.set(eventId, { state, listeners: new Set(), pushedUpTo: 0 });
+    if (this.activities.has(activityId)) return;
+    this.activities.set(activityId, { state, listeners: new Set(), pushedUpTo: 0 });
     if (this.connState === 'live') {
-      this.send({ t: 'sub', eventId, since: state.version });
+      this.send({ t: 'sub', activityId, since: state.version });
       this.flush();
     }
     this.updateStatus();
   }
 
-  close(eventId: string): void {
-    if (!this.events.delete(eventId)) return;
-    if (this.connState === 'live') this.send({ t: 'unsub', eventId });
+  close(activityId: string): void {
+    if (!this.activities.delete(activityId)) return;
+    if (this.connState === 'live') this.send({ t: 'unsub', activityId });
     this.updateStatus();
   }
 
-  snapshot(eventId: string): EventSnapshot {
-    return this.event(eventId).state.snapshot;
+  snapshot(activityId: string): ActivitySnapshot {
+    return this.activity(activityId).state.snapshot;
   }
 
-  describe(eventId: string, m: WireMutation): string {
-    return this.event(eventId).state.describe(m);
+  describe(activityId: string, m: WireMutation): string {
+    return this.activity(activityId).state.describe(m);
   }
 
-  subscribe(eventId: string, listener: () => void): () => void {
-    const listeners = this.event(eventId).listeners;
+  subscribe(activityId: string, listener: () => void): () => void {
+    const listeners = this.activity(activityId).listeners;
     listeners.add(listener);
     return () => listeners.delete(listener);
   }
@@ -174,8 +174,8 @@ export class SyncClient {
    * Applies a change locally at once and queues it for the server.
    * Throws Rejection, without queueing, if it can't apply locally.
    */
-  mutate(eventId: string, name: string, args: Record<string, unknown>): WireMutation {
-    const e = this.event(eventId);
+  mutate(activityId: string, name: string, args: Record<string, unknown>): WireMutation {
+    const e = this.activity(activityId);
     const def = this.opts.registry.latest(name);
     if (!def) throw new Rejection('unknown_mutation', `Unknown change type ${name}`);
     if (def.allow && !def.allow(this.opts.viewer)) throw new Rejection('forbidden', 'Your role cannot make this change');
@@ -187,14 +187,14 @@ export class SyncClient {
     this.nextMutationId += 1;
     // Saved right away: reusing an id after a crash would make the server drop the change as a duplicate.
     void this.persistence.saveMeta({ clientId: this.clientId, nextMutationId: this.nextMutationId });
-    this.changed(eventId);
+    this.changed(activityId);
     this.scheduleFlush();
     return m;
   }
 
-  private event(eventId: string): OpenEvent {
-    const e = this.events.get(eventId);
-    if (!e) throw new Error(`Event ${eventId} is not open`);
+  private activity(activityId: string): OpenActivity {
+    const e = this.activities.get(activityId);
+    if (!e) throw new Error(`Activity ${activityId} is not open`);
     return e;
   }
 
@@ -215,9 +215,9 @@ export class SyncClient {
         if (this.transport !== t) return;
         this.attempt = 0;
         this.lastHeard = Date.now();
-        const subs = [...this.events].map(([eventId, e]) => {
+        const subs = [...this.activities].map(([activityId, e]) => {
           e.pushedUpTo = 0; // resend everything pending; the server skips what it already has
-          return { eventId, since: e.state.version };
+          return { activityId, since: e.state.version };
         });
         this.send({ t: 'hello', clientId: this.clientId, build: this.opts.build ?? 'dev', subs });
         this.setConnState('live');
@@ -279,30 +279,30 @@ export class SyncClient {
         break;
       }
       case 'reset': {
-        const e = this.events.get(msg.eventId);
+        const e = this.activities.get(msg.activityId);
         if (!e) break;
         e.state.applyReset(msg);
         this.seenMutationId(msg.lastMutationId);
-        this.changed(msg.eventId);
+        this.changed(msg.activityId);
         break;
       }
       case 'update': {
-        const e = this.events.get(msg.eventId);
+        const e = this.activities.get(msg.activityId);
         if (!e) break;
         if (!e.state.applyUpdate(msg)) {
-          this.send({ t: 'sub', eventId: msg.eventId, since: e.state.version });
+          this.send({ t: 'sub', activityId: msg.activityId, since: e.state.version });
           break;
         }
         this.seenMutationId(msg.lastMutationId);
-        this.changed(msg.eventId);
+        this.changed(msg.activityId);
         break;
       }
       case 'reject': {
-        const e = this.events.get(msg.eventId);
+        const e = this.activities.get(msg.activityId);
         const dropped = e?.state.applyReject(msg.mutationId);
         if (!dropped) break;
-        this.changed(msg.eventId);
-        for (const l of this.rejectListeners) l({ eventId: msg.eventId, ...dropped, reason: msg.reason, message: msg.message });
+        this.changed(msg.activityId);
+        for (const l of this.rejectListeners) l({ activityId: msg.activityId, ...dropped, reason: msg.reason, message: msg.message });
         break;
       }
       case 'reload':
@@ -335,22 +335,22 @@ export class SyncClient {
     }, FLUSH_DELAY_MS);
   }
 
-  /** Sends pending mutations not yet sent on this connection, batched per event. */
+  /** Sends pending mutations not yet sent on this connection, batched per activity. */
   private flush(): void {
     if (this.connState !== 'live') return;
-    for (const [eventId, e] of this.events) {
+    for (const [activityId, e] of this.activities) {
       const unsent = e.state.pending.filter((m) => m.id > e.pushedUpTo);
       const last = unsent.at(-1);
       if (!last) continue;
-      this.send({ t: 'push', eventId, mutations: unsent });
+      this.send({ t: 'push', activityId, mutations: unsent });
       e.pushedUpTo = last.id;
     }
   }
 
-  private changed(eventId: string): void {
-    const e = this.events.get(eventId);
+  private changed(activityId: string): void {
+    const e = this.activities.get(activityId);
     if (e) for (const l of e.listeners) l();
-    this.dirty.add(eventId);
+    this.dirty.add(activityId);
     if (!this.persistTimer) this.persistTimer = setTimeout(() => this.flushPersist(), PERSIST_DELAY_MS);
     this.updateStatus();
   }
@@ -358,9 +358,9 @@ export class SyncClient {
   private flushPersist(): void {
     clearTimeout(this.persistTimer);
     this.persistTimer = undefined;
-    for (const eventId of this.dirty) {
-      const e = this.events.get(eventId);
-      if (e) void this.persistence.saveEvent(eventId, e.state.persisted());
+    for (const activityId of this.dirty) {
+      const e = this.activities.get(activityId);
+      if (e) void this.persistence.saveActivity(activityId, e.state.persisted());
     }
     this.dirty.clear();
   }
@@ -372,7 +372,7 @@ export class SyncClient {
 
   private updateStatus(): void {
     let pending = 0;
-    for (const e of this.events.values()) pending += e.state.pending.length;
+    for (const e of this.activities.values()) pending += e.state.pending.length;
     const next: SyncStatus = { state: this.connState, rtt: this.clock.rtt, clockOffset: Math.round(this.clock.offset), pending };
     const cur = this.currentStatus;
     if (cur.state === next.state && cur.rtt === next.rtt && cur.clockOffset === next.clockOffset && cur.pending === next.pending) return;

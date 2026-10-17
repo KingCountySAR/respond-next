@@ -1,14 +1,14 @@
 /**
- * Derived state, as plain functions over an event's records. The server, the client and reports
+ * Derived state, as plain functions over an activity's records. The server, the client and reports
  * all use these, so "current status" or "team members" means the same thing everywhere.
  */
 import { deriveId, type ReadView } from '@sync/core';
 import {
-  EVENT_RECORD_ID,
+  ACTIVITY_RECORD_ID,
   PARTICIPANT_STATUSES,
   type AssignmentRec,
   type EquipmentRec,
-  type EventRec,
+  type ActivityRec,
   type GroupRec,
   type ParticipantRec,
   type ParticipantStatus,
@@ -19,7 +19,7 @@ import {
   type UnitStatusRec,
 } from './schema';
 
-/** Default for events that don't set one: self sign-in opens 4 hours before the start. */
+/** Default for activities that don't set one: self sign-in opens 4 hours before the start. */
 export const DEFAULT_EARLY_SIGN_IN_WINDOW = 4 * 60 * 60 * 1000;
 
 interface TimedEntry {
@@ -29,7 +29,7 @@ interface TimedEntry {
 }
 
 /**
- * Orders entries by `at`, then by event version, then by id, so every client and the server pick the
+ * Orders entries by `at`, then by activity version, then by id, so every client and the server pick the
  * same current entry. Version 0 (applied locally, not yet confirmed) counts as newest.
  */
 export function compareEntries(a: TimedEntry, b: TimedEntry): number {
@@ -54,7 +54,7 @@ function* where<T>(items: Iterable<T>, keep: (item: T) => boolean): Generator<T>
   for (const item of items) if (keep(item)) yield item;
 }
 
-export const getEvent = (view: ReadView): EventRec | undefined => view.get<EventRec>('event', EVENT_RECORD_ID);
+export const getActivity = (view: ReadView): ActivityRec | undefined => view.get<ActivityRec>('activity', ACTIVITY_RECORD_ID);
 
 // --- Participants ---------------------------------------------------------------------------
 
@@ -169,24 +169,24 @@ export const groupLedBy = (view: ReadView, participantId: string): GroupRec | un
 export const currentUnitStatus = (view: ReadView, unitId: string): UnitStatusRec | undefined =>
   latestEntry(where(view.scan<UnitStatusRec>('unitStatus'), (s) => s.unitId === unitId));
 
-// --- Event lifecycle ------------------------------------------------------------------------
+// --- Activity lifecycle ------------------------------------------------------------------------
 
 /** When self sign-in opens; -Infinity when it's open at any time. */
-export function signInOpensAt(event: Pick<EventRec, 'startTime' | 'earlySignInWindow'>): number {
-  return event.earlySignInWindow === null ? -Infinity : event.startTime - event.earlySignInWindow;
+export function signInOpensAt(activity: Pick<ActivityRec, 'startTime' | 'earlySignInWindow'>): number {
+  return activity.earlySignInWindow === null ? -Infinity : activity.startTime - activity.earlySignInWindow;
 }
 
-export const isOpenForSignIn = (event: EventRec, now: number): boolean => !event.closed && signInOpensAt(event) <= now;
-export const isStarted = (event: EventRec, now: number): boolean => !event.closed && event.startTime <= now;
+export const isOpenForSignIn = (activity: ActivityRec, now: number): boolean => !activity.closed && signInOpensAt(activity) <= now;
+export const isStarted = (activity: ActivityRec, now: number): boolean => !activity.closed && activity.startTime <= now;
 
-export type EventPhase = 'closed' | 'inProgress' | 'openForSignIn' | 'notStarted';
+export type ActivityPhase = 'closed' | 'inProgress' | 'openForSignIn' | 'notStarted';
 
-export function eventPhase(event: EventRec, now: number): EventPhase {
-  if (event.closed) return 'closed';
-  if (isStarted(event, now)) return 'inProgress';
-  if (isOpenForSignIn(event, now)) return 'openForSignIn';
+export function activityPhase(activity: ActivityRec, now: number): ActivityPhase {
+  if (activity.closed) return 'closed';
+  if (isStarted(activity, now)) return 'inProgress';
+  if (isOpenForSignIn(activity, now)) return 'openForSignIn';
   return 'notStarted';
 }
 
 /** Light mode turns off operations: teams, groups, places, equipment and comms. */
-export const hasOperations = (event: EventRec | undefined): boolean => event?.mode !== 'light';
+export const hasOperations = (activity: ActivityRec | undefined): boolean => activity?.mode !== 'light';

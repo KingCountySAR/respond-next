@@ -5,7 +5,7 @@ import { Rejection } from './errors';
 import { MapView, OverlayTx, type ReadView } from './tx';
 
 /** What the UI reads: confirmed server state with pending mutations applied on top. Immutable. */
-export interface EventSnapshot extends ReadView {
+export interface ActivitySnapshot extends ReadView {
   readonly version: number;
   readonly pending: readonly WireMutation[];
   /** Keys (`type/id`) of records touched by pending mutations, for "unsynced" markers. */
@@ -13,7 +13,7 @@ export interface EventSnapshot extends ReadView {
   all(): Iterable<Rec>;
 }
 
-export interface PersistedEvent {
+export interface PersistedActivity {
   confirmed: Rec[];
   version: number;
   pending: WireMutation[];
@@ -22,7 +22,7 @@ export interface PersistedEvent {
 type UpdateMessage = Extract<ServerMessage, { t: 'update' }>;
 type ResetMessage = Extract<ServerMessage, { t: 'reset' }>;
 
-class Snapshot implements EventSnapshot {
+class Snapshot implements ActivitySnapshot {
   constructor(
     private readonly view: OverlayTx,
     private readonly confirmed: ReadonlyMap<string, Rec>,
@@ -46,17 +46,17 @@ class Snapshot implements EventSnapshot {
 }
 
 /**
- * One event on the client: confirmed server state plus the queue of pending mutations.
+ * One activity on the client: confirmed server state plus the queue of pending mutations.
  * There is no rollback code; the snapshot is rebuilt from confirmed state whenever either changes.
  */
-export class ClientEventState {
+export class ClientActivityState {
   private confirmed = new Map<string, Rec>();
   version = 0;
   pending: WireMutation[] = [];
-  snapshot: EventSnapshot;
+  snapshot: ActivitySnapshot;
 
   constructor(
-    readonly eventId: string,
+    readonly activityId: string,
     private readonly registry: MutationRegistry,
     private readonly viewer: Viewer,
     private readonly clientId: string,
@@ -64,14 +64,14 @@ export class ClientEventState {
     this.snapshot = this.rebuild();
   }
 
-  restore(saved: PersistedEvent): void {
+  restore(saved: PersistedActivity): void {
     this.confirmed = new Map(saved.confirmed.map((r) => [recKey(r), r]));
     this.version = saved.version;
     this.pending = [...saved.pending];
     this.snapshot = this.rebuild();
   }
 
-  persisted(): PersistedEvent {
+  persisted(): PersistedActivity {
     return { confirmed: [...this.confirmed.values()], version: this.version, pending: this.pending };
   }
 
@@ -130,7 +130,7 @@ export class ClientEventState {
     return def;
   }
 
-  private rebuild(): EventSnapshot {
+  private rebuild(): ActivitySnapshot {
     const view = new OverlayTx(new MapView(this.confirmed));
     const pendingKeys = new Set<string>();
     for (const m of this.pending) {

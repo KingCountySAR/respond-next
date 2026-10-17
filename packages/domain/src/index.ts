@@ -1,7 +1,7 @@
 import { MutationRegistry } from '@sync/core';
-import * as eventMutations from './mutations/event';
-import * as operationMutations from './mutations/operations';
-import * as participantMutations from './mutations/participants';
+import * as lifecycle from './mutations/activity';
+import * as operations from './mutations/operations';
+import * as participants from './mutations/participants';
 
 export * from './schema';
 export * from './equipment';
@@ -9,10 +9,10 @@ export * from './viewer';
 export * from './queries';
 export * from './statusSteps';
 export * from './projector';
-export * from './mutations/event';
+export * from './mutations/activity';
 export * from './mutations/participants';
 export * from './mutations/operations';
 
-export const missionMutations = { ...eventMutations, ...participantMutations, ...operationMutations };
+export const activityMutations = { ...lifecycle, ...participants, ...operations };
 
-export const missionRegistry = new MutationRegistry(Object.values(missionMutations));
+export const activityRegistry = new MutationRegistry(Object.values(activityMutations));

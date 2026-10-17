@@ -20,11 +20,11 @@ export const ClientMessage = z.discriminatedUnion('t', [
     // Restricted because it becomes a storage field name (lastMutationIds.<clientId>).
     clientId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, 'clientId must be 1-64 letters, digits, _ or -'),
     build: z.string(),
-    subs: z.array(z.object({ eventId: z.string().min(1), since: z.number().int().min(0) })),
+    subs: z.array(z.object({ activityId: z.string().min(1), since: z.number().int().min(0) })),
   }),
-  z.object({ t: z.literal('sub'), eventId: z.string().min(1), since: z.number().int().min(0) }),
-  z.object({ t: z.literal('unsub'), eventId: z.string().min(1) }),
-  z.object({ t: z.literal('push'), eventId: z.string().min(1), mutations: z.array(WireMutation).min(1) }),
+  z.object({ t: z.literal('sub'), activityId: z.string().min(1), since: z.number().int().min(0) }),
+  z.object({ t: z.literal('unsub'), activityId: z.string().min(1) }),
+  z.object({ t: z.literal('push'), activityId: z.string().min(1), mutations: z.array(WireMutation).min(1) }),
   z.object({ t: z.literal('ping'), n: z.number() }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
@@ -38,15 +38,15 @@ export interface RecRef {
 export type ServerMessage =
   | {
       t: 'update';
-      eventId: string;
+      activityId: string;
       from: number;
       to: number;
       upserts: Rec[];
       deletes: RecRef[];
       lastMutationId: number;
     }
-  | { t: 'reset'; eventId: string; to: number; records: Rec[]; lastMutationId: number }
-  | { t: 'reject'; eventId: string; mutationId: number; reason: string; message: string }
+  | { t: 'reset'; activityId: string; to: number; records: Rec[]; lastMutationId: number }
+  | { t: 'reject'; activityId: string; mutationId: number; reason: string; message: string }
   | { t: 'pong'; n: number; serverTime: number }
   | { t: 'reload'; reason: string }
   | { t: 'error'; code: string; message: string };

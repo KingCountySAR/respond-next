@@ -12,7 +12,7 @@ import {
   type Viewer,
   type WireMutation,
 } from '@sync/core';
-import { StorageConflictError, type EventStorage, type LogEntry } from './storage';
+import { StorageConflictError, type ActivityStorage, type LogEntry } from './storage';
 
 /** How far in the future a mutation's `at` may be, to absorb client clock error. */
 const MAX_FUTURE_AT_MS = 2 * 60_000;
@@ -27,7 +27,7 @@ export interface ActorConn {
 }
 
 export interface ActorDeps {
-  storage: EventStorage;
+  storage: ActivityStorage;
   registry: MutationRegistry;
   projector: Projector;
   now(): number;
@@ -44,26 +44,26 @@ interface Subscription {
 type Applied = { writes: Map<string, Rec> } | { reason: string; message: string };
 
 /**
- * Owns one event in memory and applies its mutations one at a time. Only one actor may own
- * an event at a time (a single process for now; a lease when there are several).
+ * Owns one activity in memory and applies its mutations one at a time. Only one actor may own
+ * an activity at a time (a single process for now; a lease when there are several).
  */
-export class EventActor {
+export class ActivityActor {
   private readonly records = new Map<string, Rec>();
   private version = 0;
   private readonly lastMutationIds = new Map<string, number>();
   private readonly subs = new Map<string, Subscription>();
   private queue: Promise<unknown> = Promise.resolve();
-  /** Set when storage shows another process wrote this event; the hub then loads a fresh actor. */
+  /** Set when storage shows another process wrote this activity; the hub then loads a fresh actor. */
   stale = false;
 
   private constructor(
-    readonly eventId: string,
+    readonly activityId: string,
     private readonly deps: ActorDeps,
   ) {}
 
-  static async load(eventId: string, deps: ActorDeps): Promise<EventActor> {
-    const actor = new EventActor(eventId, deps);
-    const stored = await deps.storage.load(eventId);
+  static async load(activityId: string, deps: ActorDeps): Promise<ActivityActor> {
+    const actor = new ActivityActor(activityId, deps);
+    const stored = await deps.storage.load(activityId);
     if (stored) {
       actor.version = stored.version;
       for (const r of stored.records) actor.records.set(recKey(r), r);
@@ -109,7 +109,7 @@ export class EventActor {
    */
   private retire(): void {
     this.stale = true;
-    for (const sub of this.subs.values()) sub.conn.close(1012, 'event reloaded');
+    for (const sub of this.subs.values()) sub.conn.close(1012, 'activity reloaded');
     this.subs.clear();
   }
 
@@ -120,24 +120,24 @@ export class EventActor {
   }
 
   private doSubscribe(conn: ActorConn, since: number): void {
-    if (this.stale) return conn.close(1012, 'event reloaded');
+    if (this.stale) return conn.close(1012, 'activity reloaded');
     const viewKey = this.deps.projector.viewKey(conn.viewer);
     const lastMutationId = this.lastMutationIds.get(conn.clientId) ?? 0;
     if (since === 0 || since > this.version) {
       // A client ahead of us means the server lost data; start it over.
-      conn.send({ t: 'reset', eventId: this.eventId, to: this.version, records: this.projectedRecords(viewKey), lastMutationId });
+      conn.send({ t: 'reset', activityId: this.activityId, to: this.version, records: this.projectedRecords(viewKey), lastMutationId });
     } else {
       const changed = [...this.records.values()].filter((r) => r.version > since);
       const { upserts, deletes } = this.diff(viewKey, changed);
-      conn.send({ t: 'update', eventId: this.eventId, from: since, to: this.version, upserts, deletes, lastMutationId });
+      conn.send({ t: 'update', activityId: this.activityId, from: since, to: this.version, upserts, deletes, lastMutationId });
     }
     this.subs.set(conn.id, { conn, viewKey, sentVersion: this.version, sentMutationId: lastMutationId });
   }
 
   private async doPush(conn: ActorConn, mutations: WireMutation[]): Promise<void> {
-    if (this.stale) return conn.close(1012, 'event reloaded');
+    if (this.stale) return conn.close(1012, 'activity reloaded');
     if (!this.subs.has(conn.id)) {
-      conn.send({ t: 'error', code: 'not_subscribed', message: `Subscribe to ${this.eventId} before pushing` });
+      conn.send({ t: 'error', code: 'not_subscribed', message: `Subscribe to ${this.activityId} before pushing` });
       return;
     }
     const receivedAt = this.deps.now();
@@ -151,7 +151,7 @@ export class EventActor {
       if (m.id <= lastId) continue; // already applied or rejected; resent after a reconnect
       lastId = m.id;
       const entry = {
-        eventId: this.eventId,
+        activityId: this.activityId,
         mutationId: m.id,
         clientId: conn.clientId,
         userId: conn.viewer.userId,
@@ -164,7 +164,7 @@ export class EventActor {
       const result = this.applyOne(batch, conn, m, receivedAt);
       if ('reason' in result) {
         log.push({ ...entry, version, outcome: 'rejected', reason: result.reason, effects: [] });
-        rejects.push({ t: 'reject', eventId: this.eventId, mutationId: m.id, reason: result.reason, message: result.message });
+        rejects.push({ t: 'reject', activityId: this.activityId, mutationId: m.id, reason: result.reason, message: result.message });
         continue;
       }
       version += 1;
@@ -181,7 +181,7 @@ export class EventActor {
 
     const changed = [...batch.writes.values()];
     try {
-      await this.deps.storage.commit(this.eventId, { fromVersion: this.version, version, records: changed, lastMutationIds: { [conn.clientId]: lastId }, log });
+      await this.deps.storage.commit(this.activityId, { fromVersion: this.version, version, records: changed, lastMutationIds: { [conn.clientId]: lastId }, log });
     } catch (err) {
       if (err instanceof StorageConflictError) this.retire();
       throw err;
@@ -230,7 +230,7 @@ export class EventActor {
       for (const sub of subs) {
         const lastMutationId = this.lastMutationIds.get(sub.conn.clientId) ?? 0;
         if (upserts.length === 0 && deletes.length === 0 && lastMutationId === sub.sentMutationId) continue;
-        sub.conn.send({ t: 'update', eventId: this.eventId, from: sub.sentVersion, to: this.version, upserts, deletes, lastMutationId });
+        sub.conn.send({ t: 'update', activityId: this.activityId, from: sub.sentVersion, to: this.version, upserts, deletes, lastMutationId });
         sub.sentVersion = this.version;
         sub.sentMutationId = lastMutationId;
       }

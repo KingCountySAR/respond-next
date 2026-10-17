@@ -3,7 +3,7 @@
  * projected once per key however many people are connected. Command and support see everything.
  */
 import type { Projector, Rec, Viewer } from '@sync/core';
-import { asMissionViewer, isCommand } from './viewer';
+import { asActivityViewer, isCommand } from './viewer';
 
 export type ViewKey = 'command' | 'field:member' | 'field:external';
 
@@ -14,7 +14,7 @@ const pick = (rec: Rec, fields: readonly string[]): Rec => {
   return out;
 };
 
-const EVENT_FIELDS = ['idNumber', 'kind', 'title', 'location', 'startTime', 'endTime', 'earlySignInWindow', 'mode', 'standbyOnly', 'closed', 'removedAt'] as const;
+const ACTIVITY_FIELDS = ['idNumber', 'kind', 'title', 'location', 'startTime', 'endTime', 'earlySignInWindow', 'mode', 'standbyOnly', 'closed', 'removedAt'] as const;
 const NAME_ONLY = ['name'] as const;
 
 type Rule = (rec: Rec) => Rec | null;
@@ -33,10 +33,10 @@ const assignmentKindOnly: Rule = (rec) => {
 
 const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
   member: {
-    event: only(EVENT_FIELDS),
-    eventUnit: all,
+    activity: only(ACTIVITY_FIELDS),
+    activityUnit: all,
     unitStatus: all,
-    participant: only(['personRef', 'firstname', 'lastname', 'memberTags', 'missionTags', 'eta']),
+    participant: only(['personRef', 'firstname', 'lastname', 'memberTags', 'activityTags', 'eta']),
     participantStatus: all,
     assignment: assignmentKindOnly,
     contact: all,
@@ -48,10 +48,10 @@ const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
     comm: none,
   },
   external: {
-    event: only(EVENT_FIELDS),
-    eventUnit: all,
+    activity: only(ACTIVITY_FIELDS),
+    activityUnit: all,
     unitStatus: all,
-    participant: only(['firstname', 'lastname', 'memberTags', 'missionTags']),
+    participant: only(['firstname', 'lastname', 'memberTags', 'activityTags']),
     participantStatus: all,
     assignment: none,
     contact: none,
@@ -64,10 +64,10 @@ const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
   },
 };
 
-export const missionProjector: Projector = {
+export const activityProjector: Projector = {
   viewKey(viewer: Viewer): ViewKey {
     if (isCommand(viewer)) return 'command';
-    return asMissionViewer(viewer).class === 'member' ? 'field:member' : 'field:external';
+    return asActivityViewer(viewer).class === 'member' ? 'field:member' : 'field:external';
   },
   project(viewKey, rec) {
     if (viewKey === 'command') return rec;

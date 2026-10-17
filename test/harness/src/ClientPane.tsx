@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { MemoryPersistence, SyncClient } from '@sync/client';
-import { useEventSnapshot, useRejections, useSyncStatus } from '@sync/client/react';
+import { useActivitySnapshot, useRejections, useSyncStatus } from '@sync/client/react';
 import { Rejection, keyOf, randomId } from '@sync/core';
 import { STATUSES, currentStatus, toyRegistry, type Person } from '@sync/toy-domain';
 import { SimLink, SimTransport } from './simLink';
@@ -8,14 +8,14 @@ import { SimLink, SimTransport } from './simLink';
 interface Props {
   user: string;
   tier: 'command' | 'field';
-  eventId: string;
+  activityId: string;
   onRemove(): void;
 }
 
 const wsUrl = (user: string, tier: string) =>
   `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/sync?user=${encodeURIComponent(user)}&tier=${tier}`;
 
-export function ClientPane({ user, tier, eventId, onRemove }: Props) {
+export function ClientPane({ user, tier, activityId, onRemove }: Props) {
   const [link] = useState(() => new SimLink());
   const [client] = useState(
     () =>
@@ -32,13 +32,13 @@ export function ClientPane({ user, tier, eventId, onRemove }: Props) {
     let live = true;
     void client
       .start()
-      .then(() => client.open(eventId))
+      .then(() => client.open(activityId))
       .then(() => live && setReady(true));
     return () => {
       live = false;
       client.stop();
     };
-  }, [client, eventId]);
+  }, [client, activityId]);
 
   return (
     <section className={`pane ${tier}`}>
@@ -51,8 +51,8 @@ export function ClientPane({ user, tier, eventId, onRemove }: Props) {
       <LinkControls link={link} client={client} />
       {ready ? (
         <>
-          <Roster client={client} eventId={eventId} tier={tier} />
-          <Debug client={client} eventId={eventId} />
+          <Roster client={client} activityId={activityId} tier={tier} />
+          <Debug client={client} activityId={activityId} />
         </>
       ) : (
         <p>Loading…</p>
@@ -99,8 +99,8 @@ function useMinuteTick() {
   }, []);
 }
 
-function Roster({ client, eventId, tier }: { client: SyncClient; eventId: string; tier: string }) {
-  const snap = useEventSnapshot(client, eventId);
+function Roster({ client, activityId, tier }: { client: SyncClient; activityId: string; tier: string }) {
+  const snap = useActivitySnapshot(client, activityId);
   const [name, setName] = useState('');
   const [minutesAgo, setMinutesAgo] = useState(0);
   const [error, setError] = useState<string>();
@@ -109,7 +109,7 @@ function Roster({ client, eventId, tier }: { client: SyncClient; eventId: string
 
   const act = (mutation: string, args: Record<string, unknown>) => {
     try {
-      client.mutate(eventId, mutation, args);
+      client.mutate(activityId, mutation, args);
       setError(undefined);
     } catch (err) {
       setError(err instanceof Rejection ? err.message : String(err));
@@ -191,8 +191,8 @@ function Roster({ client, eventId, tier }: { client: SyncClient; eventId: string
   );
 }
 
-function Debug({ client, eventId }: { client: SyncClient; eventId: string }) {
-  const snap = useEventSnapshot(client, eventId);
+function Debug({ client, activityId }: { client: SyncClient; activityId: string }) {
+  const snap = useActivitySnapshot(client, activityId);
   const rejections = useRejections(client);
   const [log, setLog] = useState<{ dir: 'in' | 'out'; text: string }[]>([]);
   useEffect(
@@ -213,7 +213,7 @@ function Debug({ client, eventId }: { client: SyncClient; eventId: string }) {
         <ol className="queue">
           {snap.pending.map((m) => (
             <li key={m.id}>
-              #{m.id} {client.describe(eventId, m)}
+              #{m.id} {client.describe(activityId, m)}
             </li>
           ))}
         </ol>

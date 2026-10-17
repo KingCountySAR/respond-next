@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
-import type { EventSnapshot } from '@sync/core';
+import type { ActivitySnapshot } from '@sync/core';
 import type { RejectionNotice, SyncClient, SyncStatus } from './syncClient';
 
-/** The event's current view; re-renders when it changes. The event must already be open. */
-export function useEventSnapshot(client: SyncClient, eventId: string): EventSnapshot {
-  const subscribe = useCallback((cb: () => void) => client.subscribe(eventId, cb), [client, eventId]);
-  return useSyncExternalStore(subscribe, () => client.snapshot(eventId));
+/** The activity's current view; re-renders when it changes. The activity must already be open. */
+export function useActivitySnapshot(client: SyncClient, activityId: string): ActivitySnapshot {
+  const subscribe = useCallback((cb: () => void) => client.subscribe(activityId, cb), [client, activityId]);
+  return useSyncExternalStore(subscribe, () => client.snapshot(activityId));
 }
 
 export function useSyncStatus(client: SyncClient): SyncStatus {

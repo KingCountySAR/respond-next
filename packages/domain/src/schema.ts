@@ -1,6 +1,7 @@
 /**
- * Mission records. An event is a flat set of these, keyed by (type, id). Timed facts (statuses,
- * assignments) are lists of entries that are only ever added; current state is the latest `at`.
+ * Activity records, the same for missions, trainings and other activities. An activity is a flat set of these,
+ * keyed by (type, id). Timed facts (statuses, assignments) are lists of entries that are only ever
+ * added; current state is the latest `at`.
  */
 import { z } from 'zod';
 import type { Rec } from '@sync/core';
@@ -18,11 +19,11 @@ export type TeamStatus = (typeof TEAM_STATUSES)[number];
 export const GARS = ['green', 'amber', 'red'] as const;
 export type Gar = (typeof GARS)[number];
 
-export const EVENT_KINDS = ['mission', 'training', 'event'] as const;
-export type EventKind = (typeof EVENT_KINDS)[number];
+export const ACTIVITY_KINDS = ['mission', 'training', 'other'] as const;
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
-export const EVENT_MODES = ['full', 'light'] as const;
-export type EventMode = (typeof EVENT_MODES)[number];
+export const ACTIVITY_MODES = ['full', 'light'] as const;
+export type ActivityMode = (typeof ACTIVITY_MODES)[number];
 
 /** Where a participant or piece of equipment is. */
 export const Target = z.object({ kind: z.enum(['team', 'place', 'group']), id: z.string().min(1) });
@@ -36,13 +37,13 @@ export const Location = z.object({
 });
 export type Location = z.infer<typeof Location>;
 
-/** The single `event` record in every event uses this id. */
-export const EVENT_RECORD_ID = 'event';
+/** The single `activity` record in every activity uses this id. */
+export const ACTIVITY_RECORD_ID = 'activity';
 
-export interface EventRec extends Rec {
-  type: 'event';
+export interface ActivityRec extends Rec {
+  type: 'activity';
   idNumber: string;
-  kind: EventKind;
+  kind: ActivityKind;
   title: string;
   description: string;
   location: Location;
@@ -52,16 +53,16 @@ export interface EventRec extends Rec {
   /** How long before startTime self sign-in opens, in ms; null = open at any time. */
   earlySignInWindow: number | null;
   ownerOrgId: string;
-  mode: EventMode;
+  mode: ActivityMode;
   standbyOnly: boolean;
   closed: boolean;
-  /** Set when the event is removed; removed events drop out of every list. */
+  /** Set when the activity is removed; removed activities drop out of every list. */
   removedAt: number | null;
 }
 
-/** A unit (organization) taking part. Its id is the org id, so each unit appears once per event. */
-export interface EventUnitRec extends Rec {
-  type: 'eventUnit';
+/** A unit (organization) taking part. Its id is the org id, so each unit appears once per activity. */
+export interface ActivityUnitRec extends Rec {
+  type: 'activityUnit';
   title: string;
   rosterName: string | null;
 }
@@ -82,7 +83,7 @@ export interface ParticipantRec extends Rec {
   lastname: string;
   /** From the member database; only system mutations write it. */
   memberTags: string[];
-  missionTags: string[];
+  activityTags: string[];
   eta: number | null;
   miles: number | null;
 }
@@ -171,9 +172,9 @@ export interface ContactRec extends Rec {
   email: string | null;
 }
 
-export type MissionRec =
-  | EventRec
-  | EventUnitRec
+export type DomainRec =
+  | ActivityRec
+  | ActivityUnitRec
   | UnitStatusRec
   | ParticipantRec
   | ParticipantStatusRec
@@ -186,7 +187,7 @@ export type MissionRec =
   | CommRec
   | ContactRec;
 
-export type MissionRecType = MissionRec['type'];
+export type DomainRecType = DomainRec['type'];
 
-/** Places every new event starts with; the UI recognizes them by name, as the legacy app does. */
+/** Places every new activity starts with; the UI recognizes them by name, as the legacy app does. */
 export const DEFAULT_PLACES = { base: 'Command Post', field: 'Field' } as const;

@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import type { PersistedEvent } from '@sync/core';
+import type { PersistedActivity } from '@sync/core';
 
 export interface ClientMeta {
   clientId: string;
@@ -9,15 +9,15 @@ export interface ClientMeta {
 export interface ClientPersistence {
   loadMeta(): Promise<ClientMeta | undefined>;
   saveMeta(meta: ClientMeta): Promise<void>;
-  loadEvent(eventId: string): Promise<PersistedEvent | undefined>;
-  saveEvent(eventId: string, data: PersistedEvent): Promise<void>;
-  deleteEvent(eventId: string): Promise<void>;
+  loadActivity(activityId: string): Promise<PersistedActivity | undefined>;
+  saveActivity(activityId: string, data: PersistedActivity): Promise<void>;
+  deleteActivity(activityId: string): Promise<void>;
 }
 
 /** Keeps nothing across page loads; for tests and throwaway dashboard clients. */
 export class MemoryPersistence implements ClientPersistence {
   private meta: ClientMeta | undefined;
-  private readonly events = new Map<string, PersistedEvent>();
+  private readonly activities = new Map<string, PersistedActivity>();
 
   async loadMeta() {
     return this.meta;
@@ -25,14 +25,14 @@ export class MemoryPersistence implements ClientPersistence {
   async saveMeta(meta: ClientMeta) {
     this.meta = { ...meta };
   }
-  async loadEvent(eventId: string) {
-    return this.events.get(eventId);
+  async loadActivity(activityId: string) {
+    return this.activities.get(activityId);
   }
-  async saveEvent(eventId: string, data: PersistedEvent) {
-    this.events.set(eventId, data);
+  async saveActivity(activityId: string, data: PersistedActivity) {
+    this.activities.set(activityId, data);
   }
-  async deleteEvent(eventId: string) {
-    this.events.delete(eventId);
+  async deleteActivity(activityId: string) {
+    this.activities.delete(activityId);
   }
 }
 
@@ -44,7 +44,7 @@ export class IndexedDbPersistence implements ClientPersistence {
     this.db = openDB(dbName, 1, {
       upgrade(db) {
         db.createObjectStore('meta');
-        db.createObjectStore('events');
+        db.createObjectStore('activities');
       },
     });
   }
@@ -55,13 +55,13 @@ export class IndexedDbPersistence implements ClientPersistence {
   async saveMeta(meta: ClientMeta) {
     await (await this.db).put('meta', meta, 'client');
   }
-  async loadEvent(eventId: string) {
-    return (await this.db).get('events', eventId) as Promise<PersistedEvent | undefined>;
+  async loadActivity(activityId: string) {
+    return (await this.db).get('activities', activityId) as Promise<PersistedActivity | undefined>;
   }
-  async saveEvent(eventId: string, data: PersistedEvent) {
-    await (await this.db).put('events', data, eventId);
+  async saveActivity(activityId: string, data: PersistedActivity) {
+    await (await this.db).put('activities', data, activityId);
   }
-  async deleteEvent(eventId: string) {
-    await (await this.db).delete('events', eventId);
+  async deleteActivity(activityId: string) {
+    await (await this.db).delete('activities', activityId);
   }
 }
