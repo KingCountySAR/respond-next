@@ -109,6 +109,20 @@ export const isRespondingStatus = (s: ParticipantStatus): boolean => isActiveSta
 export const isInTransitStatus = (s: ParticipantStatus): boolean => s === 'responding' || s === 'demobilizing';
 export const isCheckedInStatus = (s: ParticipantStatus): boolean => s === 'staging' || s === 'assigned';
 
+/**
+ * Time spent on the clock, in ms: responding through demobilizing, but not standby, as the legacy
+ * app counted it. An entry that is still current counts up to `now`.
+ */
+export function timeOnClock(view: ReadView, participantId: string, now: number): number {
+  let total = 0;
+  let until = now;
+  for (const entry of participantTimeline(view, participantId)) {
+    if (isRespondingStatus(entry.status)) total += until - entry.at;
+    until = entry.at;
+  }
+  return total;
+}
+
 export function statusCounts(view: ReadView, unitId?: string): Record<ParticipantStatus, number> {
   const counts = Object.fromEntries(PARTICIPANT_STATUSES.map((s) => [s, 0])) as Record<ParticipantStatus, number>;
   for (const p of view.scan<ParticipantRec>('participant')) {

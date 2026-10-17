@@ -70,13 +70,13 @@ describe('activity models over the network', () => {
     expect(mine.participant(anna)).toMatchObject({ status: 'assigned', locationName: 'Team 1' });
     expect(mine.participant(anna)!.record).toMatchObject({ miles: 40, personRef: 'kcsara:1' });
 
-    // A member sees their own entry and which kind of place people are at, but not mileage.
+    // A member sees their own entry, mileage, and which kind of place people are at, but not team notes.
     expect(member.me?.id).toBe(anna);
     expect(member.me?.isMe).toBe(true);
     expect(member.participant(anna)).toMatchObject({ status: 'assigned', targetKind: 'team' });
-    expect(member.participant(anna)!.record).toMatchObject({ personRef: 'kcsara:1' });
-    expect(member.participant(anna)!.record).not.toHaveProperty('miles');
+    expect(member.participant(anna)!.record).toMatchObject({ personRef: 'kcsara:1', miles: 40 });
     expect(member.team('t1')?.name).toBe('Team 1');
+    expect(member.team('t1')!.record).not.toHaveProperty('notes');
 
     // An external person finds themselves by id, and sees no person refs or assignments.
     expect(external.me?.id).toBe(ext);

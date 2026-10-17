@@ -45,7 +45,7 @@ npm run smoke            # end-to-end check against :4000; works with any of the
 
 **Routes.** `/api/sync` (WebSocket), `/api/bootstrap`, `/api/debug/activities/<activityId>?view=command|field:member|field:external` (dev only; off in the production bundle), `/health`. Anything else serves the UI, falling back to `index.html` for client-side routes.
 
-**Site.** Until organizations are stored, `/api/bootstrap` takes the site from `ORG_TITLE`, `ORG_SHORT_TITLE`, `THEME_PRIMARY` and `THEME_PRIMARY_DARK`, with the legacy app's defaults ("Team", `rgb(200, 100, 100)`).
+**Site.** Until organizations are stored, `/api/bootstrap` takes the site from `ORG_ID`, `ORG_TITLE`, `ORG_SHORT_TITLE`, `THEME_PRIMARY` and `THEME_PRIMARY_DARK`, with the legacy app's defaults ("Team", `rgb(200, 100, 100)`).
 
 **Storage.** `DATABASE_URL` selects Postgres; without it the server uses in-memory storage (and warns in production). Each commit is one transaction covering records, per-client mutation ids and the mutation log, guarded by the activity's version so a second process writing the same activity fails with a conflict instead of overwriting. Tables (created on startup if missing): `activity_meta`, `records` (each record whole as `jsonb`), `client_mutations`, `mutation_log` (append-only; `seq` orders it). Dev uses `postgres://sync:sync@localhost:5433/sync`; storage tests create and drop a `sync_test_*` database per test (`TEST_DATABASE_URL` to point elsewhere).
 

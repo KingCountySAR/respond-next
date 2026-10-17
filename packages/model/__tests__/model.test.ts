@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'v
 import { autorun, reaction } from 'mobx';
 import { Rejection } from '@sync/core';
 import { CommandActivity, createActivityModel, isCommandActivity, type CommandParticipant, type FieldActivity, type FieldParticipant } from '@sync/model';
-import { COMMAND, ACTIVITY_ID, EXTERNAL, HOUR, T0, activityArgs, fieldMember, offlineClient, sampleActivity, testClock } from './helpers';
+import { COMMAND, ACTIVITY_ID, CRT, EXTERNAL, HOUR, T0, activityArgs, fieldMember, offlineClient, sampleActivity, testClock } from './helpers';
 
 describe('reading', () => {
   it('reads like plain objects', async () => {
@@ -27,6 +27,22 @@ describe('reading', () => {
     expect(activity.participant(anna)!.nextStatuses).toEqual(['demobilizing', 'assigned']);
     activity.update({ mode: 'light' });
     expect(activity.participant(anna)!.nextStatuses).toEqual(['demobilizing']);
+  });
+
+  it('reads tags, time on the clock, unit counts and unit-aware steps', async () => {
+    const { activity, anna, setTime } = await sampleActivity();
+    const a = activity.participant(anna)!;
+    activity.mutate('setActivityTags', { participantId: anna, tags: ['Medic'] });
+    expect(a.tags).toEqual(['Medic']);
+    setTime(T0 + 3 * HOUR);
+    expect(a.timeOnClock).toBe(2 * HOUR); // staging since T0 + 1h
+    expect(a.isEnrouteOrStandby).toBe(false);
+    expect(activity.unit(CRT.id)!.activeParticipantCount).toBe(2);
+    expect(a.statusStepsUnder(CRT.id).map((s) => s.status)).toEqual(['demobilizing', 'assigned']);
+    expect(a.statusStepsUnder('org-other')).toEqual([
+      { status: 'responding', switchingFrom: CRT.id },
+      { status: 'clear', switchingFrom: CRT.id },
+    ]);
   });
 
   it('marks unconfirmed changes', async () => {
@@ -139,9 +155,10 @@ describe('the model for each viewer', () => {
     const rec = field.participant(anna)!.record!;
     expectTypeOf(rec.firstname).toEqualTypeOf<string>();
     expectTypeOf(rec.personRef).toEqualTypeOf<string | undefined>(); // external people don't get it
-    // @ts-expect-error mileage is command-only
-    rec.miles;
-    expectTypeOf(activity.participant(anna)!.record!.miles).toEqualTypeOf<number | null>();
+    expectTypeOf(rec.miles).toEqualTypeOf<number | null>(); // responders see mileage
+    // @ts-expect-error a team's notes are command-only
+    field.team('t1')!.record!.notes;
+    expectTypeOf(activity.team('t1')!.record!.notes).toEqualTypeOf<string | null>();
     expectTypeOf(activity.participants).toEqualTypeOf<CommandParticipant[]>();
     expectTypeOf(field.participants).toEqualTypeOf<FieldParticipant[]>();
     expectTypeOf(activity.team('t1')!.members).toEqualTypeOf<CommandParticipant[]>();

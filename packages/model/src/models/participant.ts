@@ -6,6 +6,9 @@ import {
   fullName,
   participantTimeline,
   statusSteps,
+  statusStepsUnder,
+  timeOnClock,
+  type StatusStep,
   targetName,
   type FieldContactRec,
   type FieldParticipantRec,
@@ -28,6 +31,8 @@ export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRe
       status: computed,
       unit: computed,
       nextStatuses: computed({ equals: compareShallow }),
+      tags: computed({ equals: compareShallow }),
+      timeOnClock: computed,
       timeline: computed({ equals: compareShallow }),
       contact: computed,
       targetKind: computed,
@@ -77,6 +82,32 @@ export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRe
   get targetKind(): Target['kind'] | null | undefined {
     if (!this.activity.canSeeAssignments) return undefined;
     return currentAssignment(this.store, this.id)?.target?.kind ?? null;
+  }
+
+  /**
+   * The status buttons for this person acting under `unitId` (their own unit, when they act for
+   * themselves). Active under another unit, they're offered switching or signing out of it.
+   */
+  statusStepsUnder(unitId: string): StatusStep[] {
+    const activity = this.activity.record;
+    const current = this.currentStatus;
+    return activity ? statusStepsUnder(activity, current && { status: current.status, unitId: current.unitId }, unitId, this.activity.clock.now()) : [];
+  }
+
+  /** Member database tags, then the ones command added for this activity. */
+  get tags(): string[] {
+    const r = this.record;
+    return r ? [...r.memberTags, ...r.activityTags] : [];
+  }
+
+  /** Standby or responding: the statuses an ETA is kept for. */
+  get isEnrouteOrStandby(): boolean {
+    return this.status === 'standby' || this.status === 'responding';
+  }
+
+  /** Time on the clock so far, in ms; counts up while they're responding. */
+  get timeOnClock(): number {
+    return timeOnClock(this.store, this.id, this.activity.clock.now());
   }
 
   get isMe(): boolean {

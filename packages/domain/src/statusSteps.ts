@@ -3,7 +3,7 @@
  * The UI labels each step from (from, to): demobilizing is "Turn Around" from responding and
  * "Depart Base" from staging.
  */
-import { isRespondingStatus, signInOpensAt } from './queries';
+import { isActiveStatus, isRespondingStatus, signInOpensAt } from './queries';
 import type { ActivityRec, ParticipantStatus } from './schema';
 
 const STEPS: Record<ParticipantStatus, ParticipantStatus[]> = {
@@ -54,3 +54,31 @@ export function statusSteps(activity: StatusRules, current: ParticipantStatus, n
 }
 
 export const allowedInMode = (activity: Pick<StatusRules, 'mode'>, status: ParticipantStatus): boolean => activity.mode !== 'light' || !LIGHT_MODE_EXCLUDED.has(status);
+
+/** A status button: the status it sets, and the unit it moves the person off, when switching units. */
+export interface StatusStep {
+  status: ParticipantStatus;
+  /** Set when the person is active under another unit: the step leaves that unit. */
+  switchingFrom?: string;
+}
+
+/**
+ * The status buttons for someone acting under `unitId`. Someone still active under another unit is
+ * offered, as in the legacy app, switching to this unit at the same kind of status (in town,
+ * standby, or responding) or signing out of the other unit.
+ */
+export function statusStepsUnder(
+  activity: StatusRules,
+  current: { status: ParticipantStatus; unitId: string } | undefined,
+  unitId: string,
+  now: number,
+): StatusStep[] {
+  if (current && isActiveStatus(current.status) && current.unitId !== unitId) {
+    const same: ParticipantStatus = current.status === 'remote' ? 'remote' : current.status === 'standby' ? 'standby' : 'responding';
+    return [
+      { status: same, switchingFrom: current.unitId },
+      { status: 'clear', switchingFrom: current.unitId },
+    ];
+  }
+  return statusSteps(activity, current?.status ?? 'unknown', now).map((status) => ({ status }));
+}

@@ -64,3 +64,9 @@ export function useAuth(): Auth {
   if (!auth) throw new Error('useAuth must be used inside an AuthProvider');
   return auth;
 }
+
+/** First and last name, split from the signed-in name as the legacy app took them from Google. */
+export function personName(s: Session): { firstname: string; lastname: string } {
+  const [firstname = '', ...rest] = s.name.trim().split(/\s+/);
+  return { firstname, lastname: rest.join(' ') };
+}

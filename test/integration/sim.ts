@@ -98,14 +98,34 @@ class SimTransport implements Transport {
     this.shutdown(true);
   }
 
+  private readonly queues = { toServer: [] as { at: number; fn: () => void }[], toClient: [] as { at: number; fn: () => void }[] };
+
+  /**
+   * In order, like TCP: each message waits for the one before it. (One timer per message isn't
+   * enough: timers due in the same millisecond can fire out of order, so a ping could overtake hello.)
+   */
   private deliver(dir: 'toServer' | 'toClient', fn: () => void): void {
     if (this.closed) return;
     const key = dir === 'toServer' ? 'toServerAt' : 'toClientAt';
     const at = Math.max(Date.now() + this.net.delay(), this[key]);
     this[key] = at;
-    setTimeout(() => {
-      if (!this.closed) fn();
-    }, at - Date.now());
+    const queue = this.queues[dir];
+    queue.push({ at, fn });
+    if (queue.length === 1) this.pump(dir);
+  }
+
+  private pump(dir: 'toServer' | 'toClient'): void {
+    const queue = this.queues[dir];
+    const head = queue[0];
+    if (!head) return;
+    setTimeout(
+      () => {
+        queue.shift();
+        if (!this.closed) head.fn();
+        this.pump(dir);
+      },
+      Math.max(0, head.at - Date.now()),
+    );
   }
 
   private shutdown(notifyClient: boolean): void {

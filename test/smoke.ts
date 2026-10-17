@@ -45,11 +45,14 @@ command.mutate(activityId, 'createActivity', {
   mode: 'full',
   standbyOnly: false,
 });
+command.mutate(activityId, 'addComm', { id: 'smoke-comm', from: 'Base', to: 'All', message: 'Command only' });
 command.mutate(activityId, 'addParticipant', { personRef: 'kcsara:102', firstname: 'Bob', lastname: 'Brown', unit: CRT, status: 'responding', at: command.now() - 30 * 60_000 });
 command.mutate(activityId, 'setMiles', { participantId: bob, miles: 42 });
 await waitFor('field client sees Bob', () => field.snapshot(activityId).get<ParticipantRec>('participant', bob)?.firstname === 'Bob');
 console.log(`field client saw the new person after ${Date.now() - t0} ms`);
-if ('miles' in (field.snapshot(activityId).get('participant', bob) ?? {})) throw new Error('field client received command-only mileage');
+await waitFor("field client sees Bob's miles", () => field.snapshot(activityId).get<ParticipantRec>('participant', bob)?.miles === 42);
+// The comm went before Bob, and messages arrive in order, so it would be here by now if it leaked.
+if (field.snapshot(activityId).get('comm', 'smoke-comm')) throw new Error('field client received a command-only comm');
 
 field.mutate(activityId, 'setParticipantStatus', { participantId: bob, status: 'staging', unit: CRT, at: field.now() - 15 * 60_000 });
 await waitFor('command client sees the backdated status', () => currentParticipantStatus(command.snapshot(activityId), bob)?.status === 'staging');

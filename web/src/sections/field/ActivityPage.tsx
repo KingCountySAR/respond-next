@@ -1,19 +1,24 @@
-import { Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useEffect } from 'react';
 import { observer, useFieldActivity } from '@sync/model/react';
-import { ToolbarPage } from '../../shell/ToolbarPage';
-import { Placeholder } from '../../ui/Placeholder';
+import { useRosterState } from './components/RosterPanel';
+import { DesktopActivityPage } from './DesktopActivityPage';
+import { MobileActivityPage } from './MobileActivityPage';
 
 export const ActivityPage = observer(function ActivityPage() {
   const activity = useFieldActivity();
-  const rec = activity.record!;
-  return (
-    <ToolbarPage>
-      <Placeholder title={rec.title} comesWith="the field pages">
-        <Typography>
-          {rec.location.title} · {activity.phase}
-        </Typography>
-        <Typography>{activity.me ? `You: ${activity.me.status}` : 'You are not signed in to this activity.'}</Typography>
-      </Placeholder>
-    </ToolbarPage>
-  );
+  const roster = useRosterState();
+  const rec = activity.record;
+  const numberAndTitle = rec ? `${rec.idNumber} ${rec.title}` : '';
+
+  useEffect(() => {
+    document.title = numberAndTitle;
+  }, [numberAndTitle]);
+
+  const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
+
+  if (!rec) return <div>Loading activity...</div>;
+
+  return isMobile ? <MobileActivityPage activity={activity} roster={roster} /> : <DesktopActivityPage activity={activity} roster={roster} />;
 });

@@ -2,9 +2,12 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import { Divider, IconButton, Menu, MenuItem } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
 import { useAuth } from './auth';
+import { useDialogs } from './dialogs';
+import { PreferencesDialog } from './PreferencesDialog';
 
 export function AppMenu() {
   const { session, signOut } = useAuth();
+  const { open } = useDialogs();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const handleMenu = (event: MouseEvent<HTMLButtonElement>) => setMenuAnchor(event.currentTarget);
   const handleClose = () => setMenuAnchor(null);
@@ -31,8 +34,14 @@ export function AppMenu() {
           onClose={handleClose}
         >
           {session ? <MenuItem disabled>{session.name}</MenuItem> : undefined}
-          {/* The legacy Preferences dialog comes over with the field pages. */}
-          <MenuItem disabled>Preferences</MenuItem>
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              open(PreferencesDialog, {});
+            }}
+          >
+            Preferences
+          </MenuItem>
           <MenuItem
             disabled={!session}
             onClick={() => {

@@ -53,7 +53,7 @@ describe('activity domain on the activity actor', () => {
 
     expect(command.records().get(`participant/${me}`)).toMatchObject({ firstname: 'Anna', miles: 40 });
     expect(field.records().get(`participant/${me}`)).toMatchObject({ firstname: 'Anna', personRef: 'kcsara:85205' });
-    expect(field.records().get(`participant/${me}`)).not.toHaveProperty('miles');
+    expect(field.records().get(`participant/${me}`)).toMatchObject({ miles: 40 });
     expect(field.records().has('comm/c1')).toBe(false);
     expect(field.records().get('activity/activity')).toMatchObject({ title: 'Lost hiker, Mailbox Peak' });
 

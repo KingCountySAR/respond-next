@@ -14,10 +14,16 @@ type Unit = z.infer<typeof Unit>;
 
 const isSystem = (ctx: MutationCtx) => ctx.viewer.userId === 'system';
 
-function ensureUnit(tx: Tx, unit: Unit): void {
+/**
+ * Brings the unit onto the activity if this is its first responder, as the legacy app did: the unit's
+ * status starts as standby or responding, from the person's status.
+ */
+function ensureUnit(tx: Tx, ctx: MutationCtx, nextId: () => string, unit: Unit, status: ParticipantStatus, at: number): void {
   const existing = tx.get<ActivityUnitRec>('activityUnit', unit.id);
-  if (!existing) tx.put({ type: 'activityUnit', id: unit.id, title: unit.title, rosterName: unit.rosterName });
-  else if (existing.title !== unit.title || existing.rosterName !== unit.rosterName) tx.update('activityUnit', unit.id, { title: unit.title, rosterName: unit.rosterName });
+  if (!existing) {
+    tx.put({ type: 'activityUnit', id: unit.id, title: unit.title, rosterName: unit.rosterName });
+    tx.put({ type: 'unitStatus', id: nextId(), unitId: unit.id, status: status === 'standby' ? 'standby' : 'responding', at, by: ctx.viewer.userId });
+  } else if (existing.title !== unit.title || existing.rosterName !== unit.rosterName) tx.update('activityUnit', unit.id, { title: unit.title, rosterName: unit.rosterName });
 }
 
 /** Field users signing themselves in follow the activity's standby-only and light-mode rules. */
@@ -71,8 +77,9 @@ export const addParticipant = defineMutation({
     checkSelfStatus(ctx, activity, existing ? statusOf(tx, participantId, a.at) : 'unknown', a.status, a.at);
     if (existing) tx.update('participant', participantId, { firstname: a.firstname, lastname: a.lastname });
     else tx.put({ type: 'participant', id: participantId, personRef: a.personRef, firstname: a.firstname, lastname: a.lastname, memberTags: [], activityTags: [], eta: null, miles: null });
-    ensureUnit(tx, a.unit);
-    applyStatus(tx, ctx, idSource(ctx), participantId, a.unit.id, a.status, a.at);
+    const nextId = idSource(ctx);
+    ensureUnit(tx, ctx, nextId, a.unit, a.status, a.at);
+    applyStatus(tx, ctx, nextId, participantId, a.unit.id, a.status, a.at);
   },
 });
 
@@ -87,8 +94,9 @@ export const setParticipantStatus = defineMutation({
     const participant = requireParticipant(tx, a.participantId);
     requireSelfOrCommand(ctx, participant);
     checkSelfStatus(ctx, activity, statusOf(tx, a.participantId, a.at), a.status, a.at);
-    ensureUnit(tx, a.unit);
-    applyStatus(tx, ctx, idSource(ctx), a.participantId, a.unit.id, a.status, a.at);
+    const nextId = idSource(ctx);
+    ensureUnit(tx, ctx, nextId, a.unit, a.status, a.at);
+    applyStatus(tx, ctx, nextId, a.participantId, a.unit.id, a.status, a.at);
   },
 });
 

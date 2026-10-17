@@ -47,7 +47,11 @@ const hub = new Hub({
 
 /** Until organizations are stored, the site comes from the environment, with the legacy app's defaults. */
 const site: SiteConfig = {
-  organization: { title: process.env.ORG_TITLE ?? 'Team', shortTitle: process.env.ORG_SHORT_TITLE ?? process.env.ORG_TITLE ?? 'Team' },
+  organization: {
+    id: process.env.ORG_ID ?? 'org-team',
+    title: process.env.ORG_TITLE ?? 'Team',
+    shortTitle: process.env.ORG_SHORT_TITLE ?? process.env.ORG_TITLE ?? 'Team',
+  },
   theme: { primary: process.env.THEME_PRIMARY ?? 'rgb(200, 100, 100)', primaryDark: process.env.THEME_PRIMARY_DARK },
   // No Google sign-in until phase 2: the web app offers the dev sign-in.
   dev: { noExternalNetwork: true, buildId: process.env.BUILD_ID ?? 'dev' },

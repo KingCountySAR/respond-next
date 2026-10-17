@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { participantIdFor, participantTimeline, statusOf, statusSteps, currentUnitOf, getActivity, type ParticipantRec } from '@sync/domain';
+import { currentUnitOf, currentUnitStatus, getActivity, participantIdFor, participantTimeline, statusOf, statusSteps, statusStepsUnder, timeOnClock, type ParticipantRec } from '@sync/domain';
 import { COMMAND, CRT, EXTERNAL, HOUR, RMR, SYSTEM, T0, addMember, fieldMember, startedActivity } from './helpers';
 
 const timeline = (e: ReturnType<typeof startedActivity>, pid: string) => participantTimeline(e.view, pid).map((s) => `${s.status}@${s.unitId}`);
@@ -152,5 +152,54 @@ describe('closing an event', () => {
     const e = startedActivity();
     expect(e.all<{ name: string } & ParticipantRec>('place').map((p) => p.name).sort()).toEqual(['Command Post', 'Field']);
     expect(e.rejects('createActivity', {})).toBe('bad_args');
+  });
+});
+
+describe("a unit's first responder", () => {
+  it('brings the unit on as standby or responding, and later responders leave it alone', () => {
+    const e = startedActivity();
+    addMember(e, 'kcsara:1', 'standby');
+    expect(currentUnitStatus(e.view, CRT.id)?.status).toBe('standby');
+    addMember(e, 'kcsara:2', 'responding', CRT, T0 + 2 * HOUR);
+    expect(currentUnitStatus(e.view, CRT.id)?.status).toBe('standby');
+    addMember(e, 'kcsara:3', 'responding', RMR);
+    expect(currentUnitStatus(e.view, RMR.id)?.status).toBe('responding');
+  });
+});
+
+describe('status steps under a unit', () => {
+  const activity = { startTime: T0, earlySignInWindow: null, standbyOnly: false, mode: 'full' as const };
+
+  it('are the normal steps under your own unit', () => {
+    expect(statusStepsUnder(activity, { status: 'responding', unitId: CRT.id }, CRT.id, T0)).toEqual([{ status: 'staging' }, { status: 'demobilizing' }, { status: 'clear' }]);
+    expect(statusStepsUnder(activity, undefined, CRT.id, T0).map((s) => s.status)).toEqual(['responding', 'standby', 'remote']);
+  });
+
+  it('offer switching units or signing out of the other one while active under it', () => {
+    expect(statusStepsUnder(activity, { status: 'staging', unitId: RMR.id }, CRT.id, T0)).toEqual([
+      { status: 'responding', switchingFrom: RMR.id },
+      { status: 'clear', switchingFrom: RMR.id },
+    ]);
+    expect(statusStepsUnder(activity, { status: 'standby', unitId: RMR.id }, CRT.id, T0)[0]).toEqual({ status: 'standby', switchingFrom: RMR.id });
+    expect(statusStepsUnder(activity, { status: 'clear', unitId: RMR.id }, CRT.id, T0)[0]).toEqual({ status: 'responding' });
+  });
+
+  it('switching moves the person to your unit and clears them under the other', () => {
+    const e = startedActivity();
+    const pid = addMember(e, 'kcsara:1', 'staging', RMR);
+    e.run('setParticipantStatus', { participantId: pid, status: 'responding', unit: CRT, at: T0 + 2 * HOUR });
+    expect(timeline(e, pid)).toEqual([`responding@${CRT.id}`, `clear@${RMR.id}`, `staging@${RMR.id}`]);
+  });
+});
+
+describe('time on the clock', () => {
+  it('counts responding through demobilizing, not standby, and runs on for the current entry', () => {
+    const e = startedActivity();
+    const pid = addMember(e, 'kcsara:1', 'standby', CRT, T0);
+    e.run('setParticipantStatus', { participantId: pid, status: 'responding', unit: CRT, at: T0 + HOUR });
+    e.run('setParticipantStatus', { participantId: pid, status: 'clear', unit: CRT, at: T0 + 3 * HOUR });
+    expect(timeOnClock(e.view, pid, T0 + 10 * HOUR)).toBe(2 * HOUR);
+    e.run('setParticipantStatus', { participantId: pid, status: 'responding', unit: CRT, at: T0 + 4 * HOUR });
+    expect(timeOnClock(e.view, pid, T0 + 5 * HOUR)).toBe(3 * HOUR);
   });
 });

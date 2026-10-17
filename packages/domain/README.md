@@ -63,7 +63,7 @@ Things to know:
 
 - **Use `client.now()`, never `Date.now()`,** for "now" and "minutes ago". It is the server's clock as corrected by the client.
 - **Most timed queries take `asOf`.** `statusOf(snap, id, asOf)`, `teamMembers(snap, teamId, asOf)` and the rest answer "as of then", for reports and timelines.
-- **A field viewer's snapshot holds projected records.** A field member sees only the fields in `src/projector.ts`: no `miles` on participants, no `comm` records, assignments with only `{ kind }` as their target. The field record types (`FieldParticipantRec`, `FieldActivityRec`, ...) say exactly what's there: they're derived from the projector's field lists, with member-only fields optional because external people don't get them.
+- **A field viewer's snapshot holds projected records.** A field member sees only the fields in `src/projector.ts`: only the name of teams and places, no `comm` records, assignments with only `{ kind }` as their target. The field record types (`FieldParticipantRec`, `FieldActivityRec`, ...) say exactly what's there: they're derived from the projector's field lists, with member-only fields optional because external people don't get them.
 - **Pending changes are marked.** `snap.pending` lists this client's unconfirmed mutations and `snap.pendingKeys` the `type/id` keys they touched, for "not synced yet" markers. `client.describe(activityId, m)` gives each one's text.
 
 In React, `@sync/client/react` re-renders on change:

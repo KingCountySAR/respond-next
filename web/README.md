@@ -12,9 +12,10 @@ The app people use. It replaces respond-next's client, keeping its URLs and, pag
 | `src/shell/ActivityLayout.tsx` | Opens an activity for the pages under it; they read it with `useFieldActivity()` or `useCommandActivity()` |
 | `src/shell/ToolbarPage.tsx`, `AppMenu.tsx` | The legacy page frame: app bar with title, connection icon and account menu |
 | `src/shell/routes.tsx` | The legacy URLs: `/`, `/mission/*`, `/event/*`, `/ops/:id`, `/reports/*`, `/admin/*` |
-| `src/sections/field` | Home and the activity pages (`/mission`, `/event`). Loads with the shell |
+| `src/sections/field` | Home and the activity page (`/mission/:id`, `/event/:id`): desktop and mobile layouts, briefing and manager panels, unit chips, roster with the participant dialog, the status button and its confirm form, ETA and miles. Loads with the shell |
 | `src/sections/ops`, `reports`, `admin` | Load the first time their route is visited |
-| `src/ui` | Shared components with no data of their own |
+| `src/ui` | Shared components with no data of their own, mostly the legacy ones as they were (`OutputForm`, `SplitButton`, `RelativeTimeText`, ...), and `status.ts`: the legacy words and colours for each status |
+| `src/shell/dialogs`, `preferences.tsx` | The legacy dialog provider (`useDialogs()`: `open`, `confirm`, `alert`) and per-device preferences |
 
 ## Rules
 
@@ -28,11 +29,13 @@ There is no Google sign-in until phase 2. The login panel's offline path asks wh
 
 ## Not here yet
 
-- **Every page is a placeholder** that says which step ports it. The order is the field pages, then the ops dashboard, then reports.
+- **The activity page is ported; the rest are placeholders** that say which step ports them: New/Edit activity, Home's lists, the ops dashboard, reports, admin.
+- **Add Responder** (command adding someone from the member database) needs member search on the server, so the button isn't there yet.
+- **Member photos** point at `/api/v1/organizations/<unit>/members/<id>/photo`, which the server doesn't serve yet, so the participant dialog shows a broken image.
 - **Home has no activity lists.** My Activity, Missions and Events need activity summaries from the server, so for now an activity is opened by id.
 - **No "Activity not found".** The client can't yet tell an activity the server doesn't have from one that hasn't synced, so `ActivityLayout` shows "Loading activity..." until the record arrives.
-- **Not yet ported:** the Preferences dialog, the per-organization manifest and icons (`/api/manifest.webmanifest`, `/api/icon/*`) and the date pickers' localization provider. They come with the pages that need them.
+- **Not yet ported:** the per-organization manifest and icons (`/api/manifest.webmanifest`, `/api/icon/*`).
 
 ## Tests
 
-`__tests__/shell.test.tsx` renders the whole app in jsdom against the real activity actor over the simulated network: sign-in, the connection icon, an activity page with your own status, the ops guard, a legacy redirect, sign-out.
+`__tests__/app.tsx` renders the whole app in jsdom against the real activity actor over the simulated network, with a command client that set the activity up. `shell.test.tsx` covers sign-in, the connection icon, the ops guard, a legacy redirect and sign-out; `field.test.tsx` the activity page: briefing, units, roster, changing your own status (and command seeing it), signing in from the status button, the participant dialog, and a refused Complete.

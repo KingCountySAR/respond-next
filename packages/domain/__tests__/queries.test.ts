@@ -84,12 +84,14 @@ describe('projection', () => {
     const view = projectAll('field:member', records);
     const participant = view.get(`participant/${pid}`)!;
     expect(participant).toMatchObject({ personRef: 'kcsara:1', firstname: '1' });
-    expect(participant).not.toHaveProperty('miles');
+    expect(participant).toMatchObject({ miles: 40 });
     expect(view.get('team/t1')).toEqual({ type: 'team', id: 't1', version: expect.any(Number), name: 'Team 1' });
     expect(view.get('comm/c1')).toBeNull();
     const assignment = [...view.values()].find((r) => r?.type === 'assignment')!;
     expect(assignment.target).toEqual({ kind: 'team' });
-    expect(view.get('activity/activity')).not.toHaveProperty('description');
+    // The briefing is for everyone: field members see the description and map.
+    expect(view.get('activity/activity')).toHaveProperty('description');
+    expect(view.get('activity/activity')).toHaveProperty('mapId');
   });
 
   it('shows external people less than members', () => {

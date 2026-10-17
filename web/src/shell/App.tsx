@@ -4,11 +4,16 @@
  * and from `./sync`, `./auth` and `./ActivityLayout`.
  */
 import { ThemeProvider } from '@mui/material/styles';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { BootstrapResponse, SiteConfig } from '@sync/domain';
+import type { UnitRef } from '@sync/model';
 import { AuthProvider, useAuth } from './auth';
+import { DialogProvider } from './dialogs';
 import { LoginPanel } from './LoginPanel';
+import { PreferencesProvider } from './preferences';
 import { AppRoutes } from './routes';
 import { SyncProvider, type SyncOptions } from './sync';
 import { buildTheme } from './theme';
@@ -65,11 +70,17 @@ export function App({ bootstrap = fetchBootstrap, sync }: AppProps) {
   return (
     <SiteContext.Provider value={boot.config}>
       <Themed theme={boot.config.theme}>
-        <AuthProvider>
-          <MainGate sync={sync}>
-            <AppRoutes />
-          </MainGate>
-        </AuthProvider>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <PreferencesProvider>
+            <AuthProvider>
+              <MainGate sync={sync}>
+                <DialogProvider>
+                  <AppRoutes />
+                </DialogProvider>
+              </MainGate>
+            </AuthProvider>
+          </PreferencesProvider>
+        </LocalizationProvider>
       </Themed>
     </SiteContext.Provider>
   );
@@ -91,4 +102,10 @@ function MainGate({ sync, children }: { sync?: SyncOptions; children: ReactNode 
       {children}
     </SyncProvider>
   );
+}
+
+/** The unit the signed-in person responds under: the site's organization, as in the legacy app. */
+export function useHomeUnit(): UnitRef {
+  const { id, title, shortTitle } = useSite().organization;
+  return { id, title, rosterName: shortTitle };
 }

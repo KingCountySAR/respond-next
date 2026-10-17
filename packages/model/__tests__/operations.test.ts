@@ -55,9 +55,10 @@ describe('units', () => {
   it('reads status and per-unit counts', async () => {
     const { activity, anna } = await sampleActivity();
     const crt = activity.unit(CRT.id)!;
-    expect([crt.name, crt.title, crt.status]).toEqual(['CRT', 'Cascade Rescue Team', 'unknown']);
-    crt.setStatus('responding', { at: AT });
-    expect(crt.status).toBe('responding');
+    // Its first responder brought it on as responding.
+    expect([crt.name, crt.title, crt.status]).toEqual(['CRT', 'Cascade Rescue Team', 'responding']);
+    crt.setStatus('stoodDown', { at: AT });
+    expect(crt.status).toBe('stoodDown');
     expect(crt.statusCounts).toMatchObject({ staging: 2 });
     expect(activity.participant(anna)!.unit).toBe(crt);
   });
@@ -66,7 +67,7 @@ describe('units', () => {
     const { activity } = await sampleActivity();
     activity.setUnitStatus({ id: 'org-sm', title: 'Ridgeline Mountain Rescue', rosterName: 'RMR' }, 'invited', { at: AT });
     expect(activity.units.map((u) => [u.name, u.status])).toEqual([
-      ['CRT', 'unknown'],
+      ['CRT', 'responding'],
       ['RMR', 'invited'],
     ]);
   });

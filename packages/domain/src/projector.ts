@@ -15,9 +15,10 @@ export type ViewKey = 'command' | 'field:member' | 'field:external';
 type KnownKeys<T> = keyof { [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K] };
 const fields = <R>() => <const F extends readonly KnownKeys<R>[]>(f: F): F => f;
 
-const ACTIVITY_FIELDS = fields<ActivityRec>()(['idNumber', 'kind', 'title', 'location', 'startTime', 'endTime', 'earlySignInWindow', 'mode', 'standbyOnly', 'closed', 'removedAt']);
-const MEMBER_PARTICIPANT_FIELDS = fields<ParticipantRec>()(['personRef', 'firstname', 'lastname', 'memberTags', 'activityTags', 'eta']);
-const EXTERNAL_PARTICIPANT_FIELDS = fields<ParticipantRec>()(['firstname', 'lastname', 'memberTags', 'activityTags']);
+// Everything the legacy briefing showed every responder: the description and map included.
+const ACTIVITY_FIELDS = fields<ActivityRec>()(['idNumber', 'kind', 'title', 'description', 'location', 'mapId', 'startTime', 'endTime', 'earlySignInWindow', 'ownerOrgId', 'mode', 'standbyOnly', 'closed', 'removedAt']);
+const MEMBER_PARTICIPANT_FIELDS = fields<ParticipantRec>()(['personRef', 'firstname', 'lastname', 'memberTags', 'activityTags', 'eta', 'miles']);
+const EXTERNAL_PARTICIPANT_FIELDS = fields<ParticipantRec>()(['firstname', 'lastname', 'memberTags', 'activityTags', 'miles']);
 const ASSIGNMENT_FIELDS = fields<AssignmentRec>()(['participantId', 'at', 'by']);
 const TEAM_FIELDS = fields<TeamRec>()(['name']);
 const MEMBER_GROUP_FIELDS = fields<GroupRec>()(['name', 'leaderParticipantId']);
