@@ -13,7 +13,7 @@ Phase 1 gate: **convergence and network tests pass.**
 | `packages/sync-server` | `@sync/server` | `ActivityActor` (one per activity, serial apply, per-view fan-out), `Hub` (connections → actors), storage interface + in-memory storage |
 | `packages/domain` | `@sync/domain` | The activity model (missions, trainings and other activities): records, queries, mutations, field projections. Shared by `web` and `server`; the server and harness run on it |
 | `packages/model` | `@sync/model` | Prototype UI model: MobX store fed from client snapshots, field and command models (`FieldActivity` ← `CommandActivity`, ...) over the domain queries, a server clock, and a React provider (`@sync/model/react`) |
-| `server` | `server` | Hono app: `/api/sync` WebSocket, `/api/bootstrap` (site name and colours), `/health`, dev debug endpoint, static UI. `build.mjs` bundles it to `dist/index.mjs`. Auth and REST land here |
+| `server` | `server` | Hono app: `/api/sync` WebSocket, `/api/bootstrap` (site name and colours), `/health`, dev debug endpoint, static UI, and `summaries.ts`, which keeps the activity list current. `build.mjs` bundles it to `dist/index.mjs`. Auth and REST land here |
 | `web` | `web` | The app: `src/shell` (site config, theme, dev sign-in, the session's `SyncClient`, toolbar, routes), `src/sections/{field,ops,reports,admin}` (ops, reports and admin load lazily), `src/ui` shared components. MUI and wouter, as in the legacy app. Pages are placeholders until their port; see [web/README.md](web/README.md) |
 | `test/harness` | `harness` | Test harness: side-by-side command, member and external clients on the real domain (through `@sync/model`), with per-client latency and offline switches, pending queue, rejections, message log |
 | `packages/*/__tests__` | | Unit tests next to their package: rebase and `testDomain.ts`, a small people-and-statuses domain the engine tests share (`sync-core`), storage and the Postgres suite (`sync-server`), activity rules and projections (`domain`) |
@@ -47,6 +47,8 @@ npm run smoke            # end-to-end check against :4000; works with any of the
 
 **Site.** Until organizations are stored, `/api/bootstrap` takes the site from `ORG_ID`, `ORG_TITLE`, `ORG_SHORT_TITLE`, `THEME_PRIMARY` and `THEME_PRIMARY_DARK`, with the legacy app's defaults ("Team", `rgb(200, 100, 100)`).
 
+**Activity list.** The list Home shows is a sync scope of its own, `$activities`, holding one summary per activity. Clients open it like an activity, so it's live, versioned and cached offline; only the server writes it. After an activity commits, the server recomputes its summary after a trailing 2 s debounce (capped at 5 s) and writes it if it changed. On startup it adds summaries for stored activities that have none.
+
 **Storage.** `DATABASE_URL` selects Postgres; without it the server uses in-memory storage (and warns in production). Each commit is one transaction covering records, per-client mutation ids and the mutation log, guarded by the activity's version so a second process writing the same activity fails with a conflict instead of overwriting. Tables (created on startup if missing): `activity_meta`, `records` (each record whole as `jsonb`), `client_mutations`, `mutation_log` (append-only; `seq` orders it). Dev uses `postgres://sync:sync@localhost:5433/sync`; storage tests create and drop a `sync_test_*` database per test (`TEST_DATABASE_URL` to point elsewhere).
 
 **Deploy artifact.** `dist/` is self-contained: `node dist/index.mjs` needs no `node_modules`, and serves `public/` from next to itself (override with `UI_DIST`; port with `PORT`). The Docker image contains only `dist/` and runs as `node`.
@@ -55,4 +57,4 @@ npm run smoke            # end-to-end check against :4000; works with any of the
 
 - **Auth:** identity comes from `?user=&tier=&class=&person=` on the WebSocket URL (`tier` command, support or field; `class` member or external; `person` the person ref, e.g. `kcsara:101`). Replaced by the session cookie and grants in phase 2.
 - **Any client may open any activity**, and activities are created on first subscribe.
-- **Not yet built:** idle actor unloading, cross-actor commit batching (~10 ms), build-version `reload`, HTTP fallback transport, `permessage-deflate`, the cross-activity outbox, summaries.
+- **Not yet built:** idle actor unloading, cross-actor commit batching (~10 ms), build-version `reload`, HTTP fallback transport, `permessage-deflate`, the cross-activity outbox, grants (the list shows every activity to everyone).

@@ -3,7 +3,7 @@ import { Rejection, defineMutation, type MutationCtx, type Tx } from '@sync/core
 import { currentParticipantStatus, findParticipantByPersonRef, participantIdFor, participantName, statusOf } from '../queries';
 import { PARTICIPANT_STATUSES, type ActivityRec, type ActivityUnitRec, type ParticipantRec, type ParticipantStatus, type ParticipantStatusRec } from '../schema';
 import { STANDBY_ONLY_STATUSES, allowedInMode, isStandbyOnly } from '../statusSteps';
-import { asActivityViewer, isCommand } from '../viewer';
+import { asActivityViewer, isCommand, isSystemViewer } from '../viewer';
 import { addStatus, at, id, idSource, requireOpen, requireParticipant, requireSelfOrCommand } from './common';
 
 const PersonRef = z.string().regex(/^[a-z0-9-]+:.+$/, 'Expected <source>:<id>');
@@ -161,7 +161,7 @@ export const setMemberInfo = defineMutation({
     memberTags: z.array(z.string()),
     contact: z.object({ mobile: z.string().nullable(), email: z.string().nullable() }).nullable(),
   }),
-  allow: (viewer) => viewer.userId === 'system',
+  allow: isSystemViewer,
   describe: (a, view) => `Look up ${participantName(view, a.participantId)}`,
   run(tx, a, ctx) {
     if (!isSystem(ctx)) throw new Rejection('forbidden', 'Only the system writes member info');

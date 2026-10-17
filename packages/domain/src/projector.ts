@@ -86,6 +86,8 @@ const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
     place: only(PLACE_FIELDS),
     equipment: all,
     comm: none,
+    // Lists are for everyone; a summary holds no person refs.
+    activitySummary: all,
   },
   external: {
     activity: only(ACTIVITY_FIELDS),
@@ -101,6 +103,8 @@ const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
     place: only(PLACE_FIELDS),
     equipment: all,
     comm: none,
+    // Lists are for everyone; a summary holds no person refs.
+    activitySummary: all,
   },
 };
 

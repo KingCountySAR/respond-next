@@ -12,6 +12,7 @@ The activity model, the same for missions, trainings and other activities: the r
 | `src/equipment.ts` | The equipment catalogue (legacy ids `inventory-0..38`) |
 | `src/viewer.ts` | `ActivityViewer` (tier, class, personRef), `isCommand`, `SYSTEM_VIEWER` |
 | `src/mutations/*.ts` | Every mutation, grouped by activity, participants and operations; `common.ts` has shared checks and helpers |
+| `src/summary.ts` | `ActivitySummaryRec` and `activitySummary(view, id)`: what lists show about an activity (the activity's main fields, its units with active counts, everyone's status by participant id); `ACTIVITY_LIST_ID`, the scope summaries live in; `setActivitySummary`, the server's mutation that writes them |
 | `src/projector.ts` | `activityProjector`: field views per record type, and the field record types derived from them (`FieldParticipantRec`, ...) |
 | `src/index.ts` | Exports all of the above, plus `activityMutations` and `activityRegistry` |
 

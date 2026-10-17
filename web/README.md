@@ -12,7 +12,7 @@ The app people use. It replaces respond-next's client, keeping its URLs and, pag
 | `src/shell/ActivityLayout.tsx` | Opens an activity for the pages under it; they read it with `useFieldActivity()` or `useCommandActivity()` |
 | `src/shell/ToolbarPage.tsx`, `AppMenu.tsx` | The legacy page frame: app bar with title, connection icon and account menu |
 | `src/shell/routes.tsx` | The legacy URLs: `/`, `/mission/*`, `/event/*`, `/ops/:id`, `/reports/*`, `/admin/*` |
-| `src/sections/field` | Home and the activity page (`/mission/:id`, `/event/:id`): desktop and mobile layouts, briefing and manager panels, unit chips, roster with the participant dialog, the status button and its confirm form, ETA and miles. Loads with the shell |
+| `src/sections/field` | Home (My Activity, Missions, Events, from the activity list; each active tile has its status button) and the activity page (`/mission/:id`, `/event/:id`): desktop and mobile layouts, briefing and manager panels, unit chips, roster with the participant dialog, the status button and its confirm form, ETA and miles. Loads with the shell |
 | `src/sections/ops`, `reports`, `admin` | Load the first time their route is visited |
 | `src/ui` | Shared components with no data of their own, mostly the legacy ones as they were (`OutputForm`, `SplitButton`, `RelativeTimeText`, ...), and `status.ts`: the legacy words and colours for each status |
 | `src/shell/dialogs`, `preferences.tsx` | The legacy dialog provider (`useDialogs()`: `open`, `confirm`, `alert`) and per-device preferences |
@@ -29,13 +29,13 @@ There is no Google sign-in until phase 2. The login panel's offline path asks wh
 
 ## Not here yet
 
-- **The activity page is ported; the rest are placeholders** that say which step ports them: New/Edit activity, Home's lists, the ops dashboard, reports, admin.
+- **Home and the activity page are ported; the rest are placeholders** that say which step ports them: New/Edit activity, the ops dashboard, reports (including the Mission and Event List pages), admin.
 - **Add Responder** (command adding someone from the member database) needs member search on the server, so the button isn't there yet.
 - **Member photos** point at `/api/v1/organizations/<unit>/members/<id>/photo`, which the server doesn't serve yet, so the participant dialog shows a broken image.
-- **Home has no activity lists.** My Activity, Missions and Events need activity summaries from the server, so for now an activity is opened by id.
+- **Home shows every activity to everyone,** until grants. New Mission and New Event show for command and support; the legacy app asked the organization, which isn't stored yet.
 - **No "Activity not found".** The client can't yet tell an activity the server doesn't have from one that hasn't synced, so `ActivityLayout` shows "Loading activity..." until the record arrives.
 - **Not yet ported:** the per-organization manifest and icons (`/api/manifest.webmanifest`, `/api/icon/*`).
 
 ## Tests
 
-`__tests__/app.tsx` renders the whole app in jsdom against the real activity actor over the simulated network, with a command client that set the activity up. `shell.test.tsx` covers sign-in, the connection icon, the ops guard, a legacy redirect and sign-out; `field.test.tsx` the activity page: briefing, units, roster, changing your own status (and command seeing it), signing in from the status button, the participant dialog, and a refused Complete.
+`__tests__/app.tsx` renders the whole app in jsdom against the real activity actor over the simulated network, with a command client that set the activity up and the server's summary writer running. `shell.test.tsx` covers sign-in, the connection icon, the ops guard, a legacy redirect and sign-out; `field.test.tsx` the activity page: briefing, units, roster, changing your own status (and command seeing it), signing in from the status button, the participant dialog, and a refused Complete. `home.test.tsx` covers Home: My Activity, missions and events from the summaries, changing status from a tile, and a new activity appearing without a refresh.

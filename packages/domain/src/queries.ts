@@ -208,12 +208,15 @@ export function signInOpensAt(activity: Pick<ActivityRec, 'startTime' | 'earlySi
   return activity.earlySignInWindow === null ? -Infinity : activity.startTime - activity.earlySignInWindow;
 }
 
-export const isOpenForSignIn = (activity: ActivityRec, now: number): boolean => !activity.closed && signInOpensAt(activity) <= now;
-export const isStarted = (activity: ActivityRec, now: number): boolean => !activity.closed && activity.startTime <= now;
+/** The fields the phase depends on; summaries carry them too. */
+export type PhaseFields = Pick<ActivityRec, 'closed' | 'startTime' | 'earlySignInWindow'>;
+
+export const isOpenForSignIn = (activity: PhaseFields, now: number): boolean => !activity.closed && signInOpensAt(activity) <= now;
+export const isStarted = (activity: PhaseFields, now: number): boolean => !activity.closed && activity.startTime <= now;
 
 export type ActivityPhase = 'closed' | 'inProgress' | 'openForSignIn' | 'notStarted';
 
-export function activityPhase(activity: ActivityRec, now: number): ActivityPhase {
+export function activityPhase(activity: PhaseFields, now: number): ActivityPhase {
   if (activity.closed) return 'closed';
   if (isStarted(activity, now)) return 'inProgress';
   if (isOpenForSignIn(activity, now)) return 'openForSignIn';

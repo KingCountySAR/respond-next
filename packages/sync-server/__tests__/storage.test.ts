@@ -128,6 +128,12 @@ describe.each(backends)('%s storage', (_name, makeBackend) => {
     expect(byId.p2).toEqual({ type: 'person', id: 'p2', version: 3, deleted: true });
   });
 
+  it('lists every stored activity', async () => {
+    expect(await storage.activityIds()).toEqual([]);
+    for (const id of ['e1', 'e2']) await storage.commit(id, { fromVersion: 0, version: 1, records: [rec('person', 'p1', 1)], lastMutationIds: {}, log: [] });
+    expect((await storage.activityIds()).sort()).toEqual(['e1', 'e2']);
+  });
+
   it('refuses a commit built on a version that is no longer current', async () => {
     const batch = (fromVersion: number, version: number) => ({ fromVersion, version, records: [rec('person', `p${version}`, version)], lastMutationIds: {}, log: [] });
     await storage.commit('e1', batch(0, 1));

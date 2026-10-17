@@ -8,3 +8,4 @@ export * from './unit';
 export * from './equipment';
 export * from './comm';
 export type { Holder, UnitRef } from './record';
+export * from './list';

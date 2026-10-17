@@ -57,6 +57,8 @@ export interface ActivityStorage {
   commit(activityId: string, batch: CommitBatch): Promise<void>;
   /** The latest log entries for an activity, oldest first; for debugging tools. */
   recentLog(activityId: string, limit: number): Promise<LogEntry[]>;
+  /** Every stored activity's id, e.g. to rebuild summaries. */
+  activityIds(): Promise<string[]>;
 }
 
 /** In-memory storage for development and tests. PostgresStorage implements the same interface. */
@@ -85,5 +87,9 @@ export class MemoryStorage implements ActivityStorage {
 
   async recentLog(activityId: string, limit: number): Promise<LogEntry[]> {
     return this.log.filter((e) => e.activityId === activityId).slice(-limit);
+  }
+
+  async activityIds(): Promise<string[]> {
+    return [...this.activities.keys()];
   }
 }

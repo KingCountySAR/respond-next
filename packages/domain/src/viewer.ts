@@ -19,5 +19,8 @@ export const SYSTEM_VIEWER: ActivityViewer = { userId: 'system', tier: 'command'
 
 export const asActivityViewer = (viewer: Viewer): ActivityViewer => viewer as ActivityViewer;
 
+/** The server acting for itself (SYSTEM_VIEWER): member info, summaries, cross-activity sign-outs. */
+export const isSystemViewer = (viewer: Viewer): boolean => viewer.userId === SYSTEM_VIEWER.userId;
+
 /** Support uses the command rules for now; it's a separate tier so it can diverge later. */
 export const isCommand = (viewer: Viewer): boolean => viewer.tier === 'command' || viewer.tier === 'support';

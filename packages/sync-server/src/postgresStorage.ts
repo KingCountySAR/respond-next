@@ -153,4 +153,9 @@ export class PostgresStorage implements ActivityStorage {
     const res = await this.pool.query<{ entry: LogEntry }>('SELECT entry FROM mutation_log WHERE activity_id = $1 ORDER BY seq DESC LIMIT $2', [activityId, limit]);
     return res.rows.map((r) => r.entry).reverse();
   }
+
+  async activityIds(): Promise<string[]> {
+    const res = await this.pool.query<{ activity_id: string }>('SELECT activity_id FROM activity_meta');
+    return res.rows.map((r) => r.activity_id);
+  }
 }

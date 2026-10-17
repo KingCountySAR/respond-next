@@ -6,6 +6,7 @@ import {
   recKey,
   type MutationRegistry,
   type Projector,
+  type ReadView,
   type Rec,
   type RecRef,
   type ServerMessage,
@@ -13,6 +14,9 @@ import {
   type WireMutation,
 } from '@sync/core';
 import { StorageConflictError, type ActivityStorage, type LogEntry } from './storage';
+
+/** The client id the server's own changes are logged under. */
+const SYSTEM_CLIENT = 'system';
 
 /** How far in the future a mutation's `at` may be, to absorb client clock error. */
 const MAX_FUTURE_AT_MS = 2 * 60_000;
@@ -31,6 +35,11 @@ export interface ActorDeps {
   registry: MutationRegistry;
   projector: Projector;
   now(): number;
+  /**
+   * After each commit, with a live view of the activity's records. Read it later (e.g. after a
+   * debounce) to see the latest state. Used for summaries.
+   */
+  onCommit?(activityId: string, view: ReadView): void;
 }
 
 interface Subscription {
@@ -49,6 +58,8 @@ type Applied = { writes: Map<string, Rec> } | { reason: string; message: string 
  */
 export class ActivityActor {
   private readonly records = new Map<string, Rec>();
+  /** Live: reads the records as they are when read. */
+  private readonly view: ReadView = new MapView(this.records);
   private version = 0;
   private readonly lastMutationIds = new Map<string, number>();
   private readonly subs = new Map<string, Subscription>();
@@ -90,6 +101,20 @@ export class ActivityActor {
 
   push(conn: ActorConn, mutations: WireMutation[]): Promise<void> {
     return this.serial(() => this.doPush(conn, mutations));
+  }
+
+  /**
+   * Applies changes the server makes itself (summaries, member info, cross-activity sign-outs) as
+   * `viewer`, through the same rules and log as a client's. Ids continue the 'system' client's sequence.
+   */
+  pushAsSystem(viewer: Viewer, changes: { name: string; v?: number; args: unknown }[]): Promise<void> {
+    return this.serial(() => {
+      let id = this.lastMutationIds.get(SYSTEM_CLIENT) ?? 0;
+      const now = this.deps.now();
+      const mutations: WireMutation[] = changes.map((c) => ({ id: ++id, name: c.name, v: c.v ?? this.deps.registry.latest(c.name)?.version ?? 1, args: c.args, clientTime: now }));
+      const conn: ActorConn = { id: SYSTEM_CLIENT, clientId: SYSTEM_CLIENT, viewer, send: (m) => m.t === 'reject' && console.warn(`sync: system change refused on ${this.activityId}: ${m.message}`), close: () => {} };
+      return this.doPush(conn, mutations, true);
+    });
   }
 
   /** Every visible record as a view sees it; for catch-up, tests and the dev dashboard. */
@@ -134,9 +159,9 @@ export class ActivityActor {
     this.subs.set(conn.id, { conn, viewKey, sentVersion: this.version, sentMutationId: lastMutationId });
   }
 
-  private async doPush(conn: ActorConn, mutations: WireMutation[]): Promise<void> {
+  private async doPush(conn: ActorConn, mutations: WireMutation[], system = false): Promise<void> {
     if (this.stale) return conn.close(1012, 'activity reloaded');
-    if (!this.subs.has(conn.id)) {
+    if (!system && !this.subs.has(conn.id)) {
       conn.send({ t: 'error', code: 'not_subscribed', message: `Subscribe to ${this.activityId} before pushing` });
       return;
     }
@@ -192,6 +217,7 @@ export class ActivityActor {
     this.lastMutationIds.set(conn.clientId, lastId);
     for (const r of rejects) conn.send(r);
     this.fanOut(changed);
+    if (changed.length) this.deps.onCommit?.(this.activityId, this.view);
   }
 
   private applyOne(batch: OverlayTx, conn: ActorConn, m: WireMutation, receivedAt: number): Applied {

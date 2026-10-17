@@ -3,9 +3,10 @@ import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { activityProjector, activityRegistry, type SiteConfig } from '@sync/domain';
+import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type SiteConfig } from '@sync/domain';
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
+import { SummaryWriter } from './summaries';
 
 // 4000 is the one origin the browser sees (and the OAuth redirect target). In `npm run dev`
 // this server runs on 5174 behind Vite's proxy; the production bundle serves the UI itself.
@@ -37,13 +38,20 @@ function uiDir(): string | undefined {
   return existsSync(dir) ? relative(process.cwd(), dir) || '.' : undefined;
 }
 
-const hub = new Hub({
+const summaries = new SummaryWriter(() => hub);
+const hub: Hub = new Hub({
   storage,
   registry: activityRegistry,
   projector: activityProjector,
   now: Date.now,
+  onCommit: summaries.onCommit,
+  // Only the server writes the activity list.
+  readOnly: (activityId) => activityId === ACTIVITY_LIST_ID,
   log: process.env.SYNC_LOG ? (dir, connId, msg) => console.log(dir === 'in' ? '<-' : '->', connId.slice(0, 8), JSON.stringify(msg)) : undefined,
 });
+
+const backfilled = await summaries.backfill(storage);
+if (backfilled) console.log(`added list summaries for ${backfilled} activities`);
 
 /** Until organizations are stored, the site comes from the environment, with the legacy app's defaults. */
 const site: SiteConfig = {

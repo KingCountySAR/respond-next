@@ -12,6 +12,8 @@ export interface HubConnection {
 export interface HubDeps extends ActorDeps {
   /** Called for every message in and out, e.g. for the server log. */
   log?(dir: 'in' | 'out', connId: string, msg: unknown): void;
+  /** Scopes only the server writes (e.g. the activity list): clients may read them but not push. */
+  readOnly?(activityId: string): boolean;
 }
 
 interface Conn {
@@ -52,6 +54,11 @@ export class Hub {
       if (this.actors.get(activityId) === loading) this.actors.delete(activityId);
     });
     return loading;
+  }
+
+  /** Applies changes the server makes itself; see ActivityActor.pushAsSystem. */
+  async pushAsSystem(activityId: string, viewer: Viewer, changes: { name: string; v?: number; args: unknown }[]): Promise<void> {
+    await (await this.actor(activityId)).pushAsSystem(viewer, changes);
   }
 
   private receive(conn: Conn, text: string): void {
@@ -110,6 +117,10 @@ export class Hub {
         (await this.actor(msg.activityId)).unsubscribe(conn.id);
         break;
       case 'push':
+        if (this.deps.readOnly?.(msg.activityId)) {
+          for (const m of msg.mutations) this.send(conn, { t: 'reject', activityId: msg.activityId, mutationId: m.id, reason: 'read_only', message: 'Only the server changes this' });
+          break;
+        }
         await (await this.actor(msg.activityId)).push(actorConn, msg.mutations);
         break;
     }

@@ -1,8 +1,9 @@
 /** The whole web app in jsdom, against the real activity actor over the simulated network. */
 import { configure, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryPersistence, SyncClient } from '@sync/client';
-import { activityProjector, activityRegistry, type ActivityViewer, type BootstrapResponse } from '@sync/domain';
+import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type ActivityViewer, type BootstrapResponse } from '@sync/domain';
 import { Hub, MemoryStorage } from '@sync/server';
+import { SummaryWriter } from '../../server/src/summaries';
 import { App } from '../src/shell/App';
 import { viewerOf, type Session } from '../src/shell/auth';
 import { COMMAND, CRT, activityArgs } from '../../packages/domain/__tests__/helpers';
@@ -29,7 +30,10 @@ export const TITLE = 'Lost hiker, Mailbox Peak';
 export async function serverWithActivity() {
   localStorage.clear();
   window.history.replaceState(null, '', '/');
-  const net = new SimNetwork(new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now }), mulberry32(1));
+  // The real server setup, with summaries written quickly so lists update within a test.
+  const summaries = new SummaryWriter(() => hub, { debounceMs: 20, maxWaitMs: 100 });
+  const hub: Hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now, onCommit: summaries.onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID });
+  const net = new SimNetwork(hub, mulberry32(1));
   net.latencyMs = 10;
   const seed = new SyncClient({ registry: activityRegistry, viewer: COMMAND, transport: net.transportFor(0, COMMAND) });
   await seed.start();
