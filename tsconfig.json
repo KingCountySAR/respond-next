@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["packages/*/src", "server/src", "test", "vitest.config.ts"]
+  "include": ["packages/*/src", "packages/*/__tests__", "server/src", "test", "vitest.config.ts"]
 }

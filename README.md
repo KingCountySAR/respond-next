@@ -11,16 +11,17 @@ Phase 1 gate: **convergence and network tests pass.**
 | `packages/sync-core` | `@sync/core` | Shared by client and server: records, `Tx`/overlay, `defineMutation`, wire protocol, client event state (optimistic apply + rebase), clock sync |
 | `packages/sync-client` | `@sync/client` | `SyncClient` (connection, reconnect/backoff, ping, batching, persistence), WebSocket transport, IndexedDB persistence, React hooks (`@sync/client/react`) |
 | `packages/sync-server` | `@sync/server` | `EventActor` (one per event, serial apply, per-view fan-out), `Hub` (connections → actors), storage interface + in-memory storage |
-| `packages/toy-domain` | `@sync/toy-domain` | Stand-in domain: people, timed status entries (`at`), a command-only `note`. Replaced by `packages/domain` in phase 2 |
+| `packages/domain` | `@sync/domain` | The mission model: records, queries, mutations, field projections. Shared by `web` and `server`; the server isn't wired to it yet |
+| `packages/toy-domain` | `@sync/toy-domain` | Stand-in domain: people, timed status entries (`at`), a command-only `note`. Used by the sync tests and the harness |
 | `server` | `server` | Hono app: `/api/sync` WebSocket, `/health`, dev debug endpoint, static UI. `build.mjs` bundles it to `dist/index.mjs`. Auth and REST land here |
 | `test/harness` | `harness` | Test harness: side-by-side clients with per-client latency and offline switches, pending queue, rejections, message log |
-| `test/sync` | | Rebase unit tests; seeded convergence simulation (4 clients, 20 seeds) with variable latency, jitter and dropped connections; in-order delivery, like TCP |
+| `packages/*/__tests__` | | Unit tests next to their package: rebase (`sync-core`), storage and the Postgres suite (`sync-server`), mission rules and projections (`domain`) |
+| `test/integration` | | Tests across packages: seeded convergence simulation (4 clients, 20 seeds) with variable latency, jitter and dropped connections, in-order delivery like TCP; the mission domain on the real event actor |
 | `test/smoke.ts` | | End-to-end check against a running server over real WebSockets |
 
 Planned, not created yet:
 
 - `web/`: the single SPA. `src/shell` (routing, auth, layout, the `SyncClient` provider), `src/sections/{field,ops,reports,admin}` loaded lazily by route, `src/ui` shared components. ESLint boundary rules keep sections from importing each other.
-- `packages/domain`: the mission model (records, mutations, projections), shared by `web` and `server`.
 - `packages/devtools`: `SyncPanel`, the in-app panel for connection state and outstanding changes, also used by the harness.
 
 ## Commands

@@ -1,0 +1,105 @@
+import { describe, expect, it } from 'vitest';
+import { MapView, OverlayTx, mutationCtx, recKey, type Rec } from '@sync/core';
+import { eventPhase, getEvent, latestEntry, missionProjector, missionRegistry, statusCounts } from '@sync/domain';
+import { COMMAND, EXTERNAL, HOUR, T0, addMember, fieldMember, startedEvent } from './helpers';
+
+describe('latestEntry', () => {
+  const entry = (id: string, at: number, version: number) => ({ id, at, version });
+
+  it('orders by at, then version, then id; unconfirmed entries count as newest at the same at', () => {
+    expect(latestEntry([entry('a', 2, 5), entry('b', 1, 9)])?.id).toBe('a');
+    expect(latestEntry([entry('a', 2, 5), entry('b', 2, 4)])?.id).toBe('a');
+    expect(latestEntry([entry('a', 2, 5), entry('b', 2, 0)])?.id).toBe('b');
+    expect(latestEntry([entry('a', 2, 5), entry('b', 2, 5)])?.id).toBe('b');
+  });
+
+  it('ignores entries after asOf', () => {
+    expect(latestEntry([entry('a', 1, 1), entry('b', 5, 2)], 3)?.id).toBe('a');
+    expect(latestEntry([entry('b', 5, 2)], 3)).toBeUndefined();
+  });
+});
+
+describe('event lifecycle', () => {
+  it('moves from not started to open for sign-in to in progress to closed', () => {
+    const e = startedEvent({ startTime: T0, earlySignInWindow: 4 * HOUR });
+    const event = getEvent(e.view)!;
+    expect(eventPhase(event, T0 - 5 * HOUR)).toBe('notStarted');
+    expect(eventPhase(event, T0 - 3 * HOUR)).toBe('openForSignIn');
+    expect(eventPhase(event, T0)).toBe('inProgress');
+    expect(eventPhase({ ...event, closed: true }, T0)).toBe('closed');
+    expect(eventPhase({ ...event, earlySignInWindow: null }, T0 - 100 * HOUR)).toBe('openForSignIn');
+  });
+
+  it('counts current statuses, optionally per unit', () => {
+    const e = startedEvent();
+    addMember(e, 'kcsara:1', 'staging');
+    addMember(e, 'kcsara:2', 'standby');
+    addMember(e, 'kcsara:3', 'standby', { id: 'org-rmr', title: 'RMR', rosterName: null });
+    expect(statusCounts(e.view)).toMatchObject({ staging: 1, standby: 2, assigned: 0 });
+    expect(statusCounts(e.view, 'org-rmr')).toMatchObject({ staging: 0, standby: 1 });
+  });
+});
+
+describe('mutations are deterministic', () => {
+  it('produce identical writes on client and server from the same state', () => {
+    const e = startedEvent();
+    addMember(e, 'kcsara:1');
+    e.run('createTeam', { id: 't1', name: 'Team 1' });
+    const def = missionRegistry.latest('disbandTeam')!;
+    const args = def.args.parse({ teamId: 't1', reassignTo: null, at: T0 + 2 * HOUR });
+    const writes = (side: 'client' | 'server') => {
+      const tx = new OverlayTx(new MapView(e.records));
+      def.run(tx, args, mutationCtx(COMMAND, 'c-1', 7, side));
+      return [...tx.writes.values()];
+    };
+    expect(writes('client')).toEqual(writes('server'));
+  });
+});
+
+describe('projection', () => {
+  function sample() {
+    const e = startedEvent();
+    const pid = addMember(e, 'kcsara:1');
+    e.run('setMiles', { participantId: pid, miles: 40 });
+    e.run('createTeam', { id: 't1', name: 'Team 1' });
+    e.run('updateTeam', { id: 't1', assignment: 'Segment 4', notes: 'Bring rope' });
+    e.run('assign', { participantId: pid, target: { kind: 'team', id: 't1' }, at: T0 + 2 * HOUR });
+    e.run('addComm', { id: 'c1', from: 'Base', to: 'Team 1', message: 'Go', at: T0 + 2 * HOUR });
+    return { e, pid, records: [...e.records.values()] };
+  }
+  const projectAll = (key: string, records: Rec[]) => new Map(records.map((r) => [recKey(r), missionProjector.project(key, r)]));
+  const keyFor = missionProjector.viewKey;
+
+  it('keys views by tier and class', () => {
+    expect([keyFor(COMMAND), keyFor(fieldMember('kcsara:1')), keyFor(EXTERNAL), keyFor({ ...COMMAND, tier: 'support' })]).toEqual(['command', 'field:member', 'field:external', 'command']);
+  });
+
+  it('shows command everything', () => {
+    const { records } = sample();
+    for (const r of records) expect(missionProjector.project('command', r)).toBe(r);
+  });
+
+  it('hides restricted records and fields from field members', () => {
+    const { records, pid } = sample();
+    const view = projectAll('field:member', records);
+    const participant = view.get(`participant/${pid}`)!;
+    expect(participant).toMatchObject({ personRef: 'kcsara:1', firstname: '1' });
+    expect(participant).not.toHaveProperty('miles');
+    expect(view.get('team/t1')).toEqual({ type: 'team', id: 't1', version: expect.any(Number), name: 'Team 1' });
+    expect(view.get('comm/c1')).toBeNull();
+    const assignment = [...view.values()].find((r) => r?.type === 'assignment')!;
+    expect(assignment.target).toEqual({ kind: 'team' });
+    expect(view.get('event/event')).not.toHaveProperty('description');
+  });
+
+  it('shows external people less than members', () => {
+    const { records, pid } = sample();
+    const view = projectAll('field:external', records);
+    expect(view.get(`participant/${pid}`)).not.toHaveProperty('personRef');
+    expect([...view.values()].filter((r) => r?.type === 'assignment')).toEqual([]);
+  });
+
+  it('hides record types it has no rule for', () => {
+    expect(missionProjector.project('field:member', { type: 'somethingNew', id: 'x', version: 1, secret: 1 })).toBeNull();
+  });
+});
