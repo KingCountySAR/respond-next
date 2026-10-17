@@ -14,7 +14,7 @@ The activity model, the same for missions, trainings and other activities: the r
 | `src/equipment.ts` | The equipment catalogue (legacy ids `inventory-0..38`) |
 | `src/viewer.ts` | `ActivityViewer` (tier, class, personRef), `isCommand`, `SYSTEM_VIEWER` |
 | `src/mutations/*.ts` | Every mutation, grouped by activity, participants and operations; `common.ts` has shared checks and helpers |
-| `src/projector.ts` | `activityProjector`: field views per record type |
+| `src/projector.ts` | `activityProjector`: field views per record type, and the field record types derived from them (`FieldParticipantRec`, ...) |
 | `src/index.ts` | Exports all of the above, plus `activityMutations` and `activityRegistry` |
 
 An activity is a flat set of records, each `{ type, id, version, ...fields }`. There is one `activity` record (id `ACTIVITY_RECORD_ID`). Things that change over time (participant status, assignment, team status, unit status) are not fields on the thing; they are separate timed entries with an `at`. The current value is the latest entry, which is what the queries work out for you.
@@ -22,6 +22,8 @@ An activity is a flat set of records, each `{ type, id, version, ...fields }`. T
 Code says **activity** (a mission, training or other activity: `kind`) so it isn't read as a programming event. Text shown to people still says "event", as the legacy app does: rejection messages and `describe` text.
 
 ## Getting a view of an activity
+
+> For UI code, prefer [`@sync/model`](../model/README.md): observable objects (`activity.participants[0].status`) over the same queries, with re-renders limited to what each component read. This section is the layer underneath.
 
 A client holds a **snapshot** of each activity it has open: the server's confirmed records with this client's pending mutations applied on top. A snapshot is a `ReadView` (`get(type, id)`, `scan(type)`), and every query in this package takes a `ReadView`.
 
@@ -63,7 +65,7 @@ Things to know:
 
 - **Use `client.now()`, never `Date.now()`,** for "now" and "minutes ago". It is the server's clock as corrected by the client.
 - **Most timed queries take `asOf`.** `statusOf(snap, id, asOf)`, `teamMembers(snap, teamId, asOf)` and the rest answer "as of then", for reports and timelines.
-- **A field viewer's snapshot holds projected records.** A field member sees only the fields in `src/projector.ts`: no `miles` on participants, no `comm` records, assignments with only `{ kind }` as their target. Write UI that copes with a field being absent, and read `activityProjector` to see what's there.
+- **A field viewer's snapshot holds projected records.** A field member sees only the fields in `src/projector.ts`: no `miles` on participants, no `comm` records, assignments with only `{ kind }` as their target. The field record types (`FieldParticipantRec`, `FieldActivityRec`, ...) say exactly what's there: they're derived from the projector's field lists, with member-only fields optional because external people don't get them.
 - **Pending changes are marked.** `snap.pending` lists this client's unconfirmed mutations and `snap.pendingKeys` the `type/id` keys they touched, for "not synced yet" markers. `client.describe(activityId, m)` gives each one's text.
 
 In React, `@sync/client/react` re-renders on change:
@@ -140,7 +142,7 @@ export const setTeamCallsign = defineMutation({
 
 It's exported from the file, so `index.ts` picks it up in `activityMutations` and `activityRegistry` with no further change.
 
-**3. Decide who sees it** in `src/projector.ts`. Field members see only `name` on teams today; add `callsign` to their `team` rule if they should see it. A **new record type** is hidden from field views until you add a rule for it, so forgetting fails safe.
+**3. Decide who sees it** in `src/projector.ts`. Field viewers see only `name` on teams today; add `callsign` to `TEAM_FIELDS` if they should see it. `FieldTeamRec` follows automatically, so field UI code can read it once it's listed and can't before. A **new record type** is hidden from field views until you add a rule for it, so forgetting fails safe.
 
 **4. Test it** in `__tests__/`, with the `TestActivity` harness from `__tests__/helpers.ts`. It applies mutations with the server's rules, without a network:
 

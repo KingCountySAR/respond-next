@@ -12,6 +12,7 @@ Phase 1 gate: **convergence and network tests pass.**
 | `packages/sync-client` | `@sync/client` | `SyncClient` (connection, reconnect/backoff, ping, batching, persistence), WebSocket transport, IndexedDB persistence, React hooks (`@sync/client/react`) |
 | `packages/sync-server` | `@sync/server` | `ActivityActor` (one per activity, serial apply, per-view fan-out), `Hub` (connections → actors), storage interface + in-memory storage |
 | `packages/domain` | `@sync/domain` | The activity model (missions, trainings and other activities): records, queries, mutations, field projections. Shared by `web` and `server`; the server isn't wired to it yet |
+| `packages/model` | `@sync/model` | Prototype UI model: MobX store fed from client snapshots, field and command models (`FieldActivity` ← `CommandActivity`, ...) over the domain queries, a server clock, and a React provider (`@sync/model/react`) |
 | `packages/toy-domain` | `@sync/toy-domain` | Stand-in domain: people, timed status entries (`at`), a command-only `note`. Used by the sync tests and the harness |
 | `server` | `server` | Hono app: `/api/sync` WebSocket, `/health`, dev debug endpoint, static UI. `build.mjs` bundles it to `dist/index.mjs`. Auth and REST land here |
 | `test/harness` | `harness` | Test harness: side-by-side clients with per-client latency and offline switches, pending queue, rejections, message log |

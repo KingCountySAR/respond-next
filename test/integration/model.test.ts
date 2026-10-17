@@ -1,0 +1,93 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { reaction } from 'mobx';
+import { SyncClient } from '@sync/client';
+import { Hub, MemoryStorage } from '@sync/server';
+import { activityProjector, activityRegistry, participantIdFor, type ActivityViewer } from '@sync/domain';
+import { createActivityModel, isCommandActivity, type CommandActivity } from '@sync/model';
+import { COMMAND, CRT, EXTERNAL, HOUR, T0, activityArgs, fieldMember } from '../../packages/domain/__tests__/helpers';
+import { SimNetwork, mulberry32 } from './sim';
+
+const ACTIVITY = 'e1';
+
+describe('activity models over the network', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(T0 + 2 * HOUR);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  async function connect() {
+    const hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: () => Date.now() });
+    const net = new SimNetwork(hub, mulberry32(1));
+    net.latencyMs = 50;
+    const viewers: ActivityViewer[] = [COMMAND, { ...COMMAND, userId: 'u-command-2' }, fieldMember('kcsara:1'), EXTERNAL];
+    const clients = viewers.map((viewer, i) => new SyncClient({ registry: activityRegistry, viewer, transport: net.transportFor(i, viewer) }));
+    for (const c of clients) {
+      await c.start();
+      await c.open(ACTIVITY);
+    }
+    const [mine, theirs, member, external] = clients.map((c) => createActivityModel(c, ACTIVITY));
+    const stop = () => clients.forEach((c) => c.stop());
+    return { mine: mine as CommandActivity, theirs: theirs as CommandActivity, member: member!, external: external!, stop };
+  }
+
+  it("shows others' changes, and when your own are confirmed", async () => {
+    const { mine, theirs, stop } = await connect();
+    const anna = participantIdFor('kcsara:1');
+    mine.mutate('createActivity', activityArgs());
+    mine.mutate('addParticipant', { personRef: 'kcsara:1', firstname: 'Anna', lastname: 'Lee', unit: CRT, status: 'staging', at: T0 + HOUR });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(mine.participant(anna)!.isPending).toBe(false);
+    expect(theirs.participant(anna)!.status).toBe('staging');
+
+    const seen: string[] = [];
+    const stopReaction = reaction(() => theirs.participant(anna)!.status, (s) => seen.push(s));
+    mine.participant(anna)!.setStatus('demobilizing');
+    expect(mine.participant(anna)!.status).toBe('demobilizing');
+    expect(mine.participant(anna)!.isPending).toBe(true);
+    expect(seen).toEqual([]);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(seen).toEqual(['demobilizing']);
+    expect(mine.participant(anna)!.isPending).toBe(false);
+    stopReaction();
+    stop();
+  });
+
+  it('gives members and external people the field model over their projection', async () => {
+    const { mine, member, external, stop } = await connect();
+    expect([isCommandActivity(mine), isCommandActivity(member), isCommandActivity(external)]).toEqual([true, false, false]);
+    const anna = participantIdFor('kcsara:1');
+    const ext = participantIdFor('adhoc:ext-1');
+    mine.mutate('createActivity', activityArgs());
+    mine.mutate('createTeam', { id: 't1', name: 'Team 1' });
+    mine.mutate('addParticipant', { personRef: 'kcsara:1', firstname: 'Anna', lastname: 'Lee', unit: CRT, status: 'staging', at: T0 + HOUR });
+    mine.mutate('addParticipant', { personRef: 'adhoc:ext-1', firstname: 'Eli', lastname: 'Mutual', unit: CRT, status: 'staging', at: T0 + HOUR });
+    mine.mutate('setMiles', { participantId: anna, miles: 40 });
+    mine.participant(anna)!.assign({ kind: 'team', id: 't1' });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(mine.participant(anna)).toMatchObject({ status: 'assigned', locationName: 'Team 1' });
+    expect(mine.participant(anna)!.record).toMatchObject({ miles: 40, personRef: 'kcsara:1' });
+
+    // A member sees their own entry and which kind of place people are at, but not mileage.
+    expect(member.me?.id).toBe(anna);
+    expect(member.me?.isMe).toBe(true);
+    expect(member.participant(anna)).toMatchObject({ status: 'assigned', targetKind: 'team' });
+    expect(member.participant(anna)!.record).toMatchObject({ personRef: 'kcsara:1' });
+    expect(member.participant(anna)!.record).not.toHaveProperty('miles');
+    expect(member.team('t1')?.name).toBe('Team 1');
+
+    // An external person finds themselves by id, and sees no person refs or assignments.
+    expect(external.me?.id).toBe(ext);
+    expect(external.participant(anna)!.record?.personRef).toBeUndefined();
+    expect(external.participant(anna)!.targetKind).toBeUndefined();
+    expect(external.participant(anna)!.status).toBe('assigned');
+
+    // Self-service works from the field model; the server applies it for everyone.
+    member.me!.setEta(T0 + 3 * HOUR);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(mine.participant(anna)!.record?.eta).toBe(T0 + 3 * HOUR);
+    stop();
+  });
+});

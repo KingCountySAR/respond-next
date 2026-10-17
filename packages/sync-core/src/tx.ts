@@ -5,6 +5,20 @@ import { keyOf, recKey, type Rec, type RecInput } from './records';
 export interface ReadView {
   get<T extends Rec = Rec>(type: string, id: string): T | undefined;
   scan<T extends Rec = Rec>(type: string): Iterable<T>;
+  /**
+   * Records of a type whose `field` equals `value`. Optional: a view with an index (the UI's
+   * observable store) answers without scanning, so a reader depends only on the matching records.
+   * Call it through `scanWhere()`, which falls back to filtering `scan`.
+   */
+  scanWhere?<T extends Rec = Rec>(type: string, field: string, value: unknown): Iterable<T>;
+}
+
+export function* scanWhere<T extends Rec = Rec>(view: ReadView, type: string, field: string, value: unknown): Generator<T> {
+  if (view.scanWhere) {
+    yield* view.scanWhere<T>(type, field, value);
+    return;
+  }
+  for (const r of view.scan<T>(type)) if (r[field] === value) yield r;
 }
 
 /** What mutation code reads and writes through. */

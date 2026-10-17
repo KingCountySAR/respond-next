@@ -2,7 +2,7 @@
  * Derived state, as plain functions over an activity's records. The server, the client and reports
  * all use these, so "current status" or "team members" means the same thing everywhere.
  */
-import { deriveId, type ReadView } from '@sync/core';
+import { deriveId, scanWhere, type ReadView } from '@sync/core';
 import {
   ACTIVITY_RECORD_ID,
   PARTICIPANT_STATUSES,
@@ -50,6 +50,18 @@ export function latestEntry<T extends TimedEntry>(entries: Iterable<T>, asOf?: n
   return best;
 }
 
+/**
+ * The lookups the queries make with `scanWhere`, for views that keep indexes (the UI's observable
+ * store). Each one lets a reader depend on one participant's or team's entries instead of all of them.
+ */
+export const ACTIVITY_INDEXES: Readonly<Record<string, readonly string[]>> = {
+  participantStatus: ['participantId'],
+  assignment: ['participantId'],
+  teamStatus: ['teamId'],
+  unitStatus: ['unitId'],
+  team: ['groupId'],
+};
+
 function* where<T>(items: Iterable<T>, keep: (item: T) => boolean): Generator<T> {
   for (const item of items) if (keep(item)) yield item;
 }
@@ -67,7 +79,7 @@ export function findParticipantByPersonRef(view: ReadView, personRef: string): P
 }
 
 export const participantStatusEntries = (view: ReadView, participantId: string): Iterable<ParticipantStatusRec> =>
-  where(view.scan<ParticipantStatusRec>('participantStatus'), (s) => s.participantId === participantId);
+  scanWhere<ParticipantStatusRec>(view, 'participantStatus', 'participantId', participantId);
 
 export const currentParticipantStatus = (view: ReadView, participantId: string, asOf?: number): ParticipantStatusRec | undefined =>
   latestEntry(participantStatusEntries(view, participantId), asOf);
@@ -109,7 +121,7 @@ export function statusCounts(view: ReadView, unitId?: string): Record<Participan
 // --- Assignments ----------------------------------------------------------------------------
 
 export const assignmentEntries = (view: ReadView, participantId: string): Iterable<AssignmentRec> =>
-  where(view.scan<AssignmentRec>('assignment'), (a) => a.participantId === participantId);
+  scanWhere<AssignmentRec>(view, 'assignment', 'participantId', participantId);
 
 export const currentAssignment = (view: ReadView, participantId: string, asOf?: number): AssignmentRec | undefined =>
   latestEntry(assignmentEntries(view, participantId), asOf);
@@ -154,11 +166,11 @@ export function targetName(view: ReadView, target: Target | null): string {
 // --- Teams, groups, units -------------------------------------------------------------------
 
 export const currentTeamStatus = (view: ReadView, teamId: string, asOf?: number): TeamStatusRec | undefined =>
-  latestEntry(where(view.scan<TeamStatusRec>('teamStatus'), (s) => s.teamId === teamId), asOf);
+  latestEntry(scanWhere<TeamStatusRec>(view, 'teamStatus', 'teamId', teamId), asOf);
 
 export const teamStatusOf = (view: ReadView, teamId: string, asOf?: number) => currentTeamStatus(view, teamId, asOf)?.status ?? 'inBase';
 
-export const groupTeams = (view: ReadView, groupId: string): TeamRec[] => [...where(view.scan<TeamRec>('team'), (t) => t.groupId === groupId)];
+export const groupTeams = (view: ReadView, groupId: string): TeamRec[] => [...scanWhere<TeamRec>(view, 'team', 'groupId', groupId)];
 
 /** The group whose leader this participant is, if any. */
 export const groupLedBy = (view: ReadView, participantId: string): GroupRec | undefined => {
@@ -167,7 +179,7 @@ export const groupLedBy = (view: ReadView, participantId: string): GroupRec | un
 };
 
 export const currentUnitStatus = (view: ReadView, unitId: string): UnitStatusRec | undefined =>
-  latestEntry(where(view.scan<UnitStatusRec>('unitStatus'), (s) => s.unitId === unitId));
+  latestEntry(scanWhere<UnitStatusRec>(view, 'unitStatus', 'unitId', unitId));
 
 // --- Activity lifecycle ------------------------------------------------------------------------
 

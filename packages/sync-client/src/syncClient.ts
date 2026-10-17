@@ -86,6 +86,11 @@ export class SyncClient {
     this.ready = this.loadMeta();
   }
 
+  /** Who this client acts as. Fixed for the client's life: a different user or tier is a new client. */
+  get viewer(): Viewer {
+    return this.opts.viewer;
+  }
+
   get status(): SyncStatus {
     return this.currentStatus;
   }
