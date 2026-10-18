@@ -33,14 +33,21 @@ export class StatusUpdaterViewModel {
     readonly activity: ActivityDomainModel,
     readonly user: UserInfo | MemberInfo,
     readonly respondingOrg: Organization,
+    readonly isSelf = true,
   ) {
     this.form = new StatusUpdateFormModel(activity, user, respondingOrg, () => this.close());
-    makeAutoObservable<StatusUpdaterViewModel, 'activity' | 'user' | 'respondingOrg'>(this, {
+    makeAutoObservable<StatusUpdaterViewModel, 'activity' | 'user' | 'respondingOrg' | 'isSelf'>(this, {
       activity: false,
       user: false,
       respondingOrg: false,
+      isSelf: false,
       form: false, // the child model owns its own reactivity
     });
+  }
+  /** "your" for the signed-in user, otherwise the target's first name, e.g. "Brian's". */
+  get statusOwner(): string {
+    if (this.isSelf) return 'your';
+    return this.user.given_name ? `${this.user.given_name}'s` : 'their';
   }
 
   get participantId(): string {

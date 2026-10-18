@@ -25,7 +25,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
   const { open } = useDialogs();
   const activity = vm.domain;
   const openParticipantDialog = (participant: ParticipantDomainModel) => {
-    open(ParticipantDialog, { participant });
+    open(ParticipantDialog, { participant, activity });
   };
   return (
     <ToolbarPage maxWidth="lg">

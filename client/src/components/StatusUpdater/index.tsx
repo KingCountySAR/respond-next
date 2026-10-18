@@ -18,11 +18,11 @@ export const StatusUpdater = ({ member, organization, fullWidth, activity }: { m
   const user = useAppSelector((state) => state.auth.userInfo);
   const thisOrg = useAppSelector((state) => state.organization.mine);
 
-  return user && thisOrg ? <StatusUpdaterProtected activity={activity} user={member || user} thisOrg={organization || thisOrg} fullWidth={fullWidth} /> : null;
+  return user && thisOrg ? <StatusUpdaterProtected activity={activity} user={member || user} thisOrg={organization || thisOrg} isSelf={!member || member.id === user.participantId} fullWidth={fullWidth} /> : null;
 };
 
-const StatusUpdaterProtected = observer(({ fullWidth, user, thisOrg, activity }: { user: UserInfo | MemberInfo; fullWidth?: boolean; thisOrg: Organization; activity: ActivityDomainModel }) => {
-  const vm = useMemo(() => new StatusUpdaterViewModel(activity, user, thisOrg), [activity, user, thisOrg]);
+const StatusUpdaterProtected = observer(({ fullWidth, user, thisOrg, activity, isSelf }: { user: UserInfo | MemberInfo; fullWidth?: boolean; thisOrg: Organization; activity: ActivityDomainModel; isSelf: boolean }) => {
+  const vm = useMemo(() => new StatusUpdaterViewModel(activity, user, thisOrg, isSelf), [activity, user, thisOrg, isSelf]);
 
   return (
     <>

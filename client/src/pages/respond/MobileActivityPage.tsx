@@ -71,7 +71,7 @@ function MobileBriefingScreen({ activity }: { activity: ActivityViewModel }) {
 const MobileRosterScreen = observer(function MobileRosterScreen({ activity }: { activity: ActivityViewModel }) {
   const { open } = useDialogs();
   const openParticipantDialog = (participant: ParticipantDomainModel) => {
-    open(ParticipantDialog, { participant });
+    open(ParticipantDialog, { participant, activity: activity.domain });
   };
   return (
     <>

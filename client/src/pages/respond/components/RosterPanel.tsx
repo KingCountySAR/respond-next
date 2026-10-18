@@ -6,12 +6,16 @@ import { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
 import { observer } from 'mobx-react-lite';
-import { FunctionComponent, ReactNode, useState } from 'react';
+import { FunctionComponent, ReactNode, useMemo, useState } from 'react';
 
 import { AppDialog } from '@respond/components/DialogProvider/AppDialog';
 import { getStatusCssColor, ParticipantStatus } from '@respond/shared/types/activity';
+import { MemberInfo } from '@respond/shared/types/member';
+import { Organization } from '@respond/shared/types/organization';
 
 import { ParticipantMilesUpdater } from '@/client/components/participant/ParticipantMilesUpdater';
+import { StatusUpdater } from '@/client/components/StatusUpdater';
+import { ActivityDomainModel } from '@/client/models/activityDomainModel';
 import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
 import { RosterViewModel } from '@/client/pages/reports/rosterReportViewModel';
 
@@ -64,8 +68,23 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
   );
 }
 
-export const ParticipantDialog = observer(({ open, participant, onClose }: { open: boolean; onClose: () => void; participant?: ParticipantDomainModel }) => {
+export const ParticipantDialog = observer(({ open, participant, activity, onClose }: { open: boolean; onClose: () => void; participant?: ParticipantDomainModel; activity: ActivityDomainModel }) => {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
+
+  const participantId = participant?.id;
+  const firstName = participant?.firstName;
+  const lastName = participant?.lastName;
+  const organizationId = participant?.organizationId;
+  const org = activity.organizations.find((o) => o.id === organizationId);
+  const orgTitle = org?.title;
+  const orgRosterName = org?.rosterName;
+
+  // Stable identities: StatusUpdater rebuilds its view model (and closes its dialog) when these change.
+  const member = useMemo<MemberInfo | undefined>(
+    () => (participantId ? { id: participantId, name: `${firstName} ${lastName}`, given_name: firstName ?? '', family_name: lastName ?? '', groups: [] } : undefined),
+    [participantId, firstName, lastName],
+  );
+  const organization = useMemo<Organization | undefined>(() => (organizationId && orgTitle ? { id: organizationId, title: orgTitle, rosterName: orgRosterName } : undefined), [organizationId, orgTitle, orgRosterName]);
 
   if (!participant) return <></>;
 
@@ -115,6 +134,7 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
         {/* <DialogContentText>Mark this activity as deleted? Any data it contains will stop contributing to report totals.</DialogContentText> */}
       </DialogContent>
       <DialogActions>
+        {activity.isActive && member && organization && <StatusUpdater activity={activity} member={member} organization={organization} />}
         <Button autoFocus onClick={onClose}>
           Close
         </Button>

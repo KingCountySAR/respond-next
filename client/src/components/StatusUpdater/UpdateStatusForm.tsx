@@ -34,7 +34,9 @@ export const UpdateStatusForm = observer(function UpdateStatusForm({ vm }: { vm:
             </Alert>
           ))}
           <Stack spacing={2} sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
-            <DialogContentText id="status-update-dialog-description">Change your status for {vm.activityTitle}?</DialogContentText>
+            <DialogContentText id="status-update-dialog-description">
+              Change {vm.statusOwner} status for {vm.activityTitle}?
+            </DialogContentText>
             <StatusTimeInput form={form} />
             {form.showEta && <EtaInput form={form} />}
             {form.showMiles && <MilesInput form={form} />}
