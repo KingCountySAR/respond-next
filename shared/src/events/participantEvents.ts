@@ -9,7 +9,7 @@ import { defineEvent } from './defineEvent';
 // ParticipantTagged is authored by the participant-tag reactor.
 
 export type ParticipantIdentity = { id: string; firstname: string; lastname: string; organizationId: string; miles?: number; eta?: number };
-export type StatusUpdate = { id?: string; time: number; status: ParticipantStatus };
+export type StatusUpdate = { id?: string; time: number; status: ParticipantStatus; lastUpdatedBy?: { id: string; name: string }; lastUpdatedTime?: number };
 export type ParticipantUpdatedPayload = { activityId: string; participant: ParticipantIdentity; update: StatusUpdate };
 export type ParticipantTimelinePayload = { activityId: string; participantId: string; update: ParticipantUpdate };
 

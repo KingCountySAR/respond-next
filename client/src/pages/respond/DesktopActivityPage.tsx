@@ -1,3 +1,4 @@
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
 import { observer } from 'mobx-react-lite';
@@ -89,7 +90,10 @@ const RosterRow = observer(function RosterRow({ participant, onClick }: { partic
             </Typography>
           </Stack>
           <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-            <Typography variant="body2">{participant.statusText}</Typography>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+              {participant.lastEditedByOther && <WarningAmberIcon fontSize="small" color="warning" titleAccess="Latest status was updated by someone else" />}
+              <Typography variant="body2">{participant.statusText}</Typography>
+            </Stack>
             <Typography variant="body2">{participant.isEnrouteOrStandby && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
           </Stack>
         </Stack>

@@ -119,6 +119,9 @@ export interface ParticipantUpdate {
   time: number;
   organizationId: string;
   status: ParticipantStatus;
+  // Server-stamped on user-authored adds/edits: the editor (participant id + display name) and when.
+  lastUpdatedBy?: { id: string; name: string };
+  lastUpdatedTime?: number;
 }
 
 export interface Participant {
