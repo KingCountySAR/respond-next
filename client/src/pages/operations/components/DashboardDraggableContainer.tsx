@@ -14,6 +14,8 @@ type DashboardDraggableContainerProps = {
 export function DashboardDraggableContainer({ children, sx, showHandle = true, variant = 'standard', disabled = false }: DashboardDraggableContainerProps) {
   const isCompact = variant === 'compact';
 
+  const disabledBgColor = (theme: Theme) => (theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#ebebeb');
+
   const disabledStyles: SxProps<Theme> = {
     width: '100%',
     minWidth: 0,
@@ -21,7 +23,7 @@ export function DashboardDraggableContainer({ children, sx, showHandle = true, v
     borderColor: 'divider',
     borderRadius: 2,
     p: isCompact ? 0.5 : 1,
-    bgcolor: disabled ? '#ebebeb' : 'background.paper',
+    bgcolor: disabled ? disabledBgColor : 'background.paper',
   };
 
   const draggableStyles: SxProps<Theme> = {
@@ -32,7 +34,7 @@ export function DashboardDraggableContainer({ children, sx, showHandle = true, v
     borderRadius: 2,
     p: isCompact ? 0.5 : 1,
     cursor: 'grab',
-    bgcolor: disabled ? '#ebebeb' : 'background.paper',
+    bgcolor: disabled ? disabledBgColor : 'background.paper',
     boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
     transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background-color 120ms ease',
     ':hover': {
