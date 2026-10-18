@@ -1,6 +1,5 @@
-import { Close } from '@mui/icons-material';
-import { Box, ButtonBase, IconButton, Stack, Typography } from '@mui/material';
-import { DateTimePicker } from '@mui/x-date-pickers';
+import { Box, ButtonBase, Stack, Typography } from '@mui/material';
+import { MobileDateTimePicker, renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers';
 import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
 
@@ -24,16 +23,13 @@ export default function ParticipantTimeline({ participant }: { participant: Part
 function ParticipantUpdateTile({ record, onChange }: { record: DomainParticipantUpdate; onChange?: (time: number) => void }) {
   const initialTime = record.time ?? new Date().getTime(); // Backward Compatability; timelines might have null time values. This ensures a value is present so it can be edited.
 
-  const [edit, setEdit] = useState(false);
+  const [open, setOpen] = useState(false);
   const [time, setTime] = useState(initialTime);
-  const handleAccept = (newTime: number | null) => {
+  const handleAccept = (newTime: Date | null) => {
     if (newTime) {
-      setTime(newTime);
-      onChange?.(new Date(newTime).getTime());
+      setTime(newTime.getTime());
+      onChange?.(newTime.getTime());
     }
-  };
-  const handleClose = () => {
-    setEdit(false);
   };
 
   const summary = (
@@ -51,29 +47,31 @@ function ParticipantUpdateTile({ record, onChange }: { record: DomainParticipant
     </Stack>
   );
 
+  if (!onChange) {
+    return <Box>{summary}</Box>;
+  }
+
   return (
     <Box>
-      {edit ? (
-        <Stack direction="row" sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
-          <DateTimePicker
-            value={new Date(initialTime)}
-            label={`${record.organizationName} - ${record.statusText}`}
-            format="MM/dd HH:mm"
-            onChange={(d) => handleAccept(d ? d.getTime() : null)}
-            onAccept={(d) => handleAccept(d ? d.getTime() : null)}
-            onClose={handleClose}
-          />
-          <IconButton disableRipple onClick={handleClose}>
-            <Close />
-          </IconButton>
-        </Stack>
-      ) : onChange ? (
-        <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
-          {summary}
-        </ButtonBase>
-      ) : (
-        summary
-      )}
+      <ButtonBase sx={{ width: '100%' }} onClick={() => setOpen(true)}>
+        {summary}
+      </ButtonBase>
+      <MobileDateTimePicker
+        open={open}
+        value={new Date(time)}
+        label={`${record.organizationName} - ${record.statusText}`}
+        format="MM/dd HH:mm"
+        openTo="hours"
+        minutesStep={1}
+        timeSteps={{ minutes: 1 }}
+        viewRenderers={{
+          hours: renderMultiSectionDigitalClockTimeView,
+          minutes: renderMultiSectionDigitalClockTimeView,
+        }}
+        onAccept={handleAccept}
+        onClose={() => setOpen(false)}
+        slots={{ field: () => null }}
+      />
     </Box>
   );
 }
