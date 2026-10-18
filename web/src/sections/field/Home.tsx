@@ -1,9 +1,10 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { Link } from 'wouter';
-import { isActiveStatus, participantIdFor, type ParticipantStatus } from '@sync/domain';
+import { canCreate, isActiveStatus, participantIdFor, type ParticipantStatus } from '@sync/domain';
 import type { ActivityList, ActivityListItem } from '@sync/model';
 import { observer, useActivityList } from '@sync/model/react';
+import { useSite } from '../../shell/App';
 import { useAuth } from '../../shell/auth';
 import { useSyncClient } from '../../shell/sync';
 import { ToolbarPage } from '../../shell/ToolbarPage';
@@ -47,8 +48,12 @@ export function Home() {
 
 const HomeContent = observer(function HomeContent({ list }: { list: ActivityList }) {
   const { session } = useAuth();
-  // Until organizations are stored, creating is for command and support (the legacy app asked the org).
-  const canCreate = session?.tier === 'command' || session?.tier === 'support';
+  // As the legacy app: when the organization (or a partner) may create that kind. Only command and
+  // support may create activities at all.
+  const org = useSite().organization;
+  const mayCreate = session?.tier === 'command' || session?.tier === 'support';
+  const canCreateMissions = mayCreate && canCreate(org, true);
+  const canCreateEvents = mayCreate && canCreate(org, false);
   const me = session?.personRef ? participantIdFor(session.personRef) : undefined;
 
   const mine: { item: ActivityListItem; status: ParticipantStatus }[] = [];
@@ -106,7 +111,7 @@ const HomeContent = observer(function HomeContent({ list }: { list: ActivityList
           }}
         >
           <Typography variant="h5">Missions</Typography>
-          {canCreate && (
+          {canCreateMissions && (
             <Button variant="outlined" component={Link} href="~/mission/new">
               New Mission
             </Button>
@@ -124,7 +129,7 @@ const HomeContent = observer(function HomeContent({ list }: { list: ActivityList
           }}
         >
           <Typography variant="h5">Events</Typography>
-          {canCreate && (
+          {canCreateEvents && (
             <Button variant="outlined" component={Link} href="~/event/new">
               New Event
             </Button>

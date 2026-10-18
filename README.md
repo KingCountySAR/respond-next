@@ -45,7 +45,7 @@ npm run smoke            # end-to-end check against :4000; works with any of the
 
 **Routes.** `/api/sync` (WebSocket), `/api/bootstrap`, `/api/debug/activities/<activityId>?view=command|field:member|field:external` (dev only; off in the production bundle), `/health`. Anything else serves the UI, falling back to `index.html` for client-side routes.
 
-**Site.** Until organizations are stored, `/api/bootstrap` takes the site from `ORG_ID`, `ORG_TITLE`, `ORG_SHORT_TITLE`, `THEME_PRIMARY` and `THEME_PRIMARY_DARK`, with the legacy app's defaults ("Team", `rgb(200, 100, 100)`).
+**Site.** Until organizations are stored, `/api/bootstrap` takes the site from `ORG_ID`, `ORG_TITLE`, `ORG_SHORT_TITLE`, `ORG_CAN_CREATE_MISSIONS` and `ORG_CAN_CREATE_EVENTS` (both default `true`), `ORG_PARTNERS` (a JSON array of the other units it may create activities for: `{ id, title, shortTitle?, canCreateMissions?, canCreateEvents? }`), `THEME_PRIMARY` and `THEME_PRIMARY_DARK`, with the legacy app's defaults ("Team", `rgb(200, 100, 100)`).
 
 **Activity list.** The list Home shows is a sync scope of its own, `$activities`, holding one summary per activity. Clients open it like an activity, so it's live, versioned and cached offline; only the server writes it. After an activity commits, the server recomputes its summary after a trailing 2 s debounce (capped at 5 s) and writes it if it changed. On startup it adds summaries for stored activities that have none.
 

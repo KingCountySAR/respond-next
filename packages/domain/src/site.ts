@@ -1,7 +1,20 @@
+/** A unit that may own activities, with which kinds it may create. */
+export interface SiteUnit {
+  id: string;
+  title: string;
+  /** The short name rosters and chips show ("CRT"). */
+  shortTitle: string;
+  canCreateMissions: boolean;
+  canCreateEvents: boolean;
+}
+
 /** What every client loads before anything else (`GET /api/bootstrap`): the site's name and colours. */
 export interface SiteConfig {
-  /** The site's organization. Its people respond under it as their unit, as in the legacy app. */
-  organization: { id: string; title: string; shortTitle: string };
+  /**
+   * The site's organization. Its people respond under it as their unit, as in the legacy app. Its
+   * partners are the other units it may create activities for.
+   */
+  organization: SiteUnit & { partners: SiteUnit[] };
   theme: { primary: string; primaryDark?: string };
   dev: {
     /** No Google sign-in: the login panel offers the dev sign-in instead. */
@@ -13,3 +26,14 @@ export interface SiteConfig {
 export interface BootstrapResponse {
   config: SiteConfig;
 }
+
+const permission = (missions: boolean) => (missions ? 'canCreateMissions' : 'canCreateEvents');
+
+/** The units that may own a new mission (or event): the organization first, then its partners. */
+export function ownerOptions(org: SiteConfig['organization'], missions: boolean): SiteUnit[] {
+  const can = permission(missions);
+  return [...(org[can] ? [org] : []), ...org.partners.filter((p) => p[can])];
+}
+
+/** Whether the site may create missions (or events) at all, for itself or a partner. */
+export const canCreate = (org: SiteConfig['organization'], missions: boolean): boolean => ownerOptions(org, missions).length > 0;

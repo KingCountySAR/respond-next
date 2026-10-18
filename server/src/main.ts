@@ -3,7 +3,7 @@ import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type SiteConfig } from '@sync/domain';
+import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type SiteConfig, type SiteUnit } from '@sync/domain';
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 import { SummaryWriter } from './summaries';
@@ -53,12 +53,26 @@ const hub: Hub = new Hub({
 const backfilled = await summaries.backfill(storage);
 if (backfilled) console.log(`added list summaries for ${backfilled} activities`);
 
-/** Until organizations are stored, the site comes from the environment, with the legacy app's defaults. */
+/**
+ * Until organizations are stored, the site comes from the environment, with the legacy app's defaults.
+ * ORG_PARTNERS is a JSON array of `{ id, title, shortTitle?, canCreateMissions?, canCreateEvents? }`.
+ */
+const flag = (value: string | undefined, fallback: boolean) => (value === undefined ? fallback : value === 'true');
+const partners = (JSON.parse(process.env.ORG_PARTNERS ?? '[]') as Partial<SiteUnit>[]).map((p): SiteUnit => ({
+  id: String(p.id),
+  title: String(p.title),
+  shortTitle: p.shortTitle ?? String(p.title),
+  canCreateMissions: p.canCreateMissions ?? false,
+  canCreateEvents: p.canCreateEvents ?? false,
+}));
 const site: SiteConfig = {
   organization: {
     id: process.env.ORG_ID ?? 'org-team',
     title: process.env.ORG_TITLE ?? 'Team',
     shortTitle: process.env.ORG_SHORT_TITLE ?? process.env.ORG_TITLE ?? 'Team',
+    canCreateMissions: flag(process.env.ORG_CAN_CREATE_MISSIONS, true),
+    canCreateEvents: flag(process.env.ORG_CAN_CREATE_EVENTS, true),
+    partners,
   },
   theme: { primary: process.env.THEME_PRIMARY ?? 'rgb(200, 100, 100)', primaryDark: process.env.THEME_PRIMARY_DARK },
   // No Google sign-in until phase 2: the web app offers the dev sign-in.

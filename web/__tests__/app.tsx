@@ -6,10 +6,10 @@ import { Hub, MemoryStorage } from '@sync/server';
 import { SummaryWriter } from '../../server/src/summaries';
 import { App } from '../src/shell/App';
 import { viewerOf, type Session } from '../src/shell/auth';
-import { COMMAND, CRT, activityArgs } from '../../packages/domain/__tests__/helpers';
+import { COMMAND, CRT, RMR, activityArgs } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from '../../test/integration/sim';
 
-export { CRT };
+export { CRT, RMR };
 
 // The whole app renders over a network with latency while other test files share the CPU: the
 // default 1 s wait for findBy* is too tight.
@@ -17,7 +17,7 @@ configure({ asyncUtilTimeout: 5000 });
 
 /** The site is CRT, so people signing in respond under CRT. */
 export const site: BootstrapResponse = {
-  config: { organization: { id: CRT.id, title: CRT.title, shortTitle: 'CRT' }, theme: { primary: '#336' }, dev: { noExternalNetwork: true, buildId: 'test' } },
+  config: { organization: { id: CRT.id, title: CRT.title, shortTitle: 'CRT', canCreateMissions: true, canCreateEvents: true, partners: [{ id: RMR.id, title: RMR.title, shortTitle: 'RMR', canCreateMissions: true, canCreateEvents: false }] }, theme: { primary: '#336' }, dev: { noExternalNetwork: true, buildId: 'test' } },
 };
 
 export const ACTIVITY = 'a1';
