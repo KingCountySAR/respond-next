@@ -1,7 +1,7 @@
 /** The whole web app in jsdom, against the real activity actor over the simulated network. */
 import { configure, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryPersistence, SyncClient } from '@sync/client';
-import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type ActivityViewer, type BootstrapResponse } from '@sync/domain';
+import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type ActivityViewer, type BootstrapResponse, type WeatherReport } from '@sync/domain';
 import { Hub, MemoryStorage } from '@sync/server';
 import { MemoryLocationCatalog } from '../../server/src/locations';
 import { FixtureDirectory, fixtureMembers } from '../../server/src/members';
@@ -29,11 +29,18 @@ const directory = new FixtureDirectory({
 
 /** The saved-location catalog, fresh for each server: one saved location to start. */
 export const SAVED_TRAILHEAD = { id: 'loc-1', title: 'Mailbox Peak Trailhead', lat: 47.4672, lon: -121.6754, address: 'SE Middle Fork Rd', description: 'Upper lot fills by 8am.' };
+/** Every point's forecast. */
+export const WEATHER: WeatherReport = {
+  forecastUrl: 'https://forecast.weather.gov/MapClick.php?lat=47.4672&lon=-121.6754',
+  period: { name: 'This Afternoon', temperature: 41, temperatureUnit: 'F', humidity: 88, windSpeed: '5 mph', shortForecast: 'Light Rain', icon: null },
+};
+
 const apiFor = (locations: MemoryLocationCatalog): Api => ({
   searchMembers: async (unitId, query) => (await directory.search(unitId, query)) ?? [],
   searchLocations: (query) => locations.search(query),
   saveLocation: (location) => locations.put(location),
   removeLocation: (id) => locations.remove(id),
+  weather: async () => WEATHER,
 });
 
 /** The site is CRT, so people signing in respond under CRT. */

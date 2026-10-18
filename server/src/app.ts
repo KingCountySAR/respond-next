@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { createNodeWebSocket } from '@hono/node-ws';
 import { PROTOCOL } from '@sync/core';
-import { MEMBER_QUERY_MAX, MEMBER_QUERY_MIN, SavedLocation, TIERS, type ActivityViewer, type BootstrapResponse, type SiteConfig, type Tier } from '@sync/domain';
+import { MEMBER_QUERY_MAX, MEMBER_QUERY_MIN, SavedLocation, TIERS, isValidPoint, type ActivityViewer, type BootstrapResponse, type SiteConfig, type Tier } from '@sync/domain';
 import type { Hub } from '@sync/server';
 import type { LocationCatalog } from './locations';
 import type { MemberDirectory } from './members';
+import type { WeatherSource } from './weather';
 
 export interface SyncAppOptions {
   /** The site name and colours clients load first. */
@@ -13,6 +14,8 @@ export interface SyncAppOptions {
   members?: MemberDirectory;
   /** The saved-location catalog. */
   locations?: LocationCatalog;
+  /** The ops dashboard's forecasts. */
+  weather?: WeatherSource;
   /** Dev-only JSON view of an activity's server state. Leave unset in production. */
   debugActivity?(activityId: string, view: string): Promise<unknown>;
 }
@@ -101,6 +104,18 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
     app.delete('/api/v1/locations/:id', async (c) => {
       await locations.remove(c.req.param('id'));
       return c.json({ status: 'ok' });
+    });
+  }
+
+  // The legacy weather route, a proxy for NOAA's forecast.
+  const { weather } = options;
+  if (weather) {
+    app.get('/api/weather', async (c) => {
+      const lat = Number(c.req.query('lat'));
+      const lon = Number(c.req.query('lon'));
+      if (!isValidPoint(lat, lon)) return c.json({ error: 'Invalid coordinates.' }, 400);
+      const result = await weather.forecast(lat, lon);
+      return result.ok ? c.json(result.report) : c.json({ error: result.error }, 502);
     });
   }
 

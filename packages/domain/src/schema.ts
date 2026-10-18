@@ -160,8 +160,9 @@ export interface CommRec extends Rec {
   favorite: boolean;
   /** Soft delete: the entry stays in the log for the record. */
   removed: boolean;
-  /** Imported from the legacy app, including its stored automated messages. */
+  /** Imported from the legacy app. */
   legacy?: boolean;
+  /** One of the legacy app's automated messages; editing the entry makes it a person's. */
   automated?: boolean;
   at: number;
   by: string;

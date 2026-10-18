@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Rejection } from '@sync/core';
-import { useDialogs } from '../../shell/dialogs';
+import { useDialogs } from '../shell/dialogs';
 
 /**
  * Runs a change and shows the reason if it's refused. The client checks the same rules as the

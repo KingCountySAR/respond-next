@@ -12,6 +12,7 @@ export * from './statusSteps';
 export * from './site';
 export * from './members';
 export * from './locations';
+export * from './weather';
 export * from './summary';
 export * from './projector';
 export * from './mutations/activity';

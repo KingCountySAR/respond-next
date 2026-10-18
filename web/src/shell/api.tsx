@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import type { MemberInfo, SavedLocation } from '@sync/domain';
+import type { MemberInfo, SavedLocation, WeatherReport } from '@sync/domain';
 
 /** The HTTP API beside the sync connection. Tests swap it for an in-memory one. */
 export interface Api {
@@ -10,6 +10,8 @@ export interface Api {
   /** Adds or replaces a saved location. */
   saveLocation(location: SavedLocation): Promise<void>;
   removeLocation(id: string): Promise<void>;
+  /** NOAA's current forecast for a point; throws with the reason when there isn't one. */
+  weather(lat: number, lon: number): Promise<WeatherReport>;
 }
 
 async function call<T>(what: string, url: string, init?: RequestInit): Promise<T> {
@@ -36,6 +38,9 @@ export const fetchApi: Api = {
   },
   async removeLocation(id) {
     await call('remove location', `/api/v1/locations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+  weather(lat, lon) {
+    return call<WeatherReport>('weather', `/api/weather?lat=${lat}&lon=${lon}`);
   },
 };
 

@@ -15,7 +15,7 @@ import { ToolbarPage } from '../../shell/ToolbarPage';
 import { LocationAutocomplete } from '../../ui/locations/LocationAutocomplete';
 import { LocationEditDialog } from '../../ui/locations/LocationEditDialog';
 import { ActivityDraft, EARLY_SIGN_IN_WINDOWS } from './activityDraft';
-import { useChange } from './useChange';
+import { useChange } from '../../ui/useChange';
 
 export type ActivityType = 'missions' | 'events';
 

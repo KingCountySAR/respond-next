@@ -32,12 +32,12 @@ export class Comm extends RecordModel<CommRec, CommandKinds> {
     return this.record?.favorite ?? false;
   }
 
-  /** Imported from the legacy app's automated messages. */
+  /** One of the legacy app's automated messages (imported); none are logged here. */
   get automated(): boolean {
     return this.record?.automated ?? false;
   }
 
-  edit(fields: { from?: string; to?: string; message?: string }): WireMutation {
+  edit(fields: { from?: string; to?: string; message?: string; at?: number }): WireMutation {
     return this.activity.mutate('editComm', { id: this.id, ...fields });
   }
 

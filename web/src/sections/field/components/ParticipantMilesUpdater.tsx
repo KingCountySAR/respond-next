@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { FieldParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { ParticipantMilesInput } from '../../../ui/ParticipantMilesInput';
-import { useChange } from '../useChange';
+import { useChange } from '../../../ui/useChange';
 
 export const ParticipantMilesUpdater = observer(function ParticipantMilesUpdater({
   participant,

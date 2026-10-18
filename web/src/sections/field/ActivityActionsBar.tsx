@@ -4,8 +4,8 @@ import { Link, useLocation } from 'wouter';
 import type { FieldActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useDialogs } from '../../shell/dialogs';
-import { activityPath } from './paths';
-import { useChange } from './useChange';
+import { activityPath } from '../../ui/paths';
+import { useChange } from '../../ui/useChange';
 
 export const ActivityActionsBar = observer(function ActivityActionsBar({ activity }: { activity: FieldActivity }) {
   const [, navigate] = useLocation();

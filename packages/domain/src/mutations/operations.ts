@@ -347,17 +347,19 @@ export const addComm = defineMutation({
   },
 });
 
+/** Editing the text or time of an imported automated entry makes it a person's, as the legacy app did. */
 export const editComm = defineMutation({
   name: 'editComm',
   version: 1,
-  args: z.object({ id, from: z.string().trim().optional(), to: z.string().trim().optional(), message: z.string().trim().min(1).optional(), favorite: z.boolean().optional() }),
+  args: z.object({ id, from: z.string().trim().optional(), to: z.string().trim().optional(), message: z.string().trim().min(1).optional(), at: at.optional(), favorite: z.boolean().optional() }),
   allow: isCommand,
   describe: () => 'Edit a comms entry',
   run(tx, { id: commId, ...fields }) {
     requireOperations(tx);
     const comm = requireRec<CommRec>(tx, 'comm', commId);
     if (comm.removed) throw new Rejection('removed', 'That comms entry was deleted');
-    tx.update('comm', commId, fields);
+    const edited = (['from', 'to', 'message', 'at'] as const).some((k) => fields[k] !== undefined);
+    tx.update('comm', commId, edited && comm.automated ? { ...fields, automated: false } : fields);
   },
 });
 

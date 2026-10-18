@@ -7,7 +7,7 @@ import type { ParticipantStatusRec } from '@sync/domain';
 import { isCommandActivity, type FieldParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { statusText } from '../../../ui/status';
-import { useChange } from '../useChange';
+import { useChange } from '../../../ui/useChange';
 
 /** Status entries, oldest first. Command can correct an entry's time. */
 export const ParticipantTimeline = observer(function ParticipantTimeline({ participant }: { participant: FieldParticipant }) {

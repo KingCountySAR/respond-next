@@ -9,6 +9,7 @@ import { createSyncApp } from './app';
 import { SummaryWriter } from './summaries';
 import { MemoryLocationCatalog, PostgresLocationCatalog, type LocationCatalog } from './locations';
 import { devDirectory } from './members';
+import { NoaaWeather } from './weather';
 
 // 4000 is the one origin the browser sees (and the OAuth redirect target). In `npm run dev`
 // this server runs on 5174 behind Vite's proxy; the production bundle serves the UI itself.
@@ -94,6 +95,7 @@ const { app, injectWebSocket } = createSyncApp(hub, {
   site,
   members: devDirectory(site.organization.id),
   locations,
+  weather: new NoaaWeather(),
   debugActivity: production
     ? undefined
     : async (activityId, view) => {

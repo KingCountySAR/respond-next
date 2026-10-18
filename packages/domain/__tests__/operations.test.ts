@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { keyOf } from '@sync/core';
 import { currentTarget, groupTeams, statusOf, teamMembers, teamStatusOf, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec } from '@sync/domain';
 import { HOUR, T0, addMember, fieldMember, startedActivity, type TestActivity } from './helpers';
 
@@ -172,5 +173,15 @@ describe('places, equipment and comms', () => {
     expect(e.get<CommRec>('comm', 'c1')).toMatchObject({ favorite: true, removed: true });
     expect(e.rejects('editComm', { id: 'c1', message: 'x' })).toBe('removed');
     expect(e.rejects('addComm', { id: 'c2', from: '', to: '', message: 'hi', at: T0 }, fieldMember('kcsara:1'))).toBe('forbidden');
+  });
+
+  it("makes an edited automated comm a person's, but not when only favorited", () => {
+    const e = startedActivity();
+    // The legacy app's automated entries arrive by import, as records.
+    e.records.set(keyOf('comm', 'c1'), { type: 'comm', id: 'c1', version: 1, from: 'Team 1', to: 'Command Post', message: 'In Transit', favorite: false, removed: false, legacy: true, automated: true, at: T0, by: 'import' } as CommRec);
+    e.run('editComm', { id: 'c1', favorite: true });
+    expect(e.get<CommRec>('comm', 'c1')).toMatchObject({ favorite: true, automated: true });
+    e.run('editComm', { id: 'c1', at: T0 + 2 * HOUR });
+    expect(e.get<CommRec>('comm', 'c1')).toMatchObject({ at: T0 + 2 * HOUR, automated: false });
   });
 });

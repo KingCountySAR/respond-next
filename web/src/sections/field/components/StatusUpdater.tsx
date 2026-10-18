@@ -12,7 +12,7 @@ import { ParticipantMilesInput } from '../../../ui/ParticipantMilesInput';
 import { SplitButton } from '../../../ui/SplitButton';
 import { stepText } from '../../../ui/status';
 import { formatTime } from '../../../ui/timeFormat';
-import { useChange } from '../useChange';
+import { useChange } from '../../../ui/useChange';
 
 type SettableStatus = Exclude<ParticipantStatus, 'unknown'>;
 const stepId = (s: StatusStep) => `${s.status}:${s.switchingFrom ?? ''}`;
