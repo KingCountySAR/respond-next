@@ -7,6 +7,7 @@ import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type SiteConfig,
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 import { SummaryWriter } from './summaries';
+import { MemoryLocationCatalog, PostgresLocationCatalog, type LocationCatalog } from './locations';
 import { devDirectory } from './members';
 
 // 4000 is the one origin the browser sees (and the OAuth redirect target). In `npm run dev`
@@ -15,22 +16,31 @@ const port = Number(process.env.PORT ?? 4000);
 // The build bundles with NODE_ENV=production; under tsx it comes from the environment.
 const production = process.env.NODE_ENV === 'production';
 
-async function openStorage(): Promise<{ storage: ActivityStorage; label: string; close(): Promise<void> }> {
+async function openStorage(): Promise<{ storage: ActivityStorage; locations: LocationCatalog; label: string; close(): Promise<void> }> {
   const url = process.env.DATABASE_URL;
   if (!url) {
     if (production) console.warn('DATABASE_URL is not set: using in-memory storage; everything is lost on restart');
-    return { storage: new MemoryStorage(), label: 'memory', close: async () => {} };
+    return { storage: new MemoryStorage(), locations: new MemoryLocationCatalog(), label: 'memory', close: async () => {} };
   }
   try {
     const postgres = await PostgresStorage.connect(url);
-    return { storage: postgres, label: `postgres ${new URL(url).host}`, close: () => postgres.close() };
+    const locations = await PostgresLocationCatalog.connect(url);
+    return {
+      storage: postgres,
+      locations,
+      label: `postgres ${new URL(url).host}`,
+      close: async () => {
+        await postgres.close();
+        await locations.close();
+      },
+    };
   } catch (err) {
     console.error(`Cannot reach Postgres at ${new URL(url).host}. In development, start it with \`npm run db\`.`);
     throw err;
   }
 }
 
-const { storage, label: storageLabel, close: closeStorage } = await openStorage();
+const { storage, locations, label: storageLabel, close: closeStorage } = await openStorage();
 
 /** The built UI: UI_DIST if set, else `public/` next to the server bundle. */
 function uiDir(): string | undefined {
@@ -83,6 +93,7 @@ const site: SiteConfig = {
 const { app, injectWebSocket } = createSyncApp(hub, {
   site,
   members: devDirectory(site.organization.id),
+  locations,
   debugActivity: production
     ? undefined
     : async (activityId, view) => {

@@ -3,6 +3,7 @@ import { configure, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryPersistence, SyncClient } from '@sync/client';
 import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type ActivityViewer, type BootstrapResponse } from '@sync/domain';
 import { Hub, MemoryStorage } from '@sync/server';
+import { MemoryLocationCatalog } from '../../server/src/locations';
 import { FixtureDirectory, fixtureMembers } from '../../server/src/members';
 import { SummaryWriter } from '../../server/src/summaries';
 import type { Api } from '../src/shell/api';
@@ -25,7 +26,15 @@ const directory = new FixtureDirectory({
   [CRT.id]: [...fixtureMembers('kcsara', [['Avery', 'Lindqvist'], ['Kai', 'Lindqvist']]), { ...fixtureMembers('kcsara', [['Dana', 'Field']])[0]!, id: '7', personRef: 'kcsara:7' }],
   [RMR.id]: fixtureMembers('rmr', [['Rowan', 'Pike']]),
 });
-export const api: Api = { searchMembers: async (unitId, query) => (await directory.search(unitId, query)) ?? [] };
+
+/** The saved-location catalog, fresh for each server: one saved location to start. */
+export const SAVED_TRAILHEAD = { id: 'loc-1', title: 'Mailbox Peak Trailhead', lat: 47.4672, lon: -121.6754, address: 'SE Middle Fork Rd', description: 'Upper lot fills by 8am.' };
+const apiFor = (locations: MemoryLocationCatalog): Api => ({
+  searchMembers: async (unitId, query) => (await directory.search(unitId, query)) ?? [],
+  searchLocations: (query) => locations.search(query),
+  saveLocation: (location) => locations.put(location),
+  removeLocation: (id) => locations.remove(id),
+});
 
 /** The site is CRT, so people signing in respond under CRT. */
 export const site: BootstrapResponse = {
@@ -53,13 +62,15 @@ export async function serverWithActivity() {
   seed.mutate(ACTIVITY, 'createActivity', activityArgs({ startTime: Date.now() - 60 * 60 * 1000, description: 'Hiker overdue since 1800.', mapId: 'ABC12' }));
   seed.mutate(ACTIVITY, 'addParticipant', { personRef: 'kcsara:7', firstname: 'Dana', lastname: 'Field', unit: CRT, status: 'staging' });
 
+  const locations = new MemoryLocationCatalog([SAVED_TRAILHEAD]);
+  const api = apiFor(locations);
   let nextClient = 1;
   const renderApp = (path = '/') => {
     window.history.replaceState(null, '', path);
     const index = nextClient++;
     return render(<App bootstrap={async () => site} api={api} sync={{ transport: (s: Session) => net.transportFor(index, viewerOf(s) as ActivityViewer)(), persistence: () => new MemoryPersistence() }} />);
   };
-  return { net, seed, renderApp, stop: () => seed.stop() };
+  return { net, seed, locations, renderApp, stop: () => seed.stop() };
 }
 
 export async function signIn(name: string, personRef: string, tier: 'field' | 'command' = 'field') {

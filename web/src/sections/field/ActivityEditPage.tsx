@@ -5,16 +5,16 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation } from 'wouter';
 import { randomId } from '@sync/core';
-import { DEFAULT_EARLY_SIGN_IN_WINDOW } from '@sync/domain';
+import { DEFAULT_EARLY_SIGN_IN_WINDOW, fromSaved } from '@sync/domain';
 import type { FieldActivity } from '@sync/model';
 import { observer, useFieldActivity } from '@sync/model/react';
 import { useSite } from '../../shell/App';
 import { useDialogs } from '../../shell/dialogs';
 import { useSyncClient } from '../../shell/sync';
 import { ToolbarPage } from '../../shell/ToolbarPage';
+import { LocationAutocomplete } from '../../ui/locations/LocationAutocomplete';
+import { LocationEditDialog } from '../../ui/locations/LocationEditDialog';
 import { ActivityDraft, EARLY_SIGN_IN_WINDOWS } from './activityDraft';
-import { LocationAutocomplete } from './components/LocationAutocomplete';
-import { LocationEditDialog } from './components/LocationEditDialog';
 import { useChange } from './useChange';
 
 export type ActivityType = 'missions' | 'events';
@@ -92,7 +92,7 @@ const ActivityEditForm = observer(function ActivityEditForm({ activityType, acti
             <Grid size={12}>
               <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                 <FormControl fullWidth error={!!errors.location}>
-                  <LocationAutocomplete value={draft.location} onChange={(l) => draft.set('location', l)} variant="outlined" required />
+                  <LocationAutocomplete value={draft.location} onChange={(l) => draft.set('location', l ? fromSaved(l) : null)} variant="outlined" required />
                   <FormHelperText>{errors.location}</FormHelperText>
                 </FormControl>
                 <Box sx={{ paddingRight: 2 }}>

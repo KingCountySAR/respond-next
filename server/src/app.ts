@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { createNodeWebSocket } from '@hono/node-ws';
 import { PROTOCOL } from '@sync/core';
-import { MEMBER_QUERY_MAX, MEMBER_QUERY_MIN, TIERS, type ActivityViewer, type BootstrapResponse, type SiteConfig, type Tier } from '@sync/domain';
+import { MEMBER_QUERY_MAX, MEMBER_QUERY_MIN, SavedLocation, TIERS, type ActivityViewer, type BootstrapResponse, type SiteConfig, type Tier } from '@sync/domain';
 import type { Hub } from '@sync/server';
+import type { LocationCatalog } from './locations';
 import type { MemberDirectory } from './members';
 
 export interface SyncAppOptions {
@@ -10,6 +11,8 @@ export interface SyncAppOptions {
   site: SiteConfig;
   /** Member search and photos, for adding someone else to an activity. */
   members?: MemberDirectory;
+  /** The saved-location catalog. */
+  locations?: LocationCatalog;
   /** Dev-only JSON view of an activity's server state. Leave unset in production. */
   debugActivity?(activityId: string, view: string): Promise<unknown>;
 }
@@ -79,6 +82,25 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
       const photo = await members.photo(c.req.param('orgId'), c.req.param('memberId'));
       if (!photo) return c.json({ status: 'not found' }, 404);
       return c.body(new Uint8Array(photo).buffer as ArrayBuffer, 200, { 'content-type': 'image/jpeg' });
+    });
+  }
+
+  // The legacy saved-location routes; like the member routes, no session check until phase 2.
+  const { locations } = options;
+  if (locations) {
+    app.get('/api/v1/locations', async (c) => c.json({ status: 'ok', data: await locations.search(c.req.query('query') ?? '') }));
+    app.put('/api/v1/locations', async (c) => {
+      const parsed = SavedLocation.safeParse(await c.req.json().catch(() => undefined));
+      if (!parsed.success) {
+        const issue = parsed.error.issues[0];
+        return c.json({ error: issue ? `${issue.path.join('.') || 'location'}: ${issue.message}` : 'Invalid location' }, 400);
+      }
+      await locations.put(parsed.data);
+      return c.json({ status: 'ok' });
+    });
+    app.delete('/api/v1/locations/:id', async (c) => {
+      await locations.remove(c.req.param('id'));
+      return c.json({ status: 'ok' });
     });
   }
 

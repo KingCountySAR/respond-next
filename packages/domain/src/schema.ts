@@ -34,6 +34,8 @@ export const Location = z.object({
   lat: z.number().nullable(),
   lon: z.number().nullable(),
   address: z.string().nullable(),
+  /** The saved location (`GET /api/v1/locations`) it was picked from, if any. */
+  savedId: z.string().nullable().optional(),
 });
 export type Location = z.infer<typeof Location>;
 
