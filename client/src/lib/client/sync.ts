@@ -169,6 +169,7 @@ export class ClientSync {
   // the read model (activities scoped to this user).
   handleSnapshot(payload: { activities: ActivityState }) {
     this.dispatch(activitiesReloaded(payload.activities));
+    this.dispatch(SyncActions.snapshotReceived());
   }
 
   emitCommand(command: Command) {

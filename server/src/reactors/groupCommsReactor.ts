@@ -4,8 +4,8 @@ import { DEFAULT_PLACES } from '@shared/types/operations';
 
 import { Reactor, ReactorContext } from './reactor';
 
-function establishedEntry(groupName: string): LogCommInput {
-  return { from: groupName, to: DEFAULT_PLACES.base, message: `${groupName} established`, isAutomated: true };
+function establishedEntry(groupName: string, assignee: string): LogCommInput {
+  return { from: groupName, to: DEFAULT_PLACES.base, message: `${groupName} established; ${assignee} is assuming ${groupName}`, isAutomated: true };
 }
 
 function terminatedEntry(groupName: string): LogCommInput {
@@ -29,7 +29,12 @@ export const groupCommsReactor: Reactor = {
 
   react(event, ctx: ReactorContext) {
     if (GroupEvents.GroupCreated.match(event)) {
-      return [CommsCommands.LogComm(event.payload.activityId, establishedEntry(event.payload.group.name))];
+      const { activityId, group } = event.payload;
+      // A group is only "established" in the log once it has a leader.
+      if (!group.leaderId) return [];
+      const leader = ctx.currentActivities[activityId]?.participants[group.leaderId];
+      if (!leader) return [];
+      return [CommsCommands.LogComm(activityId, establishedEntry(group.name, `${leader.firstname} ${leader.lastname}`))];
     }
 
     if (GroupEvents.GroupUpdated.match(event)) {
@@ -45,7 +50,9 @@ export const groupCommsReactor: Reactor = {
       if (prior.leaderId !== leaderId) {
         if (!leaderId) return [CommsCommands.LogComm(event.payload.activityId, unassignedEntry(event.payload.group.name))];
         const participant = activity.participants[leaderId];
-        return [CommsCommands.LogComm(event.payload.activityId, assignedEntry(name, `${participant.firstname} ${participant.lastname}`))];
+        const assignee = `${participant.firstname} ${participant.lastname}`;
+        const entry = prior.leaderId ? assignedEntry(name, assignee) : establishedEntry(name, assignee);
+        return [CommsCommands.LogComm(event.payload.activityId, entry)];
       }
     }
 

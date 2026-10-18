@@ -34,6 +34,8 @@ export interface Group {
   assignedTeams: string[];
   assignedParticipants: string[];
   assignedEquipment: EquipmentItem[];
+  // Set on the dashboard's auto-created group so concurrent creates are deduped by name.
+  isDefault?: boolean;
 }
 
 export interface EquipmentItem {
@@ -74,6 +76,8 @@ export function createNewTeam(name: string): Team {
     assignedEquipment: [],
   };
 }
+
+export const DEFAULT_GROUP_NAME = 'Rescue Group';
 
 export function createNewGroup(name: string): Group {
   return {

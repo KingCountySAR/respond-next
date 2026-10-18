@@ -5,13 +5,15 @@ import EditIcon from '@mui/icons-material/Edit';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { Button, IconButton, Typography } from '@mui/material';
 import { Box, Stack } from '@mui/system';
+import { useEffect, useRef } from 'react';
 
 import { useActivityContext } from '@respond/components/activities/ActivityProvider';
 import { useDialogs } from '@respond/components/DialogProvider';
 import { Draggable, Droppable } from '@respond/components/DragAndDrop/DnDComponents';
 import { useGroupCommands, useResourceCommands } from '@respond/hooks/commands';
+import { useAppSelector } from '@respond/lib/client/store';
 import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
-import { createNewGroup, EquipmentItem, Group, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
+import { createNewGroup, DEFAULT_GROUP_NAME, EquipmentItem, Group, sortEquipmentAlphabetically } from '@respond/shared/types/operations';
 
 import { DashboardBoxWithTitle } from './DashboardBoxWithTitle';
 import { DashboardDividedSection } from './DashboardDividedSection';
@@ -44,9 +46,25 @@ export function DashboardAddGroupButton() {
 
 export function DashboardGroupManager() {
   const activity = useActivityContext();
+  const groupCommands = useGroupCommands(activity.id);
+  const ensuredActivityId = useRef<string | null>(null);
+  // The localStorage cache can still contain a deleted group, so only check against the server's state.
+  const snapshotReceived = useAppSelector((state) => state.sync.snapshotReceived);
 
   // nullish coalese for backward compatibility on inital render
   const activityGroups = activity.groups ?? [];
+
+  useEffect(() => {
+    if (!snapshotReceived) return;
+    // Guard so re-renders before the new group round-trips don't create duplicates.
+    if (ensuredActivityId.current === activity.id) return;
+    ensuredActivityId.current = activity.id;
+    if (!(activity.groups ?? []).some((group) => group.name === DEFAULT_GROUP_NAME)) {
+      groupCommands.createGroup({ ...createNewGroup(DEFAULT_GROUP_NAME), isDefault: true });
+    }
+  }, [snapshotReceived, activity.id, activity.groups, groupCommands]);
+
+  if (activityGroups.length === 0) return null;
 
   return (
     <Stack spacing={1}>

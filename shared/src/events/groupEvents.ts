@@ -16,6 +16,7 @@ export const GroupEvents = {
     (state: Draft<ActivityState>, { activityId, group }: GroupPayload) => {
       const activity = state.list.find((a) => a.id === activityId);
       if (!activity) return;
+      if (group.isDefault && (activity.groups ?? []).some((g) => g.name === group.name)) return;
       activity.groups = [...(activity.groups ?? []), group];
     },
   ),
