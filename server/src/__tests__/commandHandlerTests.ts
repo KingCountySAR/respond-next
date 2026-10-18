@@ -70,7 +70,7 @@ describe('produceEvents', () => {
   describe('timeline audit stamp', () => {
     const entry = { time: 1, status: ParticipantStatus.Available, organizationId: '1' };
 
-    it('stamps the editing user\'s participant id and time on add and edit', () => {
+    it("stamps the editing user's participant id and time on add and edit", () => {
       const author = userAuthor('org:p9', 'Pat Nine');
       const [added] = produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', entry), { author });
       const [edited] = produceEvents(ParticipantCommands.UpdateParticipantTimeline(activityId, 'p1', { ...entry, id: 'e1' }), { author });
