@@ -52,10 +52,10 @@ function DashboardContent() {
     document.title = `${activity.idNumber} ${activity.title} - Dashboard`;
   }, [activity.idNumber, activity.title]);
 
-  // Mobile View: narrower than 1280px
-  const isSmallScreen = useMediaQuery('(max-width:1279.95px)');
-  // Tablet View: 1280px up to (but narrower than) 1920px; Team Manager and Communications are tabbed
-  const isTablet = useMediaQuery('(min-width:1280px) and (max-width:1919.95px)');
+  // Mobile View: narrower than 1024px (iPad Mini in Ladscape)
+  const isSmallScreen = useMediaQuery('(max-width:1023.95px)');
+  // Tablet View: 1024px up to (but narrower than) 1920px; Team Manager and Communications are tabbed
+  const isTablet = useMediaQuery('(min-width:1024px) and (max-width:1919.95px)');
 
   if (!activity) {
     return (
