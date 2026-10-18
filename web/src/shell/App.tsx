@@ -10,6 +10,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { BootstrapResponse, SiteConfig } from '@sync/domain';
 import type { UnitRef } from '@sync/model';
+import { ApiProvider, fetchApi, type Api } from './api';
 import { AuthProvider, useAuth } from './auth';
 import { DialogProvider } from './dialogs';
 import { LoginPanel } from './LoginPanel';
@@ -46,9 +47,11 @@ export interface AppProps {
   /** For tests: where the site config comes from, and how the SyncClient connects. */
   bootstrap?: () => Promise<BootstrapResponse>;
   sync?: SyncOptions;
+  /** For tests: the HTTP API (member search). */
+  api?: Api;
 }
 
-export function App({ bootstrap = fetchBootstrap, sync }: AppProps) {
+export function App({ bootstrap = fetchBootstrap, sync, api = fetchApi }: AppProps) {
   const [boot, setBoot] = useState<BootstrapResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,19 +72,21 @@ export function App({ bootstrap = fetchBootstrap, sync }: AppProps) {
 
   return (
     <SiteContext.Provider value={boot.config}>
-      <Themed theme={boot.config.theme}>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <PreferencesProvider>
-            <AuthProvider>
-              <MainGate sync={sync}>
-                <DialogProvider>
-                  <AppRoutes />
-                </DialogProvider>
-              </MainGate>
-            </AuthProvider>
-          </PreferencesProvider>
-        </LocalizationProvider>
-      </Themed>
+      <ApiProvider api={api}>
+        <Themed theme={boot.config.theme}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <PreferencesProvider>
+              <AuthProvider>
+                <MainGate sync={sync}>
+                  <DialogProvider>
+                    <AppRoutes />
+                  </DialogProvider>
+                </MainGate>
+              </AuthProvider>
+            </PreferencesProvider>
+          </LocalizationProvider>
+        </Themed>
+      </ApiProvider>
     </SiteContext.Provider>
   );
 }

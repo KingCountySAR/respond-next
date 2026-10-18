@@ -7,6 +7,7 @@ import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type SiteConfig,
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 import { SummaryWriter } from './summaries';
+import { devDirectory } from './members';
 
 // 4000 is the one origin the browser sees (and the OAuth redirect target). In `npm run dev`
 // this server runs on 5174 behind Vite's proxy; the production bundle serves the UI itself.
@@ -81,6 +82,7 @@ const site: SiteConfig = {
 
 const { app, injectWebSocket } = createSyncApp(hub, {
   site,
+  members: devDirectory(site.organization.id),
   debugActivity: production
     ? undefined
     : async (activityId, view) => {

@@ -8,6 +8,7 @@ import { useDialogs } from '../../shell/dialogs';
 import { ToolbarPage } from '../../shell/ToolbarPage';
 import { statusText } from '../../ui/status';
 import { ActivityActionsBar } from './ActivityActionsBar';
+import { AddParticipantButton } from './components/AddParticipantButton';
 import { BriefingPanel } from './components/BriefingPanel';
 import { ManagerPanel } from './components/ManagerPanel';
 import { ParticipantEtaUpdater } from './components/ParticipantEtaUpdater';
@@ -32,6 +33,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ activ
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <UnitChips activity={activity} filter={roster.filter} setFilter={roster.setFilter} sx={{ display: 'flex', flexDirection: 'row' }} />
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <AddParticipantButton activity={activity} />
               <Button component={Link} href={`~/reports/roster/${activity.activityId}`} variant="outlined" size="small">
                 View Roster
               </Button>

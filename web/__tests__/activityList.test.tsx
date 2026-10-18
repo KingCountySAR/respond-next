@@ -1,10 +1,15 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import { activityArgs } from '../../packages/domain/__tests__/helpers';
 import { ACTIVITY, TITLE, serverWithActivity, signIn } from './app';
 
 let server: Awaited<ReturnType<typeof serverWithActivity>>;
+
+// The reports section (with the data grid) loads lazily; loading it here keeps that out of the first test's waits.
+beforeAll(async () => {
+  await import('../src/sections/reports');
+});
 
 beforeEach(async () => {
   server = await serverWithActivity();

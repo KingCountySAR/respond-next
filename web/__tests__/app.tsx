@@ -3,7 +3,9 @@ import { configure, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryPersistence, SyncClient } from '@sync/client';
 import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, type ActivityViewer, type BootstrapResponse } from '@sync/domain';
 import { Hub, MemoryStorage } from '@sync/server';
+import { FixtureDirectory, fixtureMembers } from '../../server/src/members';
 import { SummaryWriter } from '../../server/src/summaries';
+import type { Api } from '../src/shell/api';
 import { App } from '../src/shell/App';
 import { viewerOf, type Session } from '../src/shell/auth';
 import { COMMAND, CRT, RMR, activityArgs } from '../../packages/domain/__tests__/helpers';
@@ -14,6 +16,16 @@ export { CRT, RMR };
 // The whole app renders over a network with latency while other test files share the CPU: the
 // default 1 s wait for findBy* is too tight.
 configure({ asyncUtilTimeout: 5000 });
+
+/**
+ * The member directory: CRT's members are Avery and Kai Lindqvist (kcsara:1, kcsara:2) and Dana Field
+ * (kcsara:7, on the activity already); RMR's is Rowan Pike (rmr:1).
+ */
+const directory = new FixtureDirectory({
+  [CRT.id]: [...fixtureMembers('kcsara', [['Avery', 'Lindqvist'], ['Kai', 'Lindqvist']]), { ...fixtureMembers('kcsara', [['Dana', 'Field']])[0]!, id: '7', personRef: 'kcsara:7' }],
+  [RMR.id]: fixtureMembers('rmr', [['Rowan', 'Pike']]),
+});
+export const api: Api = { searchMembers: async (unitId, query) => (await directory.search(unitId, query)) ?? [] };
 
 /** The site is CRT, so people signing in respond under CRT. */
 export const site: BootstrapResponse = {
@@ -45,7 +57,7 @@ export async function serverWithActivity() {
   const renderApp = (path = '/') => {
     window.history.replaceState(null, '', path);
     const index = nextClient++;
-    return render(<App bootstrap={async () => site} sync={{ transport: (s: Session) => net.transportFor(index, viewerOf(s) as ActivityViewer)(), persistence: () => new MemoryPersistence() }} />);
+    return render(<App bootstrap={async () => site} api={api} sync={{ transport: (s: Session) => net.transportFor(index, viewerOf(s) as ActivityViewer)(), persistence: () => new MemoryPersistence() }} />);
   };
   return { net, seed, renderApp, stop: () => seed.stop() };
 }

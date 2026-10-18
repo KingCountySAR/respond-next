@@ -10,6 +10,7 @@ export * from './viewer';
 export * from './queries';
 export * from './statusSteps';
 export * from './site';
+export * from './members';
 export * from './summary';
 export * from './projector';
 export * from './mutations/activity';

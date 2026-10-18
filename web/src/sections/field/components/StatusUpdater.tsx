@@ -6,7 +6,7 @@ import { statusStepsUnder, type ParticipantStatus, type StatusStep } from '@sync
 import type { FieldActivity, UnitRef } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useHomeUnit } from '../../../shell/App';
-import { personName, useAuth, type Session } from '../../../shell/auth';
+import { personName, useAuth } from '../../../shell/auth';
 import { usePreferences } from '../../../shell/preferences';
 import { ParticipantMilesInput } from '../../../ui/ParticipantMilesInput';
 import { SplitButton } from '../../../ui/SplitButton';
@@ -17,14 +17,26 @@ import { useChange } from '../useChange';
 type SettableStatus = Exclude<ParticipantStatus, 'unknown'>;
 const stepId = (s: StatusStep) => `${s.status}:${s.switchingFrom ?? ''}`;
 
-/** The signed-in person's status button, under their own unit. */
-export const StatusUpdater = observer(function StatusUpdater({ activity, fullWidth }: { activity: FieldActivity; fullWidth?: boolean }) {
-  const { session } = useAuth();
-  const unit = useHomeUnit();
-  const [confirming, setConfirming] = useState<StatusStep | null>(null);
-  if (!session?.personRef || !activity.record) return null;
+/** Who a status button is for: their person ref, and their name should they need adding. */
+export interface StatusPerson {
+  personRef: string;
+  firstname: string;
+  lastname: string;
+}
 
-  const me = activity.me;
+/**
+ * A status button: the signed-in person's under their own unit, or, as Add Responder uses it,
+ * someone else's (`person`) under the unit they're responding with (`unit`).
+ */
+export const StatusUpdater = observer(function StatusUpdater({ activity, fullWidth, person: given, unit: givenUnit }: { activity: FieldActivity; fullWidth?: boolean; person?: StatusPerson; unit?: UnitRef }) {
+  const { session } = useAuth();
+  const homeUnit = useHomeUnit();
+  const unit = givenUnit ?? homeUnit;
+  const [confirming, setConfirming] = useState<StatusStep | null>(null);
+  const person = given ?? (session?.personRef ? { personRef: session.personRef, ...personName(session) } : undefined);
+  if (!person || !activity.record) return null;
+
+  const me = activity.participantByRef(person.personRef);
   const steps = me ? me.statusStepsUnder(unit.id) : statusStepsUnder(activity.record, undefined, unit.id, activity.clock.now());
   if (!steps.length) return null;
   const from = me?.status ?? 'unknown';
@@ -36,7 +48,7 @@ export const StatusUpdater = observer(function StatusUpdater({ activity, fullWid
       <SplitButton options={options} selected={options[0]!.id} fullWidth={fullWidth} onClick={(id) => setConfirming(steps.find((s) => stepId(s) === id) ?? null)} />
       <Dialog open={!!confirming} onClose={() => setConfirming(null)} aria-labelledby="status-update-dialog-title" aria-describedby="status-update-dialog-description">
         {/* Mounted only while open, so the form starts fresh each time. */}
-        {confirming && <UpdateStatusForm activity={activity} session={session} unit={unit} step={confirming} label={stepText(from, confirming, unitName)} onClose={() => setConfirming(null)} />}
+        {confirming && <UpdateStatusForm activity={activity} person={person} unit={unit} step={confirming} label={stepText(from, confirming, unitName)} onClose={() => setConfirming(null)} />}
       </Dialog>
     </>
   );
@@ -49,21 +61,21 @@ interface FormError {
 
 const UpdateStatusForm = observer(function UpdateStatusForm({
   activity,
-  session,
+  person,
   unit,
   step,
   label,
   onClose,
 }: {
   activity: FieldActivity;
-  session: Session;
+  person: StatusPerson;
   unit: UnitRef;
   step: StatusStep;
   label: string;
   onClose: () => void;
 }) {
   const change = useChange();
-  const me = activity.me;
+  const me = activity.participantByRef(person.personRef);
   const status = step.status as SettableStatus;
   const currentMiles = me?.record?.miles ?? 0;
   const [statusTime, setStatusTime] = useState<number>(() => activity.clock.now());
@@ -92,7 +104,7 @@ const UpdateStatusForm = observer(function UpdateStatusForm({
     if (timeError || milesError) return;
     const done = change(() => {
       const at = statusTime;
-      const p = me ?? activity.addParticipant({ personRef: session.personRef, ...personName(session) }, unit, status, { at });
+      const p = me ?? activity.addParticipant(person, unit, status, { at });
       if (me) p.setStatus(status, { at, unit });
       if (showMiles && miles !== '' && miles !== currentMiles) p.setMiles(miles);
       if (showEta && eta !== (p.record?.eta ?? undefined)) p.setEta(eta ?? null);

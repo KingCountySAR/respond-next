@@ -145,7 +145,11 @@ export class FieldActivity<K extends Kinds = Kinds> {
   /** The viewer's own entry, once they've signed in. */
   get me(): K['participant'] | undefined {
     const personRef = asActivityViewer(this.client.viewer).personRef;
-    if (!personRef) return undefined;
+    return personRef ? this.participantByRef(personRef) : undefined;
+  }
+
+  /** Whoever takes part as this person, e.g. a member found in the directory. */
+  participantByRef(personRef: string): K['participant'] | undefined {
     return this.participant(participantIdFor(personRef)) ?? this.participant(findParticipantByPersonRef(this.store, personRef)?.id ?? '');
   }
 
