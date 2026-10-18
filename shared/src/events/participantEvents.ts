@@ -1,7 +1,7 @@
 import type { Draft } from '@reduxjs/toolkit';
 
 import type { ActivityState } from '..';
-import { ParticipantStatus, ParticipantUpdate } from '../types/activity';
+import { ParticipantStatus, ParticipantUpdate, SYSTEM_USER_ID } from '../types/activity';
 
 import { defineEvent } from './defineEvent';
 
@@ -13,7 +13,13 @@ export type StatusUpdate = { id?: string; time: number; status: ParticipantStatu
 export type ParticipantUpdatedPayload = { activityId: string; participant: ParticipantIdentity; update: StatusUpdate };
 export type ParticipantTimelinePayload = { activityId: string; participantId: string; update: ParticipantUpdate };
 
-function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: string, participantId: string, time: number) {
+// Audit stamp for timeline entries the reducers add automatically: attributed to the user who triggered
+// the change (when known) with a name of "System: <reason>".
+export function systemAudit(reason: string, time: number, by?: { id: string }) {
+  return { lastUpdatedBy: { id: by?.id ?? SYSTEM_USER_ID, name: `System: ${reason}` }, lastUpdatedTime: time };
+}
+
+function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: string, participantId: string, time: number, by?: { id: string }) {
   state.list
     .filter((f) => f.id !== activityId && f.participants[participantId])
     .forEach((otherActivity) => {
@@ -23,6 +29,7 @@ function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: str
           time,
           status: ParticipantStatus.SignedOut,
           organizationId: timeline[0].organizationId,
+          ...systemAudit('Signed In To Another Activity', time, by),
         });
       }
     });
@@ -47,6 +54,7 @@ export function participantUpdate(state: Draft<ActivityState>, { payload }: { pa
         organizationId: lastUpdate.organizationId,
         time: update.time,
         status: ParticipantStatus.SignedOut,
+        ...systemAudit('Organization Changed', update.time, update.lastUpdatedBy),
       };
       if (update.status === ParticipantStatus.SignedOut) {
         // If they are logging out, log them out of the previous org, then exit.
@@ -75,7 +83,7 @@ export function participantUpdate(state: Draft<ActivityState>, { payload }: { pa
 
   // If this is a sign-in and the user is already signed into another activity, sign them out of the other activity.
   if (update.status !== ParticipantStatus.SignedIn) {
-    signOutFromOtherActivities(state, activityId, participant.id, update.time);
+    signOutFromOtherActivities(state, activityId, participant.id, update.time, update.lastUpdatedBy);
   }
 }
 
@@ -99,7 +107,7 @@ export const ParticipantEvents = {
 
       // If this is a sign-in and the user is already signed into another activity, sign them out of the other activity.
       if (update.status === ParticipantStatus.SignedIn) {
-        signOutFromOtherActivities(state, activityId, participantId, update.time);
+        signOutFromOtherActivities(state, activityId, participantId, update.time, update.lastUpdatedBy);
       }
     },
   ),

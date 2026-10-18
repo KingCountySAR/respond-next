@@ -6,7 +6,7 @@ import { Activity, createNewActivity, OrganizationStatus, ParticipantStatus, pic
 import { Operations } from '../types/operations';
 
 import { defineEvent } from './defineEvent';
-import { participantUpdate } from './participantEvents';
+import { participantUpdate, systemAudit } from './participantEvents';
 
 // Activity summary + lifecycle facts.
 
@@ -37,7 +37,7 @@ export const ActivityEvents = {
   ActivityCompleted: defineEvent(
     //
     'evt/activity/completed',
-    (state: Draft<ActivityState>, { activityId, endTime }: { activityId: string; endTime: number }) => {
+    (state: Draft<ActivityState>, { activityId, endTime, completedBy }: { activityId: string; endTime: number; completedBy?: { id: string; name: string } }) => {
       const activity = state.list.find((f) => f.id === activityId);
       if (!activity) return;
       activity.endTime = endTime;
@@ -55,7 +55,7 @@ export const ActivityEvents = {
               miles: participant.miles,
               eta: participant.eta,
             },
-            update: { time: endTime, status: ParticipantStatus.SignedOut },
+            update: { time: endTime, status: ParticipantStatus.SignedOut, ...systemAudit('Activity Closed', endTime, completedBy) },
           },
         });
       }

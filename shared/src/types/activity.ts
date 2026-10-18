@@ -111,6 +111,9 @@ export enum OrganizationStatus {
   Cleared = 5,
 }
 
+// `lastUpdatedBy.id` for timeline entries added automatically by the system.
+export const SYSTEM_USER_ID = 'System';
+
 export interface ParticipantUpdate {
   // Server-generated, stable per timeline entry (absent on legacy entries, which
   // are therefore read-only). Used to target an entry for edits without a

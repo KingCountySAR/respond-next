@@ -30,7 +30,10 @@ const participantCommandHandlers = [
   defineCommandHandler(ParticipantCommands.UpdateParticipantTimeline, (payload, services) => [ParticipantEvents.ParticipantTimelineUpdated({ ...payload, update: { ...payload.update, ...auditStamp(services) } })]),
 ];
 
-const activityCommandHandlers = [defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })])];
+const activityCommandHandlers = [
+  defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })]),
+  defineCommandHandler(ActivityCommands.CompleteActivity, (payload, services) => [ActivityEvents.ActivityCompleted({ ...payload, completedBy: auditStamp(services).lastUpdatedBy })]),
+];
 
 // Only domains with at least one non-forwarding command appear here — Place,
 // Team, Group, and Resource all declare their target event directly on the
