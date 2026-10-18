@@ -1,11 +1,12 @@
 import { v4 as uuid } from 'uuid';
 
-import { ActivityCommands, CommsCommands, ParticipantCommands } from '@shared/commands';
-import { ActivityEvents, CommsEvents, DomainEvent, ParticipantEvents } from '@shared/events';
-import { createDefaultOperations, createNewCommsEntry } from '@shared/types/operations';
+import { ActivityCommands, CommsCommands, ParticipantCommands, TeamCommands } from '@shared/commands';
+import { ActivityEvents, CommsEvents, DomainEvent, ParticipantEvents, TeamEvents } from '@shared/events';
+import type { Activity } from '@shared/types/activity';
+import { createDefaultOperations, createNewCommsEntry, createNewTeam, getNextTeamNumber } from '@shared/types/operations';
 
-/** Placeholder for future server-only dependencies (DB, external services) a handler may need. Empty today. */
-export type CommandServices = Record<string, never>;
+/** Server-only dependencies a handler may need. */
+export type CommandServices = { activities?: Activity[] };
 
 export type CommandHandler<P> = (payload: P, services: CommandServices) => DomainEvent[];
 
@@ -24,7 +25,15 @@ const participantCommandHandlers = [
 
 const activityCommandHandlers = [defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })])];
 
+const teamCommandHandlers = [
+  defineCommandHandler(TeamCommands.CreateTeam, (payload, services) => {
+    const activity = services.activities?.find((a) => a.id === payload.activityId);
+    if (!activity) return [];
+    return [TeamEvents.TeamCreated({ activityId: payload.activityId, team: createNewTeam(`Team ${getNextTeamNumber(activity.teams)}`) })];
+  }),
+];
+
 // Only domains with at least one non-forwarding command appear here — Place,
 // Team, Group, and Resource all declare their target event directly on the
 // command (see shared/src/commands/*.ts) and need no explicit handler.
-export const explicitCommandHandlers: Record<string, CommandHandler<never>> = Object.fromEntries([...commsCommandHandlers, ...participantCommandHandlers, ...activityCommandHandlers]);
+export const explicitCommandHandlers: Record<string, CommandHandler<never>> = Object.fromEntries([...commsCommandHandlers, ...participantCommandHandlers, ...activityCommandHandlers, ...teamCommandHandlers]);

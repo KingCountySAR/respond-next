@@ -75,6 +75,18 @@ export function createNewTeam(name: string): Team {
   };
 }
 
+// Smallest positive number not appearing as any numeric value in an existing team name (e.g. "Dog 13" reserves 13).
+export function getNextTeamNumber(teams: Team[] = []): number {
+  const used = new Set<number>();
+  for (const team of teams) {
+    for (const match of team.name.matchAll(/\d+/g)) used.add(Number(match[0]));
+  }
+
+  let next = 1;
+  while (used.has(next)) next += 1;
+  return next;
+}
+
 export function createNewGroup(name: string): Group {
   return {
     id: uuid(),

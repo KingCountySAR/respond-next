@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { ActivityCommands, Command, ParticipantCommands, PlaceCommands, ResourceCommands, StampedCommand, TeamCommands } from '@shared/commands';
 import { CommsEvents, ParticipantEvents, PlaceEvents, ResourceEvents, StampedEvent, TeamEvents, userAuthor } from '@shared/events';
 import { OrganizationStatus, ParticipantStatus } from '@shared/types/activity';
-import { createNewPlace, createNewTeam } from '@shared/types/operations';
+import { createNewPlace } from '@shared/types/operations';
 
 import { EventDoc } from '@server/data/eventDoc';
 
@@ -27,6 +27,13 @@ function c(command: Command): StampedCommand {
 
 async function createActivity(sm: InstanceType<StateManagerCtor>, id: string): Promise<void> {
   await sm.handleCommand(c(ActivityCommands.UpdateActivity({ id, title: 'Test Activity' })), userAuthor('u1'));
+}
+
+/** Creates a server-named team and returns it from state (ids are server-minted). */
+async function createTeam(sm: InstanceType<StateManagerCtor>, activityId: string) {
+  await sm.handleCommand(c(TeamCommands.CreateTeam(activityId)), userAuthor('u1'));
+  const activity = (await sm.getAllActivities()).find((a) => a.id === activityId);
+  return activity!.teams[activity!.teams.length - 1];
 }
 
 function collect(sm: InstanceType<StateManagerCtor>): StampedEvent[] {
@@ -166,14 +173,24 @@ describe('StateManager.handleCommand', () => {
     expect(tagged?.meta.cause).toEqual(updated?.id);
   });
 
+  it('gives concurrent CreateTeam commands distinct team numbers', async () => {
+    const sm = new StateManager([]);
+    await createActivity(sm, 'act-race');
+    collect(sm);
+
+    await Promise.all([1, 2, 3].map(() => sm.handleCommand(c(TeamCommands.CreateTeam('act-race')), userAuthor('u1'))));
+
+    const activity = (await sm.getAllActivities()).find((a) => a.id === 'act-race');
+    expect(activity?.teams.map((t) => t.name).sort()).toEqual(['Team 1', 'Team 2', 'Team 3']);
+  });
+
   it('assigns a member to a team and flips them to Assigned in one broadcast', async () => {
     const sm = new StateManager([participantAssignmentReactor]);
     await createActivity(sm, 'act-assign');
     const batches = collectBatches(sm);
 
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-assign', createNewPlace('CP'))), userAuthor('u1'));
-    const team = createNewTeam('Alpha');
-    await sm.handleCommand(c(TeamCommands.CreateTeam('act-assign', team)), userAuthor('u1'));
+    const team = await createTeam(sm, 'act-assign');
     // The responder arrives at base (Available) before being put on the team.
     await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-assign', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
 
@@ -196,8 +213,7 @@ describe('StateManager.handleCommand', () => {
 
     const cp = createNewPlace('CP');
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-disband', cp)), userAuthor('u1'));
-    const team = createNewTeam('Alpha');
-    await sm.handleCommand(c(TeamCommands.CreateTeam('act-disband', team)), userAuthor('u1'));
+    const team = await createTeam(sm, 'act-disband');
     await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-disband', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
     await sm.handleCommand(c(ResourceCommands.AssignParticipant('act-disband', 'p1', { type: 'team', id: team.id })), userAuthor('u1'));
 
@@ -222,8 +238,7 @@ describe('StateManager.handleCommand', () => {
 
     const cp = createNewPlace('CP');
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-delete', cp)), userAuthor('u1'));
-    const team = createNewTeam('Alpha');
-    await sm.handleCommand(c(TeamCommands.CreateTeam('act-delete', team)), userAuthor('u1'));
+    const team = await createTeam(sm, 'act-delete');
     await sm.handleCommand(c(ParticipantCommands.UpdateParticipant('act-delete', 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.Available)), userAuthor('u1'));
     await sm.handleCommand(c(ResourceCommands.AssignParticipant('act-delete', 'p1', { type: 'team', id: team.id })), userAuthor('u1'));
 
@@ -245,8 +260,7 @@ describe('StateManager.handleCommand', () => {
     collect(sm);
 
     await sm.handleCommand(c(PlaceCommands.CreatePlace('act-4', createNewPlace('CP'))), userAuthor('u1'));
-    const team = createNewTeam('Alpha');
-    await sm.handleCommand(c(TeamCommands.CreateTeam('act-4', team)), userAuthor('u1'));
+    const team = await createTeam(sm, 'act-4');
     // The UI always sends the full team object (pickTeamProperties copies all listed
     // keys, so a partial update would wipe omitted fields).
     await sm.handleCommand(c(TeamCommands.UpdateTeam('act-4', { ...team, status: 'On Assignment' })), userAuthor('u1'));
