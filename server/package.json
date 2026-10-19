@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=.env.development src/main.ts",
+    "dev": "tsx watch --env-file=.env.development --env-file-if-exists=.env.local src/main.ts",
     "build": "node build.mjs"
   },
   "dependencies": {
@@ -14,7 +14,8 @@
     "@sync/domain": "*",
     "@sync/server": "*",
     "hono": "^4.6.14",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

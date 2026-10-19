@@ -199,7 +199,7 @@ const DashboardTeamCard = observer(function DashboardTeamCard({ team, expandComm
   );
 });
 
-// Chip colours for the statuses.
+// Chip colors for the statuses.
 const STATUS_COLORS: Record<TeamStatus, 'default' | 'info' | 'warning' | 'success' | 'secondary'> = {
   inBase: 'default',
   inTransit: 'info',

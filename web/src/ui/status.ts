@@ -1,5 +1,5 @@
 /**
- * The legacy app's words and colours for statuses, keyed by the domain's status names. The domain
+ * The legacy app's words and colors for statuses, keyed by the domain's status names. The domain
  * names differ from the legacy ones: responding was "Signed In", staging "Available", demobilizing
  * "Demobilized", clear "Signed Out".
  */
@@ -86,5 +86,5 @@ export const phaseText = (phase: ActivityPhase | undefined): string => (phase ? 
 /** Roster order when sorting by status, as in the legacy roster. */
 export const STATUS_SORT_ORDER: ParticipantStatus[] = ['responding', 'staging', 'assigned', 'demobilizing', 'remote', 'standby', 'clear', 'notResponding', 'unknown'];
 
-/** The legacy organization chip colours: responding green, standby amber, anything else plain. */
+/** The legacy organization chip colors: responding green, standby amber, anything else plain. */
 export const unitChipColor = (status: UnitStatus): 'success' | 'warning' | 'default' => (status === 'responding' ? 'success' : status === 'standby' ? 'warning' : 'default');

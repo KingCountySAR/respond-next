@@ -16,10 +16,18 @@ export interface Transport {
 export class WebSocketTransport implements Transport {
   private ws: WebSocket | undefined;
 
-  constructor(private readonly url: string) {}
+  /**
+   * `headers` is for Node (its WebSocket takes them; browsers don't), e.g. a session cookie for a
+   * script. In a browser, the page's cookies go with the upgrade anyway.
+   */
+  constructor(
+    private readonly url: string,
+    private readonly options: { headers?: Record<string, string> } = {},
+  ) {}
 
   open(handlers: TransportHandlers): void {
-    const ws = new WebSocket(this.url, PROTOCOL);
+    const { headers } = this.options;
+    const ws = headers ? new WebSocket(this.url, { protocols: [PROTOCOL], headers } as unknown as string[]) : new WebSocket(this.url, PROTOCOL);
     this.ws = ws;
     ws.onopen = () => handlers.onOpen();
     ws.onmessage = (e) => {

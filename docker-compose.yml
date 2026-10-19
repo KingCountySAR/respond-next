@@ -24,6 +24,8 @@ services:
       - "${APP_PORT:-4000}:4000"
     environment:
       DATABASE_URL: postgres://sync:sync@postgres:5432/sync
+      # For trying the image locally: the dev sign-in to get in. Not a setting for a deployment.
+      DEV_TOOLS: "true"
     depends_on:
       postgres:
         condition: service_healthy

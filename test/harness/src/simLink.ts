@@ -25,8 +25,9 @@ export class SimTransport implements Transport {
   private outAt = 0;
   private inAt = 0;
 
+  /** `url` is a promise: the pane signs in before its first connection. */
   constructor(
-    private readonly url: string,
+    private readonly url: Promise<string>,
     private readonly link: SimLink,
   ) {}
 
@@ -35,7 +36,14 @@ export class SimTransport implements Transport {
       setTimeout(() => handlers.onClose('offline'), 250);
       return;
     }
-    const ws = new WebSocket(this.url, PROTOCOL);
+    this.url.then(
+      (url) => this.connect(url, handlers),
+      (err: unknown) => handlers.onClose(String(err)),
+    );
+  }
+
+  private connect(url: string, handlers: TransportHandlers): void {
+    const ws = new WebSocket(url, PROTOCOL);
     this.ws = ws;
     ws.onopen = () => this.later('in', () => handlers.onOpen());
     ws.onmessage = (e) => this.later('in', () => handlers.onMessage(String(e.data)));

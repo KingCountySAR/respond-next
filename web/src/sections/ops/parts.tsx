@@ -219,7 +219,7 @@ export function DashboardDraggableContainer({ children, sx, showHandle = true, v
   );
 }
 
-/** A coloured bar down the left of its content. */
+/** A colored bar down the left of its content. */
 export function StatusContainer({ color, children, sx }: { color: string | undefined; children: ReactNode; sx?: SxProps<Theme> }) {
   return (
     <Stack direction="row" sx={sx}>

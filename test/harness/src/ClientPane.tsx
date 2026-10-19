@@ -6,7 +6,7 @@ import { ActivityModelProvider } from '@sync/model/react';
 import { ActivityView } from './ActivityView';
 import { SimLink, SimTransport } from './simLink';
 
-/** Who a pane signs in as. The server reads the same fields from the WebSocket URL (dev auth). */
+/** Who a pane signs in as, through the dev sign-in (as that person ref, without the directory). */
 export interface PaneViewer {
   user: string;
   tier: 'command' | 'field';
@@ -20,16 +20,27 @@ interface Props {
   onRemove(): void;
 }
 
-function wsUrl(v: PaneViewer): string {
-  const query = new URLSearchParams({ user: v.user, tier: v.tier, class: v.class, ...(v.person && { person: v.person.ref }) });
-  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/sync?${query}`;
+const personRefOf = (v: PaneViewer) => v.person?.ref ?? `adhoc:${v.user}`;
+
+/**
+ * Signs the pane in and gives its WebSocket URL. Panes share one browser, so each takes its session
+ * as a token on the URL (servers with DEV_TOOLS only) rather than the cookie.
+ */
+async function wsUrl(v: PaneViewer): Promise<string> {
+  const request = { email: `${v.user}@harness.example`, name: v.person ? `${v.person.firstname} ${v.person.lastname}` : v.user, personRef: personRefOf(v), tier: v.tier, class: v.class };
+  const res = await fetch('/api/auth/dev?token=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
+  if (!res.ok) throw new Error(`sign-in: HTTP ${res.status}`);
+  const { token } = (await res.json()) as { token: string };
+  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/sync?session=${encodeURIComponent(token)}`;
 }
 
 export function ClientPane({ viewer, activityId, onRemove }: Props) {
   const [link] = useState(() => new SimLink());
   const [client] = useState(() => {
-    const as: ActivityViewer = { userId: viewer.user, tier: viewer.tier, class: viewer.class, personRef: viewer.person?.ref };
-    return new SyncClient({ registry: activityRegistry, viewer: as, transport: () => new SimTransport(wsUrl(viewer), link), persistence: new MemoryPersistence() });
+    // As the server's session has it: the user is the person.
+    const as: ActivityViewer = { userId: personRefOf(viewer), tier: viewer.tier, class: viewer.class, personRef: personRefOf(viewer) };
+    const url = wsUrl(viewer);
+    return new SyncClient({ registry: activityRegistry, viewer: as, transport: () => new SimTransport(url, link), persistence: new MemoryPersistence() });
   });
 
   useEffect(() => {

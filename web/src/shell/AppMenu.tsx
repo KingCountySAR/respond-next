@@ -1,6 +1,7 @@
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { Divider, IconButton, Menu, MenuItem } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
+import { useLocation } from 'wouter';
 import { useAuth } from './auth';
 import { useDialogs } from './dialogs';
 import { PreferencesDialog } from './PreferencesDialog';
@@ -8,6 +9,7 @@ import { PreferencesDialog } from './PreferencesDialog';
 export function AppMenu() {
   const { session, signOut } = useAuth();
   const { open } = useDialogs();
+  const [, navigate] = useLocation();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const handleMenu = (event: MouseEvent<HTMLButtonElement>) => setMenuAnchor(event.currentTarget);
   const handleClose = () => setMenuAnchor(null);
@@ -42,11 +44,21 @@ export function AppMenu() {
           >
             Preferences
           </MenuItem>
+          {session?.admin && (
+            <MenuItem
+              onClick={() => {
+                handleClose();
+                navigate('~/admin/organizations');
+              }}
+            >
+              Organizations
+            </MenuItem>
+          )}
           <MenuItem
             disabled={!session}
             onClick={() => {
               handleClose();
-              signOut();
+              void signOut();
             }}
           >
             Sign Out

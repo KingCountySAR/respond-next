@@ -13,11 +13,8 @@ export interface SyncOptions {
   persistence?: (session: Session) => ClientPersistence;
 }
 
-function syncUrl(s: Session): string {
-  // Dev auth: the server reads who this is from the URL until the session cookie lands in phase 2.
-  const query = new URLSearchParams({ user: s.userId, tier: s.tier, class: s.class, person: s.personRef });
-  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/sync?${query}`;
-}
+// The server knows who this is from the session cookie, which the browser sends with the upgrade.
+const syncUrl = () => `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/sync`;
 
 const SyncContext = createContext<SyncClient | null>(null);
 
@@ -27,7 +24,7 @@ export function SyncProvider({ session, options = {}, children }: { session: Ses
       new SyncClient({
         registry: activityRegistry,
         viewer: viewerOf(session),
-        transport: () => options.transport?.(session) ?? new WebSocketTransport(syncUrl(session)),
+        transport: () => options.transport?.(session) ?? new WebSocketTransport(syncUrl()),
         // One store per user and tier: what's cached is that viewer's projection.
         persistence: options.persistence?.(session) ?? new IndexedDbPersistence(`sync:${session.userId}:${session.tier}`),
       }),

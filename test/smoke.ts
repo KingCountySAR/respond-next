@@ -1,18 +1,23 @@
 /**
- * End-to-end check against a running server (npm run dev, npm run start or Docker):
- * a command and a field client over real WebSockets, one change each way.
+ * End-to-end check against a running server with DEV_TOOLS=true (npm run dev, or a build run with
+ * it set): a command and a field client over real WebSockets, one change each way.
+ * Each signs in with the dev sign-in and connects with its session cookie. The field client is a
+ * member of the dev seed (SMOKE_FIELD_EMAIL to use another).
  * Usage: npm run smoke [-- ws://host:port/api/sync]
  */
 import { SyncClient, WebSocketTransport } from '@sync/client';
-import { activityRegistry, currentParticipantStatus, participantIdFor, type ActivityViewer, type ParticipantRec } from '@sync/domain';
+import { activityRegistry, asActivityViewer, currentParticipantStatus, participantIdFor, viewerOfSession, type DevSignInRequest, type ParticipantRec, type SessionResponse } from '@sync/domain';
 
 const base = process.argv[2] ?? 'ws://localhost:4000/api/sync';
 const activityId = `smoke-${Date.now()}`;
 const CRT = { id: 'org-crt', title: 'Cascade Rescue Team', rosterName: 'CRT' };
 
-function makeClient(viewer: ActivityViewer): SyncClient {
-  const query = new URLSearchParams({ user: viewer.userId, tier: viewer.tier, class: viewer.class, ...(viewer.personRef && { person: viewer.personRef }) });
-  return new SyncClient({ registry: activityRegistry, viewer, transport: () => new WebSocketTransport(`${base}?${query}`) });
+async function makeClient(request: DevSignInRequest): Promise<SyncClient> {
+  const res = await fetch(new URL('/api/auth/dev', base.replace(/^ws/, 'http')), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
+  if (!res.ok) throw new Error(`sign-in as ${request.email}: HTTP ${res.status} ${await res.text()}`);
+  const { session } = (await res.json()) as SessionResponse;
+  const cookie = res.headers.get('set-cookie')!.split(';')[0]!;
+  return new SyncClient({ registry: activityRegistry, viewer: viewerOfSession(session!), transport: () => new WebSocketTransport(base, { headers: { cookie } }) });
 }
 
 async function waitFor(what: string, check: () => boolean, ms = 5000): Promise<void> {
@@ -23,15 +28,16 @@ async function waitFor(what: string, check: () => boolean, ms = 5000): Promise<v
   }
 }
 
-const command = makeClient({ userId: 'alice', tier: 'command', class: 'member', personRef: 'kcsara:101' });
-const field = makeClient({ userId: 'bob', tier: 'field', class: 'member', personRef: 'kcsara:102' });
+const command = await makeClient({ email: 'smoke-command@example.org', name: 'Smoke Command', tier: 'command', class: 'member' });
+const field = await makeClient({ email: process.env.SMOKE_FIELD_EMAIL ?? 'bo.okafor@crt.example.org', tier: 'field', class: 'member' });
+const bobRef = asActivityViewer(field.viewer).personRef!;
 for (const c of [command, field]) {
   await c.start();
   await c.open(activityId);
 }
 await waitFor('both clients live', () => command.status.state === 'live' && field.status.state === 'live');
 
-const bob = participantIdFor('kcsara:102');
+const bob = participantIdFor(bobRef);
 const t0 = Date.now();
 command.mutate(activityId, 'createActivity', {
   idNumber: '',
@@ -46,7 +52,7 @@ command.mutate(activityId, 'createActivity', {
   standbyOnly: false,
 });
 command.mutate(activityId, 'addComm', { id: 'smoke-comm', from: 'Base', to: 'All', message: 'Command only' });
-command.mutate(activityId, 'addParticipant', { personRef: 'kcsara:102', firstname: 'Bob', lastname: 'Brown', unit: CRT, status: 'responding', at: command.now() - 30 * 60_000 });
+command.mutate(activityId, 'addParticipant', { personRef: bobRef, firstname: 'Bob', lastname: 'Brown', unit: CRT, status: 'responding', at: command.now() - 30 * 60_000 });
 command.mutate(activityId, 'setMiles', { participantId: bob, miles: 42 });
 await waitFor('field client sees Bob', () => field.snapshot(activityId).get<ParticipantRec>('participant', bob)?.firstname === 'Bob');
 console.log(`field client saw the new person after ${Date.now() - t0} ms`);

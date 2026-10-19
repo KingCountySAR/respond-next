@@ -1,23 +1,18 @@
 /**
- * Who is signed in. Until phase 2 this is the dev sign-in: the person picks who they are, and the
- * SyncClient sends it to the server on the WebSocket URL. Phase 2 replaces it with Google sign-in
- * and a session cookie, and the tier comes from each activity's grants instead.
+ * Who is signed in: the server's session for this site (a cookie the WebSocket sends too). A copy is
+ * kept so the app still opens, signed in, when the server can't be reached; the server's answer
+ * replaces it whenever there is one. Signing in is the development sign-in until Google sign-in.
  */
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import type { ActivityViewer, Tier } from '@sync/domain';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { viewerOfSession, type DevSignInRequest, type Session } from '@sync/domain';
+import { useApi } from './api';
 
-export interface Session {
-  userId: string;
-  name: string;
-  /** The person this user is, e.g. `kcsara:85205`; self sign-in and "my activity" use it. */
-  personRef: string;
-  tier: Tier;
-  class: ActivityViewer['class'];
-}
+export type { Session };
+export const viewerOf = viewerOfSession;
 
-const STORAGE_KEY = 'devSession';
+const STORAGE_KEY = 'session';
 
-function loadSession(): Session | undefined {
+function loadCached(): Session | undefined {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as Session) : undefined;
@@ -26,36 +21,55 @@ function loadSession(): Session | undefined {
   }
 }
 
-function saveSession(session: Session | undefined): void {
+function saveCached(session: Session | undefined): void {
   try {
     if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
     else localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // Private windows can refuse storage; the session then lasts until reload.
+    // Private windows can refuse storage; offline, they'll be asked to sign in.
   }
 }
 
-export const viewerOf = (s: Session): ActivityViewer => ({ userId: s.userId, tier: s.tier, class: s.class, personRef: s.personRef });
-
 interface Auth {
+  /** Undefined until the server (or the copy, offline) says. */
   session: Session | undefined;
-  signIn(session: Session): void;
-  signOut(): void;
+  /** Whether the server has been asked yet. */
+  checked: boolean;
+  /** Throws with the reason sign-in was refused. */
+  devSignIn(request: DevSignInRequest): Promise<void>;
+  signOut(): Promise<void>;
 }
 
 const AuthContext = createContext<Auth | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState(loadSession);
-  const signIn = useCallback((s: Session) => {
-    saveSession(s);
-    setSession(s);
+  const api = useApi();
+  const [session, setSessionState] = useState<Session | undefined>(loadCached);
+  const [checked, setChecked] = useState(false);
+  const setSession = useCallback((s: Session | undefined) => {
+    saveCached(s);
+    setSessionState(s);
   }, []);
-  const signOut = useCallback(() => {
-    saveSession(undefined);
+
+  useEffect(() => {
+    let live = true;
+    api
+      .session()
+      .then((s) => live && setSession(s ?? undefined))
+      // Offline: keep the copy.
+      .catch(() => {})
+      .finally(() => live && setChecked(true));
+    return () => {
+      live = false;
+    };
+  }, [api, setSession]);
+
+  const devSignIn = useCallback(async (request: DevSignInRequest) => setSession(await api.devSignIn(request)), [api, setSession]);
+  const signOut = useCallback(async () => {
     setSession(undefined);
-  }, []);
-  const auth = useMemo(() => ({ session, signIn, signOut }), [session, signIn, signOut]);
+    await api.signOut().catch(() => {});
+  }, [api, setSession]);
+  const auth = useMemo(() => ({ session, checked, devSignIn, signOut }), [session, checked, devSignIn, signOut]);
   return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 

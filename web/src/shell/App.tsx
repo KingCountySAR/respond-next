@@ -99,7 +99,8 @@ function Themed({ theme, children }: { theme: SiteConfig['theme']; children: Rea
 
 /** The login panel until someone signs in; then their SyncClient and the app. */
 function MainGate({ sync, children }: { sync?: SyncOptions; children: ReactNode }) {
-  const { session } = useAuth();
+  const { session, checked } = useAuth();
+  if (!session && !checked) return <div style={{ fontFamily: 'system-ui', padding: 24 }}>Loading…</div>;
   if (!session) return <LoginPanel />;
   return (
     // Keyed by user, so signing in as someone else starts fresh.

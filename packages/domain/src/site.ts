@@ -8,7 +8,7 @@ export interface SiteUnit {
   canCreateEvents: boolean;
 }
 
-/** What every client loads before anything else (`GET /api/bootstrap`): the site's name and colours. */
+/** What every client loads before anything else (`GET /api/bootstrap`): the site's name and colors. */
 export interface SiteConfig {
   /**
    * The site's organization. Its people respond under it as their unit, as in the legacy app. Its
@@ -16,11 +16,9 @@ export interface SiteConfig {
    */
   organization: SiteUnit & { partners: SiteUnit[] };
   theme: { primary: string; primaryDark?: string };
-  dev: {
-    /** No Google sign-in: the login panel offers the dev sign-in instead. */
-    noExternalNetwork: boolean;
-    buildId: string;
-  };
+  /** The dev sign-in is on (DEV_TOOLS): anyone may sign in as any email, and choose their tier. */
+  devSignIn: boolean;
+  buildId: string;
 }
 
 export interface BootstrapResponse {

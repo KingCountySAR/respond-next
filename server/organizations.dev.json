@@ -1,0 +1,208 @@
+{
+  "memberProviders": [
+    {
+      "id": "kcsara",
+      "kind": "fixture",
+      "units": {
+        "CRT": {
+          "emailDomain": "crt.example.org",
+          "members": [
+            [
+              "Avery",
+              "Lindqvist",
+              "Field"
+            ],
+            [
+              "Bo",
+              "Okafor",
+              "Field",
+              "Medical"
+            ],
+            [
+              "Casey",
+              "Moreau",
+              "Field",
+              "K9"
+            ],
+            [
+              "Devon",
+              "Achterberg",
+              "Base"
+            ],
+            [
+              "Emery",
+              "Nakashima",
+              "Field",
+              "Rope"
+            ],
+            [
+              "Frankie",
+              "Delacroix",
+              "Field"
+            ],
+            [
+              "Gray",
+              "Abernathy",
+              "Field",
+              "Medical"
+            ],
+            [
+              "Harper",
+              "Okonkwo",
+              "Base",
+              "Comms"
+            ],
+            [
+              "Indy",
+              "Castellanos",
+              "Field"
+            ],
+            [
+              "Jules",
+              "Varga",
+              "Field",
+              "Rope"
+            ],
+            [
+              "Kai",
+              "Lindqvist",
+              "Field"
+            ],
+            [
+              "Logan",
+              "Pemberton",
+              "Base"
+            ]
+          ]
+        },
+        "RMR": {
+          "emailDomain": "rmr.example.org",
+          "members": [
+            [
+              "Morgan",
+              "Ashdown",
+              "Rope"
+            ],
+            [
+              "Noor",
+              "Haddad",
+              "Rope",
+              "Medical"
+            ],
+            [
+              "Oakley",
+              "Brandt"
+            ],
+            [
+              "Parker",
+              "Ferreira",
+              "Rope"
+            ],
+            [
+              "Quinn",
+              "Takahashi"
+            ]
+          ]
+        }
+      }
+    }
+  ],
+  "organizations": [
+    {
+      "id": "org-cvsc",
+      "parentId": null,
+      "title": "Cascade Valley SAR Council",
+      "shortTitle": "CVSC",
+      "hostnames": [
+        "localhost"
+      ],
+      "emailDomains": [
+        "cvsc.example.org"
+      ],
+      "brand": {
+        "primary": "rgb(200, 100, 100)",
+        "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSJyZ2IoMjAwLCAxMDAsIDEwMCkiLz48dGV4dCB4PSIyNTYiIHk9IjMyMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE1MCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkNWU0M8L3RleHQ+PC9zdmc+"
+      },
+      "memberProvider": "kcsara",
+      "providerUnit": null,
+      "canCreateMissions": false,
+      "canCreateEvents": true,
+      "partners": [],
+      "admins": []
+    },
+    {
+      "id": "org-crt",
+      "parentId": "org-cvsc",
+      "title": "Cascade Rescue Team",
+      "shortTitle": "CRT",
+      "hostnames": [
+        "crt.localhost"
+      ],
+      "emailDomains": [
+        "crt.example.org"
+      ],
+      "brand": {
+        "primary": "#2e5e8c",
+        "primaryDark": "#7fb0e0",
+        "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMmU1ZThjIi8+PHRleHQgeD0iMjU2IiB5PSIzMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5DUlQ8L3RleHQ+PC9zdmc+"
+      },
+      "memberProvider": null,
+      "providerUnit": "CRT",
+      "memberTags": {
+        "Medical": "MED",
+        "K9": "K9",
+        "Rope": "Rope"
+      },
+      "canCreateMissions": true,
+      "canCreateEvents": true,
+      "partners": [
+        {
+          "id": "org-rmr",
+          "canCreateMissions": true,
+          "canCreateEvents": false
+        }
+      ],
+      "admins": [
+        "harper.okonkwo@crt.example.org"
+      ]
+    },
+    {
+      "id": "org-rmr",
+      "parentId": "org-cvsc",
+      "title": "Ridgeline Mountain Rescue",
+      "shortTitle": "RMR",
+      "hostnames": [
+        "rmr.localhost"
+      ],
+      "emailDomains": [
+        "rmr.example.org"
+      ],
+      "brand": {
+        "primary": "#2f7d4f",
+        "primaryDark": "#7fd09f",
+        "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMmY3ZDRmIi8+PHRleHQgeD0iMjU2IiB5PSIzMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5STVI8L3RleHQ+PC9zdmc+"
+      },
+      "memberProvider": null,
+      "providerUnit": "RMR",
+      "memberTags": {
+        "Medical": "MED",
+        "Rope": "Rope"
+      },
+      "canCreateMissions": true,
+      "canCreateEvents": true,
+      "partners": [
+        {
+          "id": "org-crt",
+          "canCreateMissions": true,
+          "canCreateEvents": false
+        }
+      ],
+      "admins": [
+        "morgan.ashdown@rmr.example.org"
+      ]
+    }
+  ],
+  "siteAdmins": [
+    "admin@cvsc.example.org"
+  ]
+}

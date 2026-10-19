@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { randomId } from '@sync/core';
-import { activityProjector, activityRegistry, type SavedLocation, type SiteConfig } from '@sync/domain';
-import { Hub, MemoryStorage } from '@sync/server';
-import { createSyncApp } from '../src/app';
+import type { SavedLocation } from '@sync/domain';
 import { MemoryLocationCatalog, PostgresLocationCatalog, type LocationCatalog } from '../src/locations';
+import { testApp } from './helpers';
 
 /** The Postgres suite runs when TEST_DATABASE_URL (default: the `npm run db` container) is reachable. */
 const POSTGRES_BASE = process.env.TEST_DATABASE_URL ?? 'postgres://sync:sync@localhost:5433/sync';
@@ -78,24 +77,21 @@ describe.each(backends)('%s location catalog', (_name, makeBackend) => {
 });
 
 describe('location routes', () => {
-  const site: SiteConfig = {
-    organization: { id: 'org-crt', title: 'Cascade Rescue Team', shortTitle: 'CRT', canCreateMissions: true, canCreateEvents: true, partners: [] },
-    theme: { primary: '#336' },
-    dev: { noExternalNetwork: true, buildId: 'test' },
-  };
   const catalog = new MemoryLocationCatalog();
-  const { app } = createSyncApp(new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now }), { site, locations: catalog });
-  const put = (body: unknown) => app.request('/api/v1/locations', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const crt = testApp({ locations: catalog }).client();
+  const put = (body: unknown) => crt.request('/api/v1/locations', { method: 'PUT', body });
 
   it('saves, searches and deletes', async () => {
+    expect((await put(loc('1', 'Mount Si'))).status).toBe(401);
+    await crt.signIn('bo.okafor@crt.example.org');
     expect((await put(loc('1', 'Mount Si'))).status).toBe(200);
-    const res = await app.request('/api/v1/locations?query=si');
-    expect(((await res.json()) as { data: SavedLocation[] }).data).toEqual([loc('1', 'Mount Si')]);
-    expect((await app.request('/api/v1/locations/1', { method: 'DELETE' })).status).toBe(200);
+    expect((await crt.json<{ data: SavedLocation[] }>('/api/v1/locations?query=si')).body.data).toEqual([loc('1', 'Mount Si')]);
+    expect((await crt.request('/api/v1/locations/1', { method: 'DELETE' })).status).toBe(200);
     expect(await catalog.search('')).toEqual([]);
   });
 
   it('refuses a location without a title, naming the field', async () => {
+    await crt.signIn('bo.okafor@crt.example.org');
     const res = await put({ id: 'x', title: ' ', lat: null, lon: null, address: null, description: '' });
     expect(res.status).toBe(400);
     expect(((await res.json()) as { error: string }).error).toMatch(/^title: /);

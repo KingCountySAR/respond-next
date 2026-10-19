@@ -1,29 +1,49 @@
-import { Box, Button, MenuItem, Stack, TextField } from '@mui/material';
+import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useState, type FormEvent } from 'react';
-import type { Tier } from '@sync/domain';
-import { useAuth, type Session } from './auth';
+import type { Session, Tier } from '@sync/domain';
+import { useSite } from './App';
+import { useAuth } from './auth';
 
 /**
- * The legacy login panel's layout. Google sign-in arrives in phase 2; until then the offline path
- * (the legacy "offline login") lets a developer say who they are.
+ * The legacy login panel's layout. Google sign-in is still to come; a server with DEV_TOOLS offers
+ * the dev sign-in instead, which looks the email up in the member directory like Google sign-in will,
+ * but lets the developer pick the tier.
  */
 export function LoginPanel() {
-  const { signIn } = useAuth();
-  const [form, setForm] = useState({ name: '', personRef: 'kcsara:', tier: 'field' as Tier, class: 'member' as Session['class'] });
+  const { devSignIn } = useAuth();
+  const site = useSite();
+  const [form, setForm] = useState({ email: '', name: '', personRef: '', tier: 'field' as Tier, class: 'member' as Session['class'] });
+  const [error, setError] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
   const set = (field: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [field]: e.target.value });
 
-  const submit = (e: FormEvent) => {
+  if (!site.devSignIn) {
+    return (
+      <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+        <Typography sx={{ mt: 4 }}>Sign-in isn't available yet.</Typography>
+      </Box>
+    );
+  }
+
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const name = form.name.trim() || 'Dev User';
-    const personRef = form.personRef.trim();
-    signIn({ userId: `dev:${personRef || name}`, name, personRef, tier: form.tier, class: form.class });
+    setBusy(true);
+    setError(undefined);
+    try {
+      await devSignIn({ email: form.email.trim(), name: form.name.trim() || undefined, personRef: form.personRef.trim() || undefined, tier: form.tier, class: form.class });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
       <Stack spacing={2} component="form" onSubmit={submit} sx={{ width: 320, mt: 4 }}>
-        <TextField label="Name" value={form.name} onChange={set('name')} autoFocus />
-        <TextField label="Person" helperText="e.g. kcsara:85205, or adhoc:<id> for someone outside the unit" value={form.personRef} onChange={set('personRef')} />
+        <TextField label="Email" type="email" value={form.email} onChange={set('email')} autoFocus required />
+        <TextField label="Name" helperText="Only for someone not in the member directory, or with a person" value={form.name} onChange={set('name')} />
+        <TextField label="Person" helperText="Optional: be this person ref (e.g. kcsara:85205) without the directory" value={form.personRef} onChange={set('personRef')} />
         <TextField select label="Tier" value={form.tier} onChange={set('tier')}>
           <MenuItem value="field">Field</MenuItem>
           <MenuItem value="support">Support</MenuItem>
@@ -33,7 +53,10 @@ export function LoginPanel() {
           <MenuItem value="member">Member</MenuItem>
           <MenuItem value="external">External</MenuItem>
         </TextField>
-        <Button type="submit">offline login</Button>
+        {error && <Alert severity="error">{error}</Alert>}
+        <Button type="submit" disabled={busy}>
+          dev sign in
+        </Button>
       </Stack>
     </Box>
   );

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { activityProjector, activityRegistry, type SiteConfig } from '@sync/domain';
-import { Hub, MemoryStorage } from '@sync/server';
-import { createSyncApp } from '../src/app';
 import { NoaaWeather } from '../src/weather';
+import { testApp } from './helpers';
 
 const POINTS = 'https://api.weather.gov/points/47.4672,-121.6754';
 const HOURLY = 'https://api.weather.gov/gridpoints/SEW/150,50/forecast/hourly';
@@ -39,21 +37,17 @@ describe('NOAA weather', () => {
 });
 
 describe('weather route', () => {
-  const site: SiteConfig = {
-    organization: { id: 'org-crt', title: 'Cascade Rescue Team', shortTitle: 'CRT', canCreateMissions: true, canCreateEvents: true, partners: [] },
-    theme: { primary: '#336' },
-    dev: { noExternalNetwork: true, buildId: 'test' },
-  };
   const weather = new NoaaWeather(fakeNoaa({ [POINTS]: { properties: { forecastHourly: HOURLY } }, [HOURLY]: { properties: { periods: [period] } } }));
-  const { app } = createSyncApp(new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now }), { site, weather });
+  const crt = testApp({ weather }).client();
 
   it('returns the forecast, or 400 for bad coordinates and 502 when NOAA fails', async () => {
-    const res = await app.request('/api/weather?lat=47.4672&lon=-121.6754');
+    await crt.signIn('bo.okafor@crt.example.org');
+    const res = await crt.request('/api/weather?lat=47.4672&lon=-121.6754');
     expect(res.status).toBe(200);
     expect(((await res.json()) as { period: { temperature: number } }).period.temperature).toBe(41);
-    expect((await app.request('/api/weather?lat=91&lon=0')).status).toBe(400);
-    expect((await app.request('/api/weather?lat=x&lon=0')).status).toBe(400);
-    const failed = await app.request('/api/weather?lat=10&lon=10');
+    expect((await crt.request('/api/weather?lat=91&lon=0')).status).toBe(400);
+    expect((await crt.request('/api/weather?lat=x&lon=0')).status).toBe(400);
+    const failed = await crt.request('/api/weather?lat=10&lon=10');
     expect(failed.status).toBe(502);
     expect(await failed.json()).toEqual({ error: 'NOAA points service error (500)' });
   });

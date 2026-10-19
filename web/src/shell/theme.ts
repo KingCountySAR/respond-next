@@ -1,7 +1,7 @@
 import { createTheme, type Theme } from '@mui/material/styles';
 import type { SiteConfig } from '@sync/domain';
 
-/** The legacy app's theme: the site's primary colour, grey backgrounds, and a `danger` colour. */
+/** The legacy app's theme: the site's primary color, grey backgrounds, and a `danger` color. */
 export function buildTheme(theme: SiteConfig['theme'], dark: boolean): Theme {
   return createTheme({
     palette: {
