@@ -8,6 +8,7 @@ import {
   type ClientMessage,
   type ActivitySnapshot,
   type MutationRegistry,
+  type ReadView,
   type ServerMessage,
   type Viewer,
   type WireMutation,
@@ -44,6 +45,13 @@ export interface SyncClientOptions {
   registry: MutationRegistry;
   /** Used for local permission checks and previews; the server decides for real. */
   viewer: Viewer;
+  /**
+   * Who they are on an activity when that isn't `viewer`, from the view the server projects its
+   * records for (undefined until it says) and the records as they are now; undefined, by far the
+   * usual case, for `viewer`. When who they are changes, the server disconnects and starts the
+   * activity over in the new view.
+   */
+  viewerIn?(activityId: string, copy: { view: string | undefined; records: ReadView }): Viewer | undefined;
   /** Makes a transport for each connection attempt. */
   transport: () => Transport;
   persistence?: ClientPersistence;
@@ -93,6 +101,16 @@ export class SyncClient {
     return this.opts.viewer;
   }
 
+  /** Who this client acts as on an activity, as it is now; `viewer` until it's open. */
+  viewerIn(activityId: string): Viewer {
+    const state = this.activities.get(activityId)?.state;
+    return state ? this.viewerAt(state, state.snapshot) : this.opts.viewer;
+  }
+
+  private viewerAt(state: ClientActivityState, records: ReadView): Viewer {
+    return this.opts.viewerIn?.(state.activityId, { view: state.view, records }) ?? this.opts.viewer;
+  }
+
   get status(): SyncStatus {
     return this.currentStatus;
   }
@@ -128,7 +146,7 @@ export class SyncClient {
   async open(activityId: string): Promise<void> {
     await this.ready;
     if (this.activities.has(activityId)) return;
-    const state = new ClientActivityState(activityId, this.opts.registry, this.opts.viewer, this.clientId);
+    const state: ClientActivityState = new ClientActivityState(activityId, this.opts.registry, (records) => this.viewerAt(state, records), this.clientId);
     const saved = await this.persistence.loadActivity(activityId);
     if (saved) {
       state.restore(saved);
@@ -137,7 +155,7 @@ export class SyncClient {
     if (this.activities.has(activityId)) return;
     this.activities.set(activityId, { state, listeners: new Set(), pushedUpTo: 0 });
     if (this.connState === 'live') {
-      this.send({ t: 'sub', activityId, since: state.version });
+      this.send({ t: 'sub', activityId, since: state.version, view: state.view });
       this.flush();
     }
     this.updateStatus();
@@ -187,7 +205,7 @@ export class SyncClient {
     const e = this.activity(activityId);
     const def = this.opts.registry.latest(name);
     if (!def) throw new Rejection('unknown_mutation', `Unknown change type ${name}`);
-    if (def.allow && !def.allow(this.opts.viewer)) throw new Rejection('forbidden', 'Your role cannot make this change');
+    if (def.allow && !def.allow(this.viewerIn(activityId))) throw new Rejection('forbidden', 'Your role cannot make this change');
     const now = this.now();
     const parsed = def.args.safeParse(def.timed && args.at == null ? { ...args, at: now } : args);
     if (!parsed.success) throw new Rejection('bad_args', parsed.error.issues[0]?.message ?? 'Invalid change');
@@ -226,7 +244,7 @@ export class SyncClient {
         this.lastHeard = Date.now();
         const subs = [...this.activities].map(([activityId, e]) => {
           e.pushedUpTo = 0; // resend everything pending; the server skips what it already has
-          return { activityId, since: e.state.version };
+          return { activityId, since: e.state.version, view: e.state.view };
         });
         this.send({ t: 'hello', clientId: this.clientId, build: this.opts.build ?? 'dev', subs });
         this.setConnState('live');
@@ -299,7 +317,7 @@ export class SyncClient {
         const e = this.activities.get(msg.activityId);
         if (!e) break;
         if (!e.state.applyUpdate(msg)) {
-          this.send({ t: 'sub', activityId: msg.activityId, since: e.state.version });
+          this.send({ t: 'sub', activityId: msg.activityId, since: e.state.version, view: e.state.view });
           break;
         }
         this.seenMutationId(msg.lastMutationId);

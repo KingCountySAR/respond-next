@@ -50,6 +50,29 @@ describe('hub', () => {
     expect(upserts.map((r) => (r as Person).name)).toEqual(['From the server', 'Renamed']);
   });
 
+  it('lets a connection be someone else on one activity, and itself on the rest', async () => {
+    const hub = new Hub({ storage: new MemoryStorage(), registry: testRegistry, projector: testProjector, now: Date.now });
+    for (const id of ['a1', 'a2']) {
+      await hub.pushAsSystem(id, SYSTEM, [
+        { name: 'addPerson', args: { id: 'p1', name: 'Anna' } },
+        { name: 'setNote', args: { id: 'p1', note: 'command only' } },
+      ]);
+    }
+    const received: ServerMessage[] = [];
+    const field = { userId: 'u2', tier: 'field' };
+    // Command on a1 only; undefined, the usual case, is the connection's own viewer.
+    const handlers = hub.connect({ viewer: field, viewerIn: (id) => (id === 'a1' ? { ...field, tier: 'command' } : undefined), send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} });
+    const send = (msg: ClientMessage) => handlers.message(encode(msg));
+    send({ t: 'hello', clientId: 'c2', build: 'test', subs: [{ activityId: 'a1', since: 0 }, { activityId: 'a2', since: 0 }] });
+    await settle();
+    const notes = Object.fromEntries(received.flatMap((m) => (m.t === 'reset' ? [[m.activityId, (m.records[0] as Person & { note?: string }).note]] : [])));
+    expect(notes).toEqual({ a1: 'command only', a2: undefined });
+
+    for (const activityId of ['a1', 'a2']) send({ t: 'push', activityId, mutations: [{ id: activityId === 'a1' ? 1 : 2, name: 'setNote', v: 1, args: { id: 'p1', note: 'changed' }, clientTime: 0 }] });
+    await settle();
+    expect(received.filter((m) => m.t === 'reject').map((m) => m.t === 'reject' && [m.activityId, m.reason])).toEqual([['a2', 'forbidden']]);
+  });
+
   it('refuses client changes to a read-only scope', async () => {
     const hub = new Hub({ storage: new MemoryStorage(), registry: testRegistry, projector: testProjector, now: Date.now, readOnly: (id) => id === 'list' });
     const client = connect(hub, 'list');

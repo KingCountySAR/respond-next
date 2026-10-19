@@ -5,10 +5,12 @@ import CardActionArea from '@mui/material/CardActionArea';
 import type { PaperProps } from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
-import { useState, type FunctionComponent, type ReactNode } from 'react';
+import { useEffect, useState, type FunctionComponent, type ReactNode } from 'react';
 import type { ParticipantStatus } from '@sync/domain';
 import { isCommandActivity, type FieldParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
+import { useApi } from '../../../shell/api';
+import { useSyncClient } from '../../../shell/sync';
 import { AppDialog } from '../../../shell/dialogs/AppDialog';
 import { STATUS_SORT_ORDER, statusCssColor, statusText } from '../../../ui/status';
 import { ParticipantMilesUpdater } from './ParticipantMilesUpdater';
@@ -147,6 +149,7 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
         </Stack>
       </DialogContent>
       <DialogActions>
+        <CommandGrantButton participant={participant} />
         <Button autoFocus onClick={onClose}>
           Close
         </Button>
@@ -191,3 +194,48 @@ const ParticipantMiles = observer(function ParticipantMiles({ participant, canEd
     </>
   );
 });
+
+/**
+ * For someone at command on this mission: give this person command here, or take it away. It counts
+ * on this mission only, at once. Not for other kinds: members manage those anyway.
+ */
+function CommandGrantButton({ participant }: { participant: FieldParticipant }) {
+  const api = useApi();
+  const client = useSyncClient();
+  const personRef = participant.record?.personRef;
+  const { activityId } = participant.activity;
+  const shown = participant.activity.record?.kind === 'mission' && client.viewerIn(activityId).tier === 'command' && !!personRef && !participant.isMe;
+  // undefined until known; null for no grant.
+  const [granted, setGranted] = useState<boolean | undefined>();
+  const [error, setError] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!shown) return;
+    let live = true;
+    api.grantOf(activityId, personRef).then(
+      (g) => live && setGranted(g?.tier === 'command'),
+      (err: unknown) => live && setError(err instanceof Error ? err.message : String(err)),
+    );
+    return () => {
+      live = false;
+    };
+  }, [api, activityId, personRef, shown]);
+
+  if (!shown || (granted === undefined && !error)) return null;
+  const change = async () => {
+    setError(undefined);
+    try {
+      if (granted) await api.revokeGrant(activityId, personRef);
+      else await api.grant(activityId, personRef, 'command');
+      setGranted(!granted);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+  return (
+    <>
+      {error && <Typography color="error" sx={{ mr: 'auto' }}>{error}</Typography>}
+      {granted !== undefined && <Button onClick={() => void change()}>{granted ? 'Remove command grant' : 'Grant command'}</Button>}
+    </>
+  );
+}

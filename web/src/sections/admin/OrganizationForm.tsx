@@ -2,7 +2,7 @@ import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Stack, T
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useState } from 'react';
 import type { Organization, OrganizationPartner } from '@sync/domain';
-import { formatList, formatTags, parseList, parseTags, readAsDataUri } from './adminFields';
+import { formatList, formatTags, parseList, parseTags, parseTiers, readAsDataUri } from './adminFields';
 
 export interface OrganizationFormProps {
   initial: Organization;
@@ -28,6 +28,7 @@ interface Values {
   memberProvider: string;
   providerUnit: string;
   memberTags: string;
+  memberTiers: string;
   primary: string;
   primaryDark: string;
   icon: string;
@@ -47,6 +48,7 @@ const toValues = (o: Organization): Values => ({
   memberProvider: o.memberProvider ?? '',
   providerUnit: o.providerUnit ?? '',
   memberTags: formatTags(o.memberTags),
+  memberTiers: formatTags(o.memberTiers),
   primary: o.brand?.primary ?? '',
   primaryDark: o.brand?.primaryDark ?? '',
   icon: o.brand?.icon ?? '',
@@ -66,6 +68,7 @@ const fromValues = (v: Values): Organization => ({
   memberProvider: v.memberProvider || null,
   providerUnit: v.providerUnit.trim() || null,
   memberTags: parseTags(v.memberTags),
+  memberTiers: parseTiers(v.memberTiers).rules,
   // Without a primary color, the organization takes its parent's brand.
   brand: v.primary.trim() ? { primary: v.primary.trim(), primaryDark: v.primaryDark.trim() || undefined, icon: v.icon || undefined } : undefined,
   canCreateMissions: v.canCreateMissions,
@@ -80,6 +83,7 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
   const set = <K extends keyof Values>(field: K, value: Values[K]) => setValues((v) => ({ ...v, [field]: value }));
   const text = (field: keyof Values) => (e: { target: { value: string } }) => set(field, e.target.value as never);
   const others = all.filter((o) => o.id !== values.id);
+  const badTiers = parseTiers(values.memberTiers).bad;
 
   const save = async () => {
     setSaving(true);
@@ -134,6 +138,15 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
         multiline
         minRows={2}
       />
+      <TextField
+        label="Member tiers"
+        helperText={badTiers.length ? `Not a tier (command, support or field): ${badTiers.join('; ')}` : "The tier its members sign in at, from their groups, one per line: Group title = command (or support). Everyone else is field."}
+        error={badTiers.length > 0}
+        value={values.memberTiers}
+        onChange={text('memberTiers')}
+        multiline
+        minRows={2}
+      />
 
       <Typography variant="h6">Brand</Typography>
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
@@ -185,7 +198,7 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
       <TextField label="Admins" helperText="Email addresses, separated by commas. They can change these settings, and those of organizations under this one." value={values.admins} onChange={text('admins')} multiline />
 
       <Stack direction="row" spacing={2}>
-        <Button type="submit" variant="contained" disabled={saving}>
+        <Button type="submit" variant="contained" disabled={saving || badTiers.length > 0}>
           Save
         </Button>
         <Button onClick={onClose}>Cancel</Button>

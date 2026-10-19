@@ -4,6 +4,7 @@
  * hostname; its brand and member provider are its own or the nearest ancestor's.
  */
 import { z } from 'zod';
+import { TIERS, type Tier } from './viewer';
 
 const id = z.string().regex(/^[a-z0-9][a-z0-9-]*$/, 'lowercase letters, digits and dashes');
 const email = z.string().trim().toLowerCase().email();
@@ -36,6 +37,13 @@ export type OrganizationPartner = z.infer<typeof OrganizationPartner>;
 export const TagRules = z.record(z.string().trim().min(1)).default({});
 export type TagRules = z.infer<typeof TagRules>;
 
+/** Group title (in the member provider) to the tier it gives, e.g. "ESAR Operations Leader" to command. */
+export const TierRules = z.record(z.enum(TIERS)).default({});
+export type TierRules = z.infer<typeof TierRules>;
+
+/** The highest of these tiers: command, then support, then field. Field when there are none. */
+export const highestTier = (tiers: Tier[]): Tier => TIERS.find((t) => tiers.includes(t)) ?? 'field';
+
 export const Organization = z.object({
   id,
   /** The organization above this one, e.g. the umbrella over a unit. */
@@ -58,6 +66,11 @@ export const Organization = z.object({
    * or everyone in the provider when it has no unit.
    */
   memberTags: TagRules,
+  /**
+   * The tiers its members sign in at, from their groups, for the same members as `memberTags`.
+   * The highest a member's groups give wins; with none, they're field.
+   */
+  memberTiers: TierRules,
   canCreateMissions: z.boolean().default(false),
   canCreateEvents: z.boolean().default(false),
   /**
@@ -71,7 +84,7 @@ export const Organization = z.object({
 export type Organization = z.infer<typeof Organization>;
 
 /** What an organization's own admins may change; the rest is the site admins'. */
-export const ORG_ADMIN_FIELDS = ['title', 'shortTitle', 'brand', 'memberTags', 'canCreateMissions', 'canCreateEvents', 'partners', 'admins'] as const satisfies readonly (keyof Organization)[];
+export const ORG_ADMIN_FIELDS = ['title', 'shortTitle', 'brand', 'memberTags', 'memberTiers', 'canCreateMissions', 'canCreateEvents', 'partners', 'admins'] as const satisfies readonly (keyof Organization)[];
 
 const memberSeed = z.tuple([z.string(), z.string()]).rest(z.string());
 

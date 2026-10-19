@@ -3,7 +3,7 @@ import { ClientActivityState, Rejection, type Rec, type WireMutation } from '@sy
 import { currentStatus, testRegistry, type Person } from './testDomain';
 
 const viewer = { userId: 'u1', tier: 'command' };
-const newState = () => new ClientActivityState('e1', testRegistry, viewer, 'client-a');
+const newState = () => new ClientActivityState('e1', testRegistry, () => viewer, 'client-a');
 
 let nextId = 1;
 const wire = (name: string, args: Record<string, unknown>): WireMutation => ({ id: nextId++, name, v: 1, args, clientTime: 0 });

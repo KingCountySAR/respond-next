@@ -5,7 +5,7 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation } from 'wouter';
 import { randomId } from '@sync/core';
-import { DEFAULT_EARLY_SIGN_IN_WINDOW, fromSaved } from '@sync/domain';
+import { DEFAULT_EARLY_SIGN_IN_WINDOW, fromSaved, isMissionCommand } from '@sync/domain';
 import type { FieldActivity } from '@sync/model';
 import { observer, useFieldActivity } from '@sync/model/react';
 import { useSite } from '../../shell/App';
@@ -64,6 +64,8 @@ const ActivityEditForm = observer(function ActivityEditForm({ activityType, acti
   };
 
   const selectedType = draft.isMission ? 'missions' : 'events';
+  // Members may create and manage other events; missions are for command.
+  const missionCommand = isMissionCommand(activity ? client.viewerIn(activity.activityId) : client.viewer);
   const ownerChoices = draft.ownerChoices;
   const startsLater = draft.startsAfter(Date.now());
 
@@ -83,7 +85,9 @@ const ActivityEditForm = observer(function ActivityEditForm({ activityType, acti
               <FormControl fullWidth>
                 <InputLabel id="activity-type-label">Type</InputLabel>
                 <Select labelId="activity-type-label" label="Type" value={selectedType} onChange={(event) => draft.set('isMission', event.target.value === 'missions')}>
-                  <MenuItem value="missions">Mission</MenuItem>
+                  <MenuItem value="missions" disabled={!missionCommand}>
+                    Mission
+                  </MenuItem>
                   <MenuItem value="events">Event</MenuItem>
                 </Select>
               </FormControl>

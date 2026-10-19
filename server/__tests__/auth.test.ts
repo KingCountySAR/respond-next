@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BootstrapResponse, SessionResponse } from '@sync/domain';
-import { testApp } from './helpers';
+import { OrganizationStore } from '../src/organizations';
+import { testApp, testSeed } from './helpers';
 
 describe('sites', () => {
   it("serve each hostname's organization, brand and partners", async () => {
@@ -35,6 +36,21 @@ describe('dev sign-in', () => {
     const expected = { userId: 'kcsara:1', name: 'Avery Lindqvist', email: 'avery.lindqvist@crt.example.org', personRef: 'kcsara:1', tier: 'command', class: 'member', admin: false };
     expect(((await res.json()) as SessionResponse).session).toEqual(expected);
     expect((await crt.json<SessionResponse>('/api/auth/session')).body.session).toEqual(expected);
+  });
+
+  it('takes the tier from their groups unless one is chosen', async () => {
+    const seed = testSeed();
+    seed.organizations[1]!.memberTiers = { Medical: 'command' };
+    const app = () => testApp({ organizations: OrganizationStore.memory(seed) }).client();
+    const bo = app();
+    await bo.signIn('bo.okafor@crt.example.org', { tier: undefined });
+    expect((await bo.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('command');
+    const chosen = app();
+    await chosen.signIn('bo.okafor@crt.example.org', { tier: 'support' });
+    expect((await chosen.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('support');
+    const visitor = app();
+    await visitor.signIn('pat@gmail.example', { name: 'Pat Visitor', tier: undefined });
+    expect((await visitor.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('field');
   });
 
   it("signs someone from another organization in on this site's terms", async () => {

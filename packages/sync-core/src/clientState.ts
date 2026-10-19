@@ -16,6 +16,8 @@ export interface ActivitySnapshot extends ReadView {
 export interface PersistedActivity {
   confirmed: Rec[];
   version: number;
+  /** The view key the server projected `confirmed` for. */
+  view?: string;
   pending: WireMutation[];
 }
 
@@ -52,13 +54,16 @@ class Snapshot implements ActivitySnapshot {
 export class ClientActivityState {
   private confirmed = new Map<string, Rec>();
   version = 0;
+  /** The view key the server projected the confirmed records for; undefined until it says. */
+  view: string | undefined;
   pending: WireMutation[] = [];
   snapshot: ActivitySnapshot;
 
   constructor(
     readonly activityId: string,
     private readonly registry: MutationRegistry,
-    private readonly viewer: Viewer,
+    /** Who they are here, given the records as they are in a view (an activity's kind can change it). */
+    private readonly viewerOf: (view: ReadView) => Viewer,
     private readonly clientId: string,
   ) {
     this.snapshot = this.rebuild();
@@ -67,18 +72,19 @@ export class ClientActivityState {
   restore(saved: PersistedActivity): void {
     this.confirmed = new Map(saved.confirmed.map((r) => [recKey(r), r]));
     this.version = saved.version;
+    this.view = saved.view;
     this.pending = [...saved.pending];
     this.snapshot = this.rebuild();
   }
 
   persisted(): PersistedActivity {
-    return { confirmed: [...this.confirmed.values()], version: this.version, pending: this.pending };
+    return { confirmed: [...this.confirmed.values()], version: this.version, view: this.view, pending: this.pending };
   }
 
   /** Runs a new local mutation against the current view. Throws Rejection, without queueing, if it fails. */
   addLocal(m: WireMutation): void {
     const def = this.def(m);
-    def.run(new OverlayTx(this.snapshot), m.args, mutationCtx(this.viewer, this.clientId, m.id, 'client'));
+    def.run(new OverlayTx(this.snapshot), m.args, mutationCtx(this.viewerOf(this.snapshot), this.clientId, m.id, 'client'));
     this.pending = [...this.pending, m];
     this.snapshot = this.rebuild();
   }
@@ -86,6 +92,7 @@ export class ClientActivityState {
   applyReset(msg: ResetMessage): void {
     this.confirmed = new Map(msg.records.map((r) => [recKey(r), r]));
     this.version = msg.to;
+    this.view = msg.view ?? this.view;
     this.confirm(msg.lastMutationId);
   }
 
@@ -97,6 +104,7 @@ export class ClientActivityState {
     for (const d of msg.deletes) next.delete(keyOf(d.type, d.id));
     this.confirmed = next;
     this.version = msg.to;
+    this.view = msg.view ?? this.view;
     this.confirm(msg.lastMutationId);
     return true;
   }
@@ -138,7 +146,7 @@ export class ClientActivityState {
       if (!def) continue;
       const tx = new OverlayTx(view);
       try {
-        def.run(tx, m.args, mutationCtx(this.viewer, this.clientId, m.id, 'client'));
+        def.run(tx, m.args, mutationCtx(this.viewerOf(view), this.clientId, m.id, 'client'));
       } catch {
         // Fails against newer state: hidden from the view, but stays pending until the server answers.
         continue;

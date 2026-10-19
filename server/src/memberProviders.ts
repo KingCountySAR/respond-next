@@ -2,9 +2,10 @@
  * Which member directory answers for whom. An organization uses its nearest member provider up the
  * tree; a person ref (`<provider>:<id>`) names its provider. Each provider in the store gets one
  * directory, cedar or a fixture, built when first needed and again after the provider is changed.
- * Tags are the organizations' business: each gives its members' groups labels (`memberTags`).
+ * Tags and tiers are the organizations' business: each gives its members' groups labels
+ * (`memberTags`) and tiers (`memberTiers`).
  */
-import type { MemberInfo, MemberProviderConfig } from '@sync/domain';
+import { highestTier, type MemberInfo, type MemberProviderConfig } from '@sync/domain';
 import { CedarDirectory } from './cedar';
 import { FixtureDirectory, fixtureMembers, splitPersonRef, tagsFor, type DirectoryMember, type MemberDetails, type MemberDirectory, type MemberPhoto } from './members';
 import type { OrganizationStore } from './organizations';
@@ -47,7 +48,7 @@ export class MemberProviders {
 
   async lookup(personRef: string): Promise<MemberDetails | undefined> {
     const source = splitPersonRef(personRef)?.source;
-    return source ? this.withTags(source, await this.directory(source)?.lookup(personRef)) : undefined;
+    return source ? this.details(source, await this.directory(source)?.lookup(personRef)) : undefined;
   }
 
   /**
@@ -57,17 +58,22 @@ export class MemberProviders {
   async byEmail(email: string, siteOrgId: string): Promise<MemberDetails | undefined> {
     const domainOrg = this.orgs.forEmail(email);
     const provider = (domainOrg && this.orgs.providerOf(domainOrg.id)) ?? this.orgs.providerOf(siteOrgId);
-    return provider ? this.withTags(provider, await this.directory(provider)?.byEmail(email)) : undefined;
+    return provider ? this.details(provider, await this.directory(provider)?.byEmail(email)) : undefined;
   }
 
   /**
-   * The member's tags: from each organization on their provider that has them, by its unit there,
-   * or that has no unit (so has everyone).
+   * The member's tags and tier, from each organization on their provider that has them, by its unit
+   * there, or that has no unit (so has everyone). The highest tier any of them gives wins.
    */
-  private withTags(providerId: string, found: DirectoryMember | undefined): MemberDetails | undefined {
+  private details(providerId: string, found: DirectoryMember | undefined): MemberDetails | undefined {
     if (!found) return undefined;
+    const { member } = found;
     const theirs = this.orgs.all().filter((o) => this.orgs.providerOf(o.id) === providerId && (!o.providerUnit || found.units.includes(o.providerUnit)));
-    return { member: found.member, tags: [...new Set(theirs.flatMap((o) => tagsFor(found.member.groups, o.memberTags)))] };
+    return {
+      member,
+      tags: [...new Set(theirs.flatMap((o) => tagsFor(member.groups, o.memberTags)))],
+      tier: highestTier(theirs.flatMap((o) => member.groups.flatMap((g) => o.memberTiers[g] ?? []))),
+    };
   }
 
   private forOrganization(orgId: string): MemberDirectory | undefined {

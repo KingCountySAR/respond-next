@@ -13,7 +13,7 @@ const members = fixtureMembers('kcsara', [
 
 /** The fixture, with CRT's tag for its Medical group, as the member providers give it. */
 function tagged(fixture = new FixtureDirectory({ CRT: members })): PersonLookup {
-  return { lookup: async (ref) => fixture.lookup(ref).then((f) => f && { member: f.member, tags: tagsFor(f.member.groups, { Medical: 'MED' }) }) };
+  return { lookup: async (ref) => fixture.lookup(ref).then((f) => f && { member: f.member, tags: tagsFor(f.member.groups, { Medical: 'MED' }), tier: 'field' as const }) };
 }
 
 function setup(directory: PersonLookup = tagged()) {

@@ -1,4 +1,5 @@
 /** Text fields on the admin forms, to and from what's stored. */
+import { TIERS, type Tier } from '@sync/domain';
 
 /** A list typed with commas or one per line. */
 export const parseList = (text: string): string[] =>
@@ -26,6 +27,18 @@ export const formatTags = (rules: Record<string, string>): string =>
   Object.entries(rules)
     .map(([group, label]) => `${group} = ${label}`)
     .join('\n');
+
+/** Tier rules, one `Group title = command` (or support, or field) per line; the bad lines, to report. */
+export function parseTiers(text: string): { rules: Record<string, Tier>; bad: string[] } {
+  const rules: Record<string, Tier> = {};
+  const bad: string[] = [];
+  for (const [group, value] of Object.entries(parseTags(text))) {
+    const tier = value.toLowerCase();
+    if ((TIERS as readonly string[]).includes(tier)) rules[group] = tier as Tier;
+    else bad.push(`${group} = ${value}`);
+  }
+  return { rules, bad };
+}
 
 /** A picked image file as a `data:` URI, for an organization's icon. */
 export function readAsDataUri(file: Blob): Promise<string> {

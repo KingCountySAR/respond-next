@@ -1,4 +1,5 @@
 import {
+  ACCESS_CHANGED,
   MapView,
   OverlayTx,
   Rejection,
@@ -91,8 +92,9 @@ export class ActivityActor {
     return this.subs.size;
   }
 
-  subscribe(conn: ActorConn, since: number): Promise<void> {
-    return this.serial(() => this.doSubscribe(conn, since));
+  /** `view`: the view key the client's copy is in, when it has one; a different one starts it over. */
+  subscribe(conn: ActorConn, since: number, view?: string): Promise<void> {
+    return this.serial(() => this.doSubscribe(conn, since, view));
   }
 
   unsubscribe(connId: string): void {
@@ -144,17 +146,26 @@ export class ActivityActor {
     return next;
   }
 
-  private doSubscribe(conn: ActorConn, since: number): void {
+  /** Who the connection is here, given the records as they are in `view` (e.g. an activity's kind). */
+  private viewerOf(conn: ActorConn, view: ReadView = this.view): Viewer {
+    return this.deps.projector.viewerIn?.(conn.viewer, view) ?? conn.viewer;
+  }
+
+  private viewKeyOf(conn: ActorConn): string {
+    return this.deps.projector.viewKey(this.viewerOf(conn));
+  }
+
+  private doSubscribe(conn: ActorConn, since: number, view?: string): void {
     if (this.stale) return conn.close(1012, 'activity reloaded');
-    const viewKey = this.deps.projector.viewKey(conn.viewer);
+    const viewKey = this.viewKeyOf(conn);
     const lastMutationId = this.lastMutationIds.get(conn.clientId) ?? 0;
-    if (since === 0 || since > this.version) {
+    if (since === 0 || since > this.version || (view !== undefined && view !== viewKey)) {
       // A client ahead of us means the server lost data; start it over.
-      conn.send({ t: 'reset', activityId: this.activityId, to: this.version, records: this.projectedRecords(viewKey), lastMutationId });
+      conn.send({ t: 'reset', activityId: this.activityId, view: viewKey, to: this.version, records: this.projectedRecords(viewKey), lastMutationId });
     } else {
       const changed = [...this.records.values()].filter((r) => r.version > since);
       const { upserts, deletes } = this.diff(viewKey, changed);
-      conn.send({ t: 'update', activityId: this.activityId, from: since, to: this.version, upserts, deletes, lastMutationId });
+      conn.send({ t: 'update', activityId: this.activityId, view: viewKey, from: since, to: this.version, upserts, deletes, lastMutationId });
     }
     this.subs.set(conn.id, { conn, viewKey, sentVersion: this.version, sentMutationId: lastMutationId });
   }
@@ -224,7 +235,9 @@ export class ActivityActor {
     const reject = (reason: string, message: string): Applied => ({ reason, message });
     const def = this.deps.registry.get(m.name, m.v);
     if (!def) return reject('unknown_mutation', `Unknown change type ${m.name}@${m.v}`);
-    if (def.allow && !def.allow(conn.viewer)) return reject('forbidden', 'Your role cannot make this change');
+    // Who they are as of the changes before this one in the batch.
+    const viewer = this.viewerOf(conn, batch);
+    if (def.allow && !def.allow(viewer)) return reject('forbidden', 'Your role cannot make this change');
     const parsed = def.args.safeParse(m.args);
     if (!parsed.success) return reject('bad_args', parsed.error.issues[0]?.message ?? 'Invalid change');
     if (def.timed) {
@@ -234,7 +247,7 @@ export class ActivityActor {
     }
     const tx = new OverlayTx(batch);
     try {
-      def.run(tx, parsed.data, mutationCtx(conn.viewer, conn.clientId, m.id, 'server'));
+      def.run(tx, parsed.data, mutationCtx(viewer, conn.clientId, m.id, 'server'));
     } catch (err) {
       if (err instanceof Rejection) return reject(err.code, err.message);
       console.error(`sync: ${m.name} failed on the server`, err);
@@ -243,10 +256,20 @@ export class ActivityActor {
     return { writes: tx.writes };
   }
 
-  /** Projects the changes once per view key, then sends each subscriber what it hasn't seen. */
+  /**
+   * Projects the changes once per view key, then sends each subscriber what it hasn't seen. Someone
+   * the changes made someone else here (an activity's kind changed) is disconnected, as for a change
+   * to their grants: their client reconnects, and gets the activity afresh in their new view.
+   */
   private fanOut(changed: Rec[]): void {
     const byView = new Map<string, Subscription[]>();
     for (const sub of this.subs.values()) {
+      const viewKey = this.viewKeyOf(sub.conn);
+      if (viewKey !== sub.viewKey) {
+        this.subs.delete(sub.conn.id);
+        sub.conn.close(ACCESS_CHANGED, 'access changed');
+        continue;
+      }
       const group = byView.get(sub.viewKey) ?? [];
       group.push(sub);
       byView.set(sub.viewKey, group);
@@ -256,7 +279,7 @@ export class ActivityActor {
       for (const sub of subs) {
         const lastMutationId = this.lastMutationIds.get(sub.conn.clientId) ?? 0;
         if (upserts.length === 0 && deletes.length === 0 && lastMutationId === sub.sentMutationId) continue;
-        sub.conn.send({ t: 'update', activityId: this.activityId, from: sub.sentVersion, to: this.version, upserts, deletes, lastMutationId });
+        sub.conn.send({ t: 'update', activityId: this.activityId, view: viewKey, from: sub.sentVersion, to: this.version, upserts, deletes, lastMutationId });
         sub.sentVersion = this.version;
         sub.sentMutationId = lastMutationId;
       }

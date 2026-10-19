@@ -18,6 +18,7 @@ const NEW_ORGANIZATION: Organization = {
   memberProvider: null,
   providerUnit: null,
   memberTags: {},
+  memberTiers: {},
   canCreateMissions: false,
   canCreateEvents: false,
   partners: [],

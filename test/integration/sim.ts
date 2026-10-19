@@ -33,8 +33,9 @@ export class SimNetwork {
     return (this.latencyMs / 2) * (0.5 + this.rand());
   }
 
-  transportFor(index: number, viewer: Viewer): () => Transport {
-    return () => new SimTransport(this, index, viewer);
+  /** `viewerIn`: who they are on an activity, when that isn't `viewer`. */
+  transportFor(index: number, viewer: Viewer, viewerIn?: (activityId: string) => Viewer | undefined): () => Transport {
+    return () => new SimTransport(this, index, viewer, viewerIn);
   }
 
   cut(index: number): void {
@@ -63,6 +64,7 @@ class SimTransport implements Transport {
     private readonly net: SimNetwork,
     private readonly index: number,
     private readonly viewer: Viewer,
+    private readonly viewerIn?: (activityId: string) => Viewer | undefined,
   ) {}
 
   open(handlers: TransportHandlers): void {
@@ -77,8 +79,9 @@ class SimTransport implements Transport {
       if (this.closed) return;
       this.server = this.net.hub.connect({
         viewer: this.viewer,
+        viewerIn: this.viewerIn,
         send: (text) => this.deliver('toClient', () => this.handlers?.onMessage(text)),
-        close: () => this.kill(),
+        close: (code, reason) => this.kill(`${code} ${reason}`),
       });
       handlers.onOpen();
     }, this.net.latencyMs);
@@ -90,12 +93,12 @@ class SimTransport implements Transport {
 
   /** Closed by the client. */
   close(): void {
-    this.shutdown(false);
+    this.shutdown(undefined);
   }
 
   /** Cut by the network or the server; the client finds out. */
-  kill(): void {
-    this.shutdown(true);
+  kill(reason = 'connection lost'): void {
+    this.shutdown(reason);
   }
 
   private readonly queues = { toServer: [] as { at: number; fn: () => void }[], toClient: [] as { at: number; fn: () => void }[] };
@@ -128,12 +131,13 @@ class SimTransport implements Transport {
     );
   }
 
-  private shutdown(notifyClient: boolean): void {
+  /** `reason`: the client is told why, unless it closed the connection itself. */
+  private shutdown(reason: string | undefined): void {
     if (this.closed) return;
     this.closed = true;
     this.net.register(this.index, undefined);
     this.server?.close();
     const handlers = this.handlers;
-    if (notifyClient && handlers) setTimeout(() => handlers.onClose('connection lost'), 0);
+    if (reason !== undefined && handlers) setTimeout(() => handlers.onClose(reason), 0);
   }
 }

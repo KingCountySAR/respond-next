@@ -5,18 +5,23 @@
  */
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
-import type { Session } from '@sync/domain';
+import type { Session, Tier } from '@sync/domain';
 
 export const SESSION_COOKIE = 'sync_session';
 // As the legacy app: a day.
 export const SESSION_TTL_SECONDS = 60 * 60 * 24;
 
-/** What a session stands for. Whether they're an admin is worked out on each request. */
-export type SessionData = Omit<Session, 'admin'> & { orgId: string };
+/**
+ * What a session stands for. Whether they're an admin is worked out on each request. `grants`: tiers
+ * command gave them on particular missions, by activity id (none in sessions from before grants).
+ */
+export type SessionData = Omit<Session, 'admin'> & { orgId: string; grants?: Record<string, Tier> };
 
 export interface SessionStore {
   create(data: SessionData): Promise<string>;
   get(id: string): Promise<SessionData | undefined>;
+  /** Changes what each of this person's live sessions stands for, keeping its expiry, e.g. when their grants change. */
+  updatePerson(personRef: string, change: (data: SessionData) => Promise<SessionData>): Promise<void>;
   remove(id: string): Promise<void>;
 }
 
@@ -37,6 +42,12 @@ export class MemorySessionStore implements SessionStore {
     const found = this.sessions.get(id);
     if (found && found.expires <= this.now()) this.sessions.delete(id);
     return found && found.expires > this.now() ? found.data : undefined;
+  }
+
+  async updatePerson(personRef: string, change: (data: SessionData) => Promise<SessionData>): Promise<void> {
+    for (const [id, found] of this.sessions) {
+      if (found.data.personRef === personRef && (await this.get(id))) found.data = await change(found.data);
+    }
   }
 
   async remove(id: string): Promise<void> {
@@ -70,6 +81,11 @@ export class PostgresSessionStore implements SessionStore {
   async get(id: string): Promise<SessionData | undefined> {
     const { rows } = await this.pool.query<{ data: SessionData }>('SELECT data FROM sessions WHERE id = $1 AND expires > now()', [id]);
     return rows[0]?.data;
+  }
+
+  async updatePerson(personRef: string, change: (data: SessionData) => Promise<SessionData>): Promise<void> {
+    const { rows } = await this.pool.query<{ id: string; data: SessionData }>("SELECT id, data FROM sessions WHERE data->>'personRef' = $1 AND expires > now()", [personRef]);
+    for (const { id, data } of rows) await this.pool.query('UPDATE sessions SET data = $2 WHERE id = $1 AND expires > now()', [id, await change(data)]);
   }
 
   async remove(id: string): Promise<void> {

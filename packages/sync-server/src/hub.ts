@@ -1,10 +1,12 @@
-import { ClientMessage, decode, encode, randomId, type ServerMessage, type Viewer } from '@sync/core';
+import { ACCESS_CHANGED, ClientMessage, decode, encode, randomId, type ServerMessage, type Viewer } from '@sync/core';
 import { ActivityActor, type ActorConn, type ActorDeps } from './activityActor';
 import { StorageConflictError } from './storage';
 
 /** The transport side of one client connection (a WebSocket in production, a fake in tests). */
 export interface HubConnection {
   readonly viewer: Viewer;
+  /** Who they are on one activity when that isn't `viewer` (a grant there); undefined, by far the usual case, for `viewer`. */
+  viewerIn?(activityId: string): Viewer | undefined;
   send(text: string): void;
   close(code: number, reason: string): void;
 }
@@ -20,7 +22,8 @@ interface Conn {
   id: string;
   transport: HubConnection;
   actorConn?: ActorConn;
-  activities: Set<string>;
+  /** The connection as each activity it opened sees it: itself, unless they're someone else there. */
+  activities: Map<string, ActorConn>;
   queue: Promise<unknown>;
   closed: boolean;
 }
@@ -28,11 +31,13 @@ interface Conn {
 /** Routes client connections to activity actors. Each connection's messages are handled in order. */
 export class Hub {
   private readonly actors = new Map<string, Promise<ActivityActor>>();
+  private readonly conns = new Set<Conn>();
 
   constructor(private readonly deps: HubDeps) {}
 
   connect(transport: HubConnection): { message(text: string): void; close(): void } {
-    const conn: Conn = { id: randomId(), transport, activities: new Set(), queue: Promise.resolve(), closed: false };
+    const conn: Conn = { id: randomId(), transport, activities: new Map(), queue: Promise.resolve(), closed: false };
+    this.conns.add(conn);
     return {
       message: (text) => this.receive(conn, text),
       close: () => this.disconnect(conn),
@@ -54,6 +59,18 @@ export class Hub {
       if (this.actors.get(activityId) === loading) this.actors.delete(activityId);
     });
     return loading;
+  }
+
+  /**
+   * Disconnects everyone `match` picks, e.g. someone whose grants changed. Their clients reconnect,
+   * as who they are now.
+   */
+  disconnectWhere(match: (viewer: Viewer) => boolean): void {
+    for (const conn of this.conns) {
+      if (!match(conn.transport.viewer)) continue;
+      conn.transport.close(ACCESS_CHANGED, 'access changed');
+      this.disconnect(conn);
+    }
   }
 
   /** Applies changes the server makes itself; see ActivityActor.pushAsSystem. */
@@ -100,7 +117,7 @@ export class Hub {
           this.disconnect(conn);
         },
       };
-      for (const s of msg.subs) await this.subscribe(conn, conn.actorConn, s.activityId, s.since);
+      for (const s of msg.subs) await this.subscribe(conn, conn.actorConn, s.activityId, s.since, s.view);
       return;
     }
     const actorConn = conn.actorConn;
@@ -110,7 +127,7 @@ export class Hub {
     }
     switch (msg.t) {
       case 'sub':
-        await this.subscribe(conn, actorConn, msg.activityId, msg.since);
+        await this.subscribe(conn, actorConn, msg.activityId, msg.since, msg.view);
         break;
       case 'unsub':
         conn.activities.delete(msg.activityId);
@@ -121,15 +138,17 @@ export class Hub {
           for (const m of msg.mutations) this.send(conn, { t: 'reject', activityId: msg.activityId, mutationId: m.id, reason: 'read_only', message: 'Only the server changes this' });
           break;
         }
-        await (await this.actor(msg.activityId)).push(actorConn, msg.mutations);
+        await (await this.actor(msg.activityId)).push(conn.activities.get(msg.activityId) ?? actorConn, msg.mutations);
         break;
     }
   }
 
-  private async subscribe(conn: Conn, actorConn: ActorConn, activityId: string, since: number): Promise<void> {
+  private async subscribe(conn: Conn, actorConn: ActorConn, activityId: string, since: number, view?: string): Promise<void> {
     // Phase 1: any connection may open any activity. Grants are checked here in phase 2.
-    conn.activities.add(activityId);
-    await (await this.actor(activityId)).subscribe(actorConn, since);
+    const viewer = conn.transport.viewerIn?.(activityId);
+    const there: ActorConn = viewer ? { ...actorConn, viewer } : actorConn;
+    conn.activities.set(activityId, there);
+    await (await this.actor(activityId)).subscribe(there, since, view);
   }
 
   private send(conn: Conn, msg: ServerMessage): void {
@@ -141,6 +160,7 @@ export class Hub {
   private disconnect(conn: Conn): void {
     if (conn.closed) return;
     conn.closed = true;
-    for (const activityId of conn.activities) void this.actors.get(activityId)?.then((a) => a.unsubscribe(conn.id));
+    this.conns.delete(conn);
+    for (const activityId of conn.activities.keys()) void this.actors.get(activityId)?.then((a) => a.unsubscribe(conn.id));
   }
 }

@@ -68,3 +68,16 @@ describe('member tags', () => {
     expect((await members.lookup('kcsara:3'))?.tags).toEqual(['MED']);
   });
 });
+
+describe('member tiers', () => {
+  it("are the highest their organizations' rules give their groups, else field", async () => {
+    const seed = testSeed();
+    seed.organizations[1]!.memberTiers = { Medical: 'support' };
+    // The umbrella has no unit: its rules are for everyone.
+    seed.organizations[0]!.memberTiers = { Field: 'command' };
+    const members = new MemberProviders(OrganizationStore.memory(seed));
+    expect((await members.lookup('kcsara:1'))?.tier).toBe('command'); // Avery: Field
+    expect((await members.lookup('kcsara:3'))?.tier).toBe('support'); // Bo: Medical
+    expect((await members.lookup('kcsara:2'))?.tier).toBe('field'); // Kai: no groups
+  });
+});

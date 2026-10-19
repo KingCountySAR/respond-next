@@ -7,12 +7,12 @@ import { useAuth } from './auth';
 /**
  * The legacy login panel's layout. Google sign-in is still to come; a server with DEV_TOOLS offers
  * the dev sign-in instead, which looks the email up in the member directory like Google sign-in will,
- * but lets the developer pick the tier.
+ * taking the tier from their groups unless the developer picks one.
  */
 export function LoginPanel() {
   const { devSignIn } = useAuth();
   const site = useSite();
-  const [form, setForm] = useState({ email: '', name: '', personRef: '', tier: 'field' as Tier, class: 'member' as Session['class'] });
+  const [form, setForm] = useState({ email: '', name: '', personRef: '', tier: '' as Tier | '', class: 'member' as Session['class'] });
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const set = (field: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [field]: e.target.value });
@@ -30,7 +30,7 @@ export function LoginPanel() {
     setBusy(true);
     setError(undefined);
     try {
-      await devSignIn({ email: form.email.trim(), name: form.name.trim() || undefined, personRef: form.personRef.trim() || undefined, tier: form.tier, class: form.class });
+      await devSignIn({ email: form.email.trim(), name: form.name.trim() || undefined, personRef: form.personRef.trim() || undefined, tier: form.tier || undefined, class: form.class });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -45,6 +45,7 @@ export function LoginPanel() {
         <TextField label="Name" helperText="Only for someone not in the member directory, or with a person" value={form.name} onChange={set('name')} />
         <TextField label="Person" helperText="Optional: be this person ref (e.g. kcsara:85205) without the directory" value={form.personRef} onChange={set('personRef')} />
         <TextField select label="Tier" value={form.tier} onChange={set('tier')}>
+          <MenuItem value="">From their groups</MenuItem>
           <MenuItem value="field">Field</MenuItem>
           <MenuItem value="support">Support</MenuItem>
           <MenuItem value="command">Command</MenuItem>

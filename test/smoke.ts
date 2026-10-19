@@ -41,7 +41,7 @@ const bob = participantIdFor(bobRef);
 const t0 = Date.now();
 command.mutate(activityId, 'createActivity', {
   idNumber: '',
-  kind: 'training',
+  kind: 'mission',
   title: 'Smoke test',
   description: '',
   location: { title: 'Nowhere', lat: null, lon: null, address: null },

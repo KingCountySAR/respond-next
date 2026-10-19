@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Rejection, defineMutation } from '@sync/core';
 import { DEFAULT_EARLY_SIGN_IN_WINDOW, currentParticipantStatus, getActivity, isActiveStatus } from '../queries';
 import { DEFAULT_PLACES, ACTIVITY_KINDS, ACTIVITY_MODES, ACTIVITY_RECORD_ID, Location, type ParticipantRec } from '../schema';
-import { isCommand } from '../viewer';
+import { asActivityViewer, isCommand, isMissionCommand } from '../viewer';
 import { addStatus, at, id, idSource, requireActivity, requireOpen } from './common';
 
 const ActivityFields = z.object({
@@ -24,9 +24,11 @@ export const createActivity = defineMutation({
   name: 'createActivity',
   version: 1,
   args: ActivityFields.extend({ earlySignInWindow: ActivityFields.shape.earlySignInWindow.default(DEFAULT_EARLY_SIGN_IN_WINDOW) }),
-  allow: isCommand,
+  // Command creates missions; members may create trainings and other events too.
+  allow: (viewer) => isCommand(viewer) || asActivityViewer(viewer).class === 'member',
   describe: (a) => `Create ${a.title}`,
   run(tx, a, ctx) {
+    if (a.kind === 'mission' && !isMissionCommand(ctx.viewer)) throw new Rejection('forbidden', 'Only command can create a mission');
     if (getActivity(tx)) throw new Rejection('exists', 'This event already exists');
     tx.put({ type: 'activity', id: ACTIVITY_RECORD_ID, ...a, endTime: null, closed: false, removedAt: null });
     const nextId = idSource(ctx);
@@ -40,8 +42,9 @@ export const updateActivity = defineMutation({
   args: ActivityFields.partial(),
   allow: isCommand,
   describe: (_a, view) => `Edit ${getActivity(view)?.title ?? 'the event'}`,
-  run(tx, a) {
-    requireOpen(tx);
+  run(tx, a, ctx) {
+    const activity = requireOpen(tx);
+    if (a.kind === 'mission' && activity.kind !== 'mission' && !isMissionCommand(ctx.viewer)) throw new Rejection('forbidden', 'Only command can make this a mission');
     tx.update('activity', ACTIVITY_RECORD_ID, a);
   },
 });

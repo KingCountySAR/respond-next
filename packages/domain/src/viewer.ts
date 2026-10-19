@@ -12,6 +12,11 @@ export interface ActivityViewer extends Viewer {
   class: 'member' | 'external';
   /** The viewer's own person, for self-service changes (signing in, ETA). */
   personRef?: string;
+  /**
+   * Their tier were the activity a mission, when its kind is what makes them command: members
+   * manage trainings and other events. Only that tier may make one a mission.
+   */
+  missionTier?: Tier;
 }
 
 /** System mutations (member info, cross-activity sign-outs) run as this viewer. */
@@ -24,3 +29,6 @@ export const isSystemViewer = (viewer: Viewer): boolean => viewer.userId === SYS
 
 /** Support uses the command rules for now; it's a separate tier so it can diverge later. */
 export const isCommand = (viewer: Viewer): boolean => viewer.tier === 'command' || viewer.tier === 'support';
+
+/** Whether they're command on missions: their own tier (with any grant), not one an event's kind gives them. */
+export const isMissionCommand = (viewer: Viewer): boolean => isCommand({ ...viewer, tier: asActivityViewer(viewer).missionTier ?? viewer.tier });

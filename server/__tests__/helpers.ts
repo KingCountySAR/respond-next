@@ -2,6 +2,7 @@
 import { activityProjector, activityRegistry, OrganizationSeed } from '@sync/domain';
 import { Hub, MemoryStorage } from '@sync/server';
 import { createSyncApp, type SyncAppOptions } from '../src/app';
+import { MemoryGrantStore } from '../src/grants';
 import { MemberProviders } from '../src/memberProviders';
 import { OrganizationStore } from '../src/organizations';
 import { MemorySessionStore } from '../src/sessions';
@@ -52,7 +53,8 @@ export function testApp(options: Partial<SyncAppOptions> = {}) {
   const sessions = new MemorySessionStore();
   const members = new MemberProviders(organizations);
   const hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now });
-  const { app } = createSyncApp(hub, { organizations, sessions, members, devSignIn: true, ...options });
+  const grants = options.grants ?? new MemoryGrantStore();
+  const { app } = createSyncApp(hub, { organizations, sessions, members, grants, devSignIn: true, ...options });
 
   /** Requests on one site (by hostname), keeping the session cookie once signed in. */
   const client = (host = CRT_HOST) => {
@@ -78,5 +80,5 @@ export function testApp(options: Partial<SyncAppOptions> = {}) {
       },
     };
   };
-  return { app, organizations, sessions, client };
+  return { app, hub, organizations, sessions, grants, client };
 }

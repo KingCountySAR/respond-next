@@ -58,9 +58,12 @@ describe('organization admin', () => {
     fireEvent.change(field(/^Title/), { target: { value: 'Cascade Rescue' } });
     fireEvent.change(field(/^Primary color$/), { target: { value: '#123456' } });
     fireEvent.change(field(/^Member tags/), { target: { value: 'CRT Medical = MED\nCRT K9 = K9' } });
+    fireEvent.change(field(/^Member tiers/), { target: { value: 'CRT Leader = boss' } });
+    expect(screen.getByText('Not a tier (command, support or field): CRT Leader = boss')).toBeTruthy();
+    fireEvent.change(field(/^Member tiers/), { target: { value: 'CRT Leader = Command' } });
     fireEvent.click(screen.getByText('Save'));
     expect(await screen.findByText('Cascade Rescue (CRT)')).toBeTruthy();
-    expect(organizations.get(CRT.id)).toMatchObject({ title: 'Cascade Rescue', brand: { primary: '#123456' }, memberTags: { 'CRT Medical': 'MED', 'CRT K9': 'K9' }, hostnames: ['crt.localhost'] });
+    expect(organizations.get(CRT.id)).toMatchObject({ title: 'Cascade Rescue', brand: { primary: '#123456' }, memberTags: { 'CRT Medical': 'MED', 'CRT K9': 'K9' }, memberTiers: { 'CRT Leader': 'command' }, hostnames: ['crt.localhost'] });
   });
 
   it('lets site admins add organizations and member providers, with secrets kept back', async () => {

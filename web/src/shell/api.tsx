@@ -3,6 +3,8 @@ import type {
   AdminMemberProvidersResponse,
   AdminOrganizationsResponse,
   DevSignInRequest,
+  GrantResponse,
+  TierGrant,
   MemberInfo,
   MemberProviderConfig,
   Organization,
@@ -20,6 +22,10 @@ export interface Api {
   /** The development sign-in; throws with the reason it was refused. */
   devSignIn(request: DevSignInRequest): Promise<Session>;
   signOut(): Promise<void>;
+  /** Command on the activity only: a person's grant there, giving it (to someone on its roster), or taking it away. */
+  grantOf(activityId: string, personRef: string): Promise<TierGrant | null>;
+  grant(activityId: string, personRef: string, tier: 'command' | 'support'): Promise<void>;
+  revokeGrant(activityId: string, personRef: string): Promise<void>;
   /** Members of a unit matching a name or email; empty when there's no match. */
   searchMembers(unitId: string, query: string): Promise<MemberInfo[]>;
   /** Saved locations by title; all of them for an empty query. */
@@ -55,6 +61,8 @@ async function call<T>(what: string, url: string, init?: RequestInit): Promise<T
 
 const json = (method: string, body: unknown): RequestInit => ({ method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
+const grantPath = (activityId: string, personRef: string) => `/api/activities/${encodeURIComponent(activityId)}/grants/${encodeURIComponent(personRef)}`;
+
 export const fetchApi: Api = {
   async session() {
     return (await call<SessionResponse>('session', '/api/auth/session')).session;
@@ -64,6 +72,15 @@ export const fetchApi: Api = {
   },
   async signOut() {
     await call('sign out', '/api/auth/logout', { method: 'POST' });
+  },
+  async grantOf(activityId, personRef) {
+    return (await call<GrantResponse>('grant', grantPath(activityId, personRef))).grant;
+  },
+  async grant(activityId, personRef, tier) {
+    await call('grant', grantPath(activityId, personRef), json('PUT', { tier }));
+  },
+  async revokeGrant(activityId, personRef) {
+    await call('remove grant', grantPath(activityId, personRef), { method: 'DELETE' });
   },
   async searchMembers(unitId, query) {
     const res = await fetch(`/api/v1/organizations/${encodeURIComponent(unitId)}/members?query=${encodeURIComponent(query)}`);

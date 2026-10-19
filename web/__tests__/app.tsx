@@ -2,17 +2,18 @@
 import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect } from 'vitest';
 import { MemoryPersistence, SyncClient } from '@sync/client';
-import { ACTIVITY_LIST_ID, OrganizationSeed, activityProjector, activityRegistry, type ActivityViewer, type BootstrapResponse, type MemberInfo, type Session, type WeatherReport } from '@sync/domain';
+import { ACTIVITY_LIST_ID, OrganizationSeed, activityProjector, activityRegistry, viewerOfSession, type ActivityViewer, type BootstrapResponse, type MemberInfo, type Session, type WeatherReport } from '@sync/domain';
 import { Hub, MemoryStorage } from '@sync/server';
 import { MemoryLocationCatalog } from '../../server/src/locations';
 import { FixtureDirectory, fixtureMembers } from '../../server/src/members';
 import { MemberProviders } from '../../server/src/memberProviders';
 import { OrganizationStore } from '../../server/src/organizations';
-import { devSignIn } from '../../server/src/signIn';
+import { devSignIn, refreshSession, tierOn } from '../../server/src/signIn';
+import type { SessionData } from '../../server/src/sessions';
+import { MemoryGrantStore } from '../../server/src/grants';
 import { SummaryWriter } from '../../server/src/summaries';
 import type { Api } from '../src/shell/api';
 import { App } from '../src/shell/App';
-import { viewerOf } from '../src/shell/auth';
 import { COMMAND, CRT, RMR, activityArgs } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from '../../test/integration/sim';
 
@@ -69,28 +70,53 @@ export const WEATHER: WeatherReport = {
   period: { name: 'This Afternoon', temperature: 41, temperatureUnit: 'F', humidity: 88, windSpeed: '5 mph', shortForecast: 'Light Rain', icon: null },
 };
 
-/** The server's API in memory, for one browser on CRT's site: it keeps one session. */
-function apiFor(locations: MemoryLocationCatalog, orgs: OrganizationStore): Api {
+/** The server's API in memory, for one browser on CRT's site: it keeps one session (`current`). */
+function apiFor(locations: MemoryLocationCatalog, orgs: OrganizationStore, hub: Hub, grants: MemoryGrantStore): { api: Api; current: () => SessionData | null; changed: (personRef: string) => Promise<void> } {
   const members = new MemberProviders(orgs, (config) => directories[config.id as keyof typeof directories]);
-  let session: Session | null = null;
+  const people = { members, grants };
+  let data: SessionData | null = null;
+  const toSession = ({ orgId: _, grants: _grants, ...rest }: SessionData): Session => ({ ...rest, admin: orgs.isAdmin(rest.email) });
+  const atCommand = (activityId: string) => {
+    if (!data || tierOn(data, activityId) !== 'command') throw new Error('Only command on this activity can grant tiers');
+  };
+  // As the server: their session brought up to date, and their connections closed.
+  const changed = async (personRef: string) => {
+    if (data?.personRef === personRef) data = await refreshSession(people, data);
+    hub.disconnectWhere((viewer) => viewer.userId === personRef);
+  };
   const site = () => orgs.get(CRT.id)!;
   const done = <T,>(result: { ok: true; saved: T } | { ok: false; error: string }): T => {
     if (!result.ok) throw new Error(result.error);
     return result.saved;
   };
-  return {
+  const api: Api = {
     async session() {
-      return session && { ...session, admin: orgs.isAdmin(session.email) };
+      return data && toSession(data);
     },
     async devSignIn(request) {
-      const result = await devSignIn(members, site(), request);
+      const result = await devSignIn(people, site(), request);
       if (!result.ok) throw new Error(result.error);
-      const { orgId: _, ...data } = result.session;
-      session = { ...data, admin: orgs.isAdmin(data.email) };
-      return session;
+      data = result.session;
+      return toSession(data);
     },
     async signOut() {
-      session = null;
+      data = null;
+    },
+    async grantOf(activityId, personRef) {
+      atCommand(activityId);
+      return (await grants.get(personRef, activityId)) ?? null;
+    },
+    async grant(activityId, personRef, tier) {
+      atCommand(activityId);
+      const roster = (await hub.actor(activityId)).projectedRecords('command');
+      if (!roster.some((r) => r.type === 'participant' && (r as { personRef?: string }).personRef === personRef)) throw new Error(`${personRef} isn't on that activity's roster`);
+      await grants.set(personRef, activityId, { tier, grantedBy: data!.email, grantedAt: Date.now() });
+      await changed(personRef);
+    },
+    async revokeGrant(activityId, personRef) {
+      atCommand(activityId);
+      await grants.remove(personRef, activityId);
+      await changed(personRef);
     },
     searchMembers: async (unitId, query) => (await members.search(unitId, query)) ?? [],
   searchLocations: (query) => locations.search(query),
@@ -99,18 +125,19 @@ function apiFor(locations: MemoryLocationCatalog, orgs: OrganizationStore): Api 
     weather: async () => WEATHER,
     admin: {
       organizations: async () => {
-        const email = session?.email;
+        const email = data?.email;
         return { organizations: orgs.editableBy(email), all: orgs.all().map((o) => ({ id: o.id, title: o.title })), memberProviders: orgs.memberProviders().map((p) => p.id), siteAdmin: orgs.isSiteAdmin(email) };
       },
-      saveOrganization: async (org) => done(await orgs.save(org, session?.email)),
-      removeOrganization: async (id) => void done(await orgs.remove(id, session?.email)),
+      saveOrganization: async (org) => done(await orgs.save(org, data?.email)),
+      removeOrganization: async (id) => void done(await orgs.remove(id, data?.email)),
       siteAdmins: async () => orgs.siteAdmins(),
       setSiteAdmins: async (stored) => (await orgs.setSiteAdmins(stored), orgs.siteAdmins()),
       memberProviders: async () => ({ memberProviders: orgs.memberProviders(), usedBy: orgs.providerUsers() }),
-      saveMemberProvider: async (provider) => void done(await orgs.saveProvider(provider, session?.email)),
-      removeMemberProvider: async (id) => void done(await orgs.removeProvider(id, session?.email)),
+      saveMemberProvider: async (provider) => void done(await orgs.saveProvider(provider, data?.email)),
+      removeMemberProvider: async (id) => void done(await orgs.removeProvider(id, data?.email)),
     },
   };
+  return { api, current: () => data, changed };
 }
 
 export const ACTIVITY = 'a1';
@@ -136,16 +163,28 @@ export async function serverWithActivity(options: { siteAdmins?: string[] } = {}
 
   const locations = new MemoryLocationCatalog([SAVED_TRAILHEAD]);
   const organizations = OrganizationStore.memory(organizationSeed(), { envAdmins: options.siteAdmins });
-  const api = apiFor(locations, organizations);
+  const grants = new MemoryGrantStore();
+  const { api, current, changed } = apiFor(locations, organizations, hub, grants);
+  /** Someone at command gives this person command on an activity, as through the API. */
+  const grantCommand = async (personRef: string, activityId = ACTIVITY) => {
+    await grants.set(personRef, activityId, { tier: 'command', grantedBy: 'alice.adams@crt.example.org', grantedAt: Date.now() });
+    await changed(personRef);
+  };
+  // Each connection is the session as it is when it opens, as the server's WebSocket upgrade.
+  const transport = (index: number) => () => {
+    const session = current()!;
+    const viewer = viewerOfSession(session);
+    return net.transportFor(index, viewer, (id) => (tierOn(session, id) === viewer.tier ? undefined : { ...viewer, tier: tierOn(session, id) }))();
+  };
   // People signing in on CRT's site respond under CRT.
   const site = (): BootstrapResponse => ({ config: organizations.siteConfig(organizations.get(CRT.id)!, { devSignIn: true, buildId: 'test' }) });
   let nextClient = 1;
   const renderApp = (path = '/') => {
     window.history.replaceState(null, '', path);
     const index = nextClient++;
-    return render(<App bootstrap={async () => site()} api={api} sync={{ transport: (s: Session) => net.transportFor(index, viewerOf(s) as ActivityViewer)(), persistence: () => new MemoryPersistence() }} />);
+    return render(<App bootstrap={async () => site()} api={api} sync={{ transport: transport(index), persistence: () => new MemoryPersistence() }} />);
   };
-  return { net, seed, locations, organizations, renderApp, stop: () => seed.stop() };
+  return { net, seed, locations, organizations, grants, grantCommand, renderApp, stop: () => seed.stop() };
 }
 
 /** Signs in by email (`given.family@crt.example.org`); everyone named here is in CRT's directory. */

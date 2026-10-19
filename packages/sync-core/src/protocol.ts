@@ -13,6 +13,9 @@ const WireMutation = z.object({
 });
 export type WireMutation = z.infer<typeof WireMutation>;
 
+/** `view`: the view key the client's copy of the activity is in; a different one gets it afresh. */
+const Sub = z.object({ activityId: z.string().min(1), since: z.number().int().min(0), view: z.string().max(64).optional() });
+
 /** Messages from client to server. Parsed with zod because they're untrusted. */
 export const ClientMessage = z.discriminatedUnion('t', [
   z.object({
@@ -20,9 +23,9 @@ export const ClientMessage = z.discriminatedUnion('t', [
     // Restricted because it becomes a storage field name (lastMutationIds.<clientId>).
     clientId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, 'clientId must be 1-64 letters, digits, _ or -'),
     build: z.string(),
-    subs: z.array(z.object({ activityId: z.string().min(1), since: z.number().int().min(0) })),
+    subs: z.array(Sub),
   }),
-  z.object({ t: z.literal('sub'), activityId: z.string().min(1), since: z.number().int().min(0) }),
+  z.object({ t: z.literal('sub'), ...Sub.shape }),
   z.object({ t: z.literal('unsub'), activityId: z.string().min(1) }),
   z.object({ t: z.literal('push'), activityId: z.string().min(1), mutations: z.array(WireMutation).min(1) }),
   z.object({ t: z.literal('ping'), n: z.number() }),
@@ -34,18 +37,25 @@ export interface RecRef {
   id: string;
 }
 
-/** Messages from server to client. */
+/**
+ * The close code for a connection whose viewer changed on an activity (its kind, or their grants):
+ * the client reconnects, and gets the activity afresh in the view it has now.
+ */
+export const ACCESS_CHANGED = 4001;
+
+/** Messages from server to client. `view`: the view key the records are projected for. */
 export type ServerMessage =
   | {
       t: 'update';
       activityId: string;
+      view?: string;
       from: number;
       to: number;
       upserts: Rec[];
       deletes: RecRef[];
       lastMutationId: number;
     }
-  | { t: 'reset'; activityId: string; to: number; records: Rec[]; lastMutationId: number }
+  | { t: 'reset'; activityId: string; view?: string; to: number; records: Rec[]; lastMutationId: number }
   | { t: 'reject'; activityId: string; mutationId: number; reason: string; message: string }
   | { t: 'pong'; n: number; serverTime: number }
   | { t: 'reload'; reason: string }

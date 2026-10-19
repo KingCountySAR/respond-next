@@ -8,6 +8,7 @@ import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync
 import { createSyncApp } from './app';
 import { SummaryWriter } from './summaries';
 import { MemoryLocationCatalog, PostgresLocationCatalog, type LocationCatalog } from './locations';
+import { MemoryGrantStore, PostgresGrantStore, type GrantStore } from './grants';
 import { MemberInfoWriter } from './memberInfo';
 import { MemberProviders } from './memberProviders';
 import { OrganizationStore } from './organizations';
@@ -37,6 +38,7 @@ interface Stores {
   locations: LocationCatalog;
   organizations: OrganizationStore;
   sessions: SessionStore;
+  grants: GrantStore;
   label: string;
   close(): Promise<void>;
 }
@@ -50,6 +52,7 @@ async function openStorage(): Promise<Stores> {
       locations: new MemoryLocationCatalog(),
       organizations: OrganizationStore.memory(undefined, { envAdmins, secrets }),
       sessions: new MemorySessionStore(),
+      grants: new MemoryGrantStore(),
       label: 'memory',
       close: async () => {},
     };
@@ -59,17 +62,20 @@ async function openStorage(): Promise<Stores> {
     const locations = await PostgresLocationCatalog.connect(url);
     const organizations = await OrganizationStore.connect(url, { envAdmins, secrets });
     const sessions = await PostgresSessionStore.connect(url);
+    const grants = await PostgresGrantStore.connect(url);
     return {
       storage: postgres,
       locations,
       organizations,
       sessions,
+      grants,
       label: `postgres ${new URL(url).host}`,
       close: async () => {
         await postgres.close();
         await locations.close();
         await organizations.close();
         await sessions.close();
+        await grants.close();
       },
     };
   } catch (err) {
@@ -78,7 +84,7 @@ async function openStorage(): Promise<Stores> {
   }
 }
 
-const { storage, locations, organizations, sessions, label: storageLabel, close: closeStorage } = await openStorage();
+const { storage, locations, organizations, sessions, grants, label: storageLabel, close: closeStorage } = await openStorage();
 if (!organizations.all().length) console.warn('No organizations: every site answers 404. Import some with `npm run seed -- <file>`.');
 
 /** The built UI: UI_DIST if set, else `public/` next to the server bundle. */
@@ -115,6 +121,7 @@ const { app, injectWebSocket } = createSyncApp(hub, {
   secureCookies: production,
   buildId: process.env.BUILD_ID,
   members,
+  grants,
   locations,
   weather: new NoaaWeather(),
   debugActivity: !devTools

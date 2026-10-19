@@ -11,17 +11,19 @@ import {
   type AdminMemberProvidersResponse,
   type AdminOrganizationsResponse,
   type BootstrapResponse,
+  type GrantResponse,
   type Organization,
   type Session,
   type SessionResponse,
   type SiteAdminsResponse,
 } from '@sync/domain';
 import type { Hub } from '@sync/server';
+import type { GrantStore } from './grants';
 import type { LocationCatalog } from './locations';
 import type { MemberProviders } from './memberProviders';
 import { hostnameOf, type OrganizationStore } from './organizations';
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, type SessionData, type SessionStore } from './sessions';
-import { devSignIn } from './signIn';
+import { devSignIn, refreshSession, tierOn, type People } from './signIn';
 import type { WeatherSource } from './weather';
 
 export interface SyncAppOptions {
@@ -35,6 +37,8 @@ export interface SyncAppOptions {
   buildId?: string;
   /** Member search and photos (for adding someone else to an activity), and sign-in lookups. */
   members?: MemberProviders;
+  /** Tiers granted by command, beside what members' groups give. */
+  grants?: GrantStore;
   /** The saved-location catalog. */
   locations?: LocationCatalog;
   /** The ops dashboard's forecasts. */
@@ -69,7 +73,8 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
     const data = id ? await sessions.get(id) : undefined;
     return data?.orgId === c.get('site').id ? data : undefined;
   };
-  const toSession = ({ orgId: _, ...data }: SessionData): Session => ({ ...data, admin: orgs.isAdmin(data.email) });
+  const people: People = { members: options.members, grants: options.grants };
+  const toSession = ({ orgId: _, grants: _grants, ...data }: SessionData): Session => ({ ...data, admin: orgs.isAdmin(data.email) });
   /** Routes below it need a session. */
   const signedIn = async (c: Context<Env>, next: () => Promise<void>) => {
     const session = await sessionOf(c);
@@ -115,7 +120,7 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
   });
   if (options.devSignIn) {
     app.post('/api/auth/dev', async (c) => {
-      const result = await devSignIn(options.members, c.get('site'), await c.req.json().catch(() => undefined));
+      const result = await devSignIn(people, c.get('site'), await c.req.json().catch(() => undefined));
       if (!result.ok) return c.json({ error: result.error }, result.status);
       const id = await sessions.create(result.session);
       // `?token=1`: the session id comes back for `?session=`, and no cookie is set.
@@ -136,7 +141,8 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
     signedIn,
     upgradeWebSocket((c) => {
       const offered = (c.req.header('sec-websocket-protocol') ?? '').split(',').map((p) => p.trim());
-      const viewer = viewerOfSession(toSession(c.get('session')));
+      const session = c.get('session');
+      const viewer = viewerOfSession(session);
       let handlers: ReturnType<Hub['connect']> | undefined;
       return {
         onOpen(_evt, ws) {
@@ -146,6 +152,11 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
           }
           handlers = hub.connect({
             viewer,
+            // Undefined, the usual case, without a grant there.
+            viewerIn: (activityId) => {
+              const tier = tierOn(session, activityId);
+              return tier === viewer.tier ? undefined : { ...viewer, tier };
+            },
             send: (text) => {
               if (ws.readyState === 1) ws.send(text);
             },
@@ -186,6 +197,39 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
         console.error('member photo failed', err);
         return c.json({ error: 'Failed to load the photo' }, 502);
       }
+    });
+  }
+
+  // Tier grants: someone at command on an activity may give a person on its roster command (or
+  // support) there, and take it away. It counts on that activity only, at once: their sessions are
+  // brought up to date and their connections closed, so their clients reconnect as who they are now.
+  const { grants } = options;
+  if (grants) {
+    const changed = async (personRef: string) => {
+      await sessions.updatePerson(personRef, (data) => refreshSession(people, data));
+      hub.disconnectWhere((viewer) => viewer.userId === personRef);
+    };
+    const grantPath = '/api/activities/:activityId/grants/:personRef';
+    const atCommand = async (c: Context<Env>, next: () => Promise<void>) => {
+      if (tierOn(c.get('session'), c.req.param('activityId')!) !== 'command') return c.json({ error: 'Only command on this activity can grant tiers' }, 403);
+      await next();
+    };
+    app.get(grantPath, signedIn, atCommand, async (c) => c.json({ grant: (await grants.get(c.req.param('personRef')!, c.req.param('activityId')!)) ?? null } satisfies GrantResponse));
+    app.put(grantPath, signedIn, atCommand, async (c) => {
+      const { activityId, personRef } = c.req.param() as { activityId: string; personRef: string };
+      const body = (await c.req.json().catch(() => undefined)) as { tier?: unknown } | undefined;
+      if (body?.tier !== 'command' && body?.tier !== 'support') return c.json({ error: 'tier: command or support' }, 400);
+      const roster = (await hub.actor(activityId)).projectedRecords('command');
+      if (!roster.some((r) => r.type === 'participant' && (r as { personRef?: string }).personRef === personRef)) return c.json({ error: `${personRef} isn't on that activity's roster` }, 400);
+      const grant = { tier: body.tier, grantedBy: c.get('session').email, grantedAt: Date.now() } as const;
+      await grants.set(personRef, activityId, grant);
+      await changed(personRef);
+      return c.json({ grant } satisfies GrantResponse);
+    });
+    app.delete(grantPath, signedIn, atCommand, async (c) => {
+      await grants.remove(c.req.param('personRef')!, c.req.param('activityId')!);
+      await changed(c.req.param('personRef')!);
+      return c.json({ grant: null } satisfies GrantResponse);
     });
   }
 

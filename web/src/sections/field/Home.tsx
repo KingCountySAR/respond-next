@@ -49,11 +49,11 @@ export function Home() {
 const HomeContent = observer(function HomeContent({ list }: { list: ActivityList }) {
   const { session } = useAuth();
   // As the legacy app: when the organization (or a partner) may create that kind. Only command and
-  // support may create activities at all.
+  // support may create missions; members may create other events too.
   const org = useSite().organization;
-  const mayCreate = session?.tier === 'command' || session?.tier === 'support';
-  const canCreateMissions = mayCreate && canCreate(org, true);
-  const canCreateEvents = mayCreate && canCreate(org, false);
+  const command = session?.tier === 'command' || session?.tier === 'support';
+  const canCreateMissions = command && canCreate(org, true);
+  const canCreateEvents = (command || session?.class === 'member') && canCreate(org, false);
   const me = session?.personRef ? participantIdFor(session.personRef) : undefined;
 
   const mine: { item: ActivityListItem; status: ParticipantStatus }[] = [];

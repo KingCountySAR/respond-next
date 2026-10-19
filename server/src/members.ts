@@ -3,7 +3,7 @@
  * our API in front of D4H; dev and tests use a fixture of fictional members. Which directory an
  * organization uses is `memberProviders.ts`'s business.
  */
-import type { MemberInfo, TagRules } from '@sync/domain';
+import type { MemberInfo, TagRules, Tier } from '@sync/domain';
 
 export interface MemberPhoto {
   data: Uint8Array;
@@ -16,10 +16,14 @@ export interface DirectoryMember {
   units: string[];
 }
 
-/** A member, with the tags their organizations give their groups (e.g. "Medical" shows as "MED"). */
+/**
+ * A member, with what their organizations make of their groups: tags (e.g. "Medical" shows as
+ * "MED") and the tier they sign in at.
+ */
 export interface MemberDetails {
   member: MemberInfo;
   tags: string[];
+  tier: Tier;
 }
 
 export interface MemberDirectory {

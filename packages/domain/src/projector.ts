@@ -5,9 +5,10 @@
  * The field lists below also define the field record types (`FieldParticipantRec`, ...), so the UI's
  * types can't drift from what the server actually sends.
  */
-import type { Projector, Rec, Viewer } from '@sync/core';
+import type { Projector, ReadView, Rec, Viewer } from '@sync/core';
+import { getActivity } from './queries';
 import type { ActivityRec, ActivityUnitRec, AssignmentRec, ContactRec, EquipmentRec, GroupRec, ParticipantRec, PlaceRec, Target, TeamRec, TeamStatusRec } from './schema';
-import { asActivityViewer, isCommand } from './viewer';
+import { asActivityViewer, isCommand, type ActivityViewer } from './viewer';
 
 export type ViewKey = 'command' | 'field:member' | 'field:external';
 
@@ -108,7 +109,30 @@ const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
   },
 };
 
+/**
+ * Who a viewer is on an activity: the limits of command and support are for missions only, so
+ * members manage trainings and other events as command (for now). Undefined, as they are, for
+ * missions, external people, command already, and an activity not yet known.
+ */
+export function viewerOnActivity(viewer: Viewer, view: ReadView): ActivityViewer | undefined {
+  const v = asActivityViewer(viewer);
+  if (isCommand(v) || v.class !== 'member') return undefined;
+  const kind = getActivity(view)?.kind;
+  return kind && kind !== 'mission' ? { ...v, tier: 'command', missionTier: v.tier } : undefined;
+}
+
+/**
+ * Who a client is on an activity, from the view the server projects it for (which counts grants)
+ * and its records (its kind); undefined for who they are.
+ */
+export function clientViewerOn(viewer: ActivityViewer, copy: { view: string | undefined; records: ReadView }): ActivityViewer | undefined {
+  const byKind = viewerOnActivity(viewer, copy.records);
+  if (byKind) return byKind;
+  return copy.view === 'command' && !isCommand(viewer) ? { ...viewer, tier: 'command' } : undefined;
+}
+
 export const activityProjector: Projector = {
+  viewerIn: viewerOnActivity,
   viewKey(viewer: Viewer): ViewKey {
     if (isCommand(viewer)) return 'command';
     return asActivityViewer(viewer).class === 'member' ? 'field:member' : 'field:external';

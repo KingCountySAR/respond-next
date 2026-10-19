@@ -69,7 +69,7 @@ const RECORD_TYPE: Record<ModelKind, string> = {
 
 /** The model for the client's viewer: `CommandActivity` for command and support, else `FieldActivity`. */
 export function createActivityModel(client: SyncClient, activityId: string, options?: ActivityModelOptions): FieldActivity {
-  return activityProjector.viewKey(client.viewer) === 'command' ? new CommandActivity(client, activityId, options) : new FieldActivity(client, activityId, options);
+  return activityProjector.viewKey(client.viewerIn(activityId)) === 'command' ? new CommandActivity(client, activityId, options) : new FieldActivity(client, activityId, options);
 }
 
 export const isCommandActivity = (model: FieldActivity): model is CommandActivity => model instanceof CommandActivity;
@@ -91,7 +91,7 @@ export class FieldActivity<K extends Kinds = Kinds> {
     options: ActivityModelOptions = {},
   ) {
     this.clock = options.clock ?? new Clock(() => client.now());
-    this.viewKey = activityProjector.viewKey(client.viewer) as ViewKey;
+    this.viewKey = activityProjector.viewKey(client.viewerIn(activityId)) as ViewKey;
     makeObservable(this, {
       record: computed,
       phase: computed,
@@ -144,7 +144,7 @@ export class FieldActivity<K extends Kinds = Kinds> {
 
   /** The viewer's own entry, once they've signed in. */
   get me(): K['participant'] | undefined {
-    const personRef = asActivityViewer(this.client.viewer).personRef;
+    const personRef = asActivityViewer(this.client.viewerIn(this.activityId)).personRef;
     return personRef ? this.participantByRef(personRef) : undefined;
   }
 
