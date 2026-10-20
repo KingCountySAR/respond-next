@@ -34,6 +34,12 @@ export interface SyncAppOptions {
   sessions: SessionStore;
   /** Each site's Google sign-in, from its sign-in provider. */
   signIn?: { forSite(orgId: string): GoogleSignIn | undefined };
+  /**
+   * One Google callback for every site, e.g. http://localhost:4000/api/auth/callback on a dev machine
+   * (Google won't take crt.localhost). It sends the code on to the site that started the sign-in,
+   * which finishes it. Unset: each site's own.
+   */
+  signInCallback?: string;
   /** Offer `POST /api/auth/dev` (sign in as anyone) and `?session=` tokens. Never on an internet-facing site. */
   devSignIn: boolean;
   /** Mark the session cookie Secure (production, behind HTTPS). */
@@ -59,6 +65,21 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
   app.get('/health', (c) => c.json({ ok: true }));
+
+  const scheme = options.secureCookies ? 'https' : 'http';
+  const failed = (c: Context, error: string) => c.redirect(`/?signinError=${encodeURIComponent(error)}`);
+
+  // With one Google callback for every site, the sign-in's state names the site that started it (its
+  // host), and the callback sends the code there: only to a site of ours, and the code is no use
+  // without the verifier in that site's cookie. Ahead of the site lookup, so the callback's host
+  // needn't be a site.
+  app.get('/api/auth/callback', async (c, next) => {
+    const tag = options.signInCallback && c.req.query('state')?.split('.')[1];
+    const site = tag ? Buffer.from(tag, 'base64url').toString('utf8') : undefined;
+    if (!site || hostnameOf(site) === hostnameOf(c.req.header('host'))) return next();
+    if (!/^[a-z0-9.-]+(:\d+)?$/i.test(site) || !orgs.forHost(site)) return failed(c, "That sign-in started on a site that isn't here.");
+    return c.redirect(`${scheme}://${site}/api/auth/callback?${new URL(c.req.url).searchParams}`);
+  });
 
   // Everything else under /api is for one site, by hostname.
   app.use('/api/*', async (c, next) => {
@@ -133,19 +154,19 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
       return c.json({ session: toSession(result.session) } satisfies SessionResponse);
     });
   }
-  // Sign-in with Google, through the site's provider: off to Google, and back with a code. What's needed to finish
-  // waits in a cookie for this site only; a failure goes back to the app as `?signinError=`.
+  // Sign-in with Google, through the site's provider: off to Google, and back with a code. What's
+  // needed to finish (the PKCE verifier among it) waits in a cookie for this site only; a failure
+  // goes back to the app as `?signinError=`.
   const signInOf = (c: Context<Env>) => options.signIn?.forSite(c.get('site').id);
   const LOGIN_COOKIE = 'sync_login';
-  const callbackOf = (c: Context<Env>) => `${options.secureCookies ? 'https' : 'http'}://${c.req.header('host')}/api/auth/callback`;
+  const callbackOf = (c: Context<Env>) => options.signInCallback ?? `${scheme}://${c.req.header('host')}/api/auth/callback`;
   // Only a path on this site, never another site (//host).
   const pathOnly = (then: string | undefined) => (then && /^\/(?![/\\])/.test(then) ? then : '/');
-  const failed = (c: Context<Env>, error: string) => c.redirect(`/?signinError=${encodeURIComponent(error)}`);
 
   app.get('/api/auth/login', async (c) => {
     const google = signInOf(c);
     if (!google) return c.json({ error: 'This site has no sign-in provider' }, 404);
-    const { url, keep } = google.start(callbackOf(c));
+    const { url, keep } = google.start(callbackOf(c), options.signInCallback && Buffer.from(c.req.header('host') ?? '').toString('base64url'));
     const value = Buffer.from(JSON.stringify({ ...keep, then: pathOnly(c.req.query('then')) })).toString('base64url');
     setCookie(c, LOGIN_COOKIE, value, { httpOnly: true, secure: options.secureCookies, sameSite: 'Lax', path: '/api/auth', maxAge: 600 });
     return c.redirect(url);

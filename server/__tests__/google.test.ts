@@ -24,7 +24,7 @@ const idToken = (claims: Record<string, unknown>) => `e30.${Buffer.from(JSON.str
  * A server whose sign-in provider talks to a fake Google token endpoint, which answers with an ID
  * token for `who` (with the nonce the sign-in sent) unless told otherwise.
  */
-function setup(who: Record<string, unknown> = { email: 'Bo.Okafor@crt.example.org', email_verified: true }) {
+function setup(who: Record<string, unknown> = { email: 'Bo.Okafor@crt.example.org', email_verified: true }, more: { signInCallback?: string } = {}) {
   const organizations = OrganizationStore.memory(seedWithSignIn());
   let nonce = '';
   const seen: { url: string; body?: URLSearchParams }[] = [];
@@ -35,8 +35,8 @@ function setup(who: Record<string, unknown> = { email: 'Bo.Okafor@crt.example.or
     return Response.json({ id_token: idToken({ iss: 'https://accounts.google.com', aud: CLIENT_ID, exp: Date.now() / 1000 + 300, nonce, ...who }) });
   };
   const signIn = new SignInProviders(organizations, (config) => new GoogleSignIn({ ...config, fetch: fake }));
-  const { app } = testApp({ organizations, signIn });
-  const request = (path: string, cookie?: string) => app.request(path, { headers: { host: CRT_HOST, ...(cookie && { cookie }) } });
+  const { app } = testApp({ organizations, signIn, ...more });
+  const request = (path: string, cookie?: string, host = CRT_HOST) => app.request(path, { headers: { host, ...(cookie && { cookie }) } });
 
   /** Off to Google: where to, and the cookie this site keeps meanwhile. */
   const start = async (then = '/mission/a1') => {
@@ -112,6 +112,34 @@ describe('sign-in with Google', () => {
     const { start, finish } = setup();
     const { state, cookie } = await start('//evil.example.org/x');
     expect((await finish(state, cookie)).location).toBe('/');
+  });
+
+  it('goes through one callback for every site, which sends the code on to the site that started', async () => {
+    const RELAY = 'http://localhost:4000/api/auth/callback';
+    const { start, finish, request, seen } = setup(undefined, { signInCallback: RELAY });
+    const { to, state, cookie } = await start();
+    expect(to.searchParams.get('redirect_uri')).toBe(RELAY);
+
+    // Google comes back to the relay (CVSC's site), without CRT's cookie.
+    const relayed = await request(`/api/auth/callback?code=c1&state=${state}`, undefined, 'localhost:4000');
+    expect(relayed.headers.get('location')).toBe(`http://${CRT_HOST}/api/auth/callback?code=c1&state=${encodeURIComponent(state)}`);
+    expect(seen).toEqual([]);
+    // Even where the callback's host is no site.
+    const nowhere = await request(`/api/auth/callback?code=c1&state=${state}`, undefined, 'nowhere.example');
+    expect(nowhere.headers.get('location')).toBe(relayed.headers.get('location'));
+
+    // CRT finishes, with the relay's callback as the redirect URI Google expects.
+    const back = await finish(state, cookie);
+    expect(back.location).toBe('/mission/a1');
+    expect(back.session).toBeTruthy();
+    expect(seen[0]?.body?.get('redirect_uri')).toBe(RELAY);
+
+    // Not on to anywhere else.
+    for (const host of ['evil.example.org', 'crt.localhost@evil.example.org', 'evil.example.org/x']) {
+      const forged = `${state.split('.')[0]}.${Buffer.from(host).toString('base64url')}`;
+      const res = await request(`/api/auth/callback?code=c1&state=${forged}`, undefined, 'localhost:4000');
+      expect(res.headers.get('location')).toBe(`/?signinError=${encodeURIComponent("That sign-in started on a site that isn't here.")}`);
+    }
   });
 
   it("is offered where the site's organization, or one above it, has a provider", async () => {

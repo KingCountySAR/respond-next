@@ -36,9 +36,12 @@ export class GoogleSignIn {
     this.now = options.now ?? Date.now;
   }
 
-  /** A new sign-in: where to send the browser, and what to keep for its return. */
-  start(redirectUri: string): { url: string; keep: SignInStart } {
-    const keep = { state: random(), nonce: random(), verifier: random() };
+  /**
+   * A new sign-in: where to send the browser, and what to keep for its return. A `tag` (URL-safe)
+   * goes at the end of the state, after a dot.
+   */
+  start(redirectUri: string, tag?: string): { url: string; keep: SignInStart } {
+    const keep = { state: tag ? `${random()}.${tag}` : random(), nonce: random(), verifier: random() };
     const url = new URL(AUTHORIZE);
     for (const [k, v] of Object.entries({
       client_id: this.options.clientId,

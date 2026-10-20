@@ -121,6 +121,7 @@ const { app, injectWebSocket } = createSyncApp(hub, {
   devSignIn: devTools,
   // Each site signs in through its organization's sign-in provider (or its nearest ancestor's).
   signIn: new SignInProviders(organizations),
+  signInCallback: process.env.SIGN_IN_CALLBACK || undefined,
   secureCookies: production,
   buildId: process.env.BUILD_ID,
   members,
