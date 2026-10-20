@@ -1,7 +1,7 @@
 import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useState } from 'react';
-import type { Organization, OrganizationPartner } from '@sync/domain';
+import { ICON_SIZES, type BrandIcons, type IconSize, type Organization, type OrganizationPartner } from '@sync/domain';
 import { formatList, formatTags, parseList, parseTags, parseTiers, readAsDataUri } from './adminFields';
 
 export interface OrganizationFormProps {
@@ -33,12 +33,16 @@ interface Values {
   memberTiers: string;
   primary: string;
   primaryDark: string;
-  icon: string;
+  /** The icons by size, plain and maskable. */
+  icons: Record<'plain' | 'maskable', Partial<Record<IconSize, string>>>;
   canCreateMissions: boolean;
   canCreateEvents: boolean;
   partners: OrganizationPartner[];
   admins: string;
 }
+
+/** Only the sizes that have an icon. */
+const bySize = (set: Partial<Record<IconSize, string>> | undefined) => Object.fromEntries(ICON_SIZES.filter((s) => set?.[s]).map((s) => [s, set![s]]));
 
 const toValues = (o: Organization): Values => ({
   id: o.id,
@@ -54,12 +58,21 @@ const toValues = (o: Organization): Values => ({
   memberTiers: formatTags(o.memberTiers),
   primary: o.brand?.primary ?? '',
   primaryDark: o.brand?.primaryDark ?? '',
-  icon: o.brand?.icon ?? '',
+  icons: { plain: bySize(o.brand?.icon), maskable: bySize(o.brand?.icon?.maskable) },
   canCreateMissions: o.canCreateMissions,
   canCreateEvents: o.canCreateEvents,
   partners: o.partners,
   admins: formatList(o.admins),
 });
+
+/** The icons as stored: none without a 512 one (the form won't save that). */
+function iconsOf({ plain, maskable }: Values['icons']): BrandIcons | undefined {
+  const masks = bySize(maskable);
+  return plain[512] ? { ...bySize(plain), 512: plain[512], ...(Object.keys(masks).length && { maskable: masks }) } : undefined;
+}
+
+/** Icons given without the 512 one, which every other size falls back to. */
+const missing512 = ({ plain, maskable }: Values['icons']) => !plain[512] && [...Object.values(plain), ...Object.values(maskable)].some(Boolean);
 
 const fromValues = (v: Values): Organization => ({
   id: v.id.trim(),
@@ -74,7 +87,7 @@ const fromValues = (v: Values): Organization => ({
   memberTags: parseTags(v.memberTags),
   memberTiers: parseTiers(v.memberTiers).rules,
   // Without a primary color, the organization takes its parent's brand.
-  brand: v.primary.trim() ? { primary: v.primary.trim(), primaryDark: v.primaryDark.trim() || undefined, icon: v.icon || undefined } : undefined,
+  brand: v.primary.trim() ? { primary: v.primary.trim(), primaryDark: v.primaryDark.trim() || undefined, icon: iconsOf(v.icons) } : undefined,
   canCreateMissions: v.canCreateMissions,
   canCreateEvents: v.canCreateEvents,
   partners: v.partners,
@@ -88,6 +101,7 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
   const text = (field: keyof Values) => (e: { target: { value: string } }) => set(field, e.target.value as never);
   const others = all.filter((o) => o.id !== values.id);
   const badTiers = parseTiers(values.memberTiers).bad;
+  const no512 = missing512(values.icons);
 
   const save = async () => {
     setSaving(true);
@@ -98,8 +112,10 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
     }
   };
 
-  const pickIcon = async (file: File | undefined) => {
-    if (file) set('icon', await readAsDataUri(file));
+  const setIcon = (kind: 'plain' | 'maskable', size: IconSize, src: string | undefined) =>
+    setValues((v) => ({ ...v, icons: { ...v.icons, [kind]: { ...v.icons[kind], [size]: src } } }));
+  const pickIcon = async (kind: 'plain' | 'maskable', size: IconSize, file: File | undefined) => {
+    if (file) setIcon(kind, size, await readAsDataUri(file));
   };
 
   const setPartner = (i: number, partner: OrganizationPartner) => set('partners', values.partners.map((p, j) => (j === i ? partner : p)));
@@ -166,14 +182,35 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
         <TextField label="Primary color, dark mode" value={values.primaryDark} onChange={text('primaryDark')} />
         <Box sx={{ width: 32, height: 32, borderRadius: 1, bgcolor: values.primary || 'transparent', border: 1, borderColor: 'divider' }} aria-label="color preview" />
       </Stack>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-        {values.icon ? <img src={values.icon} alt="icon" width={48} height={48} /> : <Typography color="text.secondary">No icon</Typography>}
-        <Button component="label" variant="outlined">
-          Choose icon
-          <input hidden type="file" accept="image/*" aria-label="icon file" onChange={(e) => void pickIcon(e.target.files?.[0])} />
-        </Button>
-        {values.icon && <Button onClick={() => set('icon', '')}>Remove icon</Button>}
-      </Stack>
+      <Typography variant="body2" color={no512 ? 'error' : 'text.secondary'}>
+        App icons by size. 512 is needed; a size not given is made from the next larger one. Maskable icons keep their content to the
+        middle 80%, for phones that crop icons to a shape; without any, the plain ones are used.
+      </Typography>
+      {(['plain', 'maskable'] as const).map((kind) => (
+        <Stack key={kind} direction="row" spacing={2} sx={{ alignItems: 'flex-start', flexWrap: 'wrap', rowGap: 1 }}>
+          <Typography sx={{ width: 80, pt: 1 }}>{kind === 'plain' ? 'Icon' : 'Maskable'}</Typography>
+          {[...ICON_SIZES].reverse().map((size) => {
+            const src = values.icons[kind][size];
+            const label = `${kind === 'plain' ? '' : 'maskable '}${size} icon`;
+            return (
+              <Stack key={size} spacing={0.5} sx={{ alignItems: 'center', width: 96 }}>
+                <Box sx={{ width: 48, height: 48, border: 1, borderColor: 'divider', borderRadius: 1, display: 'grid', placeItems: 'center' }}>
+                  {src ? <img src={src} alt={label} width={48} height={48} style={{ objectFit: 'contain' }} /> : <Typography variant="caption" color="text.secondary">{size}</Typography>}
+                </Box>
+                <Button component="label" size="small">
+                  {src ? 'Replace' : 'Choose'}
+                  <input hidden type="file" accept="image/*" aria-label={`${label} file`} onChange={(e) => void pickIcon(kind, size, e.target.files?.[0])} />
+                </Button>
+                {src && (
+                  <Button size="small" aria-label={`remove ${label}`} onClick={() => setIcon(kind, size, undefined)}>
+                    Remove
+                  </Button>
+                )}
+              </Stack>
+            );
+          })}
+        </Stack>
+      ))}
 
       <Typography variant="h6">Activities</Typography>
       <Stack direction="row">
@@ -210,7 +247,7 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
       <TextField label="Admins" helperText="Email addresses, separated by commas. They can change these settings, and those of organizations under this one." value={values.admins} onChange={text('admins')} multiline />
 
       <Stack direction="row" spacing={2}>
-        <Button type="submit" variant="contained" disabled={saving || badTiers.length > 0}>
+        <Button type="submit" variant="contained" disabled={saving || badTiers.length > 0 || no512}>
           Save
         </Button>
         <Button onClick={onClose}>Cancel</Button>

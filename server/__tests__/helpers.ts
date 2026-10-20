@@ -33,7 +33,7 @@ export const testSeed = (): OrganizationSeed =>
         shortTitle: 'CRT',
         hostnames: ['crt.localhost'],
         emailDomains: ['crt.example.org'],
-        brand: { primary: '#336', icon: `data:image/png;base64,${Buffer.from([1, 2, 3]).toString('base64')}` },
+        brand: { primary: '#336', icon: { 512: `data:image/png;base64,${Buffer.from([1, 2, 3]).toString('base64')}` } },
         providerUnit: 'CRT',
         memberTags: { Medical: 'MED' },
         canCreateMissions: true,

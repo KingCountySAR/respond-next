@@ -23,6 +23,7 @@ import type { GrantStore } from './grants';
 import type { LocationCatalog } from './locations';
 import type { MemberProviders } from './memberProviders';
 import type { GoogleSignIn, SignInStart } from './google';
+import { hasMaskable, iconSizeOf, iconSourceFor, IconRenderer } from './icons';
 import { hostnameOf, type OrganizationStore } from './organizations';
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, type SessionData, type SessionStore } from './sessions';
 import { devSignIn, memberSignIn, refreshSession, tierOn, type People } from './signIn';
@@ -40,6 +41,8 @@ export interface SyncAppOptions {
    * which finishes it. Unset: each site's own.
    */
   signInCallback?: string;
+  /** Makes the app icons at the sizes asked for; tests pass one that fetches nothing. */
+  icons?: IconRenderer;
   /** Offer `POST /api/auth/dev` (sign in as anyone) and `?session=` tokens. Never on an internet-facing site. */
   devSignIn: boolean;
   /** Mark the session cookie Secure (production, behind HTTPS). */
@@ -61,6 +64,7 @@ type Env = { Variables: { site: Organization; session: SessionData } };
 
 export function createSyncApp(hub: Hub, options: SyncAppOptions) {
   const { organizations: orgs, sessions } = options;
+  const iconRenderer = options.icons ?? new IconRenderer();
   const app = new Hono<Env>();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
@@ -112,16 +116,19 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
     c.json({ config: orgs.siteConfig(c.get('site'), { devSignIn: options.devSignIn, googleSignIn: !!options.signIn?.forSite(c.get('site').id), buildId: options.buildId ?? 'dev' }) } satisfies BootstrapResponse),
   );
 
-  // The site's app icon and install manifest, as the legacy app served them per hostname. The icon
-  // is served as stored: browsers scale it to the size they need.
-  app.get('/api/icon', (c) => {
-    const icon = orgs.brandOf(c.get('site').id).icon;
+  // The site's app icon and install manifest, as the legacy app served them per hostname: each icon
+  // at the sizes the app uses, made from the nearest stored one (icons.ts).
+  const serveIcon = (maskable: boolean) => async (c: Context<Env>) => {
+    const size = iconSizeOf(c.req.param('size') ?? '');
+    const icons = orgs.brandOf(c.get('site').id).icon;
+    const source = size && icons && iconSourceFor(icons, size, maskable);
+    const icon = source ? await iconRenderer.render(source, size).catch(() => undefined) : undefined;
     if (!icon) return c.json({ error: 'not_found' }, 404);
-    if (icon.startsWith('https://')) return c.redirect(icon);
-    const [, type, data] = /^data:([^;]+);base64,(.*)$/s.exec(icon) ?? [];
-    if (!type || data === undefined) return c.json({ error: 'not_found' }, 404);
-    return c.body(new Uint8Array(Buffer.from(data, 'base64')), 200, { 'content-type': type, 'cache-control': 'no-cache' });
-  });
+    if (c.req.header('if-none-match') === icon.etag) return c.body(null, 304);
+    return c.body(icon.body, 200, { 'content-type': icon.type, 'cache-control': 'no-cache', etag: icon.etag });
+  };
+  app.get('/api/icon/maskable/:size', serveIcon(true));
+  app.get('/api/icon/:size', serveIcon(false));
   app.get('/api/manifest.webmanifest', (c) => {
     const site = c.get('site');
     const brand = orgs.brandOf(site.id);
@@ -133,7 +140,13 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
       display: 'standalone',
       background_color: '#ffffff',
       theme_color: brand.primary,
-      icons: brand.icon ? [{ src: '/api/icon', sizes: '512x512', purpose: 'any' }] : [],
+      // Maskable ones only when there's a maskable icon: one that isn't kept to the safe zone, offered
+      // as maskable, gets clipped.
+      icons: brand.icon
+        ? (hasMaskable(brand.icon) ? (['any', 'maskable'] as const) : (['any'] as const)).flatMap((purpose) =>
+            ([192, 512] as const).map((s) => ({ src: `/api/icon/${purpose === 'maskable' ? 'maskable/' : ''}${s}.png`, sizes: `${s}x${s}`, purpose })),
+          )
+        : [],
     };
     return c.body(JSON.stringify(manifest), 200, { 'content-type': 'application/manifest+json', 'cache-control': 'no-cache' });
   });

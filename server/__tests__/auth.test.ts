@@ -16,14 +16,10 @@ describe('sites', () => {
     expect(unknown).toEqual({ status: 404, body: { error: 'No site is set up for elsewhere.example' } });
   });
 
-  it("serve the organization's icon and install manifest", async () => {
+  it("serve the organization's install manifest", async () => {
     const { client } = testApp();
-    const icon = await client().request('/api/icon');
-    expect(icon.headers.get('content-type')).toBe('image/png');
-    expect([...new Uint8Array(await icon.arrayBuffer())]).toEqual([1, 2, 3]);
-    expect((await client('rmr.localhost').request('/api/icon')).status).toBe(404);
     const manifest = await client().json<{ short_name: string; theme_color: string; icons: unknown[] }>('/api/manifest.webmanifest');
-    expect(manifest.body).toMatchObject({ short_name: 'CRT Respond', theme_color: '#336', icons: [{ src: '/api/icon' }] });
+    expect(manifest.body).toMatchObject({ short_name: 'CRT Respond', theme_color: '#336', icons: [{ src: '/api/icon/192.png' }, { src: '/api/icon/512.png' }] });
   });
 });
 

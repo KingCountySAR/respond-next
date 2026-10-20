@@ -15,14 +15,39 @@ const hostname = z
   .toLowerCase()
   .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'a hostname, like crt.example.org');
 
+/** An icon image: a `data:image/...` URI or an `https://` URL. */
+const iconSource = z.string().regex(/^(data:image\/[a-z0-9.+-]+;base64,|https:\/\/)/i, 'a data:image URI or an https URL');
+
+/** The sizes the app serves icons at (`/api/icon/<size>.png`): favicon, apple-touch-icon, manifest. */
+export const ICON_SIZES = [32, 180, 192, 512] as const;
+export type IconSize = (typeof ICON_SIZES)[number];
+
+const iconsBySize = {
+  32: iconSource.optional(),
+  180: iconSource.optional(),
+  192: iconSource.optional(),
+};
+
+/**
+ * The app icon, by pixel size; each needn't be square or exactly that size, as it's scaled down
+ * and padded to fit. 512 is required: a size not given is made from the next larger one.
+ */
+export const BrandIcons = z.object({
+  ...iconsBySize,
+  512: iconSource,
+  /**
+   * Maskable variants, their content within the center ~80% "safe zone" so the shapes phones crop
+   * icons to don't clip it. Each size falls back to the plain icon; the manifest only offers
+   * maskable icons when there's at least one here.
+   */
+  maskable: z.object({ ...iconsBySize, 512: iconSource.optional() }).optional(),
+});
+export type BrandIcons = z.infer<typeof BrandIcons>;
+
 export const Brand = z.object({
   primary: z.string().trim().min(1),
   primaryDark: z.string().trim().min(1).optional(),
-  /** The app icon: a `data:image/...` URI or an `https://` URL, ideally square and 512px. */
-  icon: z
-    .string()
-    .regex(/^(data:image\/[a-z0-9.+-]+;base64,|https:\/\/)/i, 'a data:image URI or an https URL')
-    .optional(),
+  icon: BrandIcons.optional(),
 });
 export type Brand = z.infer<typeof Brand>;
 

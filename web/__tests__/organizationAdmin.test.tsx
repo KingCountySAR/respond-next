@@ -66,6 +66,32 @@ describe('organization admin', () => {
     expect(organizations.get(CRT.id)).toMatchObject({ title: 'Cascade Rescue', brand: { primary: '#123456' }, memberTags: { 'CRT Medical': 'MED', 'CRT K9': 'K9' }, memberTiers: { 'CRT Leader': 'command' }, hostnames: ['crt.localhost'] });
   });
 
+  it('takes app icons by size, needing a 512 one', async () => {
+    const { organizations, renderApp } = await start();
+    renderApp('/');
+    await signIn('Alice Adams', 'kcsara:101', 'command');
+    fireEvent.click(await screen.findByLabelText('account of current user'));
+    fireEvent.click(within(screen.getByRole('menu')).getByText('Organizations'));
+    fireEvent.click(await screen.findByText('Cascade Rescue Team (CRT)'));
+    fireEvent.change(field(/^Primary color$/), { target: { value: '#123456' } });
+    const remove512 = screen.queryByLabelText('remove 512 icon');
+    if (remove512) fireEvent.click(remove512);
+
+    const pick = (label: string, bytes: string) => fireEvent.change(field(label), { target: { files: [new File([bytes], 'icon.png', { type: 'image/png' })] } });
+    pick('maskable 192 icon file', 'mask');
+    expect(await screen.findByAltText('maskable 192 icon')).toBeTruthy();
+    expect((screen.getByText('Save').closest('button') as HTMLButtonElement).disabled).toBe(true);
+    pick('512 icon file', 'big');
+    await screen.findByAltText('512 icon');
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(organizations.get(CRT.id)?.brand?.icon).toEqual({
+        512: `data:image/png;base64,${btoa('big')}`,
+        maskable: { 192: `data:image/png;base64,${btoa('mask')}` },
+      }),
+    );
+  });
+
   it('lets site admins add organizations and member providers, with secrets kept back', async () => {
     const { organizations, renderApp } = await start({ siteAdmins: [SITE_ADMIN] });
     renderApp('/admin/organizations');
