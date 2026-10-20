@@ -64,6 +64,17 @@ export async function devSignIn(people: People, site: Organization, input: unkno
   return sessionFor(`adhoc:${email}`, name, 'field');
 }
 
+/**
+ * Sign-in with a verified email (from Google): only someone the member directory knows, for now.
+ * Visitors will come in by invitation.
+ */
+export async function memberSignIn(people: People, site: Organization, email: string): Promise<SignInResult> {
+  const found = await people.members?.byEmail(email, site.id);
+  if (!found) return { ok: false, status: 403, error: `${email} isn't in the member directory.` };
+  const { personRef, name } = found.member;
+  return { ok: true, session: { userId: personRef, name, email, personRef, ...(await access(people, personRef, found.tier)), class: 'member', orgId: site.id } };
+}
+
 /** Their tier on an activity: the higher of their own and any grant there. */
 export function tierOn(session: Pick<SessionData, 'tier' | 'grants'>, activityId: string): Tier {
   const granted = session.grants?.[activityId];

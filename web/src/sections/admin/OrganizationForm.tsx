@@ -12,6 +12,7 @@ export interface OrganizationFormProps {
   /** Every organization, for parents and partners. */
   all: { id: string; title: string }[];
   memberProviders: string[];
+  signInProviders: string[];
   onSave(org: Organization): Promise<void>;
   onDelete?(): void;
   onClose(): void;
@@ -26,6 +27,7 @@ interface Values {
   hostnames: string;
   emailDomains: string;
   memberProvider: string;
+  signInProvider: string;
   providerUnit: string;
   memberTags: string;
   memberTiers: string;
@@ -46,6 +48,7 @@ const toValues = (o: Organization): Values => ({
   hostnames: formatList(o.hostnames),
   emailDomains: formatList(o.emailDomains),
   memberProvider: o.memberProvider ?? '',
+  signInProvider: o.signInProvider ?? '',
   providerUnit: o.providerUnit ?? '',
   memberTags: formatTags(o.memberTags),
   memberTiers: formatTags(o.memberTiers),
@@ -66,6 +69,7 @@ const fromValues = (v: Values): Organization => ({
   hostnames: parseList(v.hostnames),
   emailDomains: parseList(v.emailDomains),
   memberProvider: v.memberProvider || null,
+  signInProvider: v.signInProvider || null,
   providerUnit: v.providerUnit.trim() || null,
   memberTags: parseTags(v.memberTags),
   memberTiers: parseTiers(v.memberTiers).rules,
@@ -77,7 +81,7 @@ const fromValues = (v: Values): Organization => ({
   admins: parseList(v.admins),
 });
 
-export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProviders, onSave, onDelete, onClose }: OrganizationFormProps) {
+export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProviders, signInProviders, onSave, onDelete, onClose }: OrganizationFormProps) {
   const [values, setValues] = useState(() => toValues(initial));
   const [saving, setSaving] = useState(false);
   const set = <K extends keyof Values>(field: K, value: Values[K]) => setValues((v) => ({ ...v, [field]: value }));
@@ -130,6 +134,14 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
         </TextField>
         <TextField label="Unit in provider" helperText="Keeps searches to its members" value={values.providerUnit} onChange={text('providerUnit')} disabled={!siteAdmin} fullWidth />
       </Stack>
+      <TextField select label="Sign-in provider" helperText="Where the site's people sign in" value={values.signInProvider} onChange={text('signInProvider')} disabled={!siteAdmin}>
+        <MenuItem value="">(the parent's)</MenuItem>
+        {signInProviders.map((id) => (
+          <MenuItem key={id} value={id}>
+            {id}
+          </MenuItem>
+        ))}
+      </TextField>
       <TextField
         label="Member tags"
         helperText="What its members' groups show as on rosters, one per line: Group title = Label"

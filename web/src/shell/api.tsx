@@ -1,12 +1,14 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type {
   AdminMemberProvidersResponse,
+  AdminSignInProvidersResponse,
   AdminOrganizationsResponse,
   DevSignInRequest,
   GrantResponse,
   TierGrant,
   MemberInfo,
   MemberProviderConfig,
+  SignInProviderConfig,
   Organization,
   SavedLocation,
   Session,
@@ -48,6 +50,9 @@ export interface AdminApi {
   memberProviders(): Promise<AdminMemberProvidersResponse>;
   saveMemberProvider(provider: MemberProviderConfig): Promise<void>;
   removeMemberProvider(id: string): Promise<void>;
+  signInProviders(): Promise<AdminSignInProvidersResponse>;
+  saveSignInProvider(provider: SignInProviderConfig): Promise<void>;
+  removeSignInProvider(id: string): Promise<void>;
 }
 
 async function call<T>(what: string, url: string, init?: RequestInit): Promise<T> {
@@ -116,6 +121,13 @@ export const fetchApi: Api = {
     },
     async removeMemberProvider(id) {
       await call('remove member provider', `/api/admin/member-providers/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    },
+    signInProviders: () => call<AdminSignInProvidersResponse>('sign-in providers', '/api/admin/sign-in-providers'),
+    async saveSignInProvider(provider) {
+      await call('save sign-in provider', `/api/admin/sign-in-providers/${encodeURIComponent(provider.id)}`, json('PUT', provider));
+    },
+    async removeSignInProvider(id) {
+      await call('remove sign-in provider', `/api/admin/sign-in-providers/${encodeURIComponent(id)}`, { method: 'DELETE' });
     },
   },
 };

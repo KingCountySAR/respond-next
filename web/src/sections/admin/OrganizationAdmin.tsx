@@ -1,12 +1,14 @@
 import { Alert, Box, Button, List, ListItemButton, ListItemText, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import type { AdminMemberProvidersResponse, AdminOrganizationsResponse, MemberProviderConfig, MemberProviderView, Organization, SiteAdminsResponse } from '@sync/domain';
+import type { ReactNode } from 'react';
+import type { AdminOrganizationsResponse, MemberProviderConfig, MemberProviderView, Organization, SignInProviderConfig, SignInProviderView, SiteAdminsResponse } from '@sync/domain';
 import { useApi } from '../../shell/api';
 import { useDialogs } from '../../shell/dialogs';
 import { ToolbarPage } from '../../shell/ToolbarPage';
 import { parseList } from './adminFields';
 import { MemberProviderForm } from './MemberProviderForm';
 import { OrganizationForm } from './OrganizationForm';
+import { SignInProviderForm } from './SignInProviderForm';
 
 const NEW_ORGANIZATION: Organization = {
   id: '',
@@ -16,6 +18,7 @@ const NEW_ORGANIZATION: Organization = {
   hostnames: [],
   emailDomains: [],
   memberProvider: null,
+  signInProvider: null,
   providerUnit: null,
   memberTags: {},
   memberTiers: {},
@@ -29,7 +32,7 @@ const message = (err: unknown) => (err instanceof Error ? err.message : String(e
 
 /**
  * `/admin/organizations`: organizations' settings for their admins; for site admins, every
- * organization, the member providers and the site admins too.
+ * organization, the member and sign-in providers and the site admins too.
  */
 export function OrganizationAdmin() {
   const api = useApi();
@@ -99,6 +102,7 @@ export function OrganizationAdmin() {
               siteAdmin={data.siteAdmin}
               all={data.all}
               memberProviders={data.memberProviders}
+              signInProviders={data.signInProviders}
               onSave={save}
               onDelete={data.siteAdmin && selected !== 'new' ? () => void remove(selected) : undefined}
               onClose={() => setSelected(undefined)}
@@ -114,6 +118,7 @@ export function OrganizationAdmin() {
           )}
         </Paper>
         {data.siteAdmin && <MemberProviders onChange={load} />}
+        {data.siteAdmin && <SignInProviders onChange={load} />}
         {data.siteAdmin && <SiteAdmins />}
       </Stack>
     </ToolbarPage>
@@ -122,18 +127,75 @@ export function OrganizationAdmin() {
 
 function MemberProviders({ onChange }: { onChange(): void }) {
   const api = useApi();
-  const { alert, confirm } = useDialogs();
-  const [data, setData] = useState<AdminMemberProvidersResponse | undefined>();
-  const [selected, setSelected] = useState<MemberProviderView | 'new' | undefined>();
+  return (
+    <ProviderSection<MemberProviderView, MemberProviderConfig>
+      title="Member providers"
+      what="member provider"
+      load={async () => {
+        const d = await api.admin.memberProviders();
+        return { providers: d.memberProviders, usedBy: d.usedBy };
+      }}
+      save={(p) => api.admin.saveMemberProvider(p)}
+      remove={(id) => api.admin.removeMemberProvider(id)}
+      describe={(p) => (p.kind === 'cedar' ? p.url : 'fixture')}
+      form={(props) => <MemberProviderForm {...props} />}
+      onChange={onChange}
+    />
+  );
+}
 
-  const load = useCallback(() => api.admin.memberProviders().then(setData, (err) => alert({ title: 'Member providers', message: message(err), type: 'error' })), [api, alert]);
+function SignInProviders({ onChange }: { onChange(): void }) {
+  const api = useApi();
+  return (
+    <ProviderSection<SignInProviderView, SignInProviderConfig>
+      title="Sign-in providers"
+      what="sign-in provider"
+      load={async () => {
+        const d = await api.admin.signInProviders();
+        return { providers: d.signInProviders, usedBy: d.usedBy };
+      }}
+      save={(p) => api.admin.saveSignInProvider(p)}
+      remove={(id) => api.admin.removeSignInProvider(id)}
+      describe={(p) => `Google: ${p.clientId}`}
+      form={(props) => <SignInProviderForm {...props} />}
+      onChange={onChange}
+    />
+  );
+}
+
+interface ProviderFormProps<V, C> {
+  initial: V | undefined;
+  usedBy: string[];
+  onSave(provider: C): Promise<void>;
+  onDelete?(): void;
+  onClose(): void;
+}
+
+/** A list of providers of one kind, and a form for one. */
+function ProviderSection<V extends { id: string }, C>(props: {
+  title: string;
+  what: string;
+  load(): Promise<{ providers: V[]; usedBy: Record<string, string[]> }>;
+  save(provider: C): Promise<void>;
+  remove(id: string): Promise<void>;
+  describe(provider: V): string;
+  form(props: ProviderFormProps<V, C> & { key: string }): ReactNode;
+  onChange(): void;
+}) {
+  const { title, what, load: fetchAll, save: send, remove: drop, describe, form, onChange } = props;
+  const { alert, confirm } = useDialogs();
+  const [data, setData] = useState<{ providers: V[]; usedBy: Record<string, string[]> } | undefined>();
+  const [selected, setSelected] = useState<V | 'new' | undefined>();
+
+  const load = useCallback(() => fetchAll().then(setData, (err) => alert({ title, message: message(err), type: 'error' })), [fetchAll, alert, title]);
   useEffect(() => {
     void load();
-  }, [load]);
+    // Once: the callers pass new functions on every render.
+  }, []);
 
-  const save = async (provider: MemberProviderConfig) => {
+  const save = async (provider: C) => {
     try {
-      await api.admin.saveMemberProvider(provider);
+      await send(provider);
       setSelected(undefined);
       await load();
       onChange();
@@ -143,9 +205,9 @@ function MemberProviders({ onChange }: { onChange(): void }) {
   };
 
   const remove = async (id: string) => {
-    if (!(await confirm({ prompt: `Delete member provider ${id}?`, destructive: true, label: 'Delete' }))) return;
+    if (!(await confirm({ prompt: `Delete ${what} ${id}?`, destructive: true, label: 'Delete' }))) return;
     try {
-      await api.admin.removeMemberProvider(id);
+      await drop(id);
       setSelected(undefined);
       await load();
       onChange();
@@ -157,27 +219,27 @@ function MemberProviders({ onChange }: { onChange(): void }) {
   return (
     <Paper sx={{ p: 2 }}>
       <Stack sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }} direction="row" spacing={2}>
-        <Typography variant="h5">Member providers</Typography>
+        <Typography variant="h5">{title}</Typography>
         <Box>
           <Button disabled={!!selected} variant="outlined" onClick={() => setSelected('new')}>
-            New provider
+            New {what}
           </Button>
         </Box>
       </Stack>
       {selected ? (
-        <MemberProviderForm
-          key={selected === 'new' ? 'new' : selected.id}
-          initial={selected === 'new' ? undefined : selected}
-          usedBy={selected === 'new' ? [] : (data?.usedBy[selected.id] ?? [])}
-          onSave={save}
-          onDelete={selected === 'new' ? undefined : () => void remove(selected.id)}
-          onClose={() => setSelected(undefined)}
-        />
+        form({
+          key: selected === 'new' ? 'new' : selected.id,
+          initial: selected === 'new' ? undefined : selected,
+          usedBy: selected === 'new' ? [] : (data?.usedBy[selected.id] ?? []),
+          onSave: save,
+          onDelete: selected === 'new' ? undefined : () => void remove(selected.id),
+          onClose: () => setSelected(undefined),
+        })
       ) : (
         <List>
-          {data?.memberProviders.map((p) => (
+          {data?.providers.map((p) => (
             <ListItemButton key={p.id} onClick={() => setSelected(p)}>
-              <ListItemText primary={p.id} secondary={[p.kind === 'cedar' ? p.url : 'fixture', data.usedBy[p.id]?.length ? `used by ${data.usedBy[p.id]!.join(', ')}` : 'unused'].join(' · ')} />
+              <ListItemText primary={p.id} secondary={[describe(p), data.usedBy[p.id]?.length ? `used by ${data.usedBy[p.id]!.join(', ')}` : 'unused'].join(' · ')} />
             </ListItemButton>
           ))}
         </List>

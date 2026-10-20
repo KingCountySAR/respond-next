@@ -1,6 +1,6 @@
 /**
- * `npm run seed -- <file>`: imports a seed file's member providers, organizations and site admins
- * into the database (DATABASE_URL). Each provider and organization replaces any stored one with its
+ * `npm run seed -- <file>`: imports a seed file's member and sign-in providers, organizations and
+ * site admins into the database (DATABASE_URL). Each provider and organization replaces any stored one with its
  * id; nothing else is touched. A running server sees the changes once restarted.
  */
 import { readFileSync } from 'node:fs';
@@ -21,7 +21,7 @@ const store = await OrganizationStore.connect(url, { secrets: new SecretBox(proc
 try {
   await store.importSeed(seed);
   const where = new URL(url);
-  console.log(`${where.host}${where.pathname}: imported ${seed.memberProviders.length} member providers, ${seed.organizations.length} organizations and ${seed.siteAdmins.length} site admins from ${file}. Restart a running server to see them.`);
+  console.log(`${where.host}${where.pathname}: imported ${seed.memberProviders.length} member providers, ${seed.signInProviders.length} sign-in providers, ${seed.organizations.length} organizations and ${seed.siteAdmins.length} site admins from ${file}. Restart a running server to see them.`);
 } catch (err) {
   fail(err instanceof Error ? err.message : String(err));
 } finally {

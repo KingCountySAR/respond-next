@@ -10,6 +10,7 @@ import {
   viewerOfSession,
   type AdminMemberProvidersResponse,
   type AdminOrganizationsResponse,
+  type AdminSignInProvidersResponse,
   type BootstrapResponse,
   type GrantResponse,
   type Organization,
@@ -21,15 +22,18 @@ import type { Hub } from '@sync/server';
 import type { GrantStore } from './grants';
 import type { LocationCatalog } from './locations';
 import type { MemberProviders } from './memberProviders';
+import type { GoogleSignIn, SignInStart } from './google';
 import { hostnameOf, type OrganizationStore } from './organizations';
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, type SessionData, type SessionStore } from './sessions';
-import { devSignIn, refreshSession, tierOn, type People } from './signIn';
+import { devSignIn, memberSignIn, refreshSession, tierOn, type People } from './signIn';
 import type { WeatherSource } from './weather';
 
 export interface SyncAppOptions {
   /** The organizations: each request's site is the one its hostname belongs to. */
   organizations: OrganizationStore;
   sessions: SessionStore;
+  /** Each site's Google sign-in, from its sign-in provider. */
+  signIn?: { forSite(orgId: string): GoogleSignIn | undefined };
   /** Offer `POST /api/auth/dev` (sign in as anyone) and `?session=` tokens. Never on an internet-facing site. */
   devSignIn: boolean;
   /** Mark the session cookie Secure (production, behind HTTPS). */
@@ -84,7 +88,7 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
   };
 
   app.get('/api/bootstrap', (c) =>
-    c.json({ config: orgs.siteConfig(c.get('site'), { devSignIn: options.devSignIn, buildId: options.buildId ?? 'dev' }) } satisfies BootstrapResponse),
+    c.json({ config: orgs.siteConfig(c.get('site'), { devSignIn: options.devSignIn, googleSignIn: !!options.signIn?.forSite(c.get('site').id), buildId: options.buildId ?? 'dev' }) } satisfies BootstrapResponse),
   );
 
   // The site's app icon and install manifest, as the legacy app served them per hostname. The icon
@@ -129,6 +133,49 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
       return c.json({ session: toSession(result.session) } satisfies SessionResponse);
     });
   }
+  // Sign-in with Google, through the site's provider: off to Google, and back with a code. What's needed to finish
+  // waits in a cookie for this site only; a failure goes back to the app as `?signinError=`.
+  const signInOf = (c: Context<Env>) => options.signIn?.forSite(c.get('site').id);
+  const LOGIN_COOKIE = 'sync_login';
+  const callbackOf = (c: Context<Env>) => `${options.secureCookies ? 'https' : 'http'}://${c.req.header('host')}/api/auth/callback`;
+  // Only a path on this site, never another site (//host).
+  const pathOnly = (then: string | undefined) => (then && /^\/(?![/\\])/.test(then) ? then : '/');
+  const failed = (c: Context<Env>, error: string) => c.redirect(`/?signinError=${encodeURIComponent(error)}`);
+
+  app.get('/api/auth/login', async (c) => {
+    const google = signInOf(c);
+    if (!google) return c.json({ error: 'This site has no sign-in provider' }, 404);
+    const { url, keep } = google.start(callbackOf(c));
+    const value = Buffer.from(JSON.stringify({ ...keep, then: pathOnly(c.req.query('then')) })).toString('base64url');
+    setCookie(c, LOGIN_COOKIE, value, { httpOnly: true, secure: options.secureCookies, sameSite: 'Lax', path: '/api/auth', maxAge: 600 });
+    return c.redirect(url);
+  });
+  app.get('/api/auth/callback', async (c) => {
+    const raw = getCookie(c, LOGIN_COOKIE);
+    deleteCookie(c, LOGIN_COOKIE, { path: '/api/auth' });
+    let kept: (SignInStart & { then: string }) | undefined;
+    try {
+      kept = raw ? (JSON.parse(Buffer.from(raw, 'base64url').toString('utf8')) as SignInStart & { then: string }) : undefined;
+    } catch {
+      kept = undefined;
+    }
+    if (!kept || kept.state !== c.req.query('state')) return failed(c, 'That sign-in had expired. Please try again.');
+    if (c.req.query('error')) return failed(c, c.req.query('error_description') ?? 'Sign-in was cancelled.');
+    const google = signInOf(c);
+    if (!google) return failed(c, 'This site has no sign-in provider.');
+    let email: string;
+    try {
+      ({ email } = await google.finish(c.req.query('code') ?? '', callbackOf(c), kept));
+    } catch (err) {
+      console.warn('sign-in failed', err);
+      return failed(c, 'Sign-in failed. Please try again.');
+    }
+    const result = await memberSignIn(people, c.get('site'), email);
+    if (!result.ok) return failed(c, result.error);
+    const id = await sessions.create(result.session);
+    setCookie(c, SESSION_COOKIE, id, { httpOnly: true, secure: options.secureCookies, sameSite: 'Lax', path: '/', maxAge: SESSION_TTL_SECONDS });
+    return c.redirect(pathOnly(kept.then));
+  });
   app.post('/api/auth/logout', async (c) => {
     const id = getCookie(c, SESSION_COOKIE);
     if (id) await sessions.remove(id);
@@ -273,16 +320,24 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
       organizations: editable,
       all: orgs.all().map((o) => ({ id: o.id, title: o.title })),
       memberProviders: orgs.memberProviders().map((p) => p.id),
+      signInProviders: orgs.signInProviders().map((p) => p.id),
       siteAdmin: orgs.isSiteAdmin(email),
     } satisfies AdminOrganizationsResponse);
   });
   app.put('/api/admin/organizations/:id', signedIn, async (c) => {
     const body = (await c.req.json().catch(() => undefined)) as { id?: unknown } | undefined;
     if (body?.id !== c.req.param('id')) return c.json({ error: "The organization's id doesn't match the URL" }, 400);
+    // Not the hostname this page is on (only site admins change hostnames): the site would be gone,
+    // and the page with it.
+    const host = hostnameOf(c.req.header('host'));
+    const hostnames = (body as { hostnames?: unknown }).hostnames;
+    if (body?.id === c.get('site').id && orgs.isSiteAdmin(c.get('session').email) && Array.isArray(hostnames) && !hostnames.some((h) => typeof h === 'string' && h.trim().toLowerCase() === host))
+      return c.json({ error: `You're on ${host}: keep it, or make the change from another of the organization's sites` }, 400);
     const result = await orgs.save(body, c.get('session').email);
     return result.ok ? c.json({ organization: result.saved }) : c.json({ error: result.error }, result.status);
   });
   app.delete('/api/admin/organizations/:id', signedIn, async (c) => {
+    if (c.req.param('id') === c.get('site').id && orgs.isSiteAdmin(c.get('session').email)) return c.json({ error: "You can't delete the site you're on" }, 400);
     const result = await orgs.remove(c.req.param('id')!, c.get('session').email);
     return result.ok ? c.json({ status: 'ok' }) : c.json({ error: result.error }, result.status);
   });
@@ -313,6 +368,22 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
   });
   app.delete('/api/admin/member-providers/:id', signedIn, async (c) => {
     const result = await orgs.removeProvider(c.req.param('id')!, c.get('session').email);
+    return result.ok ? c.json({ status: 'ok' }) : c.json({ error: result.error }, result.status);
+  });
+
+  // Sign-in providers: site admins only, as member providers.
+  app.get('/api/admin/sign-in-providers', signedIn, (c) => {
+    if (!orgs.isSiteAdmin(c.get('session').email)) return c.json({ error: 'Only site admins can do that' }, 403);
+    return c.json({ signInProviders: orgs.signInProviders(), usedBy: orgs.signInProviderUsers() } satisfies AdminSignInProvidersResponse);
+  });
+  app.put('/api/admin/sign-in-providers/:id', signedIn, async (c) => {
+    const body = (await c.req.json().catch(() => undefined)) as { id?: unknown } | undefined;
+    if (body?.id !== c.req.param('id')) return c.json({ error: "The sign-in provider's id doesn't match the URL" }, 400);
+    const result = await orgs.saveSignInProvider(body, c.get('session').email);
+    return result.ok ? c.json({ signInProvider: result.saved }) : c.json({ error: result.error }, result.status);
+  });
+  app.delete('/api/admin/sign-in-providers/:id', signedIn, async (c) => {
+    const result = await orgs.removeSignInProvider(c.req.param('id')!, c.get('session').email);
     return result.ok ? c.json({ status: 'ok' }) : c.json({ error: result.error }, result.status);
   });
 

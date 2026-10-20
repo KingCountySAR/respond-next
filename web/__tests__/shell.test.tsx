@@ -27,7 +27,7 @@ describe('web shell', () => {
     const menu = within(screen.getByRole('menu'));
     expect(menu.getByText('Dana Field')).toBeTruthy();
     fireEvent.click(menu.getByText('Sign Out'));
-    expect(await screen.findByText('dev sign in')).toBeTruthy();
+    expect(await screen.findByText('Dev sign-in')).toBeTruthy();
   });
 
   it('keeps the ops dashboard to command and support', async () => {

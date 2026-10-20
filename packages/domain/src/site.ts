@@ -18,6 +18,8 @@ export interface SiteConfig {
   theme: { primary: string; primaryDark?: string };
   /** The dev sign-in is on (DEV_TOOLS): anyone may sign in as any email, and choose their tier. */
   devSignIn: boolean;
+  /** Sign-in with Google, through the site's sign-in provider (`/api/auth/login`). */
+  googleSignIn: boolean;
   buildId: string;
 }
 

@@ -18,7 +18,7 @@ async function start(options: { siteAdmins?: string[] } = {}) {
 }
 
 async function signInByEmail(email: string, name?: string) {
-  await screen.findByText('dev sign in');
+  fireEvent.click(await screen.findByText('Dev sign-in'));
   fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: email } });
   if (name) fireEvent.change(screen.getByLabelText('Name'), { target: { value: name } });
   fireEvent.click(screen.getByText('dev sign in'));
@@ -72,7 +72,7 @@ describe('organization admin', () => {
     await signInByEmail(SITE_ADMIN, 'Root Admin');
 
     // A provider with a secret: it's saved, and only said to be set.
-    fireEvent.click(await screen.findByText('New provider'));
+    fireEvent.click(await screen.findByText('New member provider'));
     fireEvent.change(field(/^Id/), { target: { value: 'cedar' } });
     fireEvent.change(field(/^cedar URL/), { target: { value: 'https://cedar.test' } });
     fireEvent.change(field(/^Token URL/), { target: { value: 'https://hydra.test/oauth2/token' } });

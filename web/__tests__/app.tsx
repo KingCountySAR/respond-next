@@ -126,7 +126,7 @@ function apiFor(locations: MemoryLocationCatalog, orgs: OrganizationStore, hub: 
     admin: {
       organizations: async () => {
         const email = data?.email;
-        return { organizations: orgs.editableBy(email), all: orgs.all().map((o) => ({ id: o.id, title: o.title })), memberProviders: orgs.memberProviders().map((p) => p.id), siteAdmin: orgs.isSiteAdmin(email) };
+        return { organizations: orgs.editableBy(email), all: orgs.all().map((o) => ({ id: o.id, title: o.title })), memberProviders: orgs.memberProviders().map((p) => p.id), signInProviders: orgs.signInProviders().map((p) => p.id), siteAdmin: orgs.isSiteAdmin(email) };
       },
       saveOrganization: async (org) => done(await orgs.save(org, data?.email)),
       removeOrganization: async (id) => void done(await orgs.remove(id, data?.email)),
@@ -135,6 +135,9 @@ function apiFor(locations: MemoryLocationCatalog, orgs: OrganizationStore, hub: 
       memberProviders: async () => ({ memberProviders: orgs.memberProviders(), usedBy: orgs.providerUsers() }),
       saveMemberProvider: async (provider) => void done(await orgs.saveProvider(provider, data?.email)),
       removeMemberProvider: async (id) => void done(await orgs.removeProvider(id, data?.email)),
+      signInProviders: async () => ({ signInProviders: orgs.signInProviders(), usedBy: orgs.signInProviderUsers() }),
+      saveSignInProvider: async (provider) => void done(await orgs.saveSignInProvider(provider, data?.email)),
+      removeSignInProvider: async (id) => void done(await orgs.removeSignInProvider(id, data?.email)),
     },
   };
   return { api, current: () => data, changed };
@@ -147,7 +150,7 @@ export const TITLE = 'Lost hiker, Mailbox Peak';
  * A server with one activity on it, set up by a command client (`seed`): Dana Field (kcsara:7)
  * staging under CRT. Each app rendered connects as its own client.
  */
-export async function serverWithActivity(options: { siteAdmins?: string[] } = {}) {
+export async function serverWithActivity(options: { siteAdmins?: string[]; devSignIn?: boolean; googleSignIn?: boolean } = {}) {
   localStorage.clear();
   window.history.replaceState(null, '', '/');
   // The real server setup, with summaries written quickly so lists update within a test.
@@ -177,7 +180,7 @@ export async function serverWithActivity(options: { siteAdmins?: string[] } = {}
     return net.transportFor(index, viewer, (id) => (tierOn(session, id) === viewer.tier ? undefined : { ...viewer, tier: tierOn(session, id) }))();
   };
   // People signing in on CRT's site respond under CRT.
-  const site = (): BootstrapResponse => ({ config: organizations.siteConfig(organizations.get(CRT.id)!, { devSignIn: true, buildId: 'test' }) });
+  const site = (): BootstrapResponse => ({ config: organizations.siteConfig(organizations.get(CRT.id)!, { devSignIn: options.devSignIn ?? true, googleSignIn: options.googleSignIn, buildId: 'test' }) });
   let nextClient = 1;
   const renderApp = (path = '/') => {
     window.history.replaceState(null, '', path);
@@ -189,7 +192,7 @@ export async function serverWithActivity(options: { siteAdmins?: string[] } = {}
 
 /** Signs in by email (`given.family@crt.example.org`); everyone named here is in CRT's directory. */
 export async function signIn(name: string, personRef: string, tier: 'field' | 'command' = 'field') {
-  await screen.findByText('dev sign in');
+  fireEvent.click(await screen.findByText('Dev sign-in'));
   const email = `${name.toLowerCase().split(' ').join('.')}@crt.example.org`;
   const known = await directories.kcsara.byEmail(email);
   if (known?.member.personRef !== personRef) throw new Error(`${name} is not ${personRef} in the test directory`);

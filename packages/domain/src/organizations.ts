@@ -1,7 +1,7 @@
 /**
  * Organizations as the server stores them and the admin page edits them. They form a tree (an
  * umbrella organization over its units). Each site is one organization, found by the request's
- * hostname; its brand and member provider are its own or the nearest ancestor's.
+ * hostname; its brand, member provider and sign-in provider are its own or the nearest ancestor's.
  */
 import { z } from 'zod';
 import { TIERS, type Tier } from './viewer';
@@ -59,6 +59,8 @@ export const Organization = z.object({
   brand: Brand.optional(),
   /** A member provider's id. Unset: the nearest ancestor's. */
   memberProvider: id.nullable().default(null),
+  /** A sign-in provider's id: where the site's people sign in. Unset: the nearest ancestor's. */
+  signInProvider: id.nullable().default(null),
   /** This organization's name in its provider (cedar's unit title), to keep searches to its members. */
   providerUnit: z.string().trim().min(1).nullable().default(null),
   /**
@@ -113,6 +115,30 @@ export const MemberProviderConfig = z.discriminatedUnion('kind', [
 ]);
 export type MemberProviderConfig = z.infer<typeof MemberProviderConfig>;
 
+/**
+ * Where a site's people sign in: a Google OAuth client (a Web application in a Google Cloud project),
+ * with each site's `https://<hostname>/api/auth/callback` as a redirect URI. Set on an umbrella
+ * organization, every site under it signs in with the same client.
+ */
+export const SignInProviderConfig = z.object({
+  id,
+  kind: z.literal('google'),
+  clientId: z.string().min(1),
+  /** Write-only, as a member provider's. */
+  clientSecret: z.string().min(1).optional(),
+});
+export type SignInProviderConfig = z.infer<typeof SignInProviderConfig>;
+
+/** A sign-in provider as admins see it: never the secret, only whether there is one. */
+export type SignInProviderView = SignInProviderConfig & { hasClientSecret?: boolean };
+
+/** `GET /api/admin/sign-in-providers` (site admins). */
+export interface AdminSignInProvidersResponse {
+  signInProviders: SignInProviderView[];
+  /** The organizations that name each provider. */
+  usedBy: Record<string, string[]>;
+}
+
 /** A member provider as admins see it: never the secret, only whether there is one. */
 export type MemberProviderView = MemberProviderConfig & { hasClientSecret?: boolean };
 
@@ -126,6 +152,7 @@ export interface AdminMemberProvidersResponse {
 /** The seed file: providers, organizations and site admins to start from. */
 export const OrganizationSeed = z.object({
   memberProviders: z.array(MemberProviderConfig).default([]),
+  signInProviders: z.array(SignInProviderConfig).default([]),
   organizations: z.array(Organization).default([]),
   siteAdmins: z.array(email).default([]),
 });
@@ -137,6 +164,7 @@ export interface AdminOrganizationsResponse {
   /** Every organization's id and name, for parents and partners. */
   all: { id: string; title: string }[];
   memberProviders: string[];
+  signInProviders: string[];
   siteAdmin: boolean;
 }
 

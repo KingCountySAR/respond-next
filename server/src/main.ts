@@ -11,6 +11,7 @@ import { MemoryLocationCatalog, PostgresLocationCatalog, type LocationCatalog } 
 import { MemoryGrantStore, PostgresGrantStore, type GrantStore } from './grants';
 import { MemberInfoWriter } from './memberInfo';
 import { MemberProviders } from './memberProviders';
+import { SignInProviders } from './google';
 import { OrganizationStore } from './organizations';
 import { SecretBox } from './secrets';
 import { MemorySessionStore, PostgresSessionStore, type SessionStore } from './sessions';
@@ -118,6 +119,8 @@ const { app, injectWebSocket } = createSyncApp(hub, {
   organizations,
   sessions,
   devSignIn: devTools,
+  // Each site signs in through its organization's sign-in provider (or its nearest ancestor's).
+  signIn: new SignInProviders(organizations),
   secureCookies: production,
   buildId: process.env.BUILD_ID,
   members,

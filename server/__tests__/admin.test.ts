@@ -72,6 +72,18 @@ describe('organization admin', () => {
     expect(app.organizations.get('org-k9')).toBeUndefined();
   });
 
+  it("keeps a site admin from removing the site they're on", async () => {
+    const app = testApp();
+    const site = await as(SITE_ADMIN, app);
+    const crt = app.organizations.get('org-crt')!;
+    const moved = await site.json<{ error: string }>('/api/admin/organizations/org-crt', { method: 'PUT', body: { ...crt, hostnames: ['crt.example.org'] } });
+    expect(moved.body.error).toBe("You're on crt.localhost: keep it, or make the change from another of the organization's sites");
+    expect((await site.json<{ error: string }>('/api/admin/organizations/org-crt', { method: 'DELETE' })).body.error).toBe("You can't delete the site you're on");
+    expect(app.organizations.forHost('crt.localhost')?.id).toBe('org-crt');
+    // Adding one is fine.
+    expect((await site.request('/api/admin/organizations/org-crt', { method: 'PUT', body: { ...crt, hostnames: ['CRT.localhost', 'crt.example.org'] } })).status).toBe(200);
+  });
+
   it('keeps site admins from the environment and from the admin page', async () => {
     const app = testApp({ organizations: OrganizationStore.memory(testSeed(), { envAdmins: ['Env.Admin@example.org', ''] }) });
     const env = await as('env.admin@example.org', app);
