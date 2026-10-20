@@ -4,7 +4,8 @@ import { useSyncClient } from './sync';
 
 /**
  * Opens an activity on the session's SyncClient for the pages under it, which read it with
- * `useFieldActivity()` or `useCommandActivity()`. The legacy ActivityLayout's loading text.
+ * `useFieldActivity()` or `useCommandActivity()`. The legacy ActivityLayout's loading and
+ * not-found text.
  */
 export function ActivityLayout({ activityId, children }: { activityId: string; children: ReactNode }) {
   return (
@@ -15,9 +16,12 @@ export function ActivityLayout({ activityId, children }: { activityId: string; c
 }
 
 /**
- * Until the activity record arrives. The client can't yet tell "not on the server" from "not
- * synced yet", so there's no "Activity not found" until it can.
+ * Until the activity record arrives; "Activity not found" once the server says it doesn't have it,
+ * or it's been removed. Offline, an activity this browser hasn't seen stays loading.
  */
 const WhenLoaded = observer(function WhenLoaded({ children }: { children: ReactNode }) {
-  return useFieldActivity().record ? <>{children}</> : <div>Loading activity...</div>;
+  const activity = useFieldActivity();
+  const rec = activity.record;
+  if (rec && rec.removedAt === null) return <>{children}</>;
+  return <div>{rec || activity.missing ? 'Activity not found' : 'Loading activity...'}</div>;
 });

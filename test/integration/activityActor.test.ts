@@ -36,6 +36,26 @@ async function until(check: () => boolean) {
 }
 
 describe('activity domain on the activity actor', () => {
+  it("answers an unknown activity with nothing, and stores nothing for it until it's created", async () => {
+    const storage = new MemoryStorage();
+    const hub = new Hub({ storage, registry: activityRegistry, projector: activityProjector, now: () => T0 + 2 * HOUR });
+    const field = connect(hub, fieldMember('kcsara:85205'), 'c-field');
+    await until(() => field.received.length > 0);
+    expect(field.received[0]).toMatchObject({ t: 'reset', activityId: 'e1', to: 0, records: [] });
+
+    // A change to it is refused, and leaves no trace.
+    field.push('addParticipant', { personRef: 'kcsara:85205', firstname: 'Anna', lastname: 'Lee', unit: CRT, status: 'responding', at: T0 + HOUR });
+    await until(() => field.received.some((m) => m.t === 'reject'));
+    expect(field.received.find((m) => m.t === 'reject')).toMatchObject({ reason: 'no_activity' });
+    expect(await storage.load('e1')).toBeUndefined();
+
+    // Creating it works as ever, and the open client sees it.
+    const command = connect(hub, COMMAND, 'c-command');
+    command.push('createActivity', activityArgs());
+    await until(() => field.records().has('activity/activity'));
+    expect((await storage.load('e1'))?.version).toBe(1);
+  });
+
   it('applies mutations and sends each view only what it may see', async () => {
     const hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: () => T0 + 2 * HOUR });
     const command = connect(hub, COMMAND, 'c-command');

@@ -144,7 +144,9 @@ export class Hub {
   }
 
   private async subscribe(conn: Conn, actorConn: ActorConn, activityId: string, since: number, view?: string): Promise<void> {
-    // Phase 1: any connection may open any activity. Grants are checked here in phase 2.
+    // Any connection may open any activity, for now. One that doesn't exist gets an empty reset at
+    // version 0, which tells the client so (or, for one being created, that its createActivity is
+    // still to come); nothing is stored until a change applies.
     const viewer = conn.transport.viewerIn?.(activityId);
     const there: ActorConn = viewer ? { ...actorConn, viewer } : actorConn;
     conn.activities.set(activityId, there);

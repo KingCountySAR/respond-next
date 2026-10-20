@@ -214,6 +214,13 @@ export class ActivityActor {
       log.push({ ...entry, version, at: typeof at === 'number' ? at : undefined, outcome: 'applied', effects });
     }
     if (log.length === 0) return;
+    // An activity that doesn't exist (nothing has applied to it) stays that way until a change does
+    // (createActivity): rejections alone write nothing, so opening or pushing to an unknown id doesn't
+    // create it.
+    if (this.version === 0 && version === 0) {
+      for (const r of rejects) conn.send(r);
+      return;
+    }
 
     const changed = [...batch.writes.values()];
     try {

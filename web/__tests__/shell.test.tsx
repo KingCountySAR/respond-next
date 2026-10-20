@@ -30,6 +30,13 @@ describe('web shell', () => {
     expect(await screen.findByText('Dev sign-in')).toBeTruthy();
   });
 
+  it("says an activity the server doesn't have isn't found", async () => {
+    server.renderApp('/mission/no-such-mission');
+    await signIn('Dana Field', 'kcsara:7');
+    expect(await screen.findByText('Activity not found')).toBeTruthy();
+    expect(screen.queryByText('Loading activity...')).toBeNull();
+  });
+
   it('keeps the ops dashboard to command and support', async () => {
     server.renderApp(`/ops/${ACTIVITY}`);
     await signIn('Dana Field', 'kcsara:7');

@@ -83,5 +83,5 @@ To start everything over, activities and locations included: `docker compose dow
 
 - **Auth:** only people the member directory knows can sign in (visitors will come by invitation), and the tier from member groups is as of sign-in. Signing out ends this site's session, not Google's.
 - **`DEV_TOOLS=true`** turns on the dev sign-in, `?session=` tokens and the debug route. It's never implied by the build: only `server/.env.development` and `docker-compose.yml` (for trying the image locally) set it. Never set it on an internet-facing site.
-- **Any client may open any activity**, and activities are created on first subscribe.
-- **Not yet built:** idle actor unloading, cross-actor commit batching (~10 ms), build-version `reload`, HTTP fallback transport, `permessage-deflate`, the cross-activity outbox, grants (the list shows every activity to everyone).
+- **Any client may open any activity.** One that doesn't exist (no change has applied to it) gets an empty reset at version 0, which the client takes as "not found" unless it's creating it; nothing is stored for it until a change applies, so rejected pushes to an unknown id leave no trace.
+- **Not yet built:** idle actor unloading, cross-actor commit batching (~10 ms), build-version `reload`, HTTP fallback transport, `permessage-deflate`, the cross-activity outbox, keeping activities to their organization tree (the list shows every activity to everyone).

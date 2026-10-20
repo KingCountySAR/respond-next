@@ -57,6 +57,8 @@ export class ClientActivityState {
   /** The view key the server projected the confirmed records for; undefined until it says. */
   view: string | undefined;
   pending: WireMutation[] = [];
+  /** Whether the server has answered for it since it was opened here. */
+  heard = false;
   snapshot: ActivitySnapshot;
 
   constructor(
@@ -92,6 +94,7 @@ export class ClientActivityState {
   applyReset(msg: ResetMessage): void {
     this.confirmed = new Map(msg.records.map((r) => [recKey(r), r]));
     this.version = msg.to;
+    this.heard = true;
     this.view = msg.view ?? this.view;
     this.confirm(msg.lastMutationId);
   }
@@ -104,6 +107,7 @@ export class ClientActivityState {
     for (const d of msg.deletes) next.delete(keyOf(d.type, d.id));
     this.confirmed = next;
     this.version = msg.to;
+    this.heard = true;
     this.view = msg.view ?? this.view;
     this.confirm(msg.lastMutationId);
     return true;

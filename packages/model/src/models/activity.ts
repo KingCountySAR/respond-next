@@ -11,7 +11,7 @@
  * client's next snapshot is applied, which happens synchronously.
  */
 
-import { compareShallow, computed, computedStruct, makeObservable } from 'mobx';
+import { action, compareShallow, computed, computedStruct, makeObservable, observable } from 'mobx';
 import { randomId, type Rec, type WireMutation } from '@sync/core';
 import type { SyncClient } from '@sync/client';
 import {
@@ -83,6 +83,8 @@ export class FieldActivity<K extends Kinds = Kinds> {
   readonly viewKey: ViewKey;
   private readonly models = new Map<string, unknown>();
   private readonly unsubscribe: () => void;
+  /** The server has answered and doesn't have it (and it isn't being created here): "Activity not found". */
+  missing = false;
 
   /** The activity must already be open on the client (`await client.open(activityId)`). */
   constructor(
@@ -92,7 +94,9 @@ export class FieldActivity<K extends Kinds = Kinds> {
   ) {
     this.clock = options.clock ?? new Clock(() => client.now());
     this.viewKey = activityProjector.viewKey(client.viewerIn(activityId)) as ViewKey;
-    makeObservable(this, {
+    makeObservable<FieldActivity<K>, 'follow'>(this, {
+      missing: observable,
+      follow: action,
       record: computed,
       phase: computed,
       hasOperations: computed,
@@ -105,8 +109,13 @@ export class FieldActivity<K extends Kinds = Kinds> {
       equipment: computed({ equals: compareShallow }),
       statusCounts: computedStruct,
     });
-    this.store.apply(client.snapshot(activityId));
-    this.unsubscribe = client.subscribe(activityId, () => this.store.apply(client.snapshot(activityId)));
+    this.follow();
+    this.unsubscribe = client.subscribe(activityId, () => this.follow());
+  }
+
+  private follow(): void {
+    this.store.apply(this.client.snapshot(this.activityId));
+    this.missing = this.client.missing(this.activityId) && !this.record;
   }
 
   /** Stops following the client. Doesn't close the activity on the client. */

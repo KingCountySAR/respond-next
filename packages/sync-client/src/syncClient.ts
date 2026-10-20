@@ -167,6 +167,16 @@ export class SyncClient {
     this.updateStatus();
   }
 
+  /**
+   * The server has answered and has nothing for it: no change to it has ever applied, so it doesn't
+   * exist there (yet: one being created here exists once its createActivity reaches the server).
+   * False until the server answers, as when offline.
+   */
+  missing(activityId: string): boolean {
+    const state = this.activity(activityId).state;
+    return state.heard && state.version === 0;
+  }
+
   snapshot(activityId: string): ActivitySnapshot {
     return this.activity(activityId).state.snapshot;
   }
