@@ -7,6 +7,7 @@ import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, activityProjector, activityRegis
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 import { SummaryWriter } from './summaries';
+import { ActivityLogWriter } from './activityLog';
 import { MemoryLocationCatalog, PostgresLocationCatalog, type LocationCatalog } from './locations';
 import { MemoryGrantStore, PostgresGrantStore, type GrantStore } from './grants';
 import { MemberInfoWriter } from './memberInfo';
@@ -98,14 +99,16 @@ function uiDir(): string | undefined {
 const members = new MemberProviders(organizations);
 const summaries = new SummaryWriter(() => hub);
 const memberInfo = new MemberInfoWriter(() => hub, members);
+const activityLog = new ActivityLogWriter(() => hub);
 const hub: Hub = new Hub({
   storage,
   registry: activityRegistry,
   projector: activityProjector,
   now: Date.now,
-  onCommit: (activityId, view) => {
+  onCommit: (activityId, view, changes) => {
     summaries.onCommit(activityId, view);
     memberInfo.onCommit(activityId, view);
+    activityLog.onCommit(activityId, view, changes);
   },
   // Only the server writes the activity list and archive.
   readOnly: (activityId) => activityId === ACTIVITY_LIST_ID || activityId === ACTIVITY_ARCHIVE_ID,

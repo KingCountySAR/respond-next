@@ -5,6 +5,7 @@ import { PROTOCOL, type Rec, type Viewer } from '@sync/core';
 import {
   ACTIVITY_ARCHIVE_ID,
   MEMBER_QUERY_MAX,
+  activityOfScope,
   MEMBER_QUERY_MIN,
   SavedLocation,
   isValidPoint,
@@ -68,7 +69,7 @@ type Env = { Variables: { site: Organization; session: SessionData } };
 /** Who someone is on one activity: as signed in, unless they have a grant there. */
 function viewerOn(session: SessionData, activityId: string): Viewer {
   const viewer = viewerOfSession(session);
-  const tier = tierOn(session, activityId);
+  const tier = tierOn(session, activityOfScope(activityId));
   return tier === viewer.tier ? viewer : { ...viewer, tier };
 }
 

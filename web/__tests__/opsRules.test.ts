@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { compareTeamNames, coordinatesIn, countByName, nextTeamNumber, sortTeams, uniqueNameError } from '../src/sections/ops/opsRules';
+import type { Comm } from '@sync/model';
+import { compareTeamNames, coordinatesIn, countByName, filterComms, nextTeamNumber, sortTeams, uniqueNameError } from '../src/sections/ops/opsRules';
 import { validatePlace } from '../src/sections/ops/Operations';
 
 const team = (name: string, gar: 'green' | 'amber' | 'red' = 'green', status: 'inBase' | 'disbanded' = 'inBase') => ({ name, gar, status });
@@ -33,6 +34,17 @@ describe('ops dashboard rules', () => {
     expect(validatePlace({ name: 'LZ', lat: '47.5', lon: '' }, [])).toEqual({ lon: 'Longitude is required when latitude is provided' });
     expect(validatePlace({ name: 'LZ', lat: '91', lon: 'east' }, [])).toEqual({ lat: 'Latitude must be between -90 and 90', lon: 'Longitude must be a valid decimal number' });
     expect(validatePlace({ name: 'LZ', lat: ' 47.5 ', lon: '-121.7' }, [])).toEqual({});
+  });
+
+  it('filters comms to a priority level, favorites always shown, and by text', () => {
+    const comm = (id: string, priority: 1 | 2 | 3, favorite = false) => ({ id, priority, favorite, from: 'Base', to: 'Team 1', message: `Message ${id}` }) as Comm;
+    const comms = [comm('a', 1), comm('b', 2), comm('c', 3), comm('d', 3, true)];
+    const ids = (level: 'favorites' | 1 | 2 | 3, query = '') => filterComms(comms, { query, level }).map((c) => c.id);
+    expect(ids('favorites')).toEqual(['d']);
+    expect(ids(1)).toEqual(['a', 'd']);
+    expect(ids(2)).toEqual(['a', 'b', 'd']);
+    expect(ids(3)).toEqual(['a', 'b', 'c', 'd']);
+    expect(ids(3, 'message c')).toEqual(['c']);
   });
 
   it('finds coordinates in a comms message, to copy', () => {

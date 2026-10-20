@@ -12,6 +12,8 @@ export interface ActivityViewer extends Viewer {
   class: 'member' | 'external';
   /** The viewer's own person, for self-service changes (signing in, ETA). */
   personRef?: string;
+  /** Their name, as signed in: the activity log says who made each change. */
+  name?: string;
   /**
    * Their tier were the activity a mission, when its kind is what makes them command: members
    * manage trainings and other events. Only that tier may make one a mission.

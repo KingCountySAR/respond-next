@@ -5,8 +5,8 @@
  */
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { OpenOptions, SyncClient } from '@sync/client';
-import { ACTIVITY_LIST_ID, activityProjector } from '@sync/domain';
-import { ActivityList, createActivityModel, isCommandActivity, type CommandActivity, type FieldActivity } from './models';
+import { ACTIVITY_LIST_ID, activityLogId, activityProjector } from '@sync/domain';
+import { ActivityList, ActivityLog, createActivityModel, isCommandActivity, type CommandActivity, type FieldActivity } from './models';
 
 export { observer, Observer } from 'mobx-react-lite';
 
@@ -84,6 +84,22 @@ export function useActivityList(client: SyncClient): ActivityList | null {
     };
   }, [client]);
   return list;
+}
+
+/** An activity's log, open while any component uses it; null until it's loaded. Command only. */
+export function useActivityLog(client: SyncClient, activityId: string): ActivityLog | null {
+  const [log, setLog] = useState<ActivityLog | null>(null);
+  useEffect(() => {
+    const lease = acquire(client, activityLogId(activityId), () => new ActivityLog(client, activityId));
+    let live = true;
+    void lease.ready.then((l) => live && setLog(l));
+    return () => {
+      live = false;
+      lease.release();
+      setLog(null);
+    };
+  }, [client, activityId]);
+  return log;
 }
 
 const ActivityModelContext = createContext<FieldActivity | null>(null);

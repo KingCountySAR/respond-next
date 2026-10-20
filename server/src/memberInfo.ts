@@ -4,7 +4,7 @@
  * started) is looked up, and `setMemberInfo` is written when it differs from what the activity has.
  */
 import type { ReadView } from '@sync/core';
-import { ACTIVITY_LIST_ID, SYSTEM_VIEWER, type ContactRec, type ParticipantRec } from '@sync/domain';
+import { SYSTEM_VIEWER, isReservedScope, type ContactRec, type ParticipantRec } from '@sync/domain';
 import type { Hub } from '@sync/server';
 import type { MemberDetails } from './members';
 
@@ -28,7 +28,7 @@ export class MemberInfoWriter {
 
   /** Pass to the hub's `onCommit`. */
   readonly onCommit = (activityId: string, view: ReadView): void => {
-    if (activityId === ACTIVITY_LIST_ID) return;
+    if (isReservedScope(activityId)) return;
     for (const p of view.scan<ParticipantRec>('participant')) {
       const key = `${activityId}/${p.id}/${p.personRef}`;
       if (this.done.has(key)) continue;

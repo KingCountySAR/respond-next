@@ -13,6 +13,8 @@ The activity model, the same for missions, trainings and other activities: the r
 | `src/viewer.ts` | `ActivityViewer` (tier, class, personRef), `isCommand`, `SYSTEM_VIEWER` |
 | `src/mutations/*.ts` | Every mutation, grouped by activity, participants and operations; `common.ts` has shared checks and helpers |
 | `src/summary.ts` | `ActivitySummaryRec` and `activitySummary(view, id)`: what lists show about an activity (the activity's main fields, its units with active counts, everyone's status by participant id); `ACTIVITY_LIST_ID`, the scope open and recent activities' summaries live in (`inActivityList`), and `ACTIVITY_ARCHIVE_ID`, every activity's; the `/api/activities` response types; `setActivitySummary`, the server's mutation that writes them |
+| `src/activityLog.ts` | The activity log: `activityLogId` (its scope), `LogEntryRec`, `appendLog` (the server's) and `setLogFavorite`, and `narrate`, which words a committed change as log lines (level 3 for team status and GAR, 4 for the rest) |
+| `src/labels.ts` | The words shown for participant, team and unit statuses and GAR, for the UI and the log alike |
 | `src/site.ts`, `src/members.ts`, `src/locations.ts` | `SavedLocation` (the catalog's entries; `fromSaved` makes an activity location of one), and what `/api/bootstrap` sends (`SiteConfig`: the site's unit, its partners, which may create missions or events; `ownerOptions`, `canCreate`), and `MemberInfo`, what member search returns |
 | `src/projector.ts` | `activityProjector`: field views per record type, and the field record types derived from them (`FieldParticipantRec`, ...) |
 | `src/index.ts` | Exports all of the above, plus `activityMutations` and `activityRegistry` |

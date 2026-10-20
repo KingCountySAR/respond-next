@@ -6,7 +6,7 @@
  * of the list.
  */
 import { MapView, recKey, type ReadView, type Rec } from '@sync/core';
-import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, SYSTEM_VIEWER, activitySummary, inActivityList, type ActivitySummary } from '@sync/domain';
+import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, SYSTEM_VIEWER, activitySummary, inActivityList, isReservedScope, type ActivitySummary } from '@sync/domain';
 import type { ActivityStorage, Hub } from '@sync/server';
 
 export interface SummaryOptions {
@@ -23,7 +23,6 @@ function stableJson(value: unknown): string {
 }
 
 const withoutVersion = ({ version: _version, ...rest }: Rec) => rest;
-const isScope = (activityId: string) => activityId === ACTIVITY_LIST_ID || activityId === ACTIVITY_ARCHIVE_ID;
 
 export class SummaryWriter {
   private readonly pending = new Map<string, { timer: ReturnType<typeof setTimeout>; since: number; view: ReadView }>();
@@ -50,7 +49,7 @@ export class SummaryWriter {
 
   /** Pass as the hub's `onCommit`. */
   readonly onCommit = (activityId: string, view: ReadView): void => {
-    if (isScope(activityId)) return;
+    if (isReservedScope(activityId)) return;
     const now = Date.now();
     const pending = this.pending.get(activityId);
     if (pending) clearTimeout(pending.timer);
@@ -74,7 +73,7 @@ export class SummaryWriter {
     }
     let added = 0;
     for (const id of await storage.activityIds()) {
-      if (isScope(id) || this.summaries.has(id)) continue;
+      if (isReservedScope(id) || this.summaries.has(id)) continue;
       const read = await this.hub().read(id, SYSTEM_VIEWER);
       if (await this.write(id, new MapView(new Map(read.records.map((r) => [recKey(r), r]))))) added++;
     }

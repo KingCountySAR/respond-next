@@ -32,7 +32,7 @@ export interface DevSignInRequest {
   class: ActivityViewer['class'];
 }
 
-export const viewerOfSession = (s: Pick<Session, 'userId' | 'tier' | 'class' | 'personRef'>): ActivityViewer => ({ userId: s.userId, tier: s.tier, class: s.class, personRef: s.personRef });
+export const viewerOfSession = (s: Pick<Session, 'userId' | 'tier' | 'class' | 'personRef' | 'name'>): ActivityViewer => ({ userId: s.userId, tier: s.tier, class: s.class, personRef: s.personRef, name: s.name });
 
 /** A tier someone at command gave a person on one activity, beside what their groups give them. */
 export interface TierGrant {

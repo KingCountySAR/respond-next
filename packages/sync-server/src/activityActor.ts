@@ -31,16 +31,22 @@ export interface ActorConn {
   close(code: number, reason: string): void;
 }
 
+/** A change as committed, and who made it (as connected: the activity may make them someone else there). */
+export interface CommittedChange {
+  entry: LogEntry;
+  viewer: Viewer;
+}
+
 export interface ActorDeps {
   storage: ActivityStorage;
   registry: MutationRegistry;
   projector: Projector;
   now(): number;
   /**
-   * After each commit, with a live view of the activity's records. Read it later (e.g. after a
-   * debounce) to see the latest state. Used for summaries.
+   * After each commit, with a live view of the activity's records (read it later, e.g. after a
+   * debounce, to see the latest state) and the changes that applied. Used for summaries and the log.
    */
-  onCommit?(activityId: string, view: ReadView): void;
+  onCommit?(activityId: string, view: ReadView, changes: CommittedChange[]): void;
 }
 
 interface Subscription {
@@ -282,7 +288,7 @@ export class ActivityActor {
     this.lastMutationIds.set(conn.clientId, lastId);
     for (const r of rejects) conn.send(r);
     this.fanOut(changed);
-    if (changed.length) this.deps.onCommit?.(this.activityId, this.view);
+    if (changed.length) this.deps.onCommit?.(this.activityId, this.view, log.filter((e) => e.outcome === 'applied').map((entry) => ({ entry, viewer: conn.viewer })));
   }
 
   private applyOne(batch: OverlayTx, conn: ActorConn, m: WireMutation, receivedAt: number): Applied {

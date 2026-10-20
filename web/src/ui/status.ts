@@ -1,23 +1,7 @@
-/**
- * The legacy app's words and colors for statuses, keyed by the domain's status names. The domain
- * names differ from the legacy ones: responding was "Signed In", staging "Available", demobilizing
- * "Demobilized", clear "Signed Out".
- */
-import type { ActivityPhase, ParticipantStatus, StatusStep, UnitStatus } from '@sync/domain';
+/** The legacy app's colors and button labels for statuses; their words are the domain's (labels.ts). */
+import { PARTICIPANT_STATUS_TEXT, type ActivityPhase, type ParticipantStatus, type StatusStep, type UnitStatus } from '@sync/domain';
 
-const STATUS_TEXT: Record<ParticipantStatus, string> = {
-  unknown: 'Not Responding',
-  notResponding: 'Not Responding',
-  standby: 'Standby',
-  remote: 'In Town',
-  responding: 'Responding',
-  staging: 'Available',
-  assigned: 'Assigned',
-  demobilizing: 'Demobilized',
-  clear: 'Signed Out',
-};
-
-export const statusText = (status: ParticipantStatus): string => STATUS_TEXT[status];
+export const statusText = (status: ParticipantStatus): string => PARTICIPANT_STATUS_TEXT[status];
 
 const STATUS_COLORS: Partial<Record<ParticipantStatus, string>> = {
   responding: 'green',

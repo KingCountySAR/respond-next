@@ -28,6 +28,7 @@ import {
   type ActivityPhase,
   type ActivityRec,
   type ActivityUnitRec,
+  type CommPriority,
   type EquipmentRec,
   type GroupRec,
   type ParticipantRec,
@@ -315,7 +316,8 @@ export class CommandActivity extends FieldActivity<CommandKinds> {
     return this.equipmentItem(id)!;
   }
 
-  logComm(entry: { from: string; to: string; message: string; at?: number }): Comm {
+  /** Logs a comms entry; its priority defaults to 2. */
+  logComm(entry: { from: string; to: string; message: string; priority?: CommPriority; at?: number }): Comm {
     const id = randomId();
     this.mutate('addComm', { id, ...entry });
     return this.comm(id)!;

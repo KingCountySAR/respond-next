@@ -19,6 +19,21 @@ export type TeamStatus = (typeof TEAM_STATUSES)[number];
 export const GARS = ['green', 'amber', 'red'] as const;
 export type Gar = (typeof GARS)[number];
 
+/**
+ * How much a comms entry matters, 1 highest: the log can be filtered to entries at or above a level.
+ * A favorite ranks above 1. People's entries start at 2; automated ones are logged at 2 or 3 by kind.
+ */
+export const COMM_PRIORITIES = [1, 2, 3] as const;
+export type CommPriority = (typeof COMM_PRIORITIES)[number];
+export const DEFAULT_COMM_PRIORITY: CommPriority = 2;
+
+/** Lines in the activity log (see activityLog.ts): 3 for team status and GAR, 4 for every other change. */
+export const LOG_LEVELS = [3, 4] as const;
+export type LogLevel = (typeof LOG_LEVELS)[number];
+
+/** Comms entries and log lines together: 1 highest. */
+export type Priority = CommPriority | LogLevel;
+
 export const ACTIVITY_KINDS = ['mission', 'training', 'other'] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
@@ -157,6 +172,8 @@ export interface CommRec extends Rec {
   from: string;
   to: string;
   message: string;
+  /** Unset on entries from before priorities, and imported ones: see `commPriority`. */
+  priority?: CommPriority;
   favorite: boolean;
   /** Soft delete: the entry stays in the log for the record. */
   removed: boolean;

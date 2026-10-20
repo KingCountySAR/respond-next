@@ -2,20 +2,72 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PrintIcon from '@mui/icons-material/Print';
-import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import { Autocomplete, Box, Button, Fab, IconButton, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography, type SxProps, type Theme } from '@mui/material';
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Chip,
+  Fab,
+  IconButton,
+  Menu,
+  MenuItem,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography,
+  type SxProps,
+  type Theme,
+} from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef, useState, type FormEvent, type HTMLAttributes, type Key, type ReactNode } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import type { Comm } from '@sync/model';
-import { observer, useCommandActivity } from '@sync/model/react';
+import { COMM_PRIORITIES, DEFAULT_COMM_PRIORITY, type CommPriority } from '@sync/domain';
+import type { Comm, LogLine } from '@sync/model';
+import { observer, useActivityLog, useCommandActivity } from '@sync/model/react';
+import { useSyncClient } from '../../shell/sync';
 import { useDialogs } from '../../shell/dialogs';
 import { useChange } from '../../ui/useChange';
-import { commsContacts, coordinatesIn, filterComms, format24HourTime } from './opsRules';
-import { DashboardCopyChip, DashboardSearchBox, DashboardToggleButton } from './parts';
+import { commsContacts, coordinatesIn, filterComms, format24HourTime, isComm, mergeLog, type CommLevel, type LogItem } from './opsRules';
+import { DashboardCopyChip, DashboardSearchBox } from './parts';
+
+const PRIORITY_NAMES: Record<CommPriority, string> = { 1: 'Important', 2: 'Normal', 3: 'Routine' };
+
+// Priority 1 alone is hidden for now.
+const LEVELS: { value: CommLevel; label: ReactNode; title: string }[] = [
+  { value: 'favorites', label: <StarIcon sx={{ fontSize: 18 }} />, title: 'Favorites only' },
+  { value: 2, label: '2+', title: 'Priorities 1 and 2, and favorites' },
+  { value: 3, label: '3+', title: 'Priorities 1 to 3: team status and GAR changes too' },
+  { value: 4, label: '4+', title: 'Everything, every change included' },
+];
+
+// The level last picked, in this browser.
+const LEVEL_KEY = 'comms-level';
+function storedLevel(): CommLevel {
+  try {
+    const saved = localStorage.getItem(LEVEL_KEY);
+    return LEVELS.find((l) => String(l.value) === saved)?.value ?? 3;
+  } catch {
+    return 3;
+  }
+}
+function storeLevel(level: CommLevel): void {
+  try {
+    localStorage.setItem(LEVEL_KEY, String(level));
+  } catch {
+    // Not remembered; nothing else depends on it.
+  }
+}
 
 export const DashboardCommsManager = observer(function DashboardCommsManager() {
   const activity = useCommandActivity();
@@ -23,10 +75,16 @@ export const DashboardCommsManager = observer(function DashboardCommsManager() {
   const { confirm } = useDialogs();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [hideAutomated, setHideAutomated] = useState(false);
+  const [level, setLevel] = useState<CommLevel>(storedLevel);
+  const log = useActivityLog(useSyncClient(), activity.activityId);
 
-  const shown = filterComms(activity.comms, { query, favoritesOnly, hideAutomated });
+  const all = mergeLog(activity.comms, log?.entries ?? []);
+  const shown = filterComms(all, { query, level });
+  const pickLevel = (next: CommLevel | null) => {
+    if (next === null) return; // one is always picked
+    setLevel(next);
+    storeLevel(next);
+  };
 
   const requestDelete = async (entry: Comm) => {
     const confirmed = await confirm({ prompt: `Delete communication from ${entry.from} to ${entry.to} at ${format24HourTime(entry.at)}?`, destructive: true, label: 'Delete' });
@@ -37,17 +95,15 @@ export const DashboardCommsManager = observer(function DashboardCommsManager() {
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%' }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         <DashboardSearchBox onChange={setQuery} placeholder="Search messages, to, or from..." sx={{ flex: 1 }} />
-        <DashboardToggleButton
-          on={!hideAutomated}
-          title={hideAutomated ? 'Show automated logs' : 'Hide automated logs'}
-          label={hideAutomated ? 'Show automated logs' : 'Hide automated logs'}
-          onClick={() => setHideAutomated((h) => !h)}
-        >
-          <SmartToyOutlinedIcon fontSize="small" />
-        </DashboardToggleButton>
-        <DashboardToggleButton on={favoritesOnly} title={favoritesOnly ? 'Show all messages' : 'Show favorites only'} label={favoritesOnly ? 'Show all messages' : 'Show favorites only'} onClick={() => setFavoritesOnly((f) => !f)}>
-          <StarIcon fontSize="small" />
-        </DashboardToggleButton>
+        <ToggleButtonGroup exclusive size="small" value={level} onChange={(_, next: CommLevel | null) => pickLevel(next)} aria-label="Priorities shown" sx={{ height: 32 }}>
+          {LEVELS.map((l) => (
+            <Tooltip key={l.value} title={l.title}>
+              <ToggleButton value={l.value} aria-label={l.title} sx={{ px: 1.25, minWidth: 36 }}>
+                {l.label}
+              </ToggleButton>
+            </Tooltip>
+          ))}
+        </ToggleButtonGroup>
         <DashboardCommsPrintButton communications={shown} />
       </Stack>
       <DashboardAutoScrollContainer
@@ -58,29 +114,39 @@ export const DashboardCommsManager = observer(function DashboardCommsManager() {
         {shown.length === 0 ? (
           <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-              No communications logged yet.
+              {all.length === 0 ? 'No communications logged yet.' : 'Nothing at these priorities.'}
             </Typography>
           </Box>
         ) : (
-          shown.map((entry) => (
-            <Paper
-              key={entry.id}
-              variant="outlined"
-              sx={{
-                p: 1,
-                bgcolor: entry.favorite && editingId !== entry.id ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined,
-                borderWidth: editingId === entry.id ? 2 : 1,
-                borderStyle: 'solid',
-                borderColor: editingId === entry.id ? 'primary.main' : 'divider',
-              }}
-            >
-              {editingId === entry.id ? (
-                <DashboardCommsComposer entry={entry} onDone={() => setEditingId(null)} />
-              ) : (
-                <DashboardCommsEntry entry={entry} onEdit={() => setEditingId(entry.id)} onFavorite={() => change(() => entry.setFavorite(!entry.favorite))} onDelete={() => void requestDelete(entry)} />
-              )}
-            </Paper>
-          ))
+          shown.map((entry) =>
+            isComm(entry) ? (
+              <Paper
+                key={entry.id}
+                variant="outlined"
+                sx={{
+                  p: 1,
+                  bgcolor: entry.favorite && editingId !== entry.id ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined,
+                  borderWidth: editingId === entry.id ? 2 : 1,
+                  borderStyle: 'solid',
+                  borderColor: editingId === entry.id ? 'primary.main' : 'divider',
+                }}
+              >
+                {editingId === entry.id ? (
+                  <DashboardCommsComposer entry={entry} onDone={() => setEditingId(null)} />
+                ) : (
+                  <DashboardCommsEntry
+                    entry={entry}
+                    onEdit={() => setEditingId(entry.id)}
+                    onFavorite={() => change(() => entry.setFavorite(!entry.favorite))}
+                    onPriority={(p) => change(() => entry.setPriority(p))}
+                    onDelete={() => void requestDelete(entry)}
+                  />
+                )}
+              </Paper>
+            ) : (
+              <DashboardLogLine key={entry.id} line={entry} onFavorite={() => change(() => entry.setFavorite(!entry.favorite))} />
+            ),
+          )
         )}
       </DashboardAutoScrollContainer>
       <DashboardCommsComposer />
@@ -90,7 +156,19 @@ export const DashboardCommsManager = observer(function DashboardCommsManager() {
 
 const actionSx = { opacity: 0, visibility: 'hidden', transition: 'opacity 180ms ease' };
 
-const DashboardCommsEntry = observer(function DashboardCommsEntry({ entry, onEdit, onFavorite, onDelete }: { entry: Comm; onEdit: () => void; onFavorite: () => void; onDelete: () => void }) {
+const DashboardCommsEntry = observer(function DashboardCommsEntry({
+  entry,
+  onEdit,
+  onFavorite,
+  onPriority,
+  onDelete,
+}: {
+  entry: Comm;
+  onEdit: () => void;
+  onFavorite: () => void;
+  onPriority: (priority: CommPriority) => void;
+  onDelete: () => void;
+}) {
   return (
     <Box sx={{ '&:hover .comm-action': { opacity: 1, visibility: 'visible' } }}>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
@@ -98,6 +176,7 @@ const DashboardCommsEntry = observer(function DashboardCommsEntry({ entry, onEdi
           {entry.from} → {entry.to}
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <PriorityChip priority={entry.priority} onChange={onPriority} />
           <IconButton className="comm-action" onClick={onFavorite} size="small" aria-label={entry.favorite ? 'unfavorite communication' : 'favorite communication'} sx={actionSx}>
             {entry.favorite ? <StarIcon sx={{ fontSize: 16, color: '#d89e00' }} /> : <StarBorderIcon sx={{ fontSize: 16 }} />}
           </IconButton>
@@ -122,6 +201,63 @@ const DashboardCommsEntry = observer(function DashboardCommsEntry({ entry, onEdi
   );
 });
 
+/** A line of the activity log: what changed, by whom. It can be starred, not edited. */
+const DashboardLogLine = observer(function DashboardLogLine({ line, onFavorite }: { line: LogLine; onFavorite: () => void }) {
+  return (
+    <Box
+      sx={{
+        px: 1,
+        py: 0.25,
+        borderRadius: 1,
+        bgcolor: line.favorite ? (theme) => alpha(theme.palette.info.main, 0.08) : undefined,
+        '&:hover .comm-action': { opacity: 1, visibility: 'visible' },
+      }}
+    >
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        <Typography variant="body2" sx={{ flex: 1, color: line.priority === 4 ? 'text.secondary' : 'text.primary' }}>
+          {line.text}
+        </Typography>
+        <Chip label={`P${line.priority}`} size="small" variant="outlined" sx={{ height: 20, fontSize: 11 }} />
+        <IconButton className="comm-action" onClick={onFavorite} size="small" aria-label={line.favorite ? 'unfavorite log line' : 'favorite log line'} sx={line.favorite ? undefined : actionSx}>
+          {line.favorite ? <StarIcon sx={{ fontSize: 16, color: '#d89e00' }} /> : <StarBorderIcon sx={{ fontSize: 16 }} />}
+        </IconButton>
+        <Typography variant="caption" sx={{ color: 'text.secondary', px: 0.5 }}>
+          {format24HourTime(line.at)}
+        </Typography>
+      </Stack>
+    </Box>
+  );
+});
+
+/** The entry's priority, which opens a menu to change it. */
+function PriorityChip({ priority, onChange }: { priority: CommPriority; onChange: (priority: CommPriority) => void }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const pick = (p: CommPriority) => {
+    setAnchor(null);
+    if (p !== priority) onChange(p);
+  };
+  return (
+    <>
+      <Chip
+        label={`P${priority}`}
+        size="small"
+        color={priority === 1 ? 'warning' : 'default'}
+        variant={priority === 3 ? 'outlined' : 'filled'}
+        onClick={(e) => setAnchor(e.currentTarget)}
+        aria-label={`priority ${priority}, change`}
+        sx={{ height: 20, fontSize: 11, cursor: 'pointer' }}
+      />
+      <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
+        {COMM_PRIORITIES.map((p) => (
+          <MenuItem key={p} selected={p === priority} onClick={() => pick(p)}>
+            {p} · {PRIORITY_NAMES[p]}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  );
+}
+
 // MUI's default option spreads a `key` prop into the <li>; passing it directly avoids React's warning.
 function renderContactOption(props: HTMLAttributes<HTMLLIElement> & { key?: Key }, option: string) {
   const { key, ...optionProps } = props;
@@ -137,8 +273,8 @@ const DashboardCommsComposer = observer(function DashboardCommsComposer({ entry,
   const activity = useCommandActivity();
   const change = useChange();
   const fromRef = useRef<HTMLInputElement | null>(null);
-  const blank = { from: '', to: '', message: '', at: Date.now() };
-  const [values, setValues] = useState(entry ? { from: entry.from, to: entry.to, message: entry.message, at: entry.at } : blank);
+  const blank = { from: '', to: '', message: '', priority: DEFAULT_COMM_PRIORITY, at: Date.now() };
+  const [values, setValues] = useState(entry ? { from: entry.from, to: entry.to, message: entry.message, priority: entry.priority, at: entry.at } : blank);
   const [messageMissing, setMessageMissing] = useState(false);
   const contacts = commsContacts(activity);
 
@@ -153,7 +289,9 @@ const DashboardCommsComposer = observer(function DashboardCommsComposer({ entry,
       return;
     }
     setMessageMissing(false);
-    const saved = entry ? change(() => entry.edit({ from: values.from, to: values.to, message: values.message, at: values.at })) : change(() => activity.logComm({ from: values.from, to: values.to, message: values.message }));
+    const saved = entry
+      ? change(() => entry.edit({ from: values.from, to: values.to, message: values.message, priority: values.priority, at: values.at }))
+      : change(() => activity.logComm({ from: values.from, to: values.to, message: values.message, priority: values.priority }));
     if (!saved) return;
     onDone?.();
     if (!entry) {
@@ -182,6 +320,20 @@ const DashboardCommsComposer = observer(function DashboardCommsComposer({ entry,
           <Stack direction="row" spacing={2} sx={{ alignItems: { xs: 'stretch', xl: 'center' } }}>
             {contactField('from', 'From')}
             {contactField('to', 'To')}
+            <TextField
+              select
+              label="Priority"
+              size="small"
+              value={values.priority}
+              onChange={(e) => setValues((v) => ({ ...v, priority: Number(e.target.value) as CommPriority }))}
+              sx={{ width: 120, flexShrink: 0 }}
+            >
+              {COMM_PRIORITIES.map((p) => (
+                <MenuItem key={p} value={p}>
+                  {p} · {PRIORITY_NAMES[p]}
+                </MenuItem>
+              ))}
+            </TextField>
             {entry && (
               <DateTimePicker
                 label="Time"
@@ -227,7 +379,7 @@ const DashboardCommsComposer = observer(function DashboardCommsComposer({ entry,
   );
 });
 
-function DashboardCommsPrintButton({ communications }: { communications: Comm[] }) {
+function DashboardCommsPrintButton({ communications }: { communications: LogItem[] }) {
   const activity = useCommandActivity();
   const printable = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printable, documentTitle: `${activity.record?.title || 'activity'}-comms-log` });
@@ -247,7 +399,7 @@ function DashboardCommsPrintButton({ communications }: { communications: Comm[] 
 
 const dateTime = (value: number) => `${new Date(value).toLocaleDateString('en-US')} ${format24HourTime(value)}`;
 
-const DashboardCommsPrintView = observer(function DashboardCommsPrintView({ communications }: { communications: Comm[] }) {
+const DashboardCommsPrintView = observer(function DashboardCommsPrintView({ communications }: { communications: LogItem[] }) {
   const record = useCommandActivity().record;
   const printedAt = Date.now();
   return (
@@ -255,7 +407,7 @@ const DashboardCommsPrintView = observer(function DashboardCommsPrintView({ comm
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell colSpan={4}>
+            <TableCell colSpan={5}>
               <Stack direction="row" sx={{ mb: 1.5, justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Stack>
                   <Typography variant="body2">{record?.title}</Typography>
@@ -280,6 +432,7 @@ const DashboardCommsPrintView = observer(function DashboardCommsPrintView({ comm
           </TableRow>
           <TableRow>
             <TableCell sx={{ fontWeight: 700, width: 80 }}>Time</TableCell>
+            <TableCell sx={{ fontWeight: 700, width: 40 }}>Pri</TableCell>
             <TableCell sx={{ fontWeight: 700, width: 120 }}>From</TableCell>
             <TableCell sx={{ fontWeight: 700, width: 120 }}>To</TableCell>
             <TableCell sx={{ fontWeight: 700 }}>Message</TableCell>
@@ -289,9 +442,10 @@ const DashboardCommsPrintView = observer(function DashboardCommsPrintView({ comm
           {communications.map((entry) => (
             <TableRow key={entry.id}>
               <TableCell>{format24HourTime(entry.at)}</TableCell>
-              <TableCell>{entry.from}</TableCell>
-              <TableCell>{entry.to}</TableCell>
-              <TableCell sx={{ whiteSpace: 'pre-wrap' }}>{entry.message}</TableCell>
+              <TableCell>{entry.favorite ? '★' : entry.priority}</TableCell>
+              <TableCell>{isComm(entry) ? entry.from : entry.by}</TableCell>
+              <TableCell>{isComm(entry) ? entry.to : ''}</TableCell>
+              <TableCell sx={{ whiteSpace: 'pre-wrap' }}>{isComm(entry) ? entry.message : entry.text}</TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -2,8 +2,8 @@
 import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect } from 'vitest';
 import { MemoryPersistence, SyncClient } from '@sync/client';
-import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, OrganizationSeed, activityProjector, activityRegistry, viewerOfSession, type ActivitySummary, type ActivityViewer, type BootstrapResponse, type MemberInfo, type Session, type WeatherReport } from '@sync/domain';
-import { Hub, MemoryStorage } from '@sync/server';
+import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, OrganizationSeed, activityOfScope, activityProjector, activityRegistry, viewerOfSession, type ActivitySummary, type ActivityViewer, type BootstrapResponse, type MemberInfo, type Session, type WeatherReport } from '@sync/domain';
+import { Hub, MemoryStorage, type HubDeps } from '@sync/server';
 import { MemoryLocationCatalog } from '../../server/src/locations';
 import { FixtureDirectory, fixtureMembers } from '../../server/src/members';
 import { MemberProviders } from '../../server/src/memberProviders';
@@ -12,6 +12,7 @@ import { devSignIn, refreshSession, tierOn } from '../../server/src/signIn';
 import type { SessionData } from '../../server/src/sessions';
 import { MemoryGrantStore } from '../../server/src/grants';
 import { SummaryWriter } from '../../server/src/summaries';
+import { ActivityLogWriter } from '../../server/src/activityLog';
 import type { Api } from '../src/shell/api';
 import { App } from '../src/shell/App';
 import { COMMAND, CRT, RMR, activityArgs } from '../../packages/domain/__tests__/helpers';
@@ -165,7 +166,12 @@ export async function serverWithActivity(options: { siteAdmins?: string[]; devSi
   window.history.replaceState(null, '', '/');
   // The real server setup, with summaries written quickly so lists update within a test.
   const summaries = new SummaryWriter(() => hub, { debounceMs: 20, maxWaitMs: 100 });
-  const hub: Hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now, onCommit: summaries.onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID || id === ACTIVITY_ARCHIVE_ID });
+  const activityLog = new ActivityLogWriter(() => hub);
+  const onCommit: HubDeps['onCommit'] = (id, view, changes) => {
+    summaries.onCommit(id, view);
+    activityLog.onCommit(id, view, changes);
+  };
+  const hub: Hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now, onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID || id === ACTIVITY_ARCHIVE_ID });
   const net = new SimNetwork(hub, mulberry32(1));
   net.latencyMs = 10;
   const seed = new SyncClient({ registry: activityRegistry, viewer: COMMAND, transport: net.transportFor(0, COMMAND) });
@@ -187,7 +193,8 @@ export async function serverWithActivity(options: { siteAdmins?: string[]; devSi
   const transport = (index: number) => () => {
     const session = current()!;
     const viewer = viewerOfSession(session);
-    return net.transportFor(index, viewer, (id) => (tierOn(session, id) === viewer.tier ? undefined : { ...viewer, tier: tierOn(session, id) }))();
+    const tier = (id: string) => tierOn(session, activityOfScope(id));
+    return net.transportFor(index, viewer, (id) => (tier(id) === viewer.tier ? undefined : { ...viewer, tier: tier(id) }))();
   };
   // People signing in on CRT's site respond under CRT.
   const site = (): BootstrapResponse => ({ config: organizations.siteConfig(organizations.get(CRT.id)!, { devSignIn: options.devSignIn ?? true, googleSignIn: options.googleSignIn, buildId: 'test' }) });

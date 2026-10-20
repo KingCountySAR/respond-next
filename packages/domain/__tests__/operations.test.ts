@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { keyOf } from '@sync/core';
-import { currentTarget, groupTeams, statusOf, teamMembers, teamStatusOf, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec } from '@sync/domain';
+import { commPriority, currentTarget, groupTeams, statusOf, teamMembers, teamStatusOf, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec } from '@sync/domain';
 import { HOUR, T0, addMember, fieldMember, startedActivity, type TestActivity } from './helpers';
 
 const placeId = (e: TestActivity, name: string) => e.all<PlaceRec>('place').find((p) => p.name === name)!.id;
@@ -175,12 +175,29 @@ describe('places, equipment and comms', () => {
     expect(e.rejects('addComm', { id: 'c2', from: '', to: '', message: 'hi', at: T0 }, fieldMember('kcsara:1'))).toBe('forbidden');
   });
 
+  it('logs comms at priority 2 unless told otherwise, and changes it', () => {
+    const e = startedActivity();
+    e.run('addComm', { id: 'c1', from: 'Base', to: 'Team 1', message: 'Check in at 1500', at: T0 + HOUR });
+    e.run('addComm', { id: 'c2', from: 'Team 1', to: 'Base', message: 'Subject found', priority: 1, at: T0 + HOUR });
+    expect([e.get<CommRec>('comm', 'c1')?.priority, e.get<CommRec>('comm', 'c2')?.priority]).toEqual([2, 1]);
+    e.run('editComm', { id: 'c1', priority: 3 });
+    expect(e.get<CommRec>('comm', 'c1')?.priority).toBe(3);
+    expect(e.rejects('editComm', { id: 'c1', priority: 4 })).toBe('bad_args');
+    expect(e.rejects('addComm', { id: 'c3', from: '', to: '', message: 'hi', priority: 0, at: T0 })).toBe('bad_args');
+  });
+
+  it('ranks entries without a priority: 3 if automated, else 2', () => {
+    const entry = (automated?: boolean) => ({ type: 'comm', id: 'c', from: '', to: '', message: 'm', favorite: false, removed: false, automated, at: T0, by: 'import' }) as CommRec;
+    expect([commPriority(entry()), commPriority(entry(true)), commPriority({ ...entry(true), priority: 2 })]).toEqual([2, 3, 2]);
+  });
+
   it("makes an edited automated comm a person's, but not when only favorited", () => {
     const e = startedActivity();
     // The legacy app's automated entries arrive by import, as records.
     e.records.set(keyOf('comm', 'c1'), { type: 'comm', id: 'c1', version: 1, from: 'Team 1', to: 'Command Post', message: 'In Transit', favorite: false, removed: false, legacy: true, automated: true, at: T0, by: 'import' } as CommRec);
     e.run('editComm', { id: 'c1', favorite: true });
-    expect(e.get<CommRec>('comm', 'c1')).toMatchObject({ favorite: true, automated: true });
+    e.run('editComm', { id: 'c1', priority: 2 });
+    expect(e.get<CommRec>('comm', 'c1')).toMatchObject({ favorite: true, priority: 2, automated: true });
     e.run('editComm', { id: 'c1', at: T0 + 2 * HOUR });
     expect(e.get<CommRec>('comm', 'c1')).toMatchObject({ at: T0 + 2 * HOUR, automated: false });
   });
