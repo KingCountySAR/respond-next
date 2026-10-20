@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SyncClient } from '@sync/client';
 import { Hub, MemoryStorage } from '@sync/server';
-import { ACTIVITY_LIST_ID, activityProjector, activityRegistry, participantIdFor, type ActivitySummaryRec } from '@sync/domain';
+import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_HISTORY_DAYS, ACTIVITY_LIST_ID, SYSTEM_VIEWER, activityProjector, activityRegistry, participantIdFor, type ActivitySummaryRec } from '@sync/domain';
 import { SummaryWriter } from '../../server/src/summaries';
 import { COMMAND, CRT, HOUR, T0, activityArgs, fieldMember } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from './sim';
@@ -12,9 +12,13 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
+const DAY = 24 * HOUR;
+
 async function setup(storage = new MemoryStorage()) {
-  const summaries = new SummaryWriter(() => hub);
-  const hub: Hub = new Hub({ storage, registry: activityRegistry, projector: activityProjector, now: () => Date.now(), onCommit: summaries.onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID });
+  // Days pass for the list's history (`later`) without the clients' timers running through them.
+  let shift = 0;
+  const summaries = new SummaryWriter(() => hub, { now: () => Date.now() + shift });
+  const hub: Hub = new Hub({ storage, registry: activityRegistry, projector: activityProjector, now: () => Date.now(), onCommit: summaries.onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID || id === ACTIVITY_ARCHIVE_ID });
   const net = new SimNetwork(hub, mulberry32(1));
   net.latencyMs = 20;
   const viewers = [COMMAND, fieldMember('kcsara:1')];
@@ -24,7 +28,9 @@ async function setup(storage = new MemoryStorage()) {
   await field!.open(ACTIVITY_LIST_ID);
   const summaryWrites = () => storage.log.filter((e) => e.activityId === ACTIVITY_LIST_ID).length;
   const listed = () => field!.snapshot(ACTIVITY_LIST_ID).get<ActivitySummaryRec>('activitySummary', 'a1');
-  return { hub, storage, summaries, command: command!, field: field!, summaryWrites, listed, stop: () => [command, field].forEach((c) => c!.stop()) };
+  const archived = async () => (await hub.read(ACTIVITY_ARCHIVE_ID, SYSTEM_VIEWER)).records.find((r) => r.id === 'a1') as ActivitySummaryRec | undefined;
+  const later = (ms: number) => (shift += ms);
+  return { hub, storage, summaries, command: command!, field: field!, summaryWrites, listed, archived, later, stop: () => [command, field].forEach((c) => c!.stop()) };
 }
 
 describe('activity summaries on the server', () => {
@@ -63,6 +69,32 @@ describe('activity summaries on the server', () => {
     s.stop();
   });
 
+  it('keeps every activity in the archive, and in the list only while open or recent', async () => {
+    const s = await setup();
+    s.command.mutate('a1', 'createActivity', activityArgs());
+    s.command.mutate('a1', 'closeActivity', {});
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(s.listed()?.activity.closed).toBe(true); // ended today
+    expect((await s.archived())?.activity.closed).toBe(true);
+
+    s.later((ACTIVITY_LIST_HISTORY_DAYS - 1) * DAY);
+    await s.summaries.prune();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(s.listed()).toBeDefined();
+
+    s.later(2 * DAY);
+    await s.summaries.prune();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(s.listed()).toBeUndefined();
+    expect((await s.archived())?.activity.title).toBe('Lost hiker, Mailbox Peak');
+
+    // Reactivated: back in the list.
+    s.command.mutate('a1', 'reopenActivity', {});
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(s.listed()?.activity.closed).toBe(false);
+    s.stop();
+  });
+
   it('refuses clients writing to the list', async () => {
     const s = await setup();
     const rejected: string[] = [];
@@ -94,5 +126,24 @@ describe('activity summaries on the server', () => {
     await vi.advanceTimersByTimeAsync(500);
     expect(s.listed()?.activity.title).toBe('Lost hiker, Mailbox Peak');
     s.stop();
+  });
+
+  it("doesn't load archived activities at startup, and drops those that aged out while it was down", async () => {
+    const storage = new MemoryStorage();
+    const first = await setup(storage);
+    first.command.mutate('a1', 'createActivity', activityArgs());
+    first.command.mutate('a1', 'closeActivity', {});
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(first.listed()).toBeDefined();
+    first.stop();
+
+    // The next server starts weeks later.
+    const loads = vi.spyOn(storage, 'load');
+    const summaries = new SummaryWriter(() => hub, { now: () => Date.now() + (ACTIVITY_LIST_HISTORY_DAYS + 1) * DAY });
+    const hub: Hub = new Hub({ storage, registry: activityRegistry, projector: activityProjector, now: () => Date.now(), onCommit: summaries.onCommit });
+    expect(await summaries.backfill(storage)).toBe(0);
+    expect(loads.mock.calls.map(([id]) => id).sort()).toEqual([ACTIVITY_LIST_ID, ACTIVITY_ARCHIVE_ID].sort());
+    expect((await hub.read(ACTIVITY_LIST_ID, SYSTEM_VIEWER)).records).toEqual([]);
+    expect((await hub.read(ACTIVITY_ARCHIVE_ID, SYSTEM_VIEWER)).records.map((r) => r.id)).toEqual(['a1']);
   });
 });

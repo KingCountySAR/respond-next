@@ -1,13 +1,16 @@
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { createNodeWebSocket } from '@hono/node-ws';
-import { PROTOCOL } from '@sync/core';
+import { PROTOCOL, type Rec, type Viewer } from '@sync/core';
 import {
+  ACTIVITY_ARCHIVE_ID,
   MEMBER_QUERY_MAX,
   MEMBER_QUERY_MIN,
   SavedLocation,
   isValidPoint,
   viewerOfSession,
+  type ActivitiesResponse,
+  type ActivityResponse,
   type AdminMemberProvidersResponse,
   type AdminOrganizationsResponse,
   type AdminSignInProvidersResponse,
@@ -61,6 +64,13 @@ export interface SyncAppOptions {
 }
 
 type Env = { Variables: { site: Organization; session: SessionData } };
+
+/** Who someone is on one activity: as signed in, unless they have a grant there. */
+function viewerOn(session: SessionData, activityId: string): Viewer {
+  const viewer = viewerOfSession(session);
+  const tier = tierOn(session, activityId);
+  return tier === viewer.tier ? viewer : { ...viewer, tier };
+}
 
 export function createSyncApp(hub: Hub, options: SyncAppOptions) {
   const { organizations: orgs, sessions } = options;
@@ -235,8 +245,8 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
             viewer,
             // Undefined, the usual case, without a grant there.
             viewerIn: (activityId) => {
-              const tier = tierOn(session, activityId);
-              return tier === viewer.tier ? undefined : { ...viewer, tier };
+              const there = viewerOn(session, activityId);
+              return there.tier === viewer.tier ? undefined : there;
             },
             send: (text) => {
               if (ws.readyState === 1) ws.send(text);
@@ -253,6 +263,23 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
       };
     }),
   );
+
+  // Activities over HTTP, for reports and anyone else downloading them: every activity's summary,
+  // from the archive, and one activity as the viewer sees it, once. A completed activity's page reads
+  // it this way rather than subscribing.
+  app.get('/api/activities', signedIn, async (c) => {
+    const { records } = await hub.read(ACTIVITY_ARCHIVE_ID, viewerOfSession(c.get('session')));
+    const data = records.filter((r) => r.type === 'activitySummary').map(({ version: _, ...summary }: Rec) => summary as unknown as ActivitiesResponse['data'][number]);
+    return c.json({ data } satisfies ActivitiesResponse);
+  });
+  app.get('/api/activities/:activityId', signedIn, async (c) => {
+    const activityId = c.req.param('activityId')!;
+    // The list and archive are scopes, not activities.
+    if (activityId.startsWith('$')) return c.json({ error: 'not_found' }, 404);
+    const read = await hub.read(activityId, viewerOn(c.get('session'), activityId));
+    if (read.version === 0) return c.json({ error: 'not_found' }, 404);
+    return c.json({ activityId, ...read } satisfies ActivityResponse);
+  });
 
   // The legacy member routes, for any organization: the add-responder search covers partners too.
   const { members } = options;

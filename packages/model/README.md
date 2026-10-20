@@ -55,7 +55,7 @@ reaction(() => activity.statusCounts.assigned, (n) => console.log(n, 'assigned')
 activity.dispose(); // stops following the client; doesn't close the activity
 ```
 
-With React, `ActivityModelProvider` opens the activity, shares one model per client and activity, and closes it when the last provider unmounts. Remounts in the same tick, as under StrictMode, keep it open.
+With React, `ActivityModelProvider` opens the activity, shares one model per client and activity, and closes it when the last provider unmounts. Remounts in the same tick, as under StrictMode, keep it open. With `live={false}` it opens the activity not live (`client.open(id, { live: false })`: read once with the client's `download`, not subscribed to or kept offline), and makes it live when `live` turns true; a change made to it makes it live too.
 
 ```tsx
 import { ActivityModelProvider, observer, useCommandActivity, useFieldActivity } from '@sync/model/react';

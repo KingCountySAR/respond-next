@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { encode, type ClientMessage, type ReadView, type ServerMessage } from '@sync/core';
-import { Hub, MemoryStorage } from '@sync/server';
+import { ActorUnloadedError, Hub, MemoryStorage } from '@sync/server';
 import { testProjector, testRegistry, type Person } from '../../sync-core/__tests__/testDomain';
 
 const COMMAND = { userId: 'u1', tier: 'command' };
@@ -80,5 +80,75 @@ describe('hub', () => {
     await settle();
     expect(client.received.filter((m) => m.t === 'reject').map((m) => m.t === 'reject' && m.reason)).toEqual(['read_only']);
     expect((await hub.actor('list')).currentVersion).toBe(0);
+  });
+});
+
+describe('idle activities', () => {
+  function idleHub() {
+    let now = 1_000_000;
+    const storage = new MemoryStorage();
+    const hub = new Hub({ storage, registry: testRegistry, projector: testProjector, now: () => now, idleMs: 60_000 });
+    return { hub, storage, advance: (ms: number) => (now += ms) };
+  }
+
+  it('unloads an activity no one has open once it has been idle, and loads it again when needed', async () => {
+    const { hub, advance } = idleHub();
+    await hub.pushAsSystem('a1', SYSTEM, [{ name: 'addPerson', args: { id: 'p1', name: 'Anna' } }]);
+    expect(await hub.unloadIdle()).toBe(0); // just used
+    advance(61_000);
+    expect(await hub.unloadIdle()).toBe(1);
+    expect(hub.loadedCount).toBe(0);
+    const read = await hub.read('a1', COMMAND);
+    expect([read.version, read.records.map((r) => (r as Person).name)]).toEqual([1, ['Anna']]);
+    expect(hub.loadedCount).toBe(1);
+  });
+
+  it('keeps an activity someone is subscribed to, and unloads it after they leave', async () => {
+    const { hub, advance } = idleHub();
+    const received: ServerMessage[] = [];
+    const handlers = hub.connect({ viewer: COMMAND, send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} });
+    handlers.message(encode({ t: 'hello', clientId: 'c1', build: 'test', subs: [{ activityId: 'a1', since: 0 }] }));
+    await settle();
+    advance(61_000);
+    expect(await hub.unloadIdle()).toBe(0);
+    handlers.close();
+    await settle();
+    expect(await hub.unloadIdle()).toBe(0); // idle from when they left
+    advance(61_000);
+    expect(await hub.unloadIdle()).toBe(1);
+  });
+
+  it('refuses work once unloaded, for the hub to retry elsewhere', async () => {
+    const { hub, advance } = idleHub();
+    const actor = await hub.actor('a1');
+    advance(61_000);
+    expect(await actor.unloadIfIdle(1_000_000)).toBe(true);
+    await expect(actor.read(COMMAND)).rejects.toBeInstanceOf(ActorUnloadedError);
+  });
+
+  it('subscribes on a fresh actor when the old one unloads at the same moment', async () => {
+    for (const unloadFirst of [true, false]) {
+      const { hub, advance } = idleHub();
+      await hub.pushAsSystem('a1', SYSTEM, [{ name: 'addPerson', args: { id: 'p1', name: 'Anna' } }]);
+      advance(61_000);
+      // Whichever reaches the actor first, the client ends up subscribed to the one loaded now.
+      const unloading = unloadFirst ? hub.unloadIdle() : undefined;
+      const client = connect(hub, 'a1');
+      await (unloading ?? hub.unloadIdle());
+      await settle();
+      expect(client.received.filter((m) => m.t === 'reset')).toHaveLength(1);
+      // Subscribed to the actor that's loaded now, so it hears what happens next.
+      await hub.pushAsSystem('a1', SYSTEM, [{ name: 'renamePerson', args: { id: 'p1', name: 'Ann' } }]);
+      await settle();
+      expect(client.received.flatMap((m) => (m.t === 'update' ? m.upserts.map((r) => (r as Person).name) : []))).toEqual(['Ann']);
+    }
+  });
+
+  it('reads an activity once without subscribing to it', async () => {
+    const { hub } = idleHub();
+    expect((await hub.read('nothing', COMMAND)).version).toBe(0);
+    await hub.pushAsSystem('a1', SYSTEM, [{ name: 'addPerson', args: { id: 'p1', name: 'Anna' } }]);
+    expect(await hub.read('a1', COMMAND)).toMatchObject({ version: 1, view: 'command' });
+    expect((await hub.actor('a1')).subscriberCount).toBe(0);
   });
 });

@@ -3,7 +3,7 @@ import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { ACTIVITY_LIST_ID, activityProjector, activityRegistry } from '@sync/domain';
+import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, activityProjector, activityRegistry } from '@sync/domain';
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 import { SummaryWriter } from './summaries';
@@ -107,13 +107,18 @@ const hub: Hub = new Hub({
     summaries.onCommit(activityId, view);
     memberInfo.onCommit(activityId, view);
   },
-  // Only the server writes the activity list.
-  readOnly: (activityId) => activityId === ACTIVITY_LIST_ID,
+  // Only the server writes the activity list and archive.
+  readOnly: (activityId) => activityId === ACTIVITY_LIST_ID || activityId === ACTIVITY_ARCHIVE_ID,
   log: process.env.SYNC_LOG ? (dir, connId, msg) => console.log(dir === 'in' ? '<-' : '->', connId.slice(0, 8), JSON.stringify(msg)) : undefined,
 });
 
 const backfilled = await summaries.backfill(storage);
-if (backfilled) console.log(`added list summaries for ${backfilled} activities`);
+if (backfilled) console.log(`added summaries for ${backfilled} activities`);
+
+// Activities no one has open leave memory after a few minutes; closed ones leave the list after
+// ACTIVITY_LIST_HISTORY_DAYS.
+setInterval(() => void hub.unloadIdle().catch((err) => console.error('sync: unloading idle activities failed', err)), 60_000).unref();
+setInterval(() => void summaries.prune().catch((err) => console.error('sync: pruning the activity list failed', err)), 60 * 60_000).unref();
 
 const { app, injectWebSocket } = createSyncApp(hub, {
   organizations,
@@ -135,6 +140,7 @@ const { app, injectWebSocket } = createSyncApp(hub, {
         return {
           version: actor.currentVersion,
           subscribers: actor.subscriberCount,
+          loaded: hub.loadedCount,
           records: actor.projectedRecords(view),
           log: await storage.recentLog(activityId, 50),
         };

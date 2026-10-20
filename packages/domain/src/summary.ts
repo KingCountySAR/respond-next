@@ -1,7 +1,8 @@
 /**
  * Activity summaries: what lists show about an activity without opening it. The server keeps one
- * per activity in the list scope (`ACTIVITY_LIST_ID`), so clients open the list like an activity
- * and it stays live, versioned and cached offline.
+ * per open or recent activity in the list scope (`ACTIVITY_LIST_ID`), so clients open the list like
+ * an activity and it stays live, versioned and cached offline. Every activity's is also in the
+ * archive scope (`ACTIVITY_ARCHIVE_ID`), which clients read over HTTP (`GET /api/activities`).
  */
 import { z } from 'zod';
 import { defineMutation, type ReadView, type Rec } from '@sync/core';
@@ -11,6 +12,35 @@ import { isSystemViewer } from './viewer';
 
 /** The scope the summaries live in. Reserved: no activity has this id. */
 export const ACTIVITY_LIST_ID = '$activities';
+
+/** Every activity's summary, for reports. Reserved like the list; only the server reads it. */
+export const ACTIVITY_ARCHIVE_ID = '$archive';
+
+/** How long a closed activity stays in the list after it ends. */
+export const ACTIVITY_LIST_HISTORY_DAYS = 14;
+
+/**
+ * Whether an activity is in the list (as the legacy app's initial state): not closed, starting in the
+ * future, or ended in the last `ACTIVITY_LIST_HISTORY_DAYS` days.
+ */
+export function inActivityList(a: Pick<ActivityRec, 'closed' | 'startTime' | 'endTime'>, now: number): boolean {
+  if (!a.closed || a.startTime > now) return true;
+  return Math.max(a.startTime, a.endTime ?? 0) >= now - ACTIVITY_LIST_HISTORY_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/** `GET /api/activities`: every activity's summary, from the archive. */
+export interface ActivitiesResponse {
+  data: ActivitySummary[];
+}
+
+/** `GET /api/activities/:id`: the activity as the viewer sees it, once (what a subscription starts with). */
+export interface ActivityResponse {
+  activityId: string;
+  version: number;
+  /** The view the records are projected for. */
+  view: string;
+  records: Rec[];
+}
 
 /** What a summary says; stored as an ActivitySummaryRec in the list scope. */
 export interface ActivitySummary {

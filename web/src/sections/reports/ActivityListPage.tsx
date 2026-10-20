@@ -1,9 +1,10 @@
-import { Breadcrumbs, Paper, Typography } from '@mui/material';
+import { Alert, Breadcrumbs, Paper, Typography } from '@mui/material';
 import { DataGrid, GridToolbarContainer, GridToolbarFilterButton, type GridColDef } from '@mui/x-data-grid';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import type { ActivityListItem } from '@sync/model';
+import type { ActivitySummary } from '@sync/domain';
 import { observer, useActivityList } from '@sync/model/react';
+import { useApi } from '../../shell/api';
 import { useSyncClient } from '../../shell/sync';
 import { ToolbarPage } from '../../shell/ToolbarPage';
 import { RelativeTimeText } from '../../ui/RelativeTimeText';
@@ -39,10 +40,7 @@ const columns: GridColDef<Row>[] = [
 
 const paginationModel = { page: 0, pageSize: 15 };
 
-const toRow = (item: ActivityListItem): Row | null => {
-  const a = item.activity;
-  return a ? { id: item.id, isMission: item.isMission, idNumber: a.idNumber, title: a.title, startTime: a.startTime } : null;
-};
+const toRow = ({ id, activity: a }: ActivitySummary): Row => ({ id, isMission: a.kind === 'mission', idNumber: a.idNumber, title: a.title, startTime: a.startTime });
 
 // Newest first, ties by title.
 const byStartDescending = (a: Row, b: Row) => (a.startTime === b.startTime ? (a.title < b.title ? -1 : 1) : a.startTime < b.startTime ? 1 : -1);
@@ -73,9 +71,15 @@ function ActivityGrid({ rows, loading }: { rows: Row[]; loading: boolean }) {
   );
 }
 
-/** The legacy Mission List / Event List, from the activity list scope: every listed activity of the type. */
+/**
+ * The legacy Mission List / Event List: every activity of the type. The archive (`GET /api/activities`),
+ * read once, has those closed long ago too; the live list keeps open and recent ones up to date.
+ */
 export const ActivityListPage = observer(function ActivityListPage({ activityType }: { activityType: ActivityListType }) {
+  const api = useApi();
   const list = useActivityList(useSyncClient());
+  const [summaries, setSummaries] = useState<ActivitySummary[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const isMissions = activityType === 'missions';
   const pageTitle = isMissions ? 'Mission List' : 'Event List';
 
@@ -83,10 +87,22 @@ export const ActivityListPage = observer(function ActivityListPage({ activityTyp
     document.title = pageTitle;
   }, [pageTitle]);
 
-  const rows = (list?.activities ?? [])
-    .filter((item) => item.isMission === isMissions)
+  useEffect(() => {
+    let current = true;
+    api.activities().then(
+      (data) => current && setSummaries(data),
+      (err: unknown) => current && setError(err instanceof Error ? err.message : String(err)),
+    );
+    return () => {
+      current = false;
+    };
+  }, [api]);
+
+  const byId = new Map((summaries ?? []).map((s) => [s.id, s]));
+  for (const item of list?.activities ?? []) if (item.record) byId.set(item.id, item.record);
+  const rows = [...byId.values()]
     .map(toRow)
-    .filter((r): r is Row => r !== null)
+    .filter((r) => r.isMission === isMissions)
     .sort(byStartDescending);
 
   return (
@@ -96,7 +112,7 @@ export const ActivityListPage = observer(function ActivityListPage({ activityTyp
           <Link href="~/">Home</Link>
           <Typography sx={{ color: 'text.primary' }}>{pageTitle}</Typography>
         </Breadcrumbs>
-        <ActivityGrid rows={rows} loading={!list} />
+        {error ? <Alert severity="error">Couldn't load the list: {error}</Alert> : <ActivityGrid rows={rows} loading={!summaries || !list} />}
       </Paper>
     </ToolbarPage>
   );

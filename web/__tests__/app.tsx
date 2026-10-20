@@ -2,7 +2,7 @@
 import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect } from 'vitest';
 import { MemoryPersistence, SyncClient } from '@sync/client';
-import { ACTIVITY_LIST_ID, OrganizationSeed, activityProjector, activityRegistry, viewerOfSession, type ActivityViewer, type BootstrapResponse, type MemberInfo, type Session, type WeatherReport } from '@sync/domain';
+import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, OrganizationSeed, activityProjector, activityRegistry, viewerOfSession, type ActivitySummary, type ActivityViewer, type BootstrapResponse, type MemberInfo, type Session, type WeatherReport } from '@sync/domain';
 import { Hub, MemoryStorage } from '@sync/server';
 import { MemoryLocationCatalog } from '../../server/src/locations';
 import { FixtureDirectory, fixtureMembers } from '../../server/src/members';
@@ -102,6 +102,16 @@ function apiFor(locations: MemoryLocationCatalog, orgs: OrganizationStore, hub: 
     async signOut() {
       data = null;
     },
+    // As the server's routes: the archive, and one activity as they see it there.
+    async activities() {
+      const { records } = await hub.read(ACTIVITY_ARCHIVE_ID, viewerOfSession(data!));
+      return records.filter((r) => r.type === 'activitySummary').map(({ version: _, ...summary }) => summary as unknown as ActivitySummary);
+    },
+    async activity(activityId) {
+      const viewer = viewerOfSession(data!);
+      const read = await hub.read(activityId, { ...viewer, tier: tierOn(data!, activityId) });
+      return read.version ? { activityId, ...read } : null;
+    },
     async grantOf(activityId, personRef) {
       atCommand(activityId);
       return (await grants.get(personRef, activityId)) ?? null;
@@ -155,7 +165,7 @@ export async function serverWithActivity(options: { siteAdmins?: string[]; devSi
   window.history.replaceState(null, '', '/');
   // The real server setup, with summaries written quickly so lists update within a test.
   const summaries = new SummaryWriter(() => hub, { debounceMs: 20, maxWaitMs: 100 });
-  const hub: Hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now, onCommit: summaries.onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID });
+  const hub: Hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now, onCommit: summaries.onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID || id === ACTIVITY_ARCHIVE_ID });
   const net = new SimNetwork(hub, mulberry32(1));
   net.latencyMs = 10;
   const seed = new SyncClient({ registry: activityRegistry, viewer: COMMAND, transport: net.transportFor(0, COMMAND) });

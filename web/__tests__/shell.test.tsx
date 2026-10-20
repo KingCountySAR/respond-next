@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { ACTIVITY, TITLE, serverWithActivity, signIn } from './app';
 
 let server: Awaited<ReturnType<typeof serverWithActivity>>;
@@ -35,6 +35,22 @@ describe('web shell', () => {
     await signIn('Dana Field', 'kcsara:7');
     expect(await screen.findByText('Activity not found')).toBeTruthy();
     expect(screen.queryByText('Loading activity...')).toBeNull();
+  });
+
+  it("reads a closed activity once, and goes live when it's reopened", async () => {
+    server.seed.mutate(ACTIVITY, 'closeActivity', {});
+    await waitFor(() => expect(server.seed.status.pending).toBe(0));
+    const subscribers = async () => (await server.net.hub.actor(ACTIVITY)).subscriberCount;
+    server.renderApp(`/mission/${ACTIVITY}`);
+    await signIn('Dana Field', 'kcsara:7');
+    expect(await screen.findByText(`26-0123 ${TITLE}`)).toBeTruthy();
+    expect(await subscribers()).toBe(1); // the seed only
+
+    // Someone reopens it: the list says so, and the page subscribes.
+    server.seed.mutate(ACTIVITY, 'reopenActivity', {});
+    await waitFor(async () => expect(await subscribers()).toBe(2));
+    server.seed.mutate(ACTIVITY, 'updateActivity', { title: 'Lost hikers' });
+    expect(await screen.findByText('26-0123 Lost hikers')).toBeTruthy();
   });
 
   it('keeps the ops dashboard to command and support', async () => {

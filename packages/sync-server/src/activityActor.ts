@@ -51,6 +51,20 @@ interface Subscription {
   sentMutationId: number;
 }
 
+/** The actor was unloaded for being idle; the hub retries on a freshly loaded one. */
+export class ActorUnloadedError extends Error {
+  constructor(activityId: string) {
+    super(`${activityId} was unloaded`);
+  }
+}
+
+/** What an activity holds for one viewer, read once without subscribing. */
+export interface ActivityRead {
+  version: number;
+  view: string;
+  records: Rec[];
+}
+
 type Applied = { writes: Map<string, Rec> } | { reason: string; message: string };
 
 /**
@@ -67,11 +81,17 @@ export class ActivityActor {
   private queue: Promise<unknown> = Promise.resolve();
   /** Set when storage shows another process wrote this activity; the hub then loads a fresh actor. */
   stale = false;
+  /** Set once the hub unloads it for being idle; nothing more runs on it. */
+  unloaded = false;
+  /** When it last did anything, for idle unloading. */
+  private lastUsed: number;
 
   private constructor(
     readonly activityId: string,
     private readonly deps: ActorDeps,
-  ) {}
+  ) {
+    this.lastUsed = deps.now();
+  }
 
   static async load(activityId: string, deps: ActorDeps): Promise<ActivityActor> {
     const actor = new ActivityActor(activityId, deps);
@@ -98,11 +118,34 @@ export class ActivityActor {
   }
 
   unsubscribe(connId: string): void {
-    this.subs.delete(connId);
+    if (this.subs.delete(connId)) this.lastUsed = this.deps.now();
   }
 
   push(conn: ActorConn, mutations: WireMutation[]): Promise<void> {
     return this.serial(() => this.doPush(conn, mutations));
+  }
+
+  /** The activity as `viewer` sees it, once: what a subscription starts with, without the subscription. */
+  read(viewer: Viewer): Promise<ActivityRead> {
+    return this.serial(() => {
+      const viewKey = this.deps.projector.viewKey(this.deps.projector.viewerIn?.(viewer, this.view) ?? viewer);
+      return { version: this.version, view: viewKey, records: this.projectedRecords(viewKey) };
+    });
+  }
+
+  /**
+   * Unloads it if no one is subscribed and it's done nothing since `idleSince`; true if it did. In the
+   * queue, so it can't unload between something being queued and running: that throws
+   * ActorUnloadedError instead, for the hub to retry.
+   */
+  unloadIfIdle(idleSince: number): Promise<boolean> {
+    const next = this.queue.then(() => {
+      if (this.unloaded || this.stale || this.subs.size > 0 || this.lastUsed > idleSince) return false;
+      this.unloaded = true;
+      return true;
+    });
+    this.queue = next;
+    return next;
   }
 
   /**
@@ -141,7 +184,11 @@ export class ActivityActor {
   }
 
   private serial<T>(fn: () => Promise<T> | T): Promise<T> {
-    const next = this.queue.then(fn);
+    const next = this.queue.then(() => {
+      if (this.unloaded) throw new ActorUnloadedError(this.activityId);
+      this.lastUsed = this.deps.now();
+      return fn();
+    });
     this.queue = next.catch(() => undefined);
     return next;
   }

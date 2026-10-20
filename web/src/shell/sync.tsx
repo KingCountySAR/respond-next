@@ -5,6 +5,7 @@
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { IndexedDbPersistence, SyncClient, WebSocketTransport, type ClientPersistence, type Transport } from '@sync/client';
 import { activityRegistry, clientViewerOn } from '@sync/domain';
+import { useApi } from './api';
 import { viewerOf, type Session } from './auth';
 
 export interface SyncOptions {
@@ -19,6 +20,7 @@ const syncUrl = () => `${location.protocol === 'https:' ? 'wss' : 'ws'}://${loca
 const SyncContext = createContext<SyncClient | null>(null);
 
 export function SyncProvider({ session, options = {}, children }: { session: Session; options?: SyncOptions; children: ReactNode }) {
+  const api = useApi();
   const client = useMemo(
     () =>
       new SyncClient({
@@ -29,6 +31,8 @@ export function SyncProvider({ session, options = {}, children }: { session: Ses
         transport: () => options.transport?.(session) ?? new WebSocketTransport(syncUrl()),
         // One store per user and tier: what's cached is that viewer's projection.
         persistence: options.persistence?.(session) ?? new IndexedDbPersistence(`sync:${session.userId}:${session.tier}`),
+        // Completed activities are read once over HTTP rather than subscribed to (ActivityLayout).
+        download: async (activityId) => (await api.activity(activityId)) ?? { version: 0, view: undefined, records: [] },
       }),
     // A client's viewer is fixed for its life, so a different session is a different client.
     [session.userId, session.tier, session.class, session.personRef],

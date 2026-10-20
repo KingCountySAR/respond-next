@@ -1,5 +1,8 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type {
+  ActivitiesResponse,
+  ActivityResponse,
+  ActivitySummary,
   AdminMemberProvidersResponse,
   AdminSignInProvidersResponse,
   AdminOrganizationsResponse,
@@ -24,6 +27,10 @@ export interface Api {
   /** The development sign-in; throws with the reason it was refused. */
   devSignIn(request: DevSignInRequest): Promise<Session>;
   signOut(): Promise<void>;
+  /** Every activity's summary, closed ones long ago included (the live list has open and recent ones). */
+  activities(): Promise<ActivitySummary[]>;
+  /** An activity as they see it, read once; null when there's no such activity. Throws when the server can't be reached. */
+  activity(activityId: string): Promise<ActivityResponse | null>;
   /** Command on the activity only: a person's grant there, giving it (to someone on its roster), or taking it away. */
   grantOf(activityId: string, personRef: string): Promise<TierGrant | null>;
   grant(activityId: string, personRef: string, tier: 'command' | 'support'): Promise<void>;
@@ -77,6 +84,15 @@ export const fetchApi: Api = {
   },
   async signOut() {
     await call('sign out', '/api/auth/logout', { method: 'POST' });
+  },
+  async activities() {
+    return (await call<ActivitiesResponse>('activities', '/api/activities')).data;
+  },
+  async activity(activityId) {
+    const res = await fetch(`/api/activities/${encodeURIComponent(activityId)}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`activity: HTTP ${res.status}`);
+    return (await res.json()) as ActivityResponse;
   },
   async grantOf(activityId, personRef) {
     return (await call<GrantResponse>('grant', grantPath(activityId, personRef))).grant;

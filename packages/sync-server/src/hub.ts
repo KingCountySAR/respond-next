@@ -1,5 +1,5 @@
 import { ACCESS_CHANGED, ClientMessage, decode, encode, randomId, type ServerMessage, type Viewer } from '@sync/core';
-import { ActivityActor, type ActorConn, type ActorDeps } from './activityActor';
+import { ActivityActor, ActorUnloadedError, type ActivityRead, type ActorConn, type ActorDeps } from './activityActor';
 import { StorageConflictError } from './storage';
 
 /** The transport side of one client connection (a WebSocket in production, a fake in tests). */
@@ -16,7 +16,11 @@ export interface HubDeps extends ActorDeps {
   log?(dir: 'in' | 'out', connId: string, msg: unknown): void;
   /** Scopes only the server writes (e.g. the activity list): clients may read them but not push. */
   readOnly?(activityId: string): boolean;
+  /** How long an activity no one is subscribed to stays in memory; see `unloadIdle`. Default 5 minutes. */
+  idleMs?: number;
 }
+
+const DEFAULT_IDLE_MS = 5 * 60_000;
 
 interface Conn {
   id: string;
@@ -48,7 +52,7 @@ export class Hub {
     const cached = this.actors.get(activityId);
     if (cached) {
       const actor = await cached;
-      if (!actor.stale) return actor;
+      if (!actor.stale && !actor.unloaded) return actor;
       // Only replace it if no one else has already.
       if (this.actors.get(activityId) === cached) this.actors.delete(activityId);
       return this.actor(activityId);
@@ -74,8 +78,45 @@ export class Hub {
   }
 
   /** Applies changes the server makes itself; see ActivityActor.pushAsSystem. */
-  async pushAsSystem(activityId: string, viewer: Viewer, changes: { name: string; v?: number; args: unknown }[]): Promise<void> {
-    await (await this.actor(activityId)).pushAsSystem(viewer, changes);
+  pushAsSystem(activityId: string, viewer: Viewer, changes: { name: string; v?: number; args: unknown }[]): Promise<void> {
+    return this.withActor(activityId, (a) => a.pushAsSystem(viewer, changes));
+  }
+
+  /** The activity as `viewer` sees it, once, without subscribing (e.g. a completed one, over HTTP). Version 0: it doesn't exist. */
+  read(activityId: string, viewer: Viewer): Promise<ActivityRead> {
+    return this.withActor(activityId, (a) => a.read(viewer));
+  }
+
+  /**
+   * Unloads activities no one has been subscribed to, and that have done nothing, for `idleMs`; the
+   * next thing to need one loads it again. Returns how many it unloaded. Call it now and then.
+   */
+  async unloadIdle(): Promise<number> {
+    const idleSince = this.deps.now() - (this.deps.idleMs ?? DEFAULT_IDLE_MS);
+    let unloaded = 0;
+    for (const [activityId, loading] of [...this.actors]) {
+      const actor = await loading.catch(() => undefined);
+      if (!actor || !(await actor.unloadIfIdle(idleSince))) continue;
+      if (this.actors.get(activityId) === loading) this.actors.delete(activityId);
+      unloaded++;
+    }
+    return unloaded;
+  }
+
+  /** How many activities are in memory, for the dev dashboard and tests. */
+  get loadedCount(): number {
+    return this.actors.size;
+  }
+
+  /** Runs `fn` on the activity's actor, again on a fresh one if that was unloaded meanwhile. */
+  private async withActor<T>(activityId: string, fn: (actor: ActivityActor) => Promise<T>): Promise<T> {
+    for (;;) {
+      try {
+        return await fn(await this.actor(activityId));
+      } catch (err) {
+        if (!(err instanceof ActorUnloadedError)) throw err;
+      }
+    }
   }
 
   private receive(conn: Conn, text: string): void {
@@ -131,14 +172,14 @@ export class Hub {
         break;
       case 'unsub':
         conn.activities.delete(msg.activityId);
-        (await this.actor(msg.activityId)).unsubscribe(conn.id);
+        (await this.actors.get(msg.activityId)?.catch(() => undefined))?.unsubscribe(conn.id);
         break;
       case 'push':
         if (this.deps.readOnly?.(msg.activityId)) {
           for (const m of msg.mutations) this.send(conn, { t: 'reject', activityId: msg.activityId, mutationId: m.id, reason: 'read_only', message: 'Only the server changes this' });
           break;
         }
-        await (await this.actor(msg.activityId)).push(conn.activities.get(msg.activityId) ?? actorConn, msg.mutations);
+        await this.withActor(msg.activityId, (a) => a.push(conn.activities.get(msg.activityId) ?? actorConn, msg.mutations));
         break;
     }
   }
@@ -150,7 +191,7 @@ export class Hub {
     const viewer = conn.transport.viewerIn?.(activityId);
     const there: ActorConn = viewer ? { ...actorConn, viewer } : actorConn;
     conn.activities.set(activityId, there);
-    await (await this.actor(activityId)).subscribe(there, since, view);
+    await this.withActor(activityId, (a) => a.subscribe(there, since, view));
   }
 
   private send(conn: Conn, msg: ServerMessage): void {

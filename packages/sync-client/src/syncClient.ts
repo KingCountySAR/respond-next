@@ -9,6 +9,7 @@ import {
   type ActivitySnapshot,
   type MutationRegistry,
   type ReadView,
+  type Rec,
   type ServerMessage,
   type Viewer,
   type WireMutation,
@@ -41,6 +42,13 @@ export interface RejectionNotice {
   message: string;
 }
 
+/** An activity read once, without subscribing; version 0 when the server doesn't have it. */
+export interface ActivityDownload {
+  version: number;
+  view: string | undefined;
+  records: Rec[];
+}
+
 export interface SyncClientOptions {
   registry: MutationRegistry;
   /** Used for local permission checks and previews; the server decides for real. */
@@ -56,6 +64,20 @@ export interface SyncClientOptions {
   transport: () => Transport;
   persistence?: ClientPersistence;
   build?: string;
+  /**
+   * Reads an activity once (over HTTP), for activities opened not live. Throws when it can't reach
+   * the server. Without it, every activity opens live.
+   */
+  download?(activityId: string): Promise<ActivityDownload>;
+}
+
+export interface OpenOptions {
+  /**
+   * False: read it once and don't subscribe, for an activity no one is likely to change (a completed
+   * one). It isn't kept offline. It goes live with `goLive`, or on the first change made to it here.
+   * Default true.
+   */
+  live?: boolean;
 }
 
 interface OpenActivity {
@@ -63,6 +85,10 @@ interface OpenActivity {
   listeners: Set<() => void>;
   /** Highest mutation id sent on the current connection. */
   pushedUpTo: number;
+  /** Subscribed (or to be, once connected), and kept offline. Otherwise read once with `download`. */
+  live: boolean;
+  /** A not-live activity whose download failed, to try again once connected. */
+  downloadFailed?: boolean;
 }
 
 export class SyncClient {
@@ -143,27 +169,58 @@ export class SyncClient {
     this.connect();
   }
 
-  async open(activityId: string): Promise<void> {
+  /** Opens an activity, live unless `options.live` is false. Opening one that's open not live, live, makes it live. */
+  async open(activityId: string, options: OpenOptions = {}): Promise<void> {
+    const wantLive = options.live ?? true;
     await this.ready;
-    if (this.activities.has(activityId)) return;
+    if (this.activities.has(activityId)) {
+      if (wantLive) this.goLive(activityId);
+      return;
+    }
     const state: ClientActivityState = new ClientActivityState(activityId, this.opts.registry, (records) => this.viewerAt(state, records), this.clientId);
     const saved = await this.persistence.loadActivity(activityId);
     if (saved) {
       state.restore(saved);
       for (const m of saved.pending) this.nextMutationId = Math.max(this.nextMutationId, m.id + 1);
     }
-    if (this.activities.has(activityId)) return;
-    this.activities.set(activityId, { state, listeners: new Set(), pushedUpTo: 0 });
-    if (this.connState === 'live') {
+    if (this.activities.has(activityId)) {
+      if (wantLive) this.goLive(activityId);
+      return;
+    }
+    // Changes still to send need the subscription.
+    const live = wantLive || !this.opts.download || !!saved?.pending.length;
+    this.activities.set(activityId, { state, listeners: new Set(), pushedUpTo: 0, live });
+    if (!live) void this.download(activityId);
+    else if (this.connState === 'live') {
       this.send({ t: 'sub', activityId, since: state.version, view: state.view });
       this.flush();
     }
     this.updateStatus();
   }
 
+  /** Whether an open activity is live: subscribed, rather than read once. */
+  isLive(activityId: string): boolean {
+    return this.activity(activityId).live;
+  }
+
+  /** Subscribes to an activity opened not live, carrying on from the version it read. */
+  goLive(activityId: string): void {
+    const e = this.activities.get(activityId);
+    if (!e || e.live) return;
+    e.live = true;
+    e.downloadFailed = false;
+    if (this.connState === 'live') {
+      this.send({ t: 'sub', activityId, since: e.state.version, view: e.state.view });
+      this.flush();
+    }
+    this.changed(activityId); // kept offline from now on
+  }
+
   close(activityId: string): void {
-    if (!this.activities.delete(activityId)) return;
-    if (this.connState === 'live') this.send({ t: 'unsub', activityId });
+    const e = this.activities.get(activityId);
+    if (!e) return;
+    this.activities.delete(activityId);
+    if (e.live && this.connState === 'live') this.send({ t: 'unsub', activityId });
     this.updateStatus();
   }
 
@@ -222,6 +279,7 @@ export class SyncClient {
     const m: WireMutation = { id: this.nextMutationId, name, v: def.version, args: parsed.data, clientTime: now };
     e.state.addLocal(m);
     this.nextMutationId += 1;
+    if (!e.live) this.goLive(activityId);
     // Saved right away: reusing an id after a crash would make the server drop the change as a duplicate.
     void this.persistence.saveMeta({ clientId: this.clientId, nextMutationId: this.nextMutationId });
     this.changed(activityId);
@@ -233,6 +291,25 @@ export class SyncClient {
     const e = this.activities.get(activityId);
     if (!e) throw new Error(`Activity ${activityId} is not open`);
     return e;
+  }
+
+  /** Reads a not-live activity once. If it can't, it tries again the next time it connects. */
+  private async download(activityId: string): Promise<void> {
+    const e = this.activities.get(activityId);
+    if (!e || e.live || !this.opts.download) return;
+    e.downloadFailed = false;
+    let read: ActivityDownload;
+    try {
+      read = await this.opts.download(activityId);
+    } catch (err) {
+      console.warn(`sync: could not read ${activityId}`, err);
+      if (this.activities.get(activityId) === e && !e.live) e.downloadFailed = true;
+      return;
+    }
+    // Closed, or gone live, while it was reading.
+    if (this.activities.get(activityId) !== e || e.live) return;
+    e.state.applyReset({ t: 'reset', activityId, view: read.view, to: read.version, records: read.records, lastMutationId: 0 });
+    this.changed(activityId);
   }
 
   private async loadMeta(): Promise<void> {
@@ -252,15 +329,18 @@ export class SyncClient {
         if (this.transport !== t) return;
         this.attempt = 0;
         this.lastHeard = Date.now();
-        const subs = [...this.activities].map(([activityId, e]) => {
-          e.pushedUpTo = 0; // resend everything pending; the server skips what it already has
-          return { activityId, since: e.state.version, view: e.state.view };
-        });
+        const subs = [...this.activities]
+          .filter(([, e]) => e.live)
+          .map(([activityId, e]) => {
+            e.pushedUpTo = 0; // resend everything pending; the server skips what it already has
+            return { activityId, since: e.state.version, view: e.state.view };
+          });
         this.send({ t: 'hello', clientId: this.clientId, build: this.opts.build ?? 'dev', subs });
         this.setConnState('live');
         this.flush();
         this.pingTimer = setInterval(() => this.ping(), PING_INTERVAL_MS);
         this.ping();
+        for (const [activityId, e] of this.activities) if (e.downloadFailed) void this.download(activityId);
       },
       onMessage: (text) => {
         if (this.transport !== t) return;
@@ -376,6 +456,7 @@ export class SyncClient {
   private flush(): void {
     if (this.connState !== 'live') return;
     for (const [activityId, e] of this.activities) {
+      if (!e.live) continue;
       const unsent = e.state.pending.filter((m) => m.id > e.pushedUpTo);
       const last = unsent.at(-1);
       if (!last) continue;
@@ -387,6 +468,7 @@ export class SyncClient {
   private changed(activityId: string): void {
     const e = this.activities.get(activityId);
     if (e) for (const l of e.listeners) l();
+    if (e && !e.live) return this.updateStatus(); // not kept offline
     this.dirty.add(activityId);
     if (!this.persistTimer) this.persistTimer = setTimeout(() => this.flushPersist(), PERSIST_DELAY_MS);
     this.updateStatus();
