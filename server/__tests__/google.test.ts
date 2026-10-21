@@ -4,7 +4,7 @@ import { GoogleSignIn, SignInProviders } from '../src/google';
 import { OrganizationStore } from '../src/organizations';
 import { CRT_HOST, testApp, testSeed } from './helpers';
 
-const CLIENT_ID = 'sync-app.apps.googleusercontent.com';
+const CLIENT_ID = 'respond-app.apps.googleusercontent.com';
 const TOKEN = 'https://oauth2.googleapis.com/token';
 
 /** The seed, with the umbrella's sign-in provider: CRT's site signs in through it too. */
