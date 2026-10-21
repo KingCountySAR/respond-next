@@ -1,12 +1,14 @@
-// Bundles the server and every dependency into one file: dist/index.mjs (run with `node dist/index.mjs`).
+// Bundles the server and every dependency into one file, dist/index.mjs (run with `node dist/index.mjs`),
+// and the seed import beside it, dist/seed.mjs (`node dist/seed.mjs <file>`; see src/seed.ts).
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
 const path = (p) => fileURLToPath(new URL(p, import.meta.url));
 
 await build({
-  entryPoints: [path('./src/main.ts')],
-  outfile: path('../dist/index.mjs'),
+  entryPoints: { index: path('./src/main.ts'), seed: path('./src/seed.ts') },
+  outdir: path('../dist'),
+  outExtension: { '.js': '.mjs' },
   bundle: true,
   platform: 'node',
   format: 'esm',
