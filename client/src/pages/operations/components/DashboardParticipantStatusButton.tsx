@@ -12,7 +12,7 @@ export function DashboardParticipantStatusButton({ participant, status }: { part
   const participants = useParticipantCommands(activity.id);
   const { confirm } = useDialogs();
 
-  const statusLabel = getStatusText(status);
+  const statusLabel = `Set ${getStatusText(status)}`;
   const statusColor = getStatusMuiColor(status);
   const chipColor = statusColor === 'disabled' ? 'default' : statusColor;
 
