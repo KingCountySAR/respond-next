@@ -1,4 +1,5 @@
-import { Box, Link, Paper, Stack, Typography } from '@mui/material';
+import { Refresh } from '@mui/icons-material';
+import { Box, IconButton, Link, Paper, Stack, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
 import { DashboardDividedSection } from './DashboardDividedSection';
@@ -31,13 +32,16 @@ const getWeatherIcon = (condition: string): string => {
   return '🌡️';
 };
 
+const REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+
 const DashboardWeather: React.FC<WeatherProps> = ({ lat, lon, variant }) => {
   const [data, setData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
-    const fetchWeather = async () => {
+    const fetchWeather = async (background = false) => {
       const latitude = Number(lat);
       const longitude = Number(lon);
 
@@ -47,7 +51,7 @@ const DashboardWeather: React.FC<WeatherProps> = ({ lat, lon, variant }) => {
         return;
       }
 
-      setLoading(true);
+      if (!background) setLoading(true);
       setError(null);
 
       try {
@@ -76,14 +80,23 @@ const DashboardWeather: React.FC<WeatherProps> = ({ lat, lon, variant }) => {
     };
 
     fetchWeather();
-  }, [lat, lon]);
+    const interval = setInterval(() => fetchWeather(true), REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [lat, lon, reloadCount]);
 
   if (loading) {
     return <Box>Loading weather...</Box>;
   }
 
   if (error || !data) {
-    return <Box>⚠️ {error || 'No weather data available!'}</Box>;
+    return (
+      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box>⚠️ {error || 'No weather data available!'}</Box>
+        <IconButton size="small" aria-label="Refresh weather" onClick={() => setReloadCount((c) => c + 1)}>
+          <Refresh fontSize="small" />
+        </IconButton>
+      </Stack>
+    );
   }
 
   return (
