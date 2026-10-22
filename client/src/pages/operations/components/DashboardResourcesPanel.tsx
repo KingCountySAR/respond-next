@@ -4,7 +4,7 @@ import { Badge, Box, Tab, Tabs } from '@mui/material';
 import { useState } from 'react';
 
 import { useResourceCommands } from '@respond/hooks/commands';
-import { Participant, ParticipantStatus } from '@respond/shared/types/activity';
+import { Participant } from '@respond/shared/types/activity';
 import { EquipmentItem } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
@@ -23,7 +23,9 @@ export function DashboardResourcesPanel() {
   const handleDrop = (item: Participant | EquipmentItem, type: string) => {
     if (type === 'participant') {
       const participant = item as Participant;
-      if (participant.timeline[0].status === ParticipantStatus.Assigned) {
+      // Unassign from any team/place/group regardless of status; the server reactor only adjusts Available/Assigned.
+      const isAssigned = [...(activity.teams ?? []), ...(activity.places ?? []), ...(activity.groups ?? [])].some((holder) => holder.assignedParticipants.includes(participant.id));
+      if (isAssigned) {
         resourceCommands.assignParticipant(participant.id, undefined);
       }
       return;
