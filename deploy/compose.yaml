@@ -1,0 +1,38 @@
+# Respond on the KCSARA VM, as its own compose project (respond) on the VM's kcsara network. `npm run build`, then
+# `node deploy.mjs app ../respond-sync` from the vm repo sends this folder and dist/ (app.json) to
+# /srv/kcsara/apps/respond/current. See docs/DEPLOY.md.
+# ../config/ is apps/respond/config on the VM, kept between deploys:
+#   database.env   DATABASE_URL, for the respond database in the VM's shared postgres
+#   app.env        SECRETS_KEY (encrypts the providers' client secrets in the database: back it up), SITE_ADMINS
+#   compose.env    HOSTS: every organization's host names, comma separated, each also in its organization in Respond
+services:
+  respond:
+    image: node:22-alpine
+    env_file: [../config/database.env, ../config/app.env]
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+    volumes:
+      - ./dist:/app:ro
+    working_dir: /app
+    user: node
+    command: [node, --enable-source-maps, index.mjs]
+    # Each organization's site is one of these host names; the app tells them apart by host name. Its live sync
+    # (/api/sync) is a WebSocket, which Caddy passes on as it is.
+    labels:
+      caddy: ${HOSTS:-respond.kingcountysar.org}
+      caddy.import: site
+      caddy.reverse_proxy: '{{upstreams 4000}}'
+      kcsara.health: /health
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:4000/health]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+    restart: unless-stopped
+    init: true
+
+networks:
+  default:
+    name: kcsara
+    external: true

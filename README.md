@@ -83,7 +83,7 @@ To start everything over, activities and locations included: `docker compose dow
 
 **Deploy artifact.** `dist/` is self-contained: `node dist/index.mjs` needs no `node_modules`, and serves `public/` from next to itself (override with `UI_DIST`; port with `PORT`). Beside it, `node dist/seed.mjs <file>` is the seed import (`-` reads the file from standard input), so a deployment can be seeded without the repo. The Docker image contains only `dist/` and runs as `node`.
 
-**Deploying.** On KCSARA's VM, the `../vm` repo runs this as its `respond` service (see "Respond" in its README): `npm run build` here, then `node deploy.mjs respond` there copies `dist/` over and restarts it, and `node deploy.mjs seed-respond <file>` imports a seed file into its database. Behind nginx, each organization's host name is a site there, and the server needs `DATABASE_URL`, `SECRETS_KEY` and `SITE_ADMINS` (`NODE_ENV=production` makes cookies Secure and sign-in callbacks https). A production seed file names the cedar provider by cedar's and Hydra's addresses on the VM's network (`http://cedar:3040`, `http://hydra:4444/oauth2/token`), and each organization's `hostnames` its sites there. For now it runs at respond-next.kcesar.org; respond.kingcountysar.org and the organizations' own names come later.
+**Deploying.** On KCSARA's VM it runs as its own compose project, from `deploy/`: `npm run build` here, then `node deploy.mjs app ../respond-sync` in the `../vm` repo. Its settings, sites, seeding and the respond-next import there are in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Phase 1 shortcuts (deliberate, to revisit)
 
