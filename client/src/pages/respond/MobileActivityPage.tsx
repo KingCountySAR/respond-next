@@ -1,7 +1,7 @@
 import AnnouncementIcon from '@mui/icons-material/Announcement';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
@@ -106,7 +106,7 @@ const RosterRow = observer(function RosterRow({ participant, onClick }: { partic
         </Stack>
         <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-            {participant.lastEditedByOther && <WarningAmberIcon fontSize="small" color="warning" titleAccess="Latest status was updated by someone else" />}
+            {participant.lastEditedByOther && <InfoOutlinedIcon fontSize="small" color="warning" titleAccess="Latest status was updated by someone else" />}
             <Typography variant="body2">{participant.statusText}</Typography>
           </Stack>
           <Typography variant="body2">{participant.etaText ? `ETA ${participant.etaText}` : null}</Typography>
