@@ -112,7 +112,7 @@ export enum OrganizationStatus {
 }
 
 // `lastUpdatedBy.id` for timeline entries added automatically by the system.
-export const SYSTEM_USER_ID = 'System';
+export const SYSTEM_USER_ID = 'system';
 
 export interface ParticipantUpdate {
   // Server-generated, stable per timeline entry (absent on legacy entries, which
