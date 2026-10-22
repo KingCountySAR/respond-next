@@ -32,7 +32,7 @@ const participantCommandHandlers = [
 
 const activityCommandHandlers = [
   defineCommandHandler(ActivityCommands.DecorateOperations, (payload) => [ActivityEvents.OperationsDecorated({ activityId: payload.activityId, operations: createDefaultOperations() })]),
-  defineCommandHandler(ActivityCommands.CompleteActivity, (payload, services) => [ActivityEvents.ActivityCompleted({ ...payload, completedBy: auditStamp(services).lastUpdatedBy })]),
+  defineCommandHandler(ActivityCommands.CompleteActivity, (payload) => [ActivityEvents.ActivityCompleted(payload)]),
 ];
 
 // Only domains with at least one non-forwarding command appear here — Place,

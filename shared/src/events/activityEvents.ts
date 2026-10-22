@@ -37,7 +37,7 @@ export const ActivityEvents = {
   ActivityCompleted: defineEvent(
     //
     'evt/activity/completed',
-    (state: Draft<ActivityState>, { activityId, endTime, completedBy }: { activityId: string; endTime: number; completedBy?: { id: string; name: string } }) => {
+    (state: Draft<ActivityState>, { activityId, endTime }: { activityId: string; endTime: number }) => {
       const activity = state.list.find((f) => f.id === activityId);
       if (!activity) return;
       activity.endTime = endTime;
@@ -55,7 +55,7 @@ export const ActivityEvents = {
               miles: participant.miles,
               eta: participant.eta,
             },
-            update: { time: endTime, status: ParticipantStatus.SignedOut, ...systemAudit('Activity Closed', endTime, completedBy) },
+            update: { time: endTime, status: ParticipantStatus.SignedOut, ...systemAudit('Activity Closed', endTime) },
           },
         });
       }
