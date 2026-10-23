@@ -3,30 +3,12 @@ import { Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
 
 import { useTeamCommands } from '@respond/hooks/commands';
-import { createNewTeam, Team } from '@respond/shared/types/operations';
+import { Team } from '@respond/shared/types/operations';
 
 import { useActivityContext } from '@/client/components/activities/ActivityProvider';
 import { Stack } from '@/client/components/Material';
 
 import DashboardTeamCard from './DashboardTeamCard';
-
-function getNextTeamNumber(teams: Team[]): number {
-  const usedNumbers = new Set<number>();
-
-  (teams ?? []).forEach((team) => {
-    const match = team.name.trim().match(/^team\s+(\d+)$/i);
-    if (match) {
-      usedNumbers.add(Number(match[1]));
-    }
-  });
-
-  let nextNumber = 1;
-  while (usedNumbers.has(nextNumber)) {
-    nextNumber += 1;
-  }
-
-  return nextNumber;
-}
 
 export function compareTeamNames(left: Team, right: Team): number {
   const normalizeName = (name: string) => name.trim();
@@ -107,8 +89,7 @@ export function DashboardTeamManager() {
   const anyExpanded = teams.some((team) => expandedTeamIds[team.id]);
 
   const addTeam = () => {
-    const nextTeamNumber = getNextTeamNumber(teams);
-    teamCommands.createTeam(createNewTeam(`Team ${nextTeamNumber}`));
+    teamCommands.createTeam();
   };
 
   // nonce forces each card's effect to rerun even if `expanded` repeats (e.g. a card was manually

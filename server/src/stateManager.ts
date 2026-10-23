@@ -128,7 +128,7 @@ export class StateManager {
   }
 
   private async processCommand(command: StampedCommand, author: EventAuthor, cause?: string): Promise<void> {
-    const events = produceEvents(command);
+    const events = produceEvents(command, { activities: this.activityState.list });
     if (!events.length) return;
 
     const mongo = await mongoPromise;

@@ -104,6 +104,33 @@ describe('produceEvents', () => {
   });
 });
 
+describe('CreateTeam (server-named)', () => {
+  const activityWithTeams = (...names: string[]) => {
+    const activity = createNewActivity();
+    activity.id = activityId;
+    activity.teams = names.map((name) => createNewTeam(name));
+    return activity;
+  };
+  const createdName = (activity: Activity) => {
+    const [event] = produceEvents(TeamCommands.CreateTeam(activityId), { activities: [activity] });
+    if (!TeamEvents.TeamCreated.match(event)) throw new Error('expected TeamCreated');
+    return event.payload.team.name;
+  };
+
+  it('names the first team "Team 1"', () => {
+    expect(createdName(activityWithTeams())).toBe('Team 1');
+  });
+
+  it('skips a number used by a differently-named team', () => {
+    const names = Array.from({ length: 12 }, (_, i) => `Team ${i + 1}`);
+    expect(createdName(activityWithTeams(...names, 'Dog 13'))).toBe('Team 14');
+  });
+
+  it('produces no event for an unknown activity', () => {
+    expect(produceEvents(TeamCommands.CreateTeam('missing'), { activities: [activityWithTeams()] })).toEqual([]);
+  });
+});
+
 describe('participantTagReactor', () => {
   function activityWithParticipant(tags: string[] | undefined) {
     const activity = createNewActivity();
