@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import { ActivityCommands, Commands, CommsCommands, ParticipantCommands, PlaceCommands, ResourceCommands, TeamCommands } from '@shared/commands';
-import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, ResourceEvents, TeamEvents } from '@shared/events';
+import { ActivityEvents, CommsEvents, ParticipantEvents, PlaceEvents, ResourceEvents, serviceAuthor, TeamEvents, userAuthor } from '@shared/events';
 import { Activity, createNewActivity, ParticipantStatus } from '@shared/types/activity';
 import { createNewPlace, createNewTeam, DEFAULT_PLACES } from '@shared/types/operations';
 
@@ -65,6 +65,26 @@ describe('produceEvents', () => {
   it('maps UpdateParticipant -> ParticipantUpdated', () => {
     const [event] = produceEvents(ParticipantCommands.UpdateParticipant(activityId, 'p1', 'Ann', 'Lee', '1', 100, ParticipantStatus.SignedIn));
     expect(ParticipantEvents.ParticipantUpdated.match(event)).toBe(true);
+  });
+
+  describe('timeline audit stamp', () => {
+    const entry = { time: 1, status: ParticipantStatus.Available, organizationId: '1' };
+
+    it("stamps the editing user's participant id and time on add and edit", () => {
+      const author = userAuthor('org:p9', 'Pat Nine');
+      const [added] = produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', entry), { author });
+      const [edited] = produceEvents(ParticipantCommands.UpdateParticipantTimeline(activityId, 'p1', { ...entry, id: 'e1' }), { author });
+      for (const event of [added, edited]) {
+        const update = (event.payload as { update: { lastUpdatedBy?: { id: string; name: string }; lastUpdatedTime?: number } }).update;
+        expect(update.lastUpdatedBy).toEqual({ id: 'p9', name: 'Pat Nine' });
+        expect(update.lastUpdatedTime).toBeGreaterThan(0);
+      }
+    });
+
+    it('does not stamp service-authored (reactor) entries', () => {
+      const [added] = produceEvents(ParticipantCommands.AddParticipantTimeline(activityId, 'p1', entry), { author: serviceAuthor('some-reactor') });
+      expect((added.payload as { update: { lastUpdatedBy?: unknown } }).update.lastUpdatedBy).toBeUndefined();
+    });
   });
 
   it('maps DeleteTeam -> TeamDeleted, carrying the chosen target', () => {

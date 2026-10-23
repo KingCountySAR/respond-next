@@ -2,7 +2,7 @@ import { produce } from 'immer';
 
 import { ActivityState, eventReducersByType } from '..';
 import { ActivityEvents, CommsEvents, GroupEvents, ParticipantEvents, PlaceEvents, ResourceEvents, TeamEvents } from '../events';
-import { createNewActivity, ParticipantStatus } from '../types/activity';
+import { createNewActivity, ParticipantStatus, SYSTEM_USER_ID } from '../types/activity';
 import { CommunicationsLogEntry, createDefaultOperations, createNewGroup, createNewPlace, createNewTeam, DEFAULT_PLACES } from '../types/operations';
 
 function stateWithActivity(activityId: string): ActivityState {
@@ -59,6 +59,37 @@ describe('Event Reducers', () => {
     const person = next.list[0].participants['p1'];
     expect(person.timeline[0].status).toBe(ParticipantStatus.SignedIn);
     expect(person.tags).toBeUndefined();
+  });
+
+  it('ActivityCompleted signs participants out, attributed to the system user as System: Activity Closed', () => {
+    let next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantUpdated({ activityId, participant: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, update: { time: 100, status: ParticipantStatus.SignedIn } }),
+    );
+    next = apply(next, ActivityEvents.ActivityCompleted({ activityId, endTime: 500 }));
+    const entry = next.list[0].participants['p1'].timeline[0];
+    expect(entry.status).toBe(ParticipantStatus.SignedOut);
+    expect(entry.lastUpdatedBy).toEqual({ id: SYSTEM_USER_ID, name: 'System: Activity Closed' });
+    expect(entry.lastUpdatedTime).toBe(500);
+  });
+
+  it('an org switch signs out of the previous org, attributed to the system user', () => {
+    const by = { id: 'u7', name: 'Una Seven' };
+    let next = apply(
+      stateWithActivity(activityId),
+      ParticipantEvents.ParticipantUpdated({ activityId, participant: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '1' }, update: { time: 100, status: ParticipantStatus.SignedIn } }),
+    );
+    next = apply(
+      next,
+      ParticipantEvents.ParticipantUpdated({
+        activityId,
+        participant: { id: 'p1', firstname: 'Ann', lastname: 'Lee', organizationId: '2' },
+        update: { time: 200, status: ParticipantStatus.SignedIn, lastUpdatedBy: by, lastUpdatedTime: 200 },
+      }),
+    );
+    const [, signOut] = next.list[0].participants['p1'].timeline;
+    expect(signOut.status).toBe(ParticipantStatus.SignedOut);
+    expect(signOut.lastUpdatedBy).toEqual({ id: SYSTEM_USER_ID, name: 'System: Organization Changed' });
   });
 
   it('ParticipantTagged sets tags on an existing participant', () => {

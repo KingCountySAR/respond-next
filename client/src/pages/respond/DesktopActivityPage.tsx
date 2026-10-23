@@ -1,3 +1,4 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Button, Divider, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
 import { observer } from 'mobx-react-lite';
@@ -25,7 +26,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
   const { open } = useDialogs();
   const activity = vm.domain;
   const openParticipantDialog = (participant: ParticipantDomainModel) => {
-    open(ParticipantDialog, { participant });
+    open(ParticipantDialog, { participant, activity });
   };
   return (
     <ToolbarPage maxWidth="lg">
@@ -89,7 +90,10 @@ const RosterRow = observer(function RosterRow({ participant, onClick }: { partic
             </Typography>
           </Stack>
           <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-            <Typography variant="body2">{participant.statusText}</Typography>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+              {participant.lastEditedByOther && <InfoOutlinedIcon sx={{ fontSize: 16 }} color="disabled" titleAccess="Latest status was updated by someone else" />}
+              <Typography variant="body2">{participant.statusText}</Typography>
+            </Stack>
             <Typography variant="body2">{participant.isEnrouteOrStandby && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
           </Stack>
         </Stack>

@@ -1,11 +1,14 @@
 import { Box, ButtonBase, Stack, Typography } from '@mui/material';
 import { MobileDateTimePicker, renderMultiSectionDigitalClockTimeView } from '@mui/x-date-pickers';
 import { format as formatDate } from 'date-fns';
+import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 
 import { DomainParticipantUpdate, ParticipantDomainModel } from '@/client/models/participantDomainModel';
 
-export default function ParticipantTimeline({ participant }: { participant: ParticipantDomainModel }) {
+type Audit = { name: string; time: number };
+
+export default observer(function ParticipantTimeline({ participant }: { participant: ParticipantDomainModel }) {
   return (
     <Stack spacing={2}>
       {[...participant.timeline]
@@ -13,14 +16,17 @@ export default function ParticipantTimeline({ participant }: { participant: Part
           // Only entries with a server-minted id can be edited; legacy entries are read-only.
           const id = update.id;
           const onChange = id ? (time: number) => participant.updateTimeline({ id, time, status: update.status, organizationId: update.organizationId }) : undefined;
-          return <ParticipantUpdateTile key={id ?? i} record={update} onChange={onChange} />;
+          // Only worth showing when someone other than the participant made the change.
+          const editor = update.lastUpdatedBy;
+          const audit = editor?.name && editor.id !== participant.id && update.lastUpdatedTime ? { name: editor.name, time: update.lastUpdatedTime } : undefined;
+          return <ParticipantUpdateTile key={id ?? i} record={update} onChange={onChange} audit={audit} />;
         })
         .reverse()}
     </Stack>
   );
-}
+});
 
-function ParticipantUpdateTile({ record, onChange }: { record: DomainParticipantUpdate; onChange?: (time: number) => void }) {
+function ParticipantUpdateTile({ record, onChange, audit }: { record: DomainParticipantUpdate; onChange?: (time: number) => void; audit?: Audit }) {
   const initialTime = record.time ?? new Date().getTime(); // Backward Compatability; timelines might have null time values. This ensures a value is present so it can be edited.
 
   const [open, setOpen] = useState(false);
@@ -47,8 +53,19 @@ function ParticipantUpdateTile({ record, onChange }: { record: DomainParticipant
     </Stack>
   );
 
+  const auditLine = audit && (
+    <Typography variant="caption" sx={{ display: 'block', fontSize: '0.7rem', color: 'text.secondary' }}>
+      Last Modified By: {audit.name} ({formatDate(audit.time, 'MM/dd HHmm')})
+    </Typography>
+  );
+
   if (!onChange) {
-    return <Box>{summary}</Box>;
+    return (
+      <Box>
+        {summary}
+        {auditLine}
+      </Box>
+    );
   }
 
   return (
@@ -72,6 +89,7 @@ function ParticipantUpdateTile({ record, onChange }: { record: DomainParticipant
         onClose={() => setOpen(false)}
         slots={{ field: () => null }}
       />
+      {auditLine}
     </Box>
   );
 }

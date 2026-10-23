@@ -6,7 +6,7 @@ import { Activity, createNewActivity, OrganizationStatus, ParticipantStatus, pic
 import { Operations } from '../types/operations';
 
 import { defineEvent } from './defineEvent';
-import { participantUpdate } from './participantEvents';
+import { participantUpdate, systemAudit } from './participantEvents';
 
 // Activity summary + lifecycle facts.
 
@@ -55,7 +55,7 @@ export const ActivityEvents = {
               miles: participant.miles,
               eta: participant.eta,
             },
-            update: { time: endTime, status: ParticipantStatus.SignedOut },
+            update: { time: endTime, status: ParticipantStatus.SignedOut, ...systemAudit('Activity Closed', endTime) },
           },
         });
       }

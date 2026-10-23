@@ -1,6 +1,7 @@
 import AnnouncementIcon from '@mui/icons-material/Announcement';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
@@ -71,7 +72,7 @@ function MobileBriefingScreen({ activity }: { activity: ActivityViewModel }) {
 const MobileRosterScreen = observer(function MobileRosterScreen({ activity }: { activity: ActivityViewModel }) {
   const { open } = useDialogs();
   const openParticipantDialog = (participant: ParticipantDomainModel) => {
-    open(ParticipantDialog, { participant });
+    open(ParticipantDialog, { participant, activity: activity.domain });
   };
   return (
     <>
@@ -104,7 +105,10 @@ const RosterRow = observer(function RosterRow({ participant, onClick }: { partic
           </Typography>
         </Stack>
         <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-          <Typography variant="body2">{participant.statusText}</Typography>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+            {participant.lastEditedByOther && <InfoOutlinedIcon fontSize="small" color="warning" titleAccess="Latest status was updated by someone else" />}
+            <Typography variant="body2">{participant.statusText}</Typography>
+          </Stack>
           <Typography variant="body2">{participant.etaText ? `ETA ${participant.etaText}` : null}</Typography>
         </Stack>
       </Stack>

@@ -145,6 +145,12 @@ export class ParticipantDomainModel {
     return isActive(this.status);
   }
 
+  /** True when the most recent timeline entry was last edited by someone other than the participant. */
+  get lastEditedByOther(): boolean {
+    const editor = this.participant.timeline[0]?.lastUpdatedBy;
+    return !!editor && editor.id !== this.id;
+  }
+
   get timeline(): DomainParticipantUpdate[] {
     return this.participant.timeline.map((t) => {
       const org = this.getOrganizations()[t.organizationId];

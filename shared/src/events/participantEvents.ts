@@ -1,7 +1,8 @@
 import type { Draft } from '@reduxjs/toolkit';
+import { v5 as uuid } from 'uuid';
 
 import type { ActivityState } from '..';
-import { ParticipantStatus, ParticipantUpdate } from '../types/activity';
+import { ParticipantStatus, ParticipantUpdate, SYSTEM_USER_ID } from '../types/activity';
 
 import { defineEvent } from './defineEvent';
 
@@ -9,9 +10,19 @@ import { defineEvent } from './defineEvent';
 // ParticipantTagged is authored by the participant-tag reactor.
 
 export type ParticipantIdentity = { id: string; firstname: string; lastname: string; organizationId: string; miles?: number; eta?: number };
-export type StatusUpdate = { id?: string; time: number; status: ParticipantStatus };
+export type StatusUpdate = { id?: string; time: number; status: ParticipantStatus; lastUpdatedBy?: { id: string; name: string }; lastUpdatedTime?: number };
 export type ParticipantUpdatedPayload = { activityId: string; participant: ParticipantIdentity; update: StatusUpdate };
 export type ParticipantTimelinePayload = { activityId: string; participantId: string; update: ParticipantUpdate };
+
+// Audit stamp for timeline entries the reducers add automatically: attributed to the system user
+// with a name of "System: <reason>".
+// The id is a v5 (name-based) uuid rather than the random v4 used for command-created entries. Reducers
+// run on the server and every client (and on replay) and must be deterministic; a random id here would
+// differ on each machine, so edits targeting the entry by id would not match the server's copy.
+const SYSTEM_ENTRY_NAMESPACE = '5b0e5a4c-8f0a-4c1e-9d3b-2f6a7c1d9e42';
+export function systemAudit(reason: string, time: number) {
+  return { id: uuid(`${reason}:${time}`, SYSTEM_ENTRY_NAMESPACE), lastUpdatedBy: { id: SYSTEM_USER_ID, name: `System: ${reason}` }, lastUpdatedTime: time };
+}
 
 function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: string, participantId: string, time: number) {
   state.list
@@ -23,6 +34,7 @@ function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: str
           time,
           status: ParticipantStatus.SignedOut,
           organizationId: timeline[0].organizationId,
+          ...systemAudit('Signed In To Another Activity', time),
         });
       }
     });
@@ -47,6 +59,7 @@ export function participantUpdate(state: Draft<ActivityState>, { payload }: { pa
         organizationId: lastUpdate.organizationId,
         time: update.time,
         status: ParticipantStatus.SignedOut,
+        ...systemAudit('Organization Changed', update.time),
       };
       if (update.status === ParticipantStatus.SignedOut) {
         // If they are logging out, log them out of the previous org, then exit.
