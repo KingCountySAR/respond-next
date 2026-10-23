@@ -84,3 +84,24 @@ Commands with `node deploy.mjs` or `node hydra.mjs` run in the `../vm` repo (see
 
 In `/srv/kcsara/apps/respond/current`: `docker compose logs respond` (or `node deploy.mjs logs respond` from the vm
 repo).
+
+## Running the build in Docker
+
+To try the build as the VM runs it, on a dev machine: `docker compose up` in `../vm` (Hydra and its `kcsara` network;
+cedar the same way in `../cedar`, if an organization's member provider uses it), `npm run db` here (the dev database),
+then:
+
+```
+npm run build
+npm run docker -- up -d
+```
+
+It's on http://localhost:4000, like `npm run dev` (stop that first), with the dev database's organizations and their
+sites (`crt.localhost:4000`, ...). Its settings are `server/.env.local` (`SECRETS_KEY`, `SITE_ADMINS`), and it signs in
+only with the dev sign-in (`DEV_TOOLS`): the build signs in with Google only over https. A member provider on cedar
+needs cedar's and Hydra's addresses on the `kcsara` network (`http://cedar:3040`, `http://hydra:4444/oauth2/token`),
+and a client in the local Hydra (`node hydra.mjs --local create oauth2-client ...`).
+
+`npm run docker` is `docker compose` with both files, so `npm run docker -- logs -f` shows its logs, and
+`npm run docker -- down` stops it.
+(`docker compose up --build` in the repo is another way: it builds an image of the app; see the README.)

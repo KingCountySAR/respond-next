@@ -18,6 +18,7 @@
     "dev:web": "npm run dev -w web",
     "dev:harness-ui": "npm run dev -w harness",
     "build": "npm run build -w web && npm run build -w server",
+    "docker": "docker compose -f deploy/compose.yaml -f deploy/compose.local.yaml",
     "start": "node --enable-source-maps dist/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

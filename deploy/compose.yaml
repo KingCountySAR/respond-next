@@ -5,6 +5,10 @@
 #   database.env   DATABASE_URL, for the respond database in the VM's shared postgres
 #   app.env        SECRETS_KEY (encrypts the providers' client secrets in the database: back it up), SITE_ADMINS
 #   compose.env    HOSTS: every organization's host names, comma separated, each also in its organization in Respond
+# On a dev machine, compose.local.yaml beside this runs it in Docker instead.
+# The compose project, as app.json names the app (the VM checks they agree).
+name: respond
+
 services:
   respond:
     image: node:22-alpine

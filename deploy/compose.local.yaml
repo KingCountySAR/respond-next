@@ -1,0 +1,20 @@
+# Respond in Docker on a dev machine, as on the VM but from this repo's build, on http://localhost:4000 (and
+# crt.localhost:4000, and so on): the same port as `npm run dev`, so stop that first. Needs `docker compose up` in ../vm
+# (Hydra and the kcsara network, on which it reaches cedar as http://cedar:3040), `npm run db` here (the dev database),
+# then `npm run build`, and from the repo:
+#   npm run docker -- up -d     (docker compose with this file and compose.yaml; npm run docker -- down stops it)
+# See "Running the build in Docker" in docs/DEPLOY.md.
+services:
+  respond:
+    # The dev secrets (SECRETS_KEY, SITE_ADMINS), not the rest of npm run dev's settings.
+    env_file: !override
+      - { path: ../server/.env.local, required: false }
+    environment:
+      # The dev database from `npm run db`, on the host.
+      DATABASE_URL: postgres://sync:sync@host.docker.internal:5433/sync
+      # The dev sign-in: the build signs in with Google only over https, which there isn't here.
+      DEV_TOOLS: 'true'
+    volumes: !override
+      - ../dist:/app:ro
+    extra_hosts: ['host.docker.internal:host-gateway']
+    ports: ['4000:4000']
