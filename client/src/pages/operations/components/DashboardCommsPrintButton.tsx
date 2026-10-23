@@ -1,10 +1,13 @@
 import PrintIcon from '@mui/icons-material/Print';
-import { Box, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
+import { Box, createTheme, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, ThemeProvider, Tooltip, Typography } from '@mui/material';
 import { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
 import { Activity } from '@respond/shared/types/activity';
 import { CommunicationsLogEntry } from '@respond/shared/types/operations';
+
+// Printed output is always light-themed so dark mode doesn't produce white text on white paper.
+const printTheme = createTheme({ palette: { mode: 'light' } });
 
 // TODO: This function exists in multiple places, consider moving it to a shared utility file
 function format24HourTime(value: number) {
@@ -36,7 +39,9 @@ export function DashboardCommsPrintButton({ activity, communications }: { activi
         </IconButton>
       </Tooltip>
       <Box ref={printable} sx={{ display: 'none', '@media print': { display: 'block' } }}>
-        <DashboardCommsPrintView activity={activity} communications={communications} />
+        <ThemeProvider theme={printTheme}>
+          <DashboardCommsPrintView activity={activity} communications={communications} />
+        </ThemeProvider>
       </Box>
     </>
   );
