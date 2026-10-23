@@ -1,4 +1,5 @@
 import type { Draft } from '@reduxjs/toolkit';
+import { v5 as uuid } from 'uuid';
 
 import type { ActivityState } from '..';
 import { ParticipantStatus, ParticipantUpdate, SYSTEM_USER_ID } from '../types/activity';
@@ -15,8 +16,12 @@ export type ParticipantTimelinePayload = { activityId: string; participantId: st
 
 // Audit stamp for timeline entries the reducers add automatically: attributed to the system user
 // with a name of "System: <reason>".
+// The id is a v5 (name-based) uuid rather than the random v4 used for command-created entries. Reducers
+// run on the server and every client (and on replay) and must be deterministic; a random id here would
+// differ on each machine, so edits targeting the entry by id would not match the server's copy.
+const SYSTEM_ENTRY_NAMESPACE = '5b0e5a4c-8f0a-4c1e-9d3b-2f6a7c1d9e42';
 export function systemAudit(reason: string, time: number) {
-  return { lastUpdatedBy: { id: SYSTEM_USER_ID, name: `System: ${reason}` }, lastUpdatedTime: time };
+  return { id: uuid(`${reason}:${time}`, SYSTEM_ENTRY_NAMESPACE), lastUpdatedBy: { id: SYSTEM_USER_ID, name: `System: ${reason}` }, lastUpdatedTime: time };
 }
 
 function signOutFromOtherActivities(state: Draft<ActivityState>, activityId: string, participantId: string, time: number) {
