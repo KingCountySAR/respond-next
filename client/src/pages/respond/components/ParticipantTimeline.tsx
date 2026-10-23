@@ -25,8 +25,8 @@ function ParticipantUpdateTile({ record, onChange }: { record: DomainParticipant
 
   const [open, setOpen] = useState(false);
   const [time, setTime] = useState(initialTime);
-  const handleAccept = (newTime: Date | null) => {
-    if (newTime) {
+  const handleChange = (newTime: Date | null) => {
+    if (newTime && !Number.isNaN(newTime.getTime())) {
       setTime(newTime.getTime());
       onChange?.(newTime.getTime());
     }
@@ -68,7 +68,7 @@ function ParticipantUpdateTile({ record, onChange }: { record: DomainParticipant
           hours: renderMultiSectionDigitalClockTimeView,
           minutes: renderMultiSectionDigitalClockTimeView,
         }}
-        onAccept={handleAccept}
+        onChange={handleChange}
         onClose={() => setOpen(false)}
         slots={{ field: () => null }}
       />

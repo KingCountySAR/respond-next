@@ -40,8 +40,11 @@ export function ParticipantEtaUpdater({ participant }: { participant: Pick<Parti
           hours: renderMultiSectionDigitalClockTimeView,
           minutes: renderMultiSectionDigitalClockTimeView,
         }}
-        onAccept={(date) => {
-          if (date) changeEta(date.getTime());
+        onChange={(date) => {
+          if (date && !Number.isNaN(date.getTime())) {
+            setEta(date.getTime());
+            participant.updateEta(date.getTime());
+          }
         }}
         onClose={() => setOpen(false)}
         slots={{ field: () => null }}
