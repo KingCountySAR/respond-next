@@ -21,6 +21,8 @@
     "docker": "docker compose -f deploy/compose.yaml -f deploy/compose.local.yaml",
     "start": "node --enable-source-maps dist/index.mjs",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:dom": "vitest run --project dom",
     "test:watch": "vitest",
     "smoke": "tsx test/smoke.ts",
     "seed": "tsx --env-file=server/.env.development --env-file-if-exists=server/.env.local server/src/seed.ts",

@@ -32,7 +32,9 @@ Requires Node 22.12+ and **npm 11** (npm 10 crashes resolving this tree's peer d
 npm install
 npm run db               # Postgres 18 in Docker, host port 5433
 npm run seed -- server/organizations.dev.json  # import organizations into DATABASE_URL (see below)
-npm test                 # unit, convergence and storage tests (Postgres suite runs when the db is up)
+npm test                 # every test (Postgres suite runs when the db is up); or in two parts:
+npm run test:unit        #   packages, server and integration (convergence, storage): seconds
+npm run test:dom         #   the web app in jsdom: most of the time
 npm run typecheck
 npm run dev              # starts the db, the web app on :4000, API server on :5174 behind Vite's proxy
 npm run dev:harness      # same, with the harness on :4000 instead of the web app
