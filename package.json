@@ -26,6 +26,7 @@
     "test:watch": "vitest",
     "smoke": "tsx test/smoke.ts",
     "seed": "tsx --env-file=server/.env.development --env-file-if-exists=server/.env.local server/src/seed.ts",
+    "import-legacy": "tsx --env-file=server/.env.development --env-file-if-exists=server/.env.local server/src/importLegacy.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {

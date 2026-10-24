@@ -64,6 +64,14 @@ describe('organization store', () => {
     expect(partners('org-rmr')).toEqual([['org-sheriff', true, false]]);
   });
 
+  it('keeps the legacy id when a save leaves it out', async () => {
+    const seed = testSeed();
+    seed.organizations[0]!.legacyId = '5';
+    const store = OrganizationStore.memory(seed, { envAdmins: [SITE_ADMIN] });
+    const { legacyId: _legacyId, ...edited } = store.get(seed.organizations[0]!.id)!;
+    expect(await store.save({ ...edited, title: 'Renamed' }, SITE_ADMIN)).toMatchObject({ ok: true, saved: { title: 'Renamed', legacyId: '5' } });
+  });
+
   it('lets admins of an organization edit those under it too', () => {
     const seed = testSeed();
     seed.organizations[0]!.admins = ['umbrella@cvsc.example.org'];

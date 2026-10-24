@@ -401,6 +401,8 @@ export class OrganizationStore {
     if (!parsed.success) return invalid(parsed.error, 'organization');
     let org = parsed.data;
     const existing = this.orgs.get(org.id);
+    // The admin page doesn't edit it.
+    if (org.legacyId === undefined && existing?.legacyId !== undefined) org = { ...org, legacyId: existing.legacyId };
     if (!this.isSiteAdmin(email)) {
       if (!existing || !this.canEdit(email, org.id)) return ONLY_SITE_ADMINS;
       org = { ...existing, ...Object.fromEntries(ORG_ADMIN_FIELDS.map((f) => [f, org[f]])) };

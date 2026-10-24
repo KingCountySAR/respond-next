@@ -107,6 +107,11 @@ export const Organization = z.object({
   partners: z.array(OrganizationPartner).default([]),
   /** Who may change this organization's settings. */
   admins: z.array(email).default([]),
+  /**
+   * Its id in respond-next, for the legacy import (`import-legacy`). Set from a seed file; an admin
+   * save that leaves it out keeps the stored one.
+   */
+  legacyId: z.string().min(1).optional(),
 });
 export type Organization = z.infer<typeof Organization>;
 
