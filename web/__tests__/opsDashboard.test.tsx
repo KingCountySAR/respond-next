@@ -271,7 +271,7 @@ describe('ops dashboard', () => {
     await choose(panel('Teams').getByRole('combobox', { name: 'Team 1 status' }), 'In Transit');
     const comms = panel('Communications');
     // Team status is Auto (3), shown at the default 1–3; adding Dana (Audit, 4) isn't. Each line is also in the print view.
-    const teamLine = 'Alice Adams set Team 1 from In Base to In Transit';
+    const teamLine = 'Team 1 moved from In Base to In Transit';
     expect(await comms.findAllByText(teamLine)).not.toHaveLength(0);
     expect(comms.queryAllByText(/Dana Field signed in/)).toEqual([]);
 

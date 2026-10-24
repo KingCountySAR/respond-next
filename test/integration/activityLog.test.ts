@@ -59,19 +59,20 @@ describe('the activity log', () => {
     await until(() => s.lines(s.alice).length === 10);
     // Timed changes carry their own time, the rest the server's, so the order here is loose.
     expect(s.texts(s.alice).sort()).toEqual([
-      [4, 'Alice Adams created Lost hiker, Mailbox Peak'],
-      [4, 'Alice Adams set CRT to Standby'],
+      [4, 'Lost hiker, Mailbox Peak created'],
+      [4, 'CRT moved to Standby'],
       [4, 'Anna Lee signed in as Standby'],
       [4, 'Anna Lee moved from Standby to Responding'],
-      [4, 'Alice Adams created Team 1'],
-      [3, 'Alice Adams set Team 1 from In Base to In Transit'],
-      [3, "Alice Adams set Team 1's GAR from Green to Amber"],
-      [4, 'Alice Adams edited Team 1 (notes)'],
-      [4, 'Alice Adams added Sat phone to Team 1'],
-      [4, 'Alice Adams added Litter'],
+      [4, 'Team 1 created'],
+      [3, 'Team 1 moved from In Base to In Transit'],
+      [3, "Team 1's GAR changed from Green to Amber"],
+      [4, 'Team 1 edited (notes)'],
+      [4, 'Sat phone added to Team 1'],
+      [4, 'Litter added'],
     ].sort());
-    // Alice signed Anna in, so that line says who did beside it; Anna's own change doesn't.
+    // Who made a change is beside its text, except on someone's own status: Alice signed Anna in.
     const byline = (text: string) => s.lines(s.alice).find((l) => l.text === text)?.byline;
+    expect(byline('Team 1 created')).toBe(true);
     expect(byline('Anna Lee signed in as Standby')).toBe(true);
     expect(byline('Anna Lee moved from Standby to Responding')).toBeUndefined();
   });
@@ -87,7 +88,7 @@ describe('the activity log', () => {
     await until(() => s.lines(s.alice)[0]?.favorite === true && s.alice.status.pending === 0);
     // Refused here as on the server: only the server's own changes write lines.
     expect(() => s.alice.mutate(activityLogId('a1'), 'appendLog', { lines: [{ id: 'x', at: 1, by: 'Alice', text: 'Made up', level: Level.Auto, mutation: 'none' }] })).toThrow('Your role cannot make this change');
-    expect(s.lines(s.alice).map((l) => l.text)).toEqual(['Alice Adams created Lost hiker, Mailbox Peak']);
+    expect(s.lines(s.alice).map((l) => l.text)).toEqual(['Lost hiker, Mailbox Peak created']);
   });
 
   it('makes members command on an event, there as on the event', async () => {

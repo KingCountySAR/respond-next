@@ -1,9 +1,9 @@
 /**
  * The activity log: a readable line for each change made to an activity ("Dana Field moved from
- * Standby to Responding"), shown in the ops dashboard's comms log beside the comms entries. The
- * server writes the lines after each commit, from the change and the records it touched, into a
- * scope of their own beside the activity (`activityLogId`), so the activity stays small and only the
- * dashboard syncs them. Command only, like comms.
+ * Standby to Responding", or "Team 2 created", with who made it beside), shown in the ops dashboard's
+ * comms log beside the comms entries. The server writes the lines after each commit, from the change
+ * and the records it touched, into a scope of their own beside the activity (`activityLogId`), so the
+ * activity stays small and only the dashboard syncs them. Command only, like comms.
  *
  * What the legacy app logged by itself as automated comms is Auto: team status and GAR, groups
  * formed, renamed, led and ended, places set up and ended, team leaders, and the activity closing or
@@ -39,7 +39,7 @@ export interface LogEntryRec extends Rec {
   favorite: boolean;
   /** The mutation that made it. */
   mutation: string;
-  /** The text doesn't say who made the change, and it wasn't who it's about: show `by` beside it. */
+  /** Show `by` beside the text, which never names who made the change; absent on someone's own status. */
   byline?: boolean;
 }
 
@@ -108,7 +108,7 @@ export function narrate(change: LoggedChange, view: ReadView): LogLine[] {
   const by = actor.name || (actorParticipant ? fullName(actorParticipant) : system ? 'The server' : 'Someone');
   const at = change.at ?? change.receivedAt;
   const lines: LogLine[] = [];
-  const line = (text: string, level: LogLevel = Level.Audit, when = at, byline = false) => lines.push({ at: when, by, text, level, mutation: change.name, ...(byline ? { byline } : {}) });
+  const line = (text: string, level: LogLevel = Level.Audit, when = at, byline = true) => lines.push({ at: when, by, text, level, mutation: change.name, ...(byline ? { byline } : {}) });
   const added = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && !e.before && e.after).map((e) => e.after as T);
   const changed = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && e.before && e.after) as unknown as { before: T; after: T }[];
   const removed = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && e.before && !e.after).map((e) => e.before as T);
@@ -129,18 +129,18 @@ export function narrate(change: LoggedChange, view: ReadView): LogLine[] {
     const prev = previous(view.scan<TeamStatusRec>('teamStatus'), s, (e) => e.teamId === s.teamId);
     const team = named('team', s.teamId);
     // A team is In Base until its first status.
-    line(`${by} set ${team} from ${TEAM_STATUS_TEXT[prev?.status ?? 'inBase']} to ${TEAM_STATUS_TEXT[s.status]}`, Level.Auto, s.at);
+    line(`${team} moved from ${TEAM_STATUS_TEXT[prev?.status ?? 'inBase']} to ${TEAM_STATUS_TEXT[s.status]}`, Level.Auto, s.at);
   }
   for (const { before, after } of changed<TeamRec>('team')) {
-    if (before.gar !== after.gar) line(`${by} set ${after.name}'s GAR from ${GAR_TEXT[before.gar]} to ${GAR_TEXT[after.gar]}`, Level.Auto);
+    if (before.gar !== after.gar) line(`${after.name}'s GAR changed from ${GAR_TEXT[before.gar]} to ${GAR_TEXT[after.gar]}`, Level.Auto);
   }
   for (const s of added<UnitStatusRec>('unitStatus')) {
     const unit = view.get<ActivityUnitRec>('activityUnit', s.unitId);
-    line(`${by} set ${unit?.rosterName ?? unit?.title ?? 'a unit'} to ${UNIT_STATUS_TEXT[s.status]}`, Level.Audit, s.at);
+    line(`${unit?.rosterName ?? unit?.title ?? 'A unit'} moved to ${UNIT_STATUS_TEXT[s.status]}`, Level.Audit, s.at);
   }
 
   const a = (change.args ?? {}) as Args;
-  const sentence = SENTENCES[change.name]?.({ a, view, by, named, person, changed, added });
+  const sentence = SENTENCES[change.name]?.({ a, view, named, person, changed, added });
   if (sentence) line(sentence.text, sentence.level);
   return lines;
 }
@@ -148,7 +148,6 @@ export function narrate(change: LoggedChange, view: ReadView): LogLine[] {
 interface SentenceContext {
   a: Args;
   view: ReadView;
-  by: string;
   named(type: string, id: unknown): string;
   person(id: unknown): string;
   changed<T extends Rec>(type: string): { before: T; after: T }[];
@@ -173,45 +172,48 @@ function editedFields(pairs: { before: Rec; after: Rec }[], ignore: string[] = [
 
 const fieldList = (fields: string[]) => (fields.length ? ` (${fields.join(', ')})` : '');
 
-/** One sentence per change, besides the timeline lines above; null when those say it all. */
+/**
+ * One sentence per change, besides the timeline lines above: what it's about first, for scanning, and
+ * who made it left to the byline. Null when those say it all.
+ */
 const SENTENCES: Record<string, Sentence> = {
-  createActivity: ({ a, by }) => audit(`${by} created ${str(a.title)}`),
-  updateActivity: ({ by, changed }) => {
+  createActivity: ({ a }) => audit(`${str(a.title)} created`),
+  updateActivity: ({ changed }) => {
     const fields = editedFields(changed('activity'));
-    return fields.length ? audit(`${by} edited the activity${fieldList(fields)}`) : null;
+    return fields.length ? audit(`Activity edited${fieldList(fields)}`) : null;
   },
-  closeActivity: ({ by }) => auto(`${by} closed the activity`),
-  reopenActivity: ({ by }) => auto(`${by} reopened the activity`),
-  removeActivity: ({ by }) => audit(`${by} removed the activity`),
-  assign: ({ a, by, person, view }) => audit(a.target ? `${by} assigned ${person(a.participantId)} to ${targetName(view, a.target as never)}` : `${by} unassigned ${person(a.participantId)}`),
-  createTeam: ({ a, by }) => audit(`${by} created ${str(a.name)}`),
-  updateTeam: ({ by, changed }) => {
+  closeActivity: () => auto('Activity closed'),
+  reopenActivity: () => auto('Activity reopened'),
+  removeActivity: () => audit('Activity removed'),
+  assign: ({ a, person, view }) => audit(a.target ? `${person(a.participantId)} assigned to ${targetName(view, a.target as never)}` : `${person(a.participantId)} unassigned`),
+  createTeam: ({ a }) => audit(`${str(a.name)} created`),
+  updateTeam: ({ changed }) => {
     const pairs = changed<TeamRec>('team');
     const fields = editedFields(pairs, ['gar']); // a GAR change has its own line
-    return fields.length ? audit(`${by} edited ${pairs[0]!.after.name}${fieldList(fields)}`) : null;
+    return fields.length ? audit(`${pairs[0]!.after.name} edited${fieldList(fields)}`) : null;
   },
-  setTeamLeader: ({ a, by, named, person }) => auto(a.participantId ? `${by} made ${person(a.participantId)} leader of ${named('team', a.teamId)}` : `${by} cleared the leader of ${named('team', a.teamId)}`),
+  setTeamLeader: ({ a, named, person }) => auto(a.participantId ? `${named('team', a.teamId)} leader set to ${person(a.participantId)}` : `${named('team', a.teamId)} leader cleared`),
   // Disbanding adds a team status, which has its own line.
-  deleteTeam: ({ a, by, named }) => audit(`${by} deleted ${named('team', a.teamId)}`),
-  createGroup: ({ a, by }) => auto(`${by} created group ${str(a.name)}`),
-  updateGroup: ({ a, by, changed }) => {
+  deleteTeam: ({ a, named }) => audit(`${named('team', a.teamId)} deleted`),
+  createGroup: ({ a }) => auto(`Group ${str(a.name)} created`),
+  updateGroup: ({ a, changed }) => {
     const pair = changed<GroupRec>('group')[0];
-    return pair && pair.before.name !== pair.after.name ? auto(`${by} renamed ${pair.before.name} to ${str(a.name)}`) : null;
+    return pair && pair.before.name !== pair.after.name ? auto(`${pair.before.name} renamed to ${str(a.name)}`) : null;
   },
-  setGroupLeader: ({ a, by, named, person }) => auto(a.participantId ? `${by} made ${person(a.participantId)} leader of ${named('group', a.groupId)}` : `${by} cleared the leader of ${named('group', a.groupId)}`),
-  deleteGroup: ({ a, by, named }) => auto(`${by} deleted ${named('group', a.groupId)}`),
-  setTeamGroup: ({ a, by, named }) => audit(a.groupId ? `${by} moved ${named('team', a.teamId)} to ${named('group', a.groupId)}` : `${by} took ${named('team', a.teamId)} out of its group`),
-  createPlace: ({ a, by }) => auto(`${by} created place ${str(a.name)}`),
-  updatePlace: ({ a, by, named }) => audit(`${by} edited ${named('place', a.id)}`),
-  deletePlace: ({ a, by, named }) => auto(`${by} deleted ${named('place', a.placeId)}`),
+  setGroupLeader: ({ a, named, person }) => auto(a.participantId ? `${named('group', a.groupId)} leader set to ${person(a.participantId)}` : `${named('group', a.groupId)} leader cleared`),
+  deleteGroup: ({ a, named }) => auto(`${named('group', a.groupId)} deleted`),
+  setTeamGroup: ({ a, named }) => audit(a.groupId ? `${named('team', a.teamId)} moved to ${named('group', a.groupId)}` : `${named('team', a.teamId)} taken out of its group`),
+  createPlace: ({ a }) => auto(`Place ${str(a.name)} created`),
+  updatePlace: ({ a, named }) => audit(`${named('place', a.id)} edited`),
+  deletePlace: ({ a, named }) => auto(`${named('place', a.placeId)} deleted`),
   // Dropped from the catalog straight onto a team or place: one change, one line.
-  createEquipment: ({ a, by, named, view }) => audit(`${by} added ${named('equipment', a.id)}${a.assignedTo ? ` to ${targetName(view, a.assignedTo as never)}` : ''}`),
-  assignEquipment: ({ a, by, named, view }) => audit(`${by} moved ${named('equipment', a.equipmentId)} to ${targetName(view, (a.target ?? null) as never)}`),
-  correctParticipantStatus: ({ a, by, person, view }) => audit(`${by} corrected ${person(view.get<ParticipantStatusRec>('participantStatus', str(a.entryId))?.participantId)}'s timeline`),
-  setEta: ({ a, by, person }) => audit(a.eta === null ? `${by} cleared ${person(a.participantId)}'s ETA` : `${by} updated ${person(a.participantId)}'s ETA`),
-  setMiles: ({ a, by, person }) => audit(a.miles === null ? `${by} cleared ${person(a.participantId)}'s miles` : `${by} set ${person(a.participantId)}'s miles to ${String(a.miles)}`),
-  setActivityTags: ({ a, by, person }) => audit(`${by} changed ${person(a.participantId)}'s tags`),
-  linkPerson: ({ a, by, person }) => audit(`${by} linked ${person(a.participantId)} to a member record`),
+  createEquipment: ({ a, named, view }) => audit(`${named('equipment', a.id)} added${a.assignedTo ? ` to ${targetName(view, a.assignedTo as never)}` : ''}`),
+  assignEquipment: ({ a, named, view }) => audit(`${named('equipment', a.equipmentId)} moved to ${targetName(view, (a.target ?? null) as never)}`),
+  correctParticipantStatus: ({ a, person, view }) => audit(`${person(view.get<ParticipantStatusRec>('participantStatus', str(a.entryId))?.participantId)}'s timeline corrected`),
+  setEta: ({ a, person }) => audit(a.eta === null ? `${person(a.participantId)}'s ETA cleared` : `${person(a.participantId)}'s ETA updated`),
+  setMiles: ({ a, person }) => audit(a.miles === null ? `${person(a.participantId)}'s miles cleared` : `${person(a.participantId)}'s miles set to ${String(a.miles)}`),
+  setActivityTags: ({ a, person }) => audit(`${person(a.participantId)}'s tags changed`),
+  linkPerson: ({ a, person }) => audit(`${person(a.participantId)} linked to a member record`),
 };
 
 /** The entry before `entry` in its timeline (those `same` picks), if any. */
