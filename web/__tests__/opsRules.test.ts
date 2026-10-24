@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Level } from '@sync/domain';
 import type { Comm } from '@sync/model';
 import { compareTeamNames, coordinatesIn, countByName, filterComms, nextTeamNumber, sortTeams, uniqueNameError } from '../src/sections/ops/opsRules';
 import { validatePlace } from '../src/sections/ops/Operations';
@@ -36,15 +37,15 @@ describe('ops dashboard rules', () => {
     expect(validatePlace({ name: 'LZ', lat: ' 47.5 ', lon: '-121.7' }, [])).toEqual({});
   });
 
-  it('filters comms to a priority level, favorites always shown, and by text', () => {
-    const comm = (id: string, priority: 1 | 2 | 3, favorite = false) => ({ id, priority, favorite, from: 'Base', to: 'Team 1', message: `Message ${id}` }) as Comm;
-    const comms = [comm('a', 1), comm('b', 2), comm('c', 3), comm('d', 3, true)];
-    const ids = (level: 'favorites' | 1 | 2 | 3, query = '') => filterComms(comms, { query, level }).map((c) => c.id);
-    expect(ids('favorites')).toEqual(['d']);
-    expect(ids(1)).toEqual(['a', 'd']);
-    expect(ids(2)).toEqual(['a', 'b', 'd']);
-    expect(ids(3)).toEqual(['a', 'b', 'c', 'd']);
-    expect(ids(3, 'message c')).toEqual(['c']);
+  it('filters comms to a level and those above it, and by text', () => {
+    const comm = (id: string, level: Level) => ({ id, level, from: 'Base', to: 'Team 1', message: `Message ${id}` }) as unknown as Comm;
+    const comms = [comm('a', Level.Important), comm('b', Level.Normal), comm('c', Level.Auto), comm('d', Level.Audit)];
+    const ids = (level: Level, query = '') => filterComms(comms, { query, level }).map((c) => c.id);
+    expect(ids(Level.Important)).toEqual(['a']);
+    expect(ids(Level.Normal)).toEqual(['a', 'b']);
+    expect(ids(Level.Auto)).toEqual(['a', 'b', 'c']);
+    expect(ids(Level.Audit)).toEqual(['a', 'b', 'c', 'd']);
+    expect(ids(Level.Audit, 'message c')).toEqual(['c']);
   });
 
   it('finds coordinates in a comms message, to copy', () => {

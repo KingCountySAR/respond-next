@@ -20,19 +20,18 @@ export const GARS = ['green', 'amber', 'red'] as const;
 export type Gar = (typeof GARS)[number];
 
 /**
- * How much a comms entry matters, 1 highest: the log can be filtered to entries at or above a level.
- * A favorite ranks above 1. People's entries start at 2; automated ones are logged at 2 or 3 by kind.
+ * How much a comms entry or activity log line matters, Important highest: the log can be filtered to a
+ * level and those above it (a lower number). Worked out from what the entry is, never chosen:
+ * Important is anything starred; Normal a comms entry someone logged; Auto what the legacy app logged
+ * by itself (an imported automated entry, or the log's lines for team status, GAR, groups and places);
+ * Audit every other change.
  */
-export const COMM_PRIORITIES = [1, 2, 3] as const;
-export type CommPriority = (typeof COMM_PRIORITIES)[number];
-export const DEFAULT_COMM_PRIORITY: CommPriority = 2;
+export const Level = { Important: 1, Normal: 2, Auto: 3, Audit: 4 } as const;
+export type Level = (typeof Level)[keyof typeof Level];
+export const LEVEL_NAMES: Record<Level, string> = { [Level.Important]: 'Important', [Level.Normal]: 'Normal', [Level.Auto]: 'Auto', [Level.Audit]: 'Audit' };
 
-/** Lines in the activity log (see activityLog.ts): 3 for team status and GAR, 4 for every other change. */
-export const LOG_LEVELS = [3, 4] as const;
-export type LogLevel = (typeof LOG_LEVELS)[number];
-
-/** Comms entries and log lines together: 1 highest. */
-export type Priority = CommPriority | LogLevel;
+/** The levels the activity log writes its lines at (see activityLog.ts); starring one makes it Important. */
+export type LogLevel = typeof Level.Auto | typeof Level.Audit;
 
 export const ACTIVITY_KINDS = ['mission', 'training', 'other'] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
@@ -172,8 +171,7 @@ export interface CommRec extends Rec {
   from: string;
   to: string;
   message: string;
-  /** Unset on entries from before priorities, and imported ones: see `commPriority`. */
-  priority?: CommPriority;
+  /** Its level, with `automated`: see `commLevel`. */
   favorite: boolean;
   /** Soft delete: the entry stays in the log for the record. */
   removed: boolean;

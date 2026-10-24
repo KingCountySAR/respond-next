@@ -6,7 +6,7 @@
 import { compareShallow, computed, makeObservable } from 'mobx';
 import type { WireMutation } from '@sync/core';
 import type { SyncClient } from '@sync/client';
-import { activityLogId, type LogEntryRec, type LogLevel } from '@sync/domain';
+import { Level, activityLogId, logEntryLevel, type LogEntryRec } from '@sync/domain';
 import { RecordStore } from '../store';
 
 export class ActivityLog {
@@ -72,9 +72,9 @@ export class LogLine {
     return this.record?.text ?? '';
   }
 
-  /** 3 for team status and GAR changes, 4 for the rest. */
-  get priority(): LogLevel {
-    return this.record?.level ?? 4;
+  /** Important starred, else Auto or Audit by the change. */
+  get level(): Level {
+    return this.record ? logEntryLevel(this.record) : Level.Audit;
   }
 
   get favorite(): boolean {

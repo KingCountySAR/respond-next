@@ -82,13 +82,13 @@ Only components wrapped in `observer` react. A component that reads the model wi
   | `FieldPlace`: name, isBase, asTarget | `CommandPlace`: lat, lon, notes, members, equipment, update, delete |
   | `FieldUnit`: name, title, status, statusCounts | `CommandUnit`: setStatus |
   | `FieldEquipment`: name, category, assignedTo, locationName | `CommandEquipment`: assign |
-  | | `Comm` (command only): from, to, message, at, priority (1 highest), favorite, automated, edit, setPriority, setFavorite, delete |
+  | | `Comm` (command only): from, to, message, at, level (Important when starred, Auto when automated, else Normal), favorite, automated, edit, setFavorite, delete |
 
   The `create...` methods return the new model, which is there at once because the client applies changes synchronously. Teams, groups and places have `asTarget` for the methods that take a `Target` (`p.assign(team.asTarget)`, `team.disband(base.asTarget)`).
-- **The activity log.** `ActivityLog` reads an activity's log scope: `entries` (one `LogLine` per change, oldest first, with `at`, `by`, `text`, `priority` 3 or 4, `favorite` and `setFavorite`). In React, `useActivityLog(client, activityId)` opens it while a component uses it. Command only.
+- **The activity log.** `ActivityLog` reads an activity's log scope: `entries` (one `LogLine` per change, oldest first, with `at`, `by`, `text`, `level` (Important when starred, else Auto or Audit), `favorite` and `setFavorite`). In React, `useActivityLog(client, activityId)` opens it while a component uses it. Command only.
 - **The activity list.** `ActivityList` reads the list scope: `activities` (one `ActivityListItem` per summary, with `phase`, `isActive`, `startsInFuture`, `activeParticipantCount`, `units` and `statusOf(participantId)`). In React, `useActivityList(client)` opens it while a component uses it, with the same sharing and lifetime as `ActivityModelProvider`.
 - **Files.** `src/models/` has one file per model, each holding its field and command classes (`team.ts` has `FieldTeam` and `CommandTeam`). `activity.ts` has both activity classes and `createActivityModel`, `kinds.ts` the `Kinds` types, and `record.ts` the base class and helpers they share. Only `activity.ts` imports the model classes at runtime; the rest import each other for types only, so there are no import cycles.
-- **Not in the model:** screen state such as the comms log's priority filter, its search, and the suggested from/to names. Those belong to the screen.
+- **Not in the model:** screen state such as the comms log's level filter, its search, and the suggested from/to names. Those belong to the screen.
 - **External people** see no assignments, so `targetKind` is `undefined` for them ("can't see"), not `null` ("unassigned"). They find themselves through `me`, by the participant id derived from their person ref.
 - **Cost.** `apply` walks the whole snapshot on every change, as the snapshot rebuild already does. That's fine for an activity's few thousand records; if it shows up in profiles, the client could hand over the changed keys instead.
 - **`members` and `equipment`** on teams, groups and places still depend on all assignments (or all equipment), because "who's here" means everyone's current assignment. They recompute on any such change but only re-render when the list changes.

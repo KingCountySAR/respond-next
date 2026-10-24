@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Rejection, defineMutation, type MutationCtx, type Tx } from '@sync/core';
 import { equipmentType, CUSTOM_EQUIPMENT_TYPE_ID } from '../equipment';
 import { currentTarget, groupTeams, membersOf, participantName, targetName, teamMembers, teamStatusOf } from '../queries';
-import { COMM_PRIORITIES, DEFAULT_COMM_PRIORITY, GARS, TEAM_STATUSES, Target, UNIT_STATUSES, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec, type TeamStatusRec } from '../schema';
+import { GARS, TEAM_STATUSES, Target, UNIT_STATUSES, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec, type TeamStatusRec } from '../schema';
 import { isCommand } from '../viewer';
 import { at, emptyTarget, id, idSource, moveParticipant, optionalText, requireOpen, requireOperations, requireParticipant, requireTarget } from './common';
 
@@ -333,27 +333,25 @@ export const assignEquipment = defineMutation({
 
 // --- Comms ----------------------------------------------------------------------------------
 
-const priority = z.union(COMM_PRIORITIES.map((p) => z.literal(p)) as [z.ZodLiteral<1>, z.ZodLiteral<2>, z.ZodLiteral<3>]);
-
 export const addComm = defineMutation({
   name: 'addComm',
   version: 1,
   timed: true,
-  args: z.object({ id, from: z.string().trim(), to: z.string().trim(), message: z.string().trim().min(1), priority: priority.default(DEFAULT_COMM_PRIORITY), at }),
+  args: z.object({ id, from: z.string().trim(), to: z.string().trim(), message: z.string().trim().min(1), at }),
   allow: isCommand,
   describe: (a) => `Log "${a.message.length > 40 ? `${a.message.slice(0, 40)}…` : a.message}"`,
   run(tx, a, ctx) {
     requireOperations(tx);
     requireNew(tx, 'comm', a.id);
-    tx.put({ type: 'comm', id: a.id, from: a.from, to: a.to, message: a.message, priority: a.priority, favorite: false, removed: false, at: a.at, by: ctx.viewer.userId });
+    tx.put({ type: 'comm', id: a.id, from: a.from, to: a.to, message: a.message, favorite: false, removed: false, at: a.at, by: ctx.viewer.userId });
   },
 });
 
-/** Editing the text or time of an imported automated entry makes it a person's, as the legacy app did; its priority or favorite doesn't. */
+/** Editing the text or time of an imported automated entry makes it a person's (Normal), as the legacy app did; starring it doesn't. */
 export const editComm = defineMutation({
   name: 'editComm',
   version: 1,
-  args: z.object({ id, from: z.string().trim().optional(), to: z.string().trim().optional(), message: z.string().trim().min(1).optional(), at: at.optional(), priority: priority.optional(), favorite: z.boolean().optional() }),
+  args: z.object({ id, from: z.string().trim().optional(), to: z.string().trim().optional(), message: z.string().trim().min(1).optional(), at: at.optional(), favorite: z.boolean().optional() }),
   allow: isCommand,
   describe: () => 'Edit a comms entry',
   run(tx, { id: commId, ...fields }) {

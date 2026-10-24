@@ -1,5 +1,5 @@
 /** The dashboard's rules that aren't the domain's: orders, counts, names and suggestions, as the legacy dashboard had them. */
-import { DEFAULT_PLACES, type Gar, type Priority, type TeamStatus } from '@sync/domain';
+import { DEFAULT_PLACES, type Gar, type Level, type TeamStatus } from '@sync/domain';
 import type { CommandActivity, CommandParticipant, CommandTeam, Comm, LogLine } from '@sync/model';
 
 export { TEAM_STATUS_TEXT } from '@sync/domain';
@@ -158,19 +158,19 @@ export function commsContacts(activity: CommandActivity): string[] {
 export type LogItem = Comm | LogLine;
 export const isComm = (item: LogItem): item is Comm => 'message' in item;
 
-/** What the comms log shows: favorites only, or items at or above a priority (4 shows everything). */
-export type CommLevel = 'favorites' | Priority;
+/** What the comms log shows: items at a level or above it (Important: starred only; Audit: everything). */
+export type CommLevel = Level;
 
 /** Comms entries and log lines, oldest first. */
 export const mergeLog = (comms: Comm[], lines: LogLine[]): LogItem[] => [...comms, ...lines].sort((a, b) => a.at - b.at);
 
 const searchText = (item: LogItem) => (isComm(item) ? [item.message, item.from, item.to] : [item.text, item.by]);
 
-/** Favorites rank above priority 1, so every level shows them. */
+/** Starred items are Important, so every level shows them. */
 export function filterComms<T extends LogItem>(items: T[], options: { query: string; level: CommLevel }): T[] {
   const q = options.query.trim().toLowerCase();
   const { level } = options;
-  return items.filter((c) => (c.favorite || (level !== 'favorites' && c.priority <= level)) && (!q || searchText(c).some((t) => t.toLowerCase().includes(q))));
+  return items.filter((c) => c.level <= level && (!q || searchText(c).some((t) => t.toLowerCase().includes(q))));
 }
 
 const decimalDegrees = /(\d){1,3}\.(\d)*\s*[,]?\s*[+-]?(\d){1,3}\.(\d)*/g;

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { SyncClient } from '@sync/client';
 import { Hub, MemoryStorage } from '@sync/server';
-import { activityLogId, activityProjector, activityRegistry, type ActivityViewer, type LogEntryRec } from '@sync/domain';
+import { Level, activityLogId, activityProjector, activityRegistry, type ActivityViewer, type LogEntryRec } from '@sync/domain';
 import { ActivityLogWriter } from '../../server/src/activityLog';
 import { COMMAND, CRT, activityArgs, fieldMember } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from './sim';
@@ -75,7 +75,7 @@ describe('the activity log', () => {
     s.alice.mutate(activityLogId('a1'), 'setLogFavorite', { id: s.lines(s.alice)[0]!.id, favorite: true });
     await until(() => s.lines(s.alice)[0]?.favorite === true && s.alice.status.pending === 0);
     // Refused here as on the server: only the server's own changes write lines.
-    expect(() => s.alice.mutate(activityLogId('a1'), 'appendLog', { lines: [{ id: 'x', at: 1, by: 'Alice', text: 'Made up', level: 3, mutation: 'none' }] })).toThrow('Your role cannot make this change');
+    expect(() => s.alice.mutate(activityLogId('a1'), 'appendLog', { lines: [{ id: 'x', at: 1, by: 'Alice', text: 'Made up', level: Level.Auto, mutation: 'none' }] })).toThrow('Your role cannot make this change');
     expect(s.lines(s.alice).map((l) => l.text)).toEqual(['Alice Adams created Lost hiker, Mailbox Peak']);
   });
 

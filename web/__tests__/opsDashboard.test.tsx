@@ -217,14 +217,12 @@ describe('ops dashboard', () => {
     fireEvent.click(edit.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(commLog(server.seed.snapshot(ACTIVITY))[0]?.message).toBe('LKP confirmed'));
 
-    // Lowered to routine: the 1–2 level hides it, unless it's a favorite.
+    // Unstarred, it's Normal (2): the Important level hides it.
     fireEvent.click(comms.getByLabelText('unfavorite communication'));
-    fireEvent.click(await comms.findByLabelText('priority 2, change'));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '3 · Routine' }));
-    await waitFor(() => expect(commLog(server.seed.snapshot(ACTIVITY))[0]).toMatchObject({ priority: 3, favorite: false }));
-    fireEvent.click(comms.getByLabelText('Priorities 1 and 2, and favorites'));
-    expect(await comms.findByText('Nothing at these priorities.')).toBeTruthy();
-    fireEvent.click(comms.getByLabelText('Everything, every change included'));
+    await waitFor(() => expect(commLog(server.seed.snapshot(ACTIVITY))[0]?.favorite).toBe(false));
+    fireEvent.click(comms.getByLabelText('Important: starred only'));
+    expect(await comms.findByText('Nothing at these levels.')).toBeTruthy();
+    fireEvent.click(comms.getByLabelText('Normal: comms logged by hand, and starred'));
     expect(await comms.findAllByText('LKP confirmed')).not.toHaveLength(0); // the entry, and the print view's copy
 
     fireEvent.click(await comms.findByLabelText('delete communication'));
@@ -238,16 +236,16 @@ describe('ops dashboard', () => {
     await openDashboard();
     await choose(panel('Teams').getByRole('combobox', { name: 'Team 1 status' }), 'In Transit');
     const comms = panel('Communications');
-    // Team status is level 3, shown at the default 1–3; adding Dana (level 4) isn't. Each line is also in the print view.
+    // Team status is Auto (3), shown at the default 1–3; adding Dana (Audit, 4) isn't. Each line is also in the print view.
     const teamLine = 'Alice Adams set Team 1 from In Base to In Transit';
     expect(await comms.findAllByText(teamLine)).not.toHaveLength(0);
     expect(comms.queryAllByText(/added Dana Field/)).toEqual([]);
 
-    fireEvent.click(comms.getByLabelText('Everything, every change included'));
+    fireEvent.click(comms.getByLabelText('Audit: every change'));
     expect(await comms.findAllByText(/added Dana Field as Available/)).not.toHaveLength(0);
 
     fireEvent.click(within(comms.getByText(teamLine, { selector: 'p' }).closest('.MuiStack-root') as HTMLElement).getByLabelText('favorite log line'));
-    fireEvent.click(comms.getByLabelText('Favorites only'));
+    fireEvent.click(comms.getByLabelText('Important: starred only'));
     await waitFor(() => expect(comms.queryAllByText(/added Dana Field/)).toEqual([]));
     expect(comms.getAllByText(teamLine)).not.toHaveLength(0);
   });

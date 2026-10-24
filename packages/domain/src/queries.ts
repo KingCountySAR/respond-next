@@ -5,11 +5,10 @@
 import { deriveId, scanWhere, type ReadView } from '@sync/core';
 import {
   ACTIVITY_RECORD_ID,
-  DEFAULT_COMM_PRIORITY,
   PARTICIPANT_STATUSES,
   type AssignmentRec,
-  type CommPriority,
   type CommRec,
+  Level,
   type EquipmentRec,
   type ActivityRec,
   type GroupRec,
@@ -203,8 +202,8 @@ export const currentUnitStatus = (view: ReadView, unitId: string): UnitStatusRec
 /** The comms log, oldest first; deleted entries stay stored but drop out. */
 export const commLog = (view: ReadView): CommRec[] => [...where(view.scan<CommRec>('comm'), (c) => !c.removed)].sort(compareEntries);
 
-/** An entry's priority; one without (older or imported) is 3 if automated, else the default. */
-export const commPriority = (c: Pick<CommRec, 'priority' | 'automated'>): CommPriority => c.priority ?? (c.automated ? 3 : DEFAULT_COMM_PRIORITY);
+/** A comms entry's level: Important starred, Auto one of the legacy app's automated ones, else Normal. */
+export const commLevel = (c: Pick<CommRec, 'favorite' | 'automated'>): Level => (c.favorite ? Level.Important : c.automated ? Level.Auto : Level.Normal);
 
 // --- Activity lifecycle ------------------------------------------------------------------------
 

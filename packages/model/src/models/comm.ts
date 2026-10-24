@@ -1,5 +1,5 @@
 import type { WireMutation } from '@sync/core';
-import { DEFAULT_COMM_PRIORITY, commPriority, type CommPriority, type CommRec } from '@sync/domain';
+import { Level, commLevel, type CommRec } from '@sync/domain';
 import type { CommandActivity } from './activity';
 import type { CommandKinds } from './kinds';
 import { RecordModel } from './record';
@@ -28,9 +28,9 @@ export class Comm extends RecordModel<CommRec, CommandKinds> {
     return this.record?.at ?? 0;
   }
 
-  /** 1 highest; a favorite ranks above 1. */
-  get priority(): CommPriority {
-    return this.record ? commPriority(this.record) : DEFAULT_COMM_PRIORITY;
+  /** Important starred, Auto automated, else Normal. */
+  get level(): Level {
+    return this.record ? commLevel(this.record) : Level.Normal;
   }
 
   get favorite(): boolean {
@@ -42,12 +42,8 @@ export class Comm extends RecordModel<CommRec, CommandKinds> {
     return this.record?.automated ?? false;
   }
 
-  edit(fields: { from?: string; to?: string; message?: string; at?: number; priority?: CommPriority }): WireMutation {
+  edit(fields: { from?: string; to?: string; message?: string; at?: number }): WireMutation {
     return this.activity.mutate('editComm', { id: this.id, ...fields });
-  }
-
-  setPriority(priority: CommPriority): WireMutation {
-    return this.activity.mutate('editComm', { id: this.id, priority });
   }
 
   setFavorite(favorite: boolean): WireMutation {

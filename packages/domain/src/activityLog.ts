@@ -5,14 +5,16 @@
  * scope of their own beside the activity (`activityLogId`), so the activity stays small and only the
  * dashboard syncs them. Command only, like comms.
  *
- * Team status and GAR changes are level 3, the legacy app's automated comms; every other change is
- * level 4. Starring a line raises it above level 1, as for a comms entry.
+ * What the legacy app logged by itself as automated comms is Auto: team status and GAR, groups
+ * formed, renamed, led and ended, places set up and ended, team leaders, and the activity closing or
+ * reopening. Every other change is Audit. Starring a line makes it Important, as for a comms entry
+ * (see `Level`).
  */
 import { z } from 'zod';
 import { Rejection, defineMutation, type ReadView, type Rec } from '@sync/core';
 import { GAR_TEXT, PARTICIPANT_STATUS_TEXT, TEAM_STATUS_TEXT, UNIT_STATUS_TEXT } from './labels';
 import { compareEntries, findParticipantByPersonRef, fullName, participantName, targetName } from './queries';
-import { ACTIVITY_RECORD_ID, type ActivityUnitRec, type GroupRec, type AssignmentRec, type LogLevel, type ParticipantRec, type ParticipantStatusRec, type TeamRec, type TeamStatusRec, type UnitStatusRec } from './schema';
+import { ACTIVITY_RECORD_ID, type ActivityUnitRec, type GroupRec, type AssignmentRec, Level, type LogLevel, type ParticipantRec, type ParticipantStatusRec, type TeamRec, type TeamStatusRec, type UnitStatusRec } from './schema';
 import { SYSTEM_VIEWER, isCommand, isSystemViewer } from './viewer';
 
 const PREFIX = '$log:';
@@ -41,7 +43,10 @@ export interface LogEntryRec extends Rec {
 
 export type LogLine = Omit<LogEntryRec, 'type' | 'id' | 'version' | 'favorite'>;
 
-const Line = z.object({ id: z.string().min(1), at: z.number().finite(), by: z.string(), text: z.string().min(1), level: z.union([z.literal(3), z.literal(4)]), mutation: z.string() });
+/** A log line's level: Important starred, else the level it was written at. */
+export const logEntryLevel = (e: Pick<LogEntryRec, 'favorite' | 'level'>): Level => (e.favorite ? Level.Important : e.level);
+
+const Line = z.object({ id: z.string().min(1), at: z.number().finite(), by: z.string(), text: z.string().min(1), level: z.union([z.literal(Level.Auto), z.literal(Level.Audit)]), mutation: z.string() });
 
 /**
  * Adds lines to a log scope (an id already there is left alone, favorite and all), and keeps its copy
@@ -101,7 +106,7 @@ export function narrate(change: LoggedChange, view: ReadView): LogLine[] {
   const by = actor.name || (actorParticipant ? fullName(actorParticipant) : system ? 'The server' : 'Someone');
   const at = change.at ?? change.receivedAt;
   const lines: LogLine[] = [];
-  const line = (text: string, level: LogLevel = 4, when = at) => lines.push({ at: when, by, text, level, mutation: change.name });
+  const line = (text: string, level: LogLevel = Level.Audit, when = at) => lines.push({ at: when, by, text, level, mutation: change.name });
   const added = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && !e.before && e.after).map((e) => e.after as T);
   const changed = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && e.before && e.after) as unknown as { before: T; after: T }[];
   const removed = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && e.before && !e.after).map((e) => e.before as T);
@@ -115,21 +120,21 @@ export function narrate(change: LoggedChange, view: ReadView): LogLine[] {
     const to = PARTICIPANT_STATUS_TEXT[s.status];
     // Their own change, or the server's on their behalf (signing in elsewhere signs them out here).
     const self = !!p && (p.personRef === actor.personRef || system);
-    if (prev) line(self ? `${subject} moved from ${PARTICIPANT_STATUS_TEXT[prev.status]} to ${to}` : `${by} moved ${subject} from ${PARTICIPANT_STATUS_TEXT[prev.status]} to ${to}`, 4, s.at);
-    else line(self ? `${subject} joined as ${to}` : `${by} added ${subject} as ${to}`, 4, s.at);
+    if (prev) line(self ? `${subject} moved from ${PARTICIPANT_STATUS_TEXT[prev.status]} to ${to}` : `${by} moved ${subject} from ${PARTICIPANT_STATUS_TEXT[prev.status]} to ${to}`, Level.Audit, s.at);
+    else line(self ? `${subject} joined as ${to}` : `${by} added ${subject} as ${to}`, Level.Audit, s.at);
   }
   for (const s of added<TeamStatusRec>('teamStatus')) {
     const prev = previous(view.scan<TeamStatusRec>('teamStatus'), s, (e) => e.teamId === s.teamId);
     const team = named('team', s.teamId);
     // A team is In Base until its first status.
-    line(`${by} set ${team} from ${TEAM_STATUS_TEXT[prev?.status ?? 'inBase']} to ${TEAM_STATUS_TEXT[s.status]}`, 3, s.at);
+    line(`${by} set ${team} from ${TEAM_STATUS_TEXT[prev?.status ?? 'inBase']} to ${TEAM_STATUS_TEXT[s.status]}`, Level.Auto, s.at);
   }
   for (const { before, after } of changed<TeamRec>('team')) {
-    if (before.gar !== after.gar) line(`${by} set ${after.name}'s GAR from ${GAR_TEXT[before.gar]} to ${GAR_TEXT[after.gar]}`, 3);
+    if (before.gar !== after.gar) line(`${by} set ${after.name}'s GAR from ${GAR_TEXT[before.gar]} to ${GAR_TEXT[after.gar]}`, Level.Auto);
   }
   for (const s of added<UnitStatusRec>('unitStatus')) {
     const unit = view.get<ActivityUnitRec>('activityUnit', s.unitId);
-    line(`${by} set ${unit?.rosterName ?? unit?.title ?? 'a unit'} to ${UNIT_STATUS_TEXT[s.status]}`, 4, s.at);
+    line(`${by} set ${unit?.rosterName ?? unit?.title ?? 'a unit'} to ${UNIT_STATUS_TEXT[s.status]}`, Level.Audit, s.at);
   }
 
   const a = (change.args ?? {}) as Args;
@@ -149,7 +154,8 @@ interface SentenceContext {
 }
 
 type Sentence = (c: SentenceContext) => { text: string; level: LogLevel } | null;
-const s4 = (text: string) => ({ text, level: 4 as const });
+const audit = (text: string) => ({ text, level: Level.Audit });
+const auto = (text: string) => ({ text, level: Level.Auto });
 
 /** Fields of a record a change edited, by name, for "edited Team 2 (notes)". */
 function editedFields(pairs: { before: Rec; after: Rec }[], ignore: string[] = []): string[] {
@@ -167,42 +173,42 @@ const fieldList = (fields: string[]) => (fields.length ? ` (${fields.join(', ')}
 
 /** One sentence per change, besides the timeline lines above; null when those say it all. */
 const SENTENCES: Record<string, Sentence> = {
-  createActivity: ({ a, by }) => s4(`${by} created ${str(a.title)}`),
+  createActivity: ({ a, by }) => audit(`${by} created ${str(a.title)}`),
   updateActivity: ({ by, changed }) => {
     const fields = editedFields(changed('activity'));
-    return fields.length ? s4(`${by} edited the activity${fieldList(fields)}`) : null;
+    return fields.length ? audit(`${by} edited the activity${fieldList(fields)}`) : null;
   },
-  closeActivity: ({ by }) => ({ text: `${by} closed the activity`, level: 3 }),
-  reopenActivity: ({ by }) => ({ text: `${by} reopened the activity`, level: 3 }),
-  removeActivity: ({ by }) => s4(`${by} removed the activity`),
-  assign: ({ a, by, person, view }) => s4(a.target ? `${by} assigned ${person(a.participantId)} to ${targetName(view, a.target as never)}` : `${by} unassigned ${person(a.participantId)}`),
-  createTeam: ({ a, by }) => s4(`${by} created ${str(a.name)}`),
+  closeActivity: ({ by }) => auto(`${by} closed the activity`),
+  reopenActivity: ({ by }) => auto(`${by} reopened the activity`),
+  removeActivity: ({ by }) => audit(`${by} removed the activity`),
+  assign: ({ a, by, person, view }) => audit(a.target ? `${by} assigned ${person(a.participantId)} to ${targetName(view, a.target as never)}` : `${by} unassigned ${person(a.participantId)}`),
+  createTeam: ({ a, by }) => audit(`${by} created ${str(a.name)}`),
   updateTeam: ({ by, changed }) => {
     const pairs = changed<TeamRec>('team');
     const fields = editedFields(pairs, ['gar']); // a GAR change has its own line
-    return fields.length ? s4(`${by} edited ${pairs[0]!.after.name}${fieldList(fields)}`) : null;
+    return fields.length ? audit(`${by} edited ${pairs[0]!.after.name}${fieldList(fields)}`) : null;
   },
-  setTeamLeader: ({ a, by, named, person }) => s4(a.participantId ? `${by} made ${person(a.participantId)} leader of ${named('team', a.teamId)}` : `${by} cleared the leader of ${named('team', a.teamId)}`),
+  setTeamLeader: ({ a, by, named, person }) => auto(a.participantId ? `${by} made ${person(a.participantId)} leader of ${named('team', a.teamId)}` : `${by} cleared the leader of ${named('team', a.teamId)}`),
   // Disbanding adds a team status, which has its own line.
-  deleteTeam: ({ a, by, named }) => s4(`${by} deleted ${named('team', a.teamId)}`),
-  createGroup: ({ a, by }) => s4(`${by} created group ${str(a.name)}`),
+  deleteTeam: ({ a, by, named }) => audit(`${by} deleted ${named('team', a.teamId)}`),
+  createGroup: ({ a, by }) => auto(`${by} created group ${str(a.name)}`),
   updateGroup: ({ a, by, changed }) => {
     const pair = changed<GroupRec>('group')[0];
-    return pair && pair.before.name !== pair.after.name ? s4(`${by} renamed ${pair.before.name} to ${str(a.name)}`) : null;
+    return pair && pair.before.name !== pair.after.name ? auto(`${by} renamed ${pair.before.name} to ${str(a.name)}`) : null;
   },
-  setGroupLeader: ({ a, by, named, person }) => s4(a.participantId ? `${by} made ${person(a.participantId)} leader of ${named('group', a.groupId)}` : `${by} cleared the leader of ${named('group', a.groupId)}`),
-  deleteGroup: ({ a, by, named }) => s4(`${by} deleted ${named('group', a.groupId)}`),
-  setTeamGroup: ({ a, by, named }) => s4(a.groupId ? `${by} moved ${named('team', a.teamId)} to ${named('group', a.groupId)}` : `${by} took ${named('team', a.teamId)} out of its group`),
-  createPlace: ({ a, by }) => s4(`${by} created place ${str(a.name)}`),
-  updatePlace: ({ a, by, named }) => s4(`${by} edited ${named('place', a.id)}`),
-  deletePlace: ({ a, by, named }) => s4(`${by} deleted ${named('place', a.placeId)}`),
-  createEquipment: ({ a, by, named }) => s4(`${by} added ${named('equipment', a.id)}`),
-  assignEquipment: ({ a, by, named, view }) => s4(`${by} moved ${named('equipment', a.equipmentId)} to ${targetName(view, (a.target ?? null) as never)}`),
-  correctParticipantStatus: ({ a, by, person, view }) => s4(`${by} corrected ${person(view.get<ParticipantStatusRec>('participantStatus', str(a.entryId))?.participantId)}'s timeline`),
-  setEta: ({ a, by, person }) => s4(a.eta === null ? `${by} cleared ${person(a.participantId)}'s ETA` : `${by} updated ${person(a.participantId)}'s ETA`),
-  setMiles: ({ a, by, person }) => s4(a.miles === null ? `${by} cleared ${person(a.participantId)}'s miles` : `${by} set ${person(a.participantId)}'s miles to ${String(a.miles)}`),
-  setActivityTags: ({ a, by, person }) => s4(`${by} changed ${person(a.participantId)}'s tags`),
-  linkPerson: ({ a, by, person }) => s4(`${by} linked ${person(a.participantId)} to a member record`),
+  setGroupLeader: ({ a, by, named, person }) => auto(a.participantId ? `${by} made ${person(a.participantId)} leader of ${named('group', a.groupId)}` : `${by} cleared the leader of ${named('group', a.groupId)}`),
+  deleteGroup: ({ a, by, named }) => auto(`${by} deleted ${named('group', a.groupId)}`),
+  setTeamGroup: ({ a, by, named }) => audit(a.groupId ? `${by} moved ${named('team', a.teamId)} to ${named('group', a.groupId)}` : `${by} took ${named('team', a.teamId)} out of its group`),
+  createPlace: ({ a, by }) => auto(`${by} created place ${str(a.name)}`),
+  updatePlace: ({ a, by, named }) => audit(`${by} edited ${named('place', a.id)}`),
+  deletePlace: ({ a, by, named }) => auto(`${by} deleted ${named('place', a.placeId)}`),
+  createEquipment: ({ a, by, named }) => audit(`${by} added ${named('equipment', a.id)}`),
+  assignEquipment: ({ a, by, named, view }) => audit(`${by} moved ${named('equipment', a.equipmentId)} to ${targetName(view, (a.target ?? null) as never)}`),
+  correctParticipantStatus: ({ a, by, person, view }) => audit(`${by} corrected ${person(view.get<ParticipantStatusRec>('participantStatus', str(a.entryId))?.participantId)}'s timeline`),
+  setEta: ({ a, by, person }) => audit(a.eta === null ? `${by} cleared ${person(a.participantId)}'s ETA` : `${by} updated ${person(a.participantId)}'s ETA`),
+  setMiles: ({ a, by, person }) => audit(a.miles === null ? `${by} cleared ${person(a.participantId)}'s miles` : `${by} set ${person(a.participantId)}'s miles to ${String(a.miles)}`),
+  setActivityTags: ({ a, by, person }) => audit(`${by} changed ${person(a.participantId)}'s tags`),
+  linkPerson: ({ a, by, person }) => audit(`${by} linked ${person(a.participantId)} to a member record`),
 };
 
 /** The entry before `entry` in its timeline (those `same` picks), if any. */
