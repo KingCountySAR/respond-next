@@ -123,16 +123,16 @@ export function narrate(change: LoggedChange, view: ReadView): LogLine[] {
     // Told as theirs. Someone else's change says who made it beside the text; the server's on their
     // behalf (signing in elsewhere signs them out here) doesn't.
     const self = !!p && (p.personRef === actor.personRef || system);
-    line(prev ? `${subject} moved from ${PARTICIPANT_STATUS_TEXT[prev.status]} to ${to}` : `${subject} signed in as ${to}`, Level.Audit, s.at, !self);
+    line(prev ? `${subject} is ${to} (was ${PARTICIPANT_STATUS_TEXT[prev.status]})` : `${subject} signed in as ${to}`, Level.Audit, s.at, !self);
   }
   for (const s of added<TeamStatusRec>('teamStatus')) {
     const prev = previous(view.scan<TeamStatusRec>('teamStatus'), s, (e) => e.teamId === s.teamId);
     const team = named('team', s.teamId);
     // A team is In Base until its first status.
-    line(`${team} moved from ${TEAM_STATUS_TEXT[prev?.status ?? 'inBase']} to ${TEAM_STATUS_TEXT[s.status]}`, Level.Auto, s.at);
+    line(`${team} is ${TEAM_STATUS_TEXT[s.status]} (was ${TEAM_STATUS_TEXT[prev?.status ?? 'inBase']})`, Level.Auto, s.at);
   }
   for (const { before, after } of changed<TeamRec>('team')) {
-    if (before.gar !== after.gar) line(`${after.name}'s GAR changed from ${GAR_TEXT[before.gar]} to ${GAR_TEXT[after.gar]}`, Level.Auto);
+    if (before.gar !== after.gar) line(`${after.name}'s GAR is ${GAR_TEXT[after.gar]} (was ${GAR_TEXT[before.gar]})`, Level.Auto);
   }
   for (const s of added<UnitStatusRec>('unitStatus')) {
     const unit = view.get<ActivityUnitRec>('activityUnit', s.unitId);
