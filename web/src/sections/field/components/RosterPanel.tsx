@@ -1,3 +1,4 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PhoneIcon from '@mui/icons-material/Phone';
 import { Box, Button, ButtonBase, Chip, DialogActions, DialogContent, DialogTitle, Divider, Paper, Stack, Typography, useMediaQuery } from '@mui/material';
 import Card from '@mui/material/Card';
@@ -15,6 +16,7 @@ import { AppDialog } from '../../../shell/dialogs/AppDialog';
 import { STATUS_SORT_ORDER, statusCssColor, statusText } from '../../../ui/status';
 import { ParticipantMilesUpdater } from './ParticipantMilesUpdater';
 import { ParticipantTimeline } from './ParticipantTimeline';
+import { StatusUpdater } from './StatusUpdater';
 
 /** The roster's view state: the unit filter and the sort. Shared by the desktop and mobile pages. */
 export interface RosterState {
@@ -85,6 +87,17 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
   );
 }
 
+/** A roster row's status, marked when someone else set it. */
+export const RosterStatusText = observer(function RosterStatusText({ participant }: { participant: FieldParticipant }) {
+  const byName = participant.currentStatus?.byName;
+  return (
+    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+      {byName && <InfoOutlinedIcon sx={{ fontSize: 16 }} color="action" titleAccess={`Status set by ${byName}`} />}
+      <Typography variant="body2">{statusText(participant.status)}</Typography>
+    </Stack>
+  );
+});
+
 /** `(206) 555-0100` from a stored number, as the legacy dialog showed it. */
 function formatPhone(digits: string): string {
   const match = digits.match(/^(1|)?(\d{3})(\d{3})(\d{4})$/);
@@ -101,8 +114,11 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
   const mobile = participant.contact?.mobile?.replace(/\D/g, '') ?? '';
   const email = participant.contact?.email ?? '';
   const command = isCommandActivity(participant.activity);
-  // Field viewers may change only their own miles.
+  // Field viewers may change only their own miles and status.
   const canEditMiles = command || participant.isMe;
+  const record = participant.record;
+  const unit = participant.unit?.record;
+  const statusPerson = record?.personRef && unit && !participant.activity.record?.closed && (command || participant.isMe) ? { personRef: record.personRef, firstname: record.firstname, lastname: record.lastname } : undefined;
 
   return (
     <AppDialog fullWidth open={open} onClose={onClose}>
@@ -150,6 +166,7 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
       </DialogContent>
       <DialogActions>
         <CommandGrantButton participant={participant} />
+        {statusPerson && unit && <StatusUpdater activity={participant.activity} person={statusPerson} unit={unit} />}
         <Button autoFocus onClick={onClose}>
           Close
         </Button>

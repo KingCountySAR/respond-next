@@ -1,8 +1,12 @@
-import { Box, Link, Paper, Stack, Typography } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { Box, IconButton, Link, Paper, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { isValidPoint, type WeatherReport } from '@sync/domain';
 import { useApi } from '../../shell/api';
 import { DashboardDividedSection } from './parts';
+
+/** The forecast is read again this often, quietly, while the dashboard is open. */
+const REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
 const weatherIcon = (condition: string): string => {
   const c = condition.toLowerCase();
@@ -22,6 +26,8 @@ function DashboardWeather({ lat, lon, variant }: { lat: number; lon: number; var
   const [report, setReport] = useState<WeatherReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Bumped by the refresh button, to read it again now.
+  const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
     if (!isValidPoint(lat, lon)) {
@@ -30,20 +36,38 @@ function DashboardWeather({ lat, lon, variant }: { lat: number; lon: number; var
       return;
     }
     let live = true;
-    setLoading(true);
+    // In the background (on the interval), what's shown stays until the new forecast arrives.
+    const load = (background: boolean) => {
+      if (!background) setLoading(true);
+      api
+        .weather(lat, lon)
+        .then((r) => {
+          if (!live) return;
+          setReport(r);
+          setError(null);
+        })
+        .catch((err: unknown) => live && setError(err instanceof Error ? err.message : 'Failed to load weather'))
+        .finally(() => live && setLoading(false));
+    };
     setError(null);
-    api
-      .weather(lat, lon)
-      .then((r) => live && setReport(r))
-      .catch((err: unknown) => live && setError(err instanceof Error ? err.message : 'Failed to load weather'))
-      .finally(() => live && setLoading(false));
+    load(false);
+    const interval = setInterval(() => load(true), REFRESH_INTERVAL_MS);
     return () => {
       live = false;
+      clearInterval(interval);
     };
-  }, [api, lat, lon]);
+  }, [api, lat, lon, reloads]);
 
   if (loading) return <Box>Loading weather...</Box>;
-  if (error || !report) return <Box>⚠️ {error || 'No weather data available!'}</Box>;
+  if (error || !report)
+    return (
+      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box>⚠️ {error || 'No weather data available!'}</Box>
+        <IconButton size="small" aria-label="Refresh weather" onClick={() => setReloads((n) => n + 1)}>
+          <RefreshIcon fontSize="small" />
+        </IconButton>
+      </Stack>
+    );
 
   const { period } = report;
   const unit = `°${period.temperatureUnit}`;

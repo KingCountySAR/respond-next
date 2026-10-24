@@ -4,7 +4,7 @@ import { currentParticipantStatus, findParticipantByPersonRef, participantIdFor,
 import { PARTICIPANT_STATUSES, type ActivityRec, type ActivityUnitRec, type ParticipantRec, type ParticipantStatus, type ParticipantStatusRec } from '../schema';
 import { STANDBY_ONLY_STATUSES, allowedInMode, isStandbyOnly } from '../statusSteps';
 import { asActivityViewer, isCommand, isSystemViewer } from '../viewer';
-import { addStatus, at, id, idSource, requireOpen, requireParticipant, requireSelfOrCommand } from './common';
+import { actorName, addStatus, at, id, idSource, requireOpen, requireParticipant, requireSelfOrCommand } from './common';
 
 const PersonRef = z.string().regex(/^[a-z0-9-]+:.+$/, 'Expected <source>:<id>');
 const Status = z.enum(PARTICIPANT_STATUSES).exclude(['unknown']);
@@ -47,7 +47,7 @@ function applyStatus(tx: Tx, ctx: MutationCtx, nextId: () => string, participant
       addStatus(tx, ctx, nextId, participantId, previous.unitId, 'clear', at);
       return;
     }
-    if (previous.status !== 'clear' && previous.status !== 'notResponding') addStatus(tx, ctx, nextId, participantId, previous.unitId, 'clear', at - 1);
+    if (previous.status !== 'clear' && previous.status !== 'notResponding') addStatus(tx, ctx, nextId, participantId, previous.unitId, 'clear', at - 1, 'Changed units');
   }
   addStatus(tx, ctx, nextId, participantId, unitId, status, at);
 }
@@ -107,11 +107,11 @@ export const correctParticipantStatus = defineMutation({
   args: z.object({ entryId: id, status: Status.optional(), at: at.optional() }),
   allow: isCommand,
   describe: (a, view) => `Correct ${participantName(view, view.get<ParticipantStatusRec>('participantStatus', a.entryId)?.participantId)}'s timeline`,
-  run(tx, a) {
+  run(tx, a, ctx) {
     const activity = requireOpen(tx);
     if (!tx.get('participantStatus', a.entryId)) throw new Rejection('not_found', 'That timeline entry no longer exists');
     if (a.status && !allowedInMode(activity, a.status)) throw new Rejection('light_mode', 'That status isn’t used on this event');
-    tx.update('participantStatus', a.entryId, { ...(a.status ? { status: a.status } : {}), ...(a.at !== undefined ? { at: a.at } : {}) });
+    tx.update('participantStatus', a.entryId, { ...(a.status ? { status: a.status } : {}), ...(a.at !== undefined ? { at: a.at } : {}), correctedBy: actorName(ctx) });
   },
 });
 

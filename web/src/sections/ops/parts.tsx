@@ -202,7 +202,8 @@ export function DashboardSearchBox({ placeholder, onChange, sx }: { placeholder?
 /** A card that looks draggable (grey when `disabled`, i.e. not draggable). */
 export function DashboardDraggableContainer({ children, sx, showHandle = true, variant = 'standard', disabled = false }: { children: ReactNode; sx?: SxProps<Theme>; showHandle?: boolean; variant?: 'standard' | 'compact'; disabled?: boolean }) {
   const compact = variant === 'compact';
-  const base: SxProps<Theme> = { width: '100%', minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: compact ? 0.5 : 1, bgcolor: disabled ? '#ebebeb' : 'background.paper' };
+  const disabledBg = (theme: Theme) => (theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#ebebeb');
+  const base: SxProps<Theme> = { width: '100%', minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: compact ? 0.5 : 1, bgcolor: disabled ? disabledBg : 'background.paper' };
   const draggable: SxProps<Theme> = {
     ...base,
     cursor: 'grab',

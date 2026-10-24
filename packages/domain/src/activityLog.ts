@@ -39,6 +39,8 @@ export interface LogEntryRec extends Rec {
   favorite: boolean;
   /** The mutation that made it. */
   mutation: string;
+  /** The text doesn't say who made the change, and it wasn't who it's about: show `by` beside it. */
+  byline?: boolean;
 }
 
 export type LogLine = Omit<LogEntryRec, 'type' | 'id' | 'version' | 'favorite'>;
@@ -46,7 +48,7 @@ export type LogLine = Omit<LogEntryRec, 'type' | 'id' | 'version' | 'favorite'>;
 /** A log line's level: Important starred, else the level it was written at. */
 export const logEntryLevel = (e: Pick<LogEntryRec, 'favorite' | 'level'>): Level => (e.favorite ? Level.Important : e.level);
 
-const Line = z.object({ id: z.string().min(1), at: z.number().finite(), by: z.string(), text: z.string().min(1), level: z.union([z.literal(Level.Auto), z.literal(Level.Audit)]), mutation: z.string() });
+const Line = z.object({ id: z.string().min(1), at: z.number().finite(), by: z.string(), text: z.string().min(1), level: z.union([z.literal(Level.Auto), z.literal(Level.Audit)]), mutation: z.string(), byline: z.boolean().optional() });
 
 /**
  * Adds lines to a log scope (an id already there is left alone, favorite and all), and keeps its copy
@@ -106,7 +108,7 @@ export function narrate(change: LoggedChange, view: ReadView): LogLine[] {
   const by = actor.name || (actorParticipant ? fullName(actorParticipant) : system ? 'The server' : 'Someone');
   const at = change.at ?? change.receivedAt;
   const lines: LogLine[] = [];
-  const line = (text: string, level: LogLevel = Level.Audit, when = at) => lines.push({ at: when, by, text, level, mutation: change.name });
+  const line = (text: string, level: LogLevel = Level.Audit, when = at, byline = false) => lines.push({ at: when, by, text, level, mutation: change.name, ...(byline ? { byline } : {}) });
   const added = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && !e.before && e.after).map((e) => e.after as T);
   const changed = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && e.before && e.after) as unknown as { before: T; after: T }[];
   const removed = <T extends Rec>(type: string) => change.effects.filter((e) => e.type === type && e.before && !e.after).map((e) => e.before as T);
@@ -118,10 +120,10 @@ export function narrate(change: LoggedChange, view: ReadView): LogLine[] {
     const subject = p ? fullName(p) : 'Someone';
     const prev = previous(view.scan<ParticipantStatusRec>('participantStatus'), s, (e) => e.participantId === s.participantId);
     const to = PARTICIPANT_STATUS_TEXT[s.status];
-    // Their own change, or the server's on their behalf (signing in elsewhere signs them out here).
+    // Told as theirs. Someone else's change says who made it beside the text; the server's on their
+    // behalf (signing in elsewhere signs them out here) doesn't.
     const self = !!p && (p.personRef === actor.personRef || system);
-    if (prev) line(self ? `${subject} moved from ${PARTICIPANT_STATUS_TEXT[prev.status]} to ${to}` : `${by} moved ${subject} from ${PARTICIPANT_STATUS_TEXT[prev.status]} to ${to}`, Level.Audit, s.at);
-    else line(self ? `${subject} joined as ${to}` : `${by} added ${subject} as ${to}`, Level.Audit, s.at);
+    line(prev ? `${subject} moved from ${PARTICIPANT_STATUS_TEXT[prev.status]} to ${to}` : `${subject} signed in as ${to}`, Level.Audit, s.at, !self);
   }
   for (const s of added<TeamStatusRec>('teamStatus')) {
     const prev = previous(view.scan<TeamStatusRec>('teamStatus'), s, (e) => e.teamId === s.teamId);

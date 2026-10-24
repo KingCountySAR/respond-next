@@ -28,7 +28,8 @@ export const DashboardResourcesPanel = observer(function DashboardResourcesPanel
   const handleDrop = (item: CommandParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
       const p = item as CommandParticipant;
-      if (p.status === 'assigned') assign(p, null);
+      // Whatever their status: someone on a team, place or group can always go back to the pool.
+      if (p.target) assign(p, null);
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, null));
     }

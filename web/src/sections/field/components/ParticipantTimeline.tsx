@@ -1,12 +1,11 @@
-import { Close } from '@mui/icons-material';
-import { Box, ButtonBase, IconButton, Stack, Typography } from '@mui/material';
-import { DateTimePicker } from '@mui/x-date-pickers';
+import { Box, ButtonBase, Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
 import type { ParticipantStatusRec } from '@sync/domain';
 import { isCommandActivity, type FieldParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { statusText } from '../../../ui/status';
+import { TimePickerDialog } from '../../../ui/TimePickerDialog';
 import { useChange } from '../../../ui/useChange';
 
 /** Status entries, oldest first. Command can correct an entry's time. */
@@ -25,13 +24,7 @@ export const ParticipantTimeline = observer(function ParticipantTimeline({ parti
 });
 
 function ParticipantUpdateTile({ entry, unitName, onChange }: { entry: ParticipantStatusRec; unitName: string; onChange?: (time: number) => void }) {
-  const [edit, setEdit] = useState(false);
-  const handleAccept = (newTime: number | null) => {
-    if (newTime) onChange?.(newTime);
-  };
-  const handleClose = () => {
-    setEdit(false);
-  };
+  const [open, setOpen] = useState(false);
 
   const summary = (
     <Stack direction="row" sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
@@ -48,28 +41,33 @@ function ParticipantUpdateTile({ entry, unitName, onChange }: { entry: Participa
     </Stack>
   );
 
+  const audit = auditText(entry);
+  const auditLine = audit && (
+    <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+      {audit}
+    </Typography>
+  );
+
+  if (!onChange) {
+    return (
+      <Box>
+        {summary}
+        {auditLine}
+      </Box>
+    );
+  }
   return (
     <Box>
-      {edit ? (
-        <Stack direction="row" sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
-          <DateTimePicker
-            value={new Date(entry.at)}
-            label={`${unitName} - ${statusText(entry.status)}`}
-            format="MM/dd HH:mm"
-            onAccept={(d) => handleAccept(d ? d.getTime() : null)}
-            onClose={handleClose}
-          />
-          <IconButton disableRipple onClick={handleClose}>
-            <Close />
-          </IconButton>
-        </Stack>
-      ) : onChange ? (
-        <ButtonBase sx={{ width: '100%' }} onClick={() => setEdit(true)}>
-          {summary}
-        </ButtonBase>
-      ) : (
-        summary
-      )}
+      <ButtonBase sx={{ width: '100%' }} onClick={() => setOpen(true)}>
+        {summary}
+      </ButtonBase>
+      <TimePickerDialog open={open} value={entry.at} label={`${unitName} - ${statusText(entry.status)}`} onAccept={onChange} onClose={() => setOpen(false)} />
+      {auditLine}
     </Box>
   );
+}
+
+/** Why an entry was added and by whom, when it wasn't simply the participant's own: "Activity closed · by Alice Adams". */
+export function auditText(entry: ParticipantStatusRec): string {
+  return [entry.cause, entry.byName && `by ${entry.byName}`, entry.correctedBy && `corrected by ${entry.correctedBy}`].filter(Boolean).join(' · ');
 }

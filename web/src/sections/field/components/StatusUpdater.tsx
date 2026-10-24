@@ -48,7 +48,17 @@ export const StatusUpdater = observer(function StatusUpdater({ activity, fullWid
       <SplitButton options={options} selected={options[0]!.id} fullWidth={fullWidth} onClick={(id) => setConfirming(steps.find((s) => stepId(s) === id) ?? null)} />
       <Dialog open={!!confirming} onClose={() => setConfirming(null)} aria-labelledby="status-update-dialog-title" aria-describedby="status-update-dialog-description">
         {/* Mounted only while open, so the form starts fresh each time. */}
-        {confirming && <UpdateStatusForm activity={activity} person={person} unit={unit} step={confirming} label={stepText(from, confirming, unitName)} onClose={() => setConfirming(null)} />}
+        {confirming && (
+          <UpdateStatusForm
+            activity={activity}
+            person={person}
+            self={person.personRef === session?.personRef}
+            unit={unit}
+            step={confirming}
+            label={stepText(from, confirming, unitName)}
+            onClose={() => setConfirming(null)}
+          />
+        )}
       </Dialog>
     </>
   );
@@ -62,6 +72,7 @@ interface FormError {
 const UpdateStatusForm = observer(function UpdateStatusForm({
   activity,
   person,
+  self,
   unit,
   step,
   label,
@@ -69,6 +80,8 @@ const UpdateStatusForm = observer(function UpdateStatusForm({
 }: {
   activity: FieldActivity;
   person: StatusPerson;
+  /** Whether it's the signed-in person's own status. */
+  self: boolean;
   unit: UnitRef;
   step: StatusStep;
   label: string;
@@ -88,7 +101,10 @@ const UpdateStatusForm = observer(function UpdateStatusForm({
 
   const top: FormError[] = [];
   if (me?.status === 'assigned') {
-    top.push({ severity: 'warning', text: 'You are currently assigned to a Team or Place on the Operations Dashboard. Changing your status may cause a discrepancy.' });
+    top.push({
+      severity: 'warning',
+      text: `${self ? 'You are' : `${person.firstname} is`} currently assigned to a Team or Place on the Operations Dashboard. Changing ${self ? 'your' : 'their'} status may cause a discrepancy.`,
+    });
   }
   if (!activity.unit(unit.id)) {
     const name = unit.rosterName ?? unit.title;
@@ -128,7 +144,7 @@ const UpdateStatusForm = observer(function UpdateStatusForm({
             </Alert>
           ))}
           <Stack spacing={2} sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
-            <DialogContentText id="status-update-dialog-description">Change your status for {activity.record?.title}?</DialogContentText>
+            <DialogContentText id="status-update-dialog-description">Change {self ? 'your' : `${person.firstname}'s`} status for {activity.record?.title}?</DialogContentText>
             <FormControl error={!!timeError}>
               <DateTimePicker
                 label="Status Time"

@@ -26,7 +26,7 @@ export function DashboardParticipantStatusButton({ participant, status }: { part
   // Keeps a click on the chip from starting a drag.
   const stopDrag = (event: PointerEvent<HTMLDivElement>) => event.stopPropagation();
 
-  return <Chip label={label} size="small" variant="filled" color={color === 'disabled' ? 'default' : color} clickable onClick={handleClick} onPointerDown={stopDrag} sx={{ color: 'common.white' }} />;
+  return <Chip label={`Set ${label}`} size="small" variant="filled" color={color === 'disabled' ? 'default' : color} clickable onClick={handleClick} onPointerDown={stopDrag} sx={{ color: 'common.white' }} />;
 }
 
 /** In the resource pool: the person, their ETA while still on the way, unit and tags. */

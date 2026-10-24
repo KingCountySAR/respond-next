@@ -9,12 +9,11 @@ import { observer } from '@sync/model/react';
 import { useDialogs } from '../../shell/dialogs';
 import { MobilePageId, usePreferences } from '../../shell/preferences';
 import { ToolbarPage } from '../../shell/ToolbarPage';
-import { statusText } from '../../ui/status';
 import { ActivityActionsBar } from './ActivityActionsBar';
 import { BriefingPanel } from './components/BriefingPanel';
 import { ManagerPanel } from './components/ManagerPanel';
 import { ParticipantEtaUpdater } from './components/ParticipantEtaUpdater';
-import { ParticipantDialog, RosterPanel, RosterRowCard, type RosterState } from './components/RosterPanel';
+import { ParticipantDialog, RosterPanel, RosterRowCard, RosterStatusText, type RosterState } from './components/RosterPanel';
 import { StatusUpdater } from './components/StatusUpdater';
 import { UnitChips } from './components/UnitChips';
 
@@ -93,7 +92,7 @@ const RosterRow = observer(function RosterRow({ participant, onClick }: { partic
           </Typography>
         </Stack>
         <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-          <Typography variant="body2">{statusText(participant.status)}</Typography>
+          <RosterStatusText participant={participant} />
           <Typography variant="body2">{participant.isEnrouteOrStandby && eta ? `ETA ${formatDate(eta, 'HHmm')}` : null}</Typography>
         </Stack>
       </Stack>

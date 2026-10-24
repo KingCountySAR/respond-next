@@ -72,6 +72,11 @@ export class LogLine {
     return this.record?.text ?? '';
   }
 
+  /** Who made the change, to show beside a text that doesn't say ("Anna Lee moved…", by Alice). */
+  get byline(): string | undefined {
+    return this.record?.byline ? this.by : undefined;
+  }
+
   /** Important starred, else Auto or Audit by the change. */
   get level(): Level {
     return this.record ? logEntryLevel(this.record) : Level.Audit;

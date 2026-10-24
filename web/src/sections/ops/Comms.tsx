@@ -26,14 +26,16 @@ import {
   type SxProps,
   type Theme,
 } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { ThemeProvider, alpha } from '@mui/material/styles';
 import { DateTimePicker } from '@mui/x-date-pickers';
-import { useEffect, useRef, useState, type FormEvent, type HTMLAttributes, type Key, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type HTMLAttributes, type Key, type ReactNode } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { LEVEL_NAMES, Level } from '@sync/domain';
 import type { Comm, LogLine } from '@sync/model';
 import { observer, useActivityLog, useCommandActivity } from '@sync/model/react';
+import { useSite } from '../../shell/App';
 import { useSyncClient } from '../../shell/sync';
+import { buildTheme } from '../../shell/theme';
 import { useDialogs } from '../../shell/dialogs';
 import { useChange } from '../../ui/useChange';
 import { commsContacts, coordinatesIn, filterComms, format24HourTime, isComm, mergeLog, type CommLevel, type LogItem } from './opsRules';
@@ -208,6 +210,11 @@ const DashboardLogLine = observer(function DashboardLogLine({ line, onFavorite }
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Typography variant="body2" sx={{ flex: 1, color: line.level === Level.Audit ? 'text.secondary' : 'text.primary' }}>
           {line.text}
+          {line.byline && (
+            <Typography component="span" variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>
+              by {line.byline}
+            </Typography>
+          )}
         </Typography>
         <LevelChip level={line.level} />
         <IconButton className="comm-action" onClick={onFavorite} size="small" aria-label={line.favorite ? 'unfavorite log line' : 'favorite log line'} sx={line.favorite ? undefined : actionSx}>
@@ -338,6 +345,9 @@ function DashboardCommsPrintButton({ communications }: { communications: LogItem
   const activity = useCommandActivity();
   const printable = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printable, documentTitle: `${activity.record?.title || 'activity'}-comms-log` });
+  // Printed light whatever the screen's theme: dark mode's white text would print on white paper.
+  const site = useSite();
+  const printTheme = useMemo(() => buildTheme(site.theme, false), [site.theme]);
   return (
     <>
       <Tooltip title="Print communications log">
@@ -346,7 +356,9 @@ function DashboardCommsPrintButton({ communications }: { communications: LogItem
         </IconButton>
       </Tooltip>
       <Box ref={printable} sx={{ display: 'none', '@media print': { display: 'block' } }}>
-        <DashboardCommsPrintView communications={communications} />
+        <ThemeProvider theme={printTheme}>
+          <DashboardCommsPrintView communications={communications} />
+        </ThemeProvider>
       </Box>
     </>
   );

@@ -62,7 +62,7 @@ export const closeActivity = defineMutation({
     const nextId = idSource(ctx);
     for (const p of [...tx.scan<ParticipantRec>('participant')]) {
       const current = currentParticipantStatus(tx, p.id, a.at);
-      if (current && isActiveStatus(current.status)) addStatus(tx, ctx, nextId, p.id, current.unitId, 'clear', a.at);
+      if (current && isActiveStatus(current.status)) addStatus(tx, ctx, nextId, p.id, current.unitId, 'clear', a.at, 'Activity closed');
     }
     tx.update('activity', ACTIVITY_RECORD_ID, { closed: true, endTime: a.at });
   },

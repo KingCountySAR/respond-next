@@ -44,6 +44,8 @@ describe('the activity log', () => {
     s.alice.mutate('a1', 'addParticipant', { personRef: 'kcsara:1', firstname: 'Anna', lastname: 'Lee', unit: CRT, status: 'standby', at: now });
     s.alice.mutate('a1', 'addComm', { id: 'c1', from: 'Base', to: 'All', message: 'Briefing at 1500' });
     await s.synced();
+    // Alice's changes are confirmed; Anna may not have them yet.
+    await until(() => [...s.anna.snapshot('a1').scan('participant')].length === 1);
     const annaId = [...s.anna.snapshot('a1').scan<{ id: string; personRef: string } & { type: string; version: number }>('participant')][0]!.id;
     s.anna.mutate('a1', 'setParticipantStatus', { participantId: annaId, status: 'responding', unit: CRT, at: now + 1 });
     await s.synced();
@@ -59,7 +61,7 @@ describe('the activity log', () => {
     expect(s.texts(s.alice).sort()).toEqual([
       [4, 'Alice Adams created Lost hiker, Mailbox Peak'],
       [4, 'Alice Adams set CRT to Standby'],
-      [4, 'Alice Adams added Anna Lee as Standby'],
+      [4, 'Anna Lee signed in as Standby'],
       [4, 'Anna Lee moved from Standby to Responding'],
       [4, 'Alice Adams created Team 1'],
       [3, 'Alice Adams set Team 1 from In Base to In Transit'],
@@ -68,6 +70,10 @@ describe('the activity log', () => {
       [4, 'Alice Adams added Sat phone to Team 1'],
       [4, 'Alice Adams added Litter'],
     ].sort());
+    // Alice signed Anna in, so that line says who did beside it; Anna's own change doesn't.
+    const byline = (text: string) => s.lines(s.alice).find((l) => l.text === text)?.byline;
+    expect(byline('Anna Lee signed in as Standby')).toBe(true);
+    expect(byline('Anna Lee moved from Standby to Responding')).toBeUndefined();
   });
 
   it('is for command only, can be starred, and only the server writes it', async () => {

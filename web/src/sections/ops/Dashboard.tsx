@@ -64,9 +64,9 @@ const DashboardContent = observer(function DashboardContent() {
     document.title = `${record.idNumber} ${record.title} - Dashboard`;
   }, [record.idNumber, record.title]);
 
-  // Phones: narrower than 1280px. Tablets: 1280px up to 1920px, with teams and comms tabbed.
-  const isSmallScreen = useMediaQuery('(max-width:1279.95px)');
-  const isTablet = useMediaQuery('(min-width:1280px) and (max-width:1919.95px)');
+  // Phones: narrower than 1024px (an iPad mini in landscape is a tablet). Tablets: 1024px up to 1920px, with teams and comms tabbed.
+  const isSmallScreen = useMediaQuery('(max-width:1023.95px)');
+  const isTablet = useMediaQuery('(min-width:1024px) and (max-width:1919.95px)');
 
   if (isSmallScreen) {
     return (

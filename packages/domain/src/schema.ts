@@ -112,6 +112,12 @@ export interface ParticipantStatusRec extends Rec {
   status: ParticipantStatus;
   at: number;
   by: string;
+  /** Who made it, by name, when it wasn't the participant (absent on their own, and on older entries). */
+  byName?: string;
+  /** Why, when a change added it by itself: closing the activity, an assignment, a change of units. */
+  cause?: string;
+  /** Who last corrected its time or status, by name. */
+  correctedBy?: string;
 }
 
 export interface AssignmentRec extends Rec {

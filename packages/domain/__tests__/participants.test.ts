@@ -203,3 +203,37 @@ describe('time on the clock', () => {
     expect(timeOnClock(e.view, pid, T0 + 5 * HOUR)).toBe(3 * HOUR);
   });
 });
+
+describe('who changed a status, and why', () => {
+  const BARRY = { ...COMMAND, name: 'Barry Jones' };
+
+  it("names whoever set someone else's status, but not the participant's own", () => {
+    const e = startedActivity();
+    const pid = addMember(e, 'kcsara:1', 'standby');
+    e.run('setParticipantStatus', { participantId: pid, status: 'responding', unit: CRT, at: T0 + HOUR }, { ...fieldMember('kcsara:1'), name: 'Alan Smith' });
+    e.run('setParticipantStatus', { participantId: pid, status: 'staging', unit: CRT, at: T0 + 2 * HOUR }, BARRY);
+    const [staging, responding] = participantTimeline(e.view, pid);
+    expect(staging).toMatchObject({ byName: 'Barry Jones' });
+    expect(responding!.byName).toBeUndefined();
+  });
+
+  it('says why a change added an entry by itself', () => {
+    const e = startedActivity();
+    const pid = addMember(e, 'kcsara:1', 'staging');
+    e.run('createTeam', { id: 't1', name: 'Team 1' });
+    e.run('assign', { participantId: pid, target: { kind: 'team', id: 't1' }, at: T0 + HOUR }, BARRY);
+    expect(participantTimeline(e.view, pid)[0]).toMatchObject({ status: 'assigned', cause: 'Assigned to Team 1', byName: 'Barry Jones' });
+    e.run('setParticipantStatus', { participantId: pid, status: 'responding', unit: RMR, at: T0 + 2 * HOUR });
+    expect(participantTimeline(e.view, pid)[1]).toMatchObject({ status: 'clear', unitId: CRT.id, cause: 'Changed units' });
+    e.run('closeActivity', { at: T0 + 3 * HOUR });
+    expect(participantTimeline(e.view, pid)[0]).toMatchObject({ status: 'clear', cause: 'Activity closed' });
+  });
+
+  it('names who corrected an entry', () => {
+    const e = startedActivity();
+    const pid = addMember(e, 'kcsara:1', 'responding');
+    const entry = participantTimeline(e.view, pid)[0]!;
+    e.run('correctParticipantStatus', { entryId: entry.id, at: T0 }, BARRY);
+    expect(participantTimeline(e.view, pid)[0]).toMatchObject({ correctedBy: 'Barry Jones' });
+  });
+});

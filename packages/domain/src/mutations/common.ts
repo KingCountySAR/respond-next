@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Rejection, type MutationCtx, type ReadView, type Tx } from '@sync/core';
 import { currentParticipantStatus, currentTarget, getActivity, hasOperations, membersOf, sameTarget, targetExists, targetName } from '../queries';
 import { Target, type EquipmentRec, type ActivityRec, type ParticipantRec, type ParticipantStatus, type TeamRec } from '../schema';
-import { asActivityViewer, isCommand } from '../viewer';
+import { asActivityViewer, isCommand, isSystemViewer } from '../viewer';
 
 export const id = z.string().min(1);
 export const at = z.number().finite();
@@ -51,11 +51,22 @@ export function requireTarget(view: ReadView, target: Target | null): void {
   if (target && !targetExists(view, target)) throw new Rejection('target_gone', `That ${target.kind} no longer exists`);
 }
 
-/** Adds a status entry unless the participant already had that status, under that unit, at `at`. */
-export function addStatus(tx: Tx, ctx: MutationCtx, nextId: () => string, participantId: string, unitId: string, status: ParticipantStatus, at: number): boolean {
+/** The name of whoever is making a change, as they signed in. */
+export function actorName(ctx: MutationCtx): string {
+  return asActivityViewer(ctx.viewer).name ?? (isSystemViewer(ctx.viewer) ? 'The server' : 'Someone');
+}
+
+/**
+ * Adds a status entry unless the participant already had that status, under that unit, at `at`. It
+ * names who made it when that isn't the participant, and `cause` when the change asked for something
+ * else (closing the activity clears everyone).
+ */
+export function addStatus(tx: Tx, ctx: MutationCtx, nextId: () => string, participantId: string, unitId: string, status: ParticipantStatus, at: number, cause?: string): boolean {
   const current = currentParticipantStatus(tx, participantId, at);
   if (current && current.status === status && current.unitId === unitId) return false;
-  tx.put({ type: 'participantStatus', id: nextId(), participantId, unitId, status, at, by: ctx.viewer.userId });
+  const personRef = tx.get<ParticipantRec>('participant', participantId)?.personRef;
+  const self = !!personRef && personRef === asActivityViewer(ctx.viewer).personRef;
+  tx.put({ type: 'participantStatus', id: nextId(), participantId, unitId, status, at, by: ctx.viewer.userId, ...(self ? {} : { byName: actorName(ctx) }), ...(cause ? { cause } : {}) });
   return true;
 }
 
@@ -81,8 +92,8 @@ export function moveParticipant(tx: Tx, ctx: MutationCtx, nextId: () => string, 
 
   const status = currentParticipantStatus(tx, participantId, at);
   if (!status) return;
-  if (target && status.status === 'staging') addStatus(tx, ctx, nextId, participantId, status.unitId, 'assigned', at);
-  else if (!target && status.status === 'assigned') addStatus(tx, ctx, nextId, participantId, status.unitId, 'staging', at);
+  if (target && status.status === 'staging') addStatus(tx, ctx, nextId, participantId, status.unitId, 'assigned', at, `Assigned to ${targetName(tx, target)}`);
+  else if (!target && status.status === 'assigned') addStatus(tx, ctx, nextId, participantId, status.unitId, 'staging', at, 'Unassigned');
 }
 
 /** Moves everyone and everything at `from` to `to` (a team, group or place going away). */

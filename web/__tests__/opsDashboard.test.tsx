@@ -273,14 +273,14 @@ describe('ops dashboard', () => {
     // Team status is Auto (3), shown at the default 1–3; adding Dana (Audit, 4) isn't. Each line is also in the print view.
     const teamLine = 'Alice Adams set Team 1 from In Base to In Transit';
     expect(await comms.findAllByText(teamLine)).not.toHaveLength(0);
-    expect(comms.queryAllByText(/added Dana Field/)).toEqual([]);
+    expect(comms.queryAllByText(/Dana Field signed in/)).toEqual([]);
 
     fireEvent.click(comms.getByLabelText('Audit: every change'));
-    expect(await comms.findAllByText(/added Dana Field as Available/)).not.toHaveLength(0);
+    expect(await comms.findAllByText(/Dana Field signed in as Available/)).not.toHaveLength(0);
 
     fireEvent.click(within(comms.getByText(teamLine, { selector: 'p' }).closest('.MuiStack-root') as HTMLElement).getByLabelText('favorite log line'));
     fireEvent.click(comms.getByLabelText('Important: starred only'));
-    await waitFor(() => expect(comms.queryAllByText(/added Dana Field/)).toEqual([]));
+    await waitFor(() => expect(comms.queryAllByText(/Dana Field signed in/)).toEqual([]));
     expect(comms.getAllByText(teamLine)).not.toHaveLength(0);
   });
 
@@ -298,7 +298,7 @@ describe('ops dashboard', () => {
     server.seed.mutate(ACTIVITY, 'assign', { participantId: DANA, target: { kind: 'team', id: teamId }, asLeader: true });
     // A phone-width screen.
     const matchMedia = window.matchMedia;
-    window.matchMedia = ((query: string) => ({ matches: query.includes('max-width:1279.95px') && !query.includes('min-width'), media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false })) as typeof window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: query.includes('max-width:1023.95px') && !query.includes('min-width'), media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false })) as typeof window.matchMedia;
     try {
       server.renderApp(`/ops/${ACTIVITY}`);
       await signIn('Alice Adams', 'kcsara:101', 'command');
@@ -319,10 +319,22 @@ describe('ops dashboard', () => {
     await openDashboard();
     const teams = panel('Teams');
     expect(await teams.findByLabelText('One or more team members are not assigned to the activity.')).toBeTruthy();
-    fireEvent.click(teams.getByRole('button', { name: 'Assigned' }));
+    fireEvent.click(teams.getByRole('button', { name: 'Set Assigned' }));
     const confirm = await topDialog();
     expect(confirm.getByText('Mark Avery Lindqvist as Assigned?')).toBeTruthy();
     fireEvent.click(confirm.getByRole('button', { name: /ok|yes|confirm/i }));
     await waitFor(() => expect(statusOf(server.seed.snapshot(ACTIVITY), participantIdFor('kcsara:1'))).toBe('assigned'));
+  });
+
+  it('takes someone off a team whatever their status', async () => {
+    const teamId = seedTeam('Team 1');
+    const avery = participantIdFor('kcsara:1');
+    server.seed.mutate(ACTIVITY, 'addParticipant', { personRef: 'kcsara:1', firstname: 'Avery', lastname: 'Lindqvist', unit: CRT, status: 'responding' });
+    server.seed.mutate(ACTIVITY, 'assign', { participantId: avery, target: { kind: 'team', id: teamId }, asLeader: true });
+    await openDashboard();
+    // Still responding, not assigned: dragged back to the pool, they leave the team all the same.
+    drag(await panel('Teams').findByText('Avery Lindqvist (CRT)'), panel('Resources').getByText('Dana Field'));
+    await waitFor(() => expect(currentTarget(server.seed.snapshot(ACTIVITY), avery)).toBeNull());
+    expect(statusOf(server.seed.snapshot(ACTIVITY), avery)).toBe('responding');
   });
 });

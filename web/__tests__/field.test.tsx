@@ -70,6 +70,29 @@ describe('the activity page', () => {
     expect(dialog.getAllByText('Available').length).toBeGreaterThan(0);
   });
 
+  it("lets command change someone's status from their dialog, and shows who did", async () => {
+    server.renderApp(`/mission/${ACTIVITY}`);
+    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await screen.findByText(`26-0123 ${TITLE}`);
+    fireEvent.click(rosterCard('Dana Field'));
+    const dialog = within(await screen.findByRole('dialog'));
+    fireEvent.click(dialog.getByRole('button', { name: 'Depart Base' }));
+    const form = within((await screen.findAllByRole('dialog')).at(-1)!);
+    expect(form.getByText(`Change Dana's status for ${TITLE}?`)).toBeTruthy();
+    fireEvent.click(form.getByRole('button', { name: 'Depart Base' }));
+
+    await waitFor(() => expect(currentParticipantStatus(server.seed.snapshot(ACTIVITY), dana)).toMatchObject({ status: 'demobilizing', byName: 'Alice Adams' }));
+    expect(await dialog.findByText('by Alice Adams')).toBeTruthy();
+    expect(within(rosterCard('Dana Field')).getByTitle('Status set by Alice Adams')).toBeTruthy();
+  });
+
+  it("doesn't offer field users someone else's status", async () => {
+    await openAs('Eli Ng', 'kcsara:9');
+    fireEvent.click(rosterCard('Dana Field'));
+    const dialog = within(await screen.findByRole('dialog'));
+    expect(dialog.queryByRole('button', { name: 'Depart Base' })).toBeNull();
+  });
+
   it('refuses a field user completing the activity, with the reason', async () => {
     await openAs('Dana Field', 'kcsara:7');
     fireEvent.click(screen.getByRole('button', { name: 'Complete' }));
