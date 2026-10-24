@@ -5,6 +5,7 @@ import {
   currentParticipantStatus,
   fullName,
   participantTimeline,
+  sameTarget,
   statusSteps,
   statusStepsUnder,
   timeOnClock,
@@ -168,8 +169,20 @@ export class CommandParticipant extends FieldParticipant<ParticipantRec, Command
     return t?.kind === 'team' ? this.activity.team(t.id) : undefined;
   }
 
-  assign(target: Target | null, options: { asLeader?: boolean; at?: number } = {}): WireMutation {
-    return this.activity.mutate('assign', { participantId: this.id, target, asLeader: options.asLeader, at: options.at });
+  /**
+   * Whoever could take over the team this person leads when they leave it for `target`, when there's
+   * a choice to make: two or more staying (one staying takes over by itself). Empty otherwise.
+   */
+  successorsLeaving(target: Target | null): CommandParticipant[] {
+    const team = this.team;
+    if (!team || team.leader?.id !== this.id || sameTarget(team.asTarget, target)) return [];
+    const staying = team.members.filter((m) => m.id !== this.id);
+    return staying.length >= 2 ? staying : [];
+  }
+
+  /** `newLeaderId` leads the team they leave, if they lead it (see `successorsLeaving`). */
+  assign(target: Target | null, options: { asLeader?: boolean; newLeaderId?: string; at?: number } = {}): WireMutation {
+    return this.activity.mutate('assign', { participantId: this.id, target, asLeader: options.asLeader, newLeaderId: options.newLeaderId, at: options.at });
   }
 
   /** Fixes a past status entry (from `timeline`): its status, its time, or both. */

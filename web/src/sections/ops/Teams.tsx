@@ -9,6 +9,7 @@ import { observer, useCommandActivity } from '@sync/model/react';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
 import { useChange } from '../../ui/useChange';
+import { useAssignResponder } from './NewLeaderDialog';
 import { Draggable, Droppable } from './dnd';
 import { dropEquipment, type EquipmentDrag } from './drops';
 import { GAR_COLORS, TEAM_STATUS_ORDER, TEAM_STATUS_TEXT, byName, nextTeamNumber, sortTeams, teamRoster, uniqueNameError } from './opsRules';
@@ -79,6 +80,7 @@ const DashboardTeamCard = observer(function DashboardTeamCard({ team, expandComm
 
   const { leader, others } = teamRoster(team);
   const members = team.members;
+  const assign = useAssignResponder();
   const equipment = [...team.equipment].sort(byName);
 
   /**
@@ -90,7 +92,7 @@ const DashboardTeamCard = observer(function DashboardTeamCard({ team, expandComm
       const p = item as CommandParticipant;
       const lead = asLeader || !team.leader;
       if (lead ? team.leader?.id === p.id : members.some((m) => m.id === p.id)) return;
-      change(() => p.assign(team.asTarget, { asLeader: lead }));
+      assign(p, team.asTarget, { asLeader: lead });
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, team.asTarget));
     }

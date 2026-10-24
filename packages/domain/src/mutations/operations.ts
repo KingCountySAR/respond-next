@@ -41,7 +41,8 @@ export const assign = defineMutation({
   name: 'assign',
   version: 1,
   timed: true,
-  args: z.object({ participantId: id, target: Target.nullable(), asLeader: z.boolean().default(false), at }),
+  /** `newLeaderId`: if `participantId` leads a team, `newLeaderId` specifies the new leader of that team. */
+  args: z.object({ participantId: id, target: Target.nullable(), asLeader: z.boolean().default(false), newLeaderId: id.optional(), at }),
   allow: isCommand,
   describe: (a, view) => (a.target ? `Assign ${participantName(view, a.participantId)} to ${targetName(view, a.target)}` : `Unassign ${participantName(view, a.participantId)}`),
   run(tx, a, ctx) {
@@ -49,7 +50,7 @@ export const assign = defineMutation({
     requireParticipant(tx, a.participantId);
     requireTarget(tx, a.target);
     if (a.asLeader && a.target?.kind !== 'team') throw new Rejection('bad_args', 'Only a team has a leader');
-    moveParticipant(tx, ctx, idSource(ctx), a.participantId, a.target, a.at);
+    moveParticipant(tx, ctx, idSource(ctx), a.participantId, a.target, a.at, a.newLeaderId);
     if (a.asLeader && a.target) tx.update('team', a.target.id, { leaderParticipantId: a.participantId });
   },
 });

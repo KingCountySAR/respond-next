@@ -15,6 +15,7 @@ import { observer, useCommandActivity } from '@sync/model/react';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
 import { useChange } from '../../ui/useChange';
+import { useAssignResponder } from './NewLeaderDialog';
 import { Draggable, Droppable } from './dnd';
 import { dropEquipment, type EquipmentDrag } from './drops';
 import { byName, compareTeamNames, equipmentSummary } from './opsRules';
@@ -107,6 +108,7 @@ const GroupTile = observer(function GroupTile({ group }: { group: CommandGroup }
   const dialogs = useDialogs();
   const change = useChange();
   const members = group.members;
+  const assign = useAssignResponder();
   const equipment = [...group.equipment].sort(byName);
   const teams = [...group.teams].sort((a, b) => compareTeamNames(a.name, b.name));
   const leader = group.leader;
@@ -144,7 +146,7 @@ const GroupTile = observer(function GroupTile({ group }: { group: CommandGroup }
   const handleBodyDrop = (item: CommandParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
       const p = item as CommandParticipant;
-      if (!members.some((m) => m.id === p.id)) change(() => p.assign(group.asTarget));
+      if (!members.some((m) => m.id === p.id)) assign(p, group.asTarget);
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, group.asTarget));
     }
@@ -310,6 +312,7 @@ const PlaceTile = observer(function PlaceTile({ place }: { place: CommandPlace }
   const dialogs = useDialogs();
   const change = useChange();
   const members = place.members;
+  const assign = useAssignResponder();
   const equipment = [...place.equipment].sort(byName);
   const notes = place.notes?.trim();
   const hasPoint = place.lat != null && place.lon != null;
@@ -335,7 +338,7 @@ const PlaceTile = observer(function PlaceTile({ place }: { place: CommandPlace }
   const handleDrop = (item: CommandParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
       const p = item as CommandParticipant;
-      if (!members.some((m) => m.id === p.id)) change(() => p.assign(place.asTarget));
+      if (!members.some((m) => m.id === p.id)) assign(p, place.asTarget);
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, place.asTarget));
     }

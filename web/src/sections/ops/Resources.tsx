@@ -9,6 +9,7 @@ import { observer, useCommandActivity } from '@sync/model/react';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
 import { useChange } from '../../ui/useChange';
+import { useAssignResponder } from './NewLeaderDialog';
 import { Draggable, Droppable } from './dnd';
 import { dropEquipment, type EquipmentDrag } from './drops';
 import { resourcePool } from './opsRules';
@@ -19,6 +20,7 @@ import { DashboardParticipantCard } from './People';
 export const DashboardResourcesPanel = observer(function DashboardResourcesPanel() {
   const activity = useCommandActivity();
   const change = useChange();
+  const assign = useAssignResponder();
   const [tab, setTab] = useState<'responders' | 'equipment'>('responders');
   const [query, setQuery] = useState('');
   const pool = resourcePool(activity, query);
@@ -26,7 +28,7 @@ export const DashboardResourcesPanel = observer(function DashboardResourcesPanel
   const handleDrop = (item: CommandParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
       const p = item as CommandParticipant;
-      if (p.status === 'assigned') change(() => p.assign(null));
+      if (p.status === 'assigned') assign(p, null);
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, null));
     }

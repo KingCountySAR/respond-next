@@ -37,14 +37,30 @@ describe('assigning participants', () => {
     expect(teamMembers(e.view, t, T0 + HOUR)).toEqual([]);
   });
 
-  it('clears the team leader when the leader moves elsewhere', () => {
+  it('hands the lead to the one picked, else a member left, when the leader moves elsewhere', () => {
     const e = startedActivity();
     const t = withTeam(e);
-    const pid = addMember(e, 'kcsara:1');
-    e.run('assign', { participantId: pid, target: team(t), asLeader: true, at: T0 + 2 * HOUR });
-    expect(e.get<TeamRec>('team', t)?.leaderParticipantId).toBe(pid);
-    e.run('assign', { participantId: pid, target: { kind: 'place', id: placeId(e, 'Command Post') }, at: T0 + 3 * HOUR });
-    expect(e.get<TeamRec>('team', t)?.leaderParticipantId).toBeNull();
+    const t2 = withTeam(e, 't2', 'Team 2');
+    const [pid, ana, ben, cal] = ['kcsara:1', 'kcsara:2', 'kcsara:3', 'kcsara:4'].map((ref) => addMember(e, ref));
+    e.run('assign', { participantId: pid!, target: team(t), asLeader: true, at: T0 + 2 * HOUR });
+    for (const p of [ana, ben, cal]) e.run('assign', { participantId: p!, target: team(t), at: T0 + 2 * HOUR });
+    const leader = () => e.get<TeamRec>('team', t)?.leaderParticipantId;
+    expect(leader()).toBe(pid);
+
+    // Three stay: the one picked leads, and someone not staying can't be picked.
+    expect(e.rejects('assign', { participantId: pid!, target: team(t2), newLeaderId: pid!, at: T0 + 3 * HOUR })).toBe('not_member');
+    e.run('assign', { participantId: pid!, target: team(t2), newLeaderId: cal!, at: T0 + 3 * HOUR });
+    expect(leader()).toBe(cal);
+    // Two stay and nobody's picked (an older client): the first member found leads.
+    e.run('assign', { participantId: cal!, target: null, at: T0 + 3 * HOUR });
+    expect([ana, ben]).toContain(leader());
+    // One stays: they lead.
+    e.run('setTeamLeader', { teamId: t, participantId: ana! });
+    e.run('assign', { participantId: ana!, target: { kind: 'place', id: placeId(e, 'Command Post') }, at: T0 + 3 * HOUR });
+    expect(leader()).toBe(ben);
+    // The last one out leaves it without a leader.
+    e.run('assign', { participantId: ben!, target: null, at: T0 + 3 * HOUR });
+    expect(leader()).toBeNull();
   });
 
   it('rejects missing targets, field users and light-mode events', () => {

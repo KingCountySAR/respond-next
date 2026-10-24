@@ -105,6 +105,39 @@ describe('ops dashboard', () => {
     expect(currentTarget(server.seed.snapshot(ACTIVITY), DANA)).toBeNull();
   });
 
+  it('asks who leads a team when its leader leaves two or more behind', async () => {
+    const t = seedTeam('Team 1');
+    const at = Date.now();
+    const [avery, kai] = [
+      ['kcsara:1', 'Avery'],
+      ['kcsara:2', 'Kai'],
+    ].map(([ref, firstname]) => {
+      server.seed.mutate(ACTIVITY, 'addParticipant', { personRef: ref, firstname, lastname: 'Lindqvist', unit: CRT, status: 'staging', at });
+      return participantIdFor(ref!);
+    });
+    server.seed.mutate(ACTIVITY, 'assign', { participantId: DANA, target: { kind: 'team', id: t }, asLeader: true });
+    for (const p of [avery, kai]) server.seed.mutate(ACTIVITY, 'assign', { participantId: p!, target: { kind: 'team', id: t } });
+    await openDashboard();
+    const pool = () => panel('Resources').getByText('All responders are assigned.');
+    const leader = () => byName<TeamRec>('team', 'Team 1')?.leaderParticipantId;
+
+    // Cancelled, nothing moves.
+    drag(await panel('Teams').findByText('Dana Field (CRT)'), pool());
+    let dialog = await topDialog();
+    expect(dialog.getByText('Dana Field is leaving Team 1. Who leads it now?')).toBeTruthy();
+    expect(dialog.getByRole('button', { name: 'Make leader' }).hasAttribute('disabled')).toBe(true); // nobody picked at first
+    fireEvent.click(dialog.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryAllByRole('dialog')).toEqual([]));
+    expect(currentTarget(server.seed.snapshot(ACTIVITY), DANA)).toEqual({ kind: 'team', id: t });
+
+    drag(panel('Teams').getByText('Dana Field (CRT)'), pool());
+    dialog = await topDialog();
+    fireEvent.click(dialog.getByLabelText('Kai Lindqvist'));
+    fireEvent.click(dialog.getByRole('button', { name: 'Make leader' }));
+    await waitFor(() => expect(currentTarget(server.seed.snapshot(ACTIVITY), DANA)).toBeNull());
+    expect(leader()).toBe(kai);
+  });
+
   it('edits a team, refusing a name another team has', async () => {
     seedTeam('Team 1');
     seedTeam('Team 2');

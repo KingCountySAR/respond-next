@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Rejection, type MutationCtx, type ReadView, type Tx } from '@sync/core';
-import { currentParticipantStatus, currentTarget, getActivity, hasOperations, sameTarget, targetExists, targetName } from '../queries';
+import { currentParticipantStatus, currentTarget, getActivity, hasOperations, membersOf, sameTarget, targetExists, targetName } from '../queries';
 import { Target, type EquipmentRec, type ActivityRec, type ParticipantRec, type ParticipantStatus, type TeamRec } from '../schema';
 import { asActivityViewer, isCommand } from '../viewer';
 
@@ -62,16 +62,22 @@ export function addStatus(tx: Tx, ctx: MutationCtx, nextId: () => string, partic
 /**
  * Moves a participant, keeping their status in step as the legacy app did: staging becomes assigned
  * when they're put somewhere, and assigned becomes staging when they're taken off. Other statuses
- * are left alone. Leaving a team they lead clears its leader.
+ * are left alone. When a team's leader leaves it, `newLeaderId` (one of those staying, picked by
+ * whoever moved them) leads it; with none given (the one member left needs no picking), the first
+ * member found does, and with nobody left it has no leader.
  */
-export function moveParticipant(tx: Tx, ctx: MutationCtx, nextId: () => string, participantId: string, target: Target | null, at: number): void {
+export function moveParticipant(tx: Tx, ctx: MutationCtx, nextId: () => string, participantId: string, target: Target | null, at: number, newLeaderId?: string): void {
   const previous = currentTarget(tx, participantId, at);
   if (sameTarget(previous, target)) return;
+  tx.put({ type: 'assignment', id: nextId(), participantId, target, at, by: ctx.viewer.userId });
   if (previous?.kind === 'team') {
     const team = tx.get<TeamRec>('team', previous.id);
-    if (team?.leaderParticipantId === participantId) tx.update('team', team.id, { leaderParticipantId: null });
+    if (team?.leaderParticipantId === participantId) {
+      const staying = membersOf(tx, previous);
+      if (newLeaderId && !staying.some((p) => p.id === newLeaderId)) throw new Rejection('not_member', 'The new leader is no longer on the team');
+      tx.update('team', team.id, { leaderParticipantId: newLeaderId ?? staying[0]?.id ?? null });
+    }
   }
-  tx.put({ type: 'assignment', id: nextId(), participantId, target, at, by: ctx.viewer.userId });
 
   const status = currentParticipantStatus(tx, participantId, at);
   if (!status) return;
