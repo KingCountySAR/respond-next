@@ -283,12 +283,9 @@ function DashboardTeamEditDialog({ team, activity, onClose }: MuiDialogProps<nul
     if (change(() => team.update({ name: values.name.trim(), gar: values.gar, assignment: values.assignment.trim(), notes: values.notes.trim() }))) onClose(null);
   };
 
-  // Close this dialog first so the next one isn't stacked behind it. Closing pops browser history,
-  // which the dialog provider only hears asynchronously; opening the next dialog at once would push
-  // its history entry first and the pending pop would close that one instead.
+  // Close this dialog first so the next one isn't stacked behind it.
   const deleteTeam = async () => {
     onClose(null);
-    await new Promise((resolve) => setTimeout(resolve, 0));
     const target = await chooseReassignment(dialogs, activity, team.asTarget, {
       holdsResources: team.status !== 'inBase' && holdsResources(team),
       title: `Delete ${team.name}`,

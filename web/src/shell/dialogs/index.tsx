@@ -29,6 +29,11 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   const [dialogs, setDialogs] = useState<DialogItem<any, any>[]>([]);
   const dialogsRef = useRef(dialogs);
   dialogsRef.current = dialogs;
+  // Closing a dialog from the page goes back in history, and the browser says so (popstate) only
+  // later. Until then that pop isn't the user's Back, and a dialog opened meanwhile (one replacing
+  // the dialog just closed) waits to push its entry, or the pop would land on it.
+  const pendingBacks = useRef(0);
+  const deferredPushes = useRef<{ id: string; push: () => void }[]>([]);
 
   const close = useCallback((id: string, result: unknown = null) => {
     setDialogs((prev) => {
@@ -42,7 +47,9 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     return new Promise((resolve) => {
       const id = Math.random().toString(36).substring(2, 9);
 
-      window.history.pushState({ dialogId: id }, '');
+      const push = () => window.history.pushState({ dialogId: id }, '');
+      if (pendingBacks.current) deferredPushes.current.push({ id, push });
+      else push();
 
       setDialogs((prev) => [
         ...prev,
@@ -59,6 +66,10 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   // Sync with Browser Back / Forward Button
   useEffect(() => {
     const handlePopState = () => {
+      if (pendingBacks.current) {
+        if (--pendingBacks.current === 0) for (const { push } of deferredPushes.current.splice(0)) push();
+        return;
+      }
       const currentDialogs = dialogsRef.current;
       const topDialog = currentDialogs[currentDialogs.length - 1];
       if (!topDialog) return;
@@ -81,7 +92,10 @@ export function DialogProvider({ children }: { children: ReactNode }) {
 
       close(id, result);
 
-      if (isTop && window.history.state?.dialogId === id) {
+      const deferred = deferredPushes.current.findIndex((d) => d.id === id);
+      if (deferred >= 0) deferredPushes.current.splice(deferred, 1); // never got an entry
+      else if (isTop && window.history.state?.dialogId === id) {
+        pendingBacks.current++;
         window.history.back();
       }
     },
