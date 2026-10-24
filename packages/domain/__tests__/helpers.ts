@@ -1,5 +1,7 @@
-import { MapView, OverlayTx, Rejection, keyOf, mutationCtx, recKey, type ReadView, type Rec } from '@sync/core';
-import { activityRegistry, type ActivityViewer } from '@sync/domain';
+import { MapView, OverlayTx, Rejection, keyOf, mutationCtx, recKey, type MutationInput, type MutationNamed, type ReadView, type Rec } from '@sync/core';
+import { activityRegistry, type ActivityMutation, type ActivityViewer } from '@sync/domain';
+
+type CreateActivityArgs = MutationInput<MutationNamed<ActivityMutation, 'createActivity'>>;
 
 export const COMMAND: ActivityViewer = { userId: 'u-command', tier: 'command', class: 'member' };
 export const fieldMember = (personRef: string): ActivityViewer => ({ userId: `u-${personRef}`, tier: 'field', class: 'member', personRef });
@@ -61,7 +63,7 @@ export class TestActivity {
   }
 }
 
-export const activityArgs = (overrides: Record<string, unknown> = {}) => ({
+export const activityArgs = (overrides: Partial<CreateActivityArgs> = {}): CreateActivityArgs => ({
   idNumber: '26-0123',
   kind: 'mission',
   title: 'Lost hiker, Mailbox Peak',

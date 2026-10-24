@@ -1,6 +1,6 @@
 import { SyncClient, type Transport } from '@sync/client';
 import { activityRegistry, participantIdFor, type ActivityViewer } from '@sync/domain';
-import { Clock, CommandActivity } from '@sync/model';
+import { Clock, CommandActivity, type ActivityClient } from '@sync/model';
 import { COMMAND, CRT, HOUR, T0, activityArgs } from '../../domain/__tests__/helpers';
 
 export { COMMAND, CRT, EXTERNAL, HOUR, T0, activityArgs, fieldMember } from '../../domain/__tests__/helpers';
@@ -10,7 +10,7 @@ export const ACTIVITY_ID = 'e1';
 /** Never connects: every change stays local and pending, which is all the model needs to react. */
 const offline = (): Transport => ({ open() {}, send() {}, close() {} });
 
-export async function offlineClient(viewer: ActivityViewer = COMMAND): Promise<SyncClient> {
+export async function offlineClient(viewer: ActivityViewer = COMMAND): Promise<ActivityClient> {
   const client = new SyncClient({ registry: activityRegistry, viewer, transport: offline });
   await client.open(ACTIVITY_ID);
   return client;

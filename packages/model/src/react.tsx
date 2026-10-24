@@ -4,7 +4,8 @@
  * data hooks.
  */
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import type { OpenOptions, SyncClient } from '@sync/client';
+import type { OpenOptions } from '@sync/client';
+import type { ActivityClient } from './client';
 import { ACTIVITY_LIST_ID, activityLogId, activityProjector } from '@sync/domain';
 import { ActivityList, ActivityLog, createActivityModel, isCommandActivity, type CommandActivity, type FieldActivity } from './models';
 
@@ -18,14 +19,14 @@ interface Entry {
 }
 
 /** One model per client and scope (an activity, or the activity list), shared by everything showing it. */
-const entries = new WeakMap<SyncClient, Map<string, Entry>>();
+const entries = new WeakMap<ActivityClient, Map<string, Entry>>();
 
 /**
  * Opens the scope on the client (if it isn't already) and returns its shared model. Call `release`
  * when done; the last release disposes the model and closes the scope. A model `stale` says no
  * longer fits is replaced by a new one; its holders keep it until they release it.
  */
-function acquire<M extends { dispose(): void }>(client: SyncClient, scopeId: string, create: () => M, stale?: (model: M) => boolean, open?: OpenOptions): { ready: Promise<M>; release: () => void } {
+function acquire<M extends { dispose(): void }>(client: ActivityClient, scopeId: string, create: () => M, stale?: (model: M) => boolean, open?: OpenOptions): { ready: Promise<M>; release: () => void } {
   let byScope = entries.get(client);
   if (!byScope) entries.set(client, (byScope = new Map()));
   let entry = byScope.get(scopeId);
@@ -60,18 +61,18 @@ function acquire<M extends { dispose(): void }>(client: SyncClient, scopeId: str
 }
 
 /** Whether the model is in the view the client's viewer has of the activity now; its kind can change that. */
-const fits = (client: SyncClient, model: FieldActivity) => model.viewKey === activityProjector.viewKey(client.viewerIn(model.activityId));
+const fits = (client: ActivityClient, model: FieldActivity) => model.viewKey === activityProjector.viewKey(client.viewerIn(model.activityId));
 
 /**
  * The shared model for an activity, made anew when it no longer fits; see `acquire`. `open` says how
  * to open it if it isn't open (`client.open`'s options).
  */
-export function acquireActivityModel(client: SyncClient, activityId: string, open?: OpenOptions): { ready: Promise<FieldActivity>; release: () => void } {
+export function acquireActivityModel(client: ActivityClient, activityId: string, open?: OpenOptions): { ready: Promise<FieldActivity>; release: () => void } {
   return acquire(client, activityId, () => createActivityModel(client, activityId), (model) => !fits(client, model), open);
 }
 
 /** The activity list, open while any component uses it; null until it's loaded. */
-export function useActivityList(client: SyncClient): ActivityList | null {
+export function useActivityList(client: ActivityClient): ActivityList | null {
   const [list, setList] = useState<ActivityList | null>(null);
   useEffect(() => {
     const lease = acquire(client, ACTIVITY_LIST_ID, () => new ActivityList(client));
@@ -87,7 +88,7 @@ export function useActivityList(client: SyncClient): ActivityList | null {
 }
 
 /** An activity's log, open while any component uses it; null until it's loaded. Command only. */
-export function useActivityLog(client: SyncClient, activityId: string): ActivityLog | null {
+export function useActivityLog(client: ActivityClient, activityId: string): ActivityLog | null {
   const [log, setLog] = useState<ActivityLog | null>(null);
   useEffect(() => {
     const lease = acquire(client, activityLogId(activityId), () => new ActivityLog(client, activityId));
@@ -108,7 +109,7 @@ const ActivityModelContext = createContext<FieldActivity | null>(null);
  * Opens the activity for the components under it. `live` false reads it once rather than subscribing
  * (see `OpenOptions`); it goes live when `live` turns true, or on the first change made to it.
  */
-export function ActivityModelProvider({ client, activityId, live = true, fallback = null, children }: { client: SyncClient; activityId: string; live?: boolean; fallback?: ReactNode; children: ReactNode }) {
+export function ActivityModelProvider({ client, activityId, live = true, fallback = null, children }: { client: ActivityClient; activityId: string; live?: boolean; fallback?: ReactNode; children: ReactNode }) {
   const [model, setModel] = useState<FieldActivity | null>(null);
   // Bumped when the model stops fitting (a training became a mission, say), for a new one.
   const [generation, setGeneration] = useState(0);

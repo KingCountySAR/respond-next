@@ -7,6 +7,9 @@ import {
   randomId,
   type ClientMessage,
   type ActivitySnapshot,
+  type MutationDef,
+  type MutationInput,
+  type MutationNamed,
   type MutationRegistry,
   type ReadView,
   type Rec,
@@ -49,8 +52,9 @@ export interface ActivityDownload {
   records: Rec[];
 }
 
-export interface SyncClientOptions {
-  registry: MutationRegistry;
+export interface SyncClientOptions<D extends MutationDef = MutationDef> {
+  /** Its mutations; `D` types `mutate`. */
+  registry: MutationRegistry<D>;
   /** Used for local permission checks and previews; the server decides for real. */
   viewer: Viewer;
   /**
@@ -91,7 +95,7 @@ interface OpenActivity {
   downloadFailed?: boolean;
 }
 
-export class SyncClient {
+export class SyncClient<D extends MutationDef = MutationDef> {
   private readonly persistence: ClientPersistence;
   private readonly activities = new Map<string, OpenActivity>();
   private readonly statusListeners = new Set<() => void>();
@@ -117,7 +121,7 @@ export class SyncClient {
   private lastHeard = 0;
   private currentStatus: SyncStatus = { state: 'offline', rtt: undefined, clockOffset: 0, pending: 0 };
 
-  constructor(private readonly opts: SyncClientOptions) {
+  constructor(private readonly opts: SyncClientOptions<D>) {
     this.persistence = opts.persistence ?? new MemoryPersistence();
     this.ready = this.loadMeta();
   }
@@ -268,7 +272,8 @@ export class SyncClient {
    * Applies a change locally at once and queues it for the server.
    * Throws Rejection, without queueing, if it can't apply locally.
    */
-  mutate(activityId: string, name: string, args: Record<string, unknown>): WireMutation {
+  mutate<N extends D['name']>(activityId: string, name: N, input: MutationInput<MutationNamed<D, N>>): WireMutation {
+    const args = input as Record<string, unknown>;
     const e = this.activity(activityId);
     const def = this.opts.registry.latest(name);
     if (!def) throw new Rejection('unknown_mutation', `Unknown change type ${name}`);

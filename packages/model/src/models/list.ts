@@ -3,7 +3,7 @@
  * the list scope (`ACTIVITY_LIST_ID`) the same way an activity model reads its activity.
  */
 import { compareShallow, computed, makeObservable } from 'mobx';
-import type { SyncClient } from '@sync/client';
+import type { ActivityClient } from '../client';
 import { ACTIVITY_LIST_ID, activityPhase, isActiveStatus, type ActivityPhase, type ActivitySummaryRec, type ParticipantStatus } from '@sync/domain';
 import { Clock } from '../clock';
 import { RecordStore } from '../store';
@@ -16,7 +16,7 @@ export class ActivityList {
 
   /** The list scope must already be open on the client (`await client.open(ACTIVITY_LIST_ID)`). */
   constructor(
-    private readonly client: SyncClient,
+    private readonly client: ActivityClient,
     options: { clock?: Clock } = {},
   ) {
     this.clock = options.clock ?? new Clock(() => client.now());

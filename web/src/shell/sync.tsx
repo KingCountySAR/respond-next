@@ -4,6 +4,7 @@
  */
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { IndexedDbPersistence, SyncClient, WebSocketTransport, type ClientPersistence, type Transport } from '@sync/client';
+import type { ActivityClient } from '@sync/model';
 import { activityRegistry, clientViewerOn } from '@sync/domain';
 import { useApi } from './api';
 import { viewerOf, type Session } from './auth';
@@ -17,7 +18,7 @@ export interface SyncOptions {
 // The server knows who this is from the session cookie, which the browser sends with the upgrade.
 const syncUrl = () => `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/sync`;
 
-const SyncContext = createContext<SyncClient | null>(null);
+const SyncContext = createContext<ActivityClient | null>(null);
 
 export function SyncProvider({ session, options = {}, children }: { session: Session; options?: SyncOptions; children: ReactNode }) {
   const api = useApi();
@@ -46,7 +47,7 @@ export function SyncProvider({ session, options = {}, children }: { session: Ses
   return <SyncContext.Provider value={client}>{children}</SyncContext.Provider>;
 }
 
-export function useSyncClient(): SyncClient {
+export function useSyncClient(): ActivityClient {
   const client = useContext(SyncContext);
   if (!client) throw new Error('useSyncClient must be used inside a SyncProvider');
   return client;

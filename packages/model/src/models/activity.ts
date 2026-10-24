@@ -12,8 +12,8 @@
  */
 
 import { action, compareShallow, computed, computedStruct, makeObservable, observable } from 'mobx';
-import { randomId, type Rec, type WireMutation } from '@sync/core';
-import type { SyncClient } from '@sync/client';
+import { randomId, type MutationInput, type MutationNamed, type Rec, type WireMutation } from '@sync/core';
+import type { ActivityClient } from '../client';
 import {
   ACTIVITY_INDEXES,
   activityPhase,
@@ -26,6 +26,7 @@ import {
   participantIdFor,
   statusCounts,
   type ActivityPhase,
+  type ActivityMutation,
   type ActivityRec,
   type ActivityUnitRec,
   type EquipmentRec,
@@ -68,7 +69,7 @@ const RECORD_TYPE: Record<ModelKind, string> = {
 };
 
 /** The model for the client's viewer: `CommandActivity` for command and support, else `FieldActivity`. */
-export function createActivityModel(client: SyncClient, activityId: string, options?: ActivityModelOptions): FieldActivity {
+export function createActivityModel(client: ActivityClient, activityId: string, options?: ActivityModelOptions): FieldActivity {
   return activityProjector.viewKey(client.viewerIn(activityId)) === 'command' ? new CommandActivity(client, activityId, options) : new FieldActivity(client, activityId, options);
 }
 
@@ -88,7 +89,7 @@ export class FieldActivity<K extends Kinds = Kinds> {
 
   /** The activity must already be open on the client (`await client.open(activityId)`). */
   constructor(
-    protected readonly client: SyncClient,
+    protected readonly client: ActivityClient,
     readonly activityId: string,
     options: ActivityModelOptions = {},
   ) {
@@ -219,7 +220,7 @@ export class FieldActivity<K extends Kinds = Kinds> {
   }
 
   /** Any change by name; see `@sync/domain` for names and args. Throws Rejection if refused locally. */
-  mutate(name: string, args: Record<string, unknown>): WireMutation {
+  mutate<N extends ActivityMutation['name']>(name: N, args: MutationInput<MutationNamed<ActivityMutation, N>>): WireMutation {
     return this.client.mutate(this.activityId, name, args);
   }
 
@@ -253,7 +254,7 @@ export class FieldActivity<K extends Kinds = Kinds> {
 
 /** Command and support: every record in full, comms, and the operations actions. */
 export class CommandActivity extends FieldActivity<CommandKinds> {
-  constructor(client: SyncClient, activityId: string, options?: ActivityModelOptions) {
+  constructor(client: ActivityClient, activityId: string, options?: ActivityModelOptions) {
     super(client, activityId, options);
     makeObservable(this, { comms: computed({ equals: compareShallow }) });
   }

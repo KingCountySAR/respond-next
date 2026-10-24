@@ -112,6 +112,7 @@ describe('ops dashboard', () => {
       ['kcsara:1', 'Avery'],
       ['kcsara:2', 'Kai'],
     ].map(([ref, firstname]) => {
+      if (!ref || !firstname) throw new Error('fixture');
       server.seed.mutate(ACTIVITY, 'addParticipant', { personRef: ref, firstname, lastname: 'Lindqvist', unit: CRT, status: 'staging', at });
       return participantIdFor(ref!);
     });

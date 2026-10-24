@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { MemoryPersistence, SyncClient, type ActivityDownload } from '@sync/client';
+import type { ActivityClient } from '@sync/model';
 import { Hub, MemoryStorage } from '@sync/server';
 import { activityProjector, activityRegistry, getActivity, type ActivityViewer } from '@sync/domain';
 import { COMMAND, activityArgs } from '../../packages/domain/__tests__/helpers';
@@ -12,7 +13,7 @@ async function until(check: () => boolean) {
   expect(check()).toBe(true);
 }
 
-const clients: SyncClient[] = [];
+const clients: ActivityClient[] = [];
 afterEach(() => clients.splice(0).forEach((c) => c.stop()));
 
 /** A closed activity made by one command client, and a second client to open it, not live. */

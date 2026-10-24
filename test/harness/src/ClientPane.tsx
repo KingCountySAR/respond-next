@@ -3,6 +3,7 @@ import { MemoryPersistence, SyncClient } from '@sync/client';
 import { useActivitySnapshot, useRejections, useSyncStatus } from '@sync/client/react';
 import { activityRegistry, type ActivityViewer } from '@sync/domain';
 import { ActivityModelProvider } from '@sync/model/react';
+import type { ActivityClient } from '@sync/model';
 import { ActivityView } from './ActivityView';
 import { SimLink, SimTransport } from './simLink';
 
@@ -67,7 +68,7 @@ export function ClientPane({ viewer, activityId, onRemove }: Props) {
   );
 }
 
-function LinkControls({ link, client }: { link: SimLink; client: SyncClient }) {
+function LinkControls({ link, client }: { link: SimLink; client: ActivityClient }) {
   useSyncExternalStore(
     (cb) => link.subscribe(cb),
     () => `${link.latencyMs}/${link.online}`,
@@ -97,7 +98,7 @@ function LinkControls({ link, client }: { link: SimLink; client: SyncClient }) {
   );
 }
 
-function Debug({ client, activityId }: { client: SyncClient; activityId: string }) {
+function Debug({ client, activityId }: { client: ActivityClient; activityId: string }) {
   const snap = useActivitySnapshot(client, activityId);
   const rejections = useRejections(client);
   const [log, setLog] = useState<{ dir: 'in' | 'out'; text: string }[]>([]);

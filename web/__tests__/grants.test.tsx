@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import type { ActivityKind } from '@sync/domain';
 import { ACTIVITY, TITLE, serverWithActivity, signIn } from './app';
 
 let server: Awaited<ReturnType<typeof serverWithActivity>>;
@@ -17,7 +18,7 @@ afterEach(() => {
 const DANA = 'kcsara:7';
 const rosterCard = (name: string) => screen.getAllByText(name).map((el) => el.closest('button')).find(Boolean)!;
 const FIELD_DASHBOARD = 'The operations dashboard is for command and support.';
-const setKind = (kind: string) => server.seed.mutate(ACTIVITY, 'updateActivity', { kind });
+const setKind = (kind: ActivityKind) => server.seed.mutate(ACTIVITY, 'updateActivity', { kind });
 
 describe('tier grants', () => {
   it('let command grant command on the mission to someone on its roster, and take it away', async () => {

@@ -26,4 +26,7 @@ export * from './mutations/operations';
 
 export const activityMutations = { ...lifecycle, ...participants, ...operations, setActivitySummary: summaries.setActivitySummary, appendLog: log.appendLog, setLogFavorite: log.setLogFavorite };
 
+/** Any one of the activity mutations; `SyncClient<ActivityMutation>` takes them by name with typed args. */
+export type ActivityMutation = (typeof activityMutations)[keyof typeof activityMutations];
+
 export const activityRegistry = new MutationRegistry(Object.values(activityMutations));

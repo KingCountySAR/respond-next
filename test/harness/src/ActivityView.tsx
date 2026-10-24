@@ -24,14 +24,14 @@ const decodeTarget = (v: string): Target | null => {
 function newActivityArgs(now: number) {
   return {
     idNumber: '',
-    kind: 'mission',
+    kind: 'mission' as const,
     title: 'Harness activity',
     description: '',
     location: { title: 'Harness', lat: null, lon: null, address: null },
     mapId: '',
     startTime: now,
     ownerOrgId: UNIT.id,
-    mode: 'full',
+    mode: 'full' as const,
     standbyOnly: false,
   };
 }

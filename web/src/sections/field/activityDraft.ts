@@ -3,7 +3,8 @@
  * data: the draft, its validation, which units may own it, and the changes saving it makes.
  */
 import { action, computed, makeObservable, observable, observableRef } from 'mobx';
-import { DEFAULT_EARLY_SIGN_IN_WINDOW, ownerOptions, type ActivityKind, type FieldActivityRec, type Location, type SiteConfig, type SiteUnit } from '@sync/domain';
+import { DEFAULT_EARLY_SIGN_IN_WINDOW, ownerOptions, type ActivityKind, type ActivityMutation, type FieldActivityRec, type Location, type SiteConfig, type SiteUnit } from '@sync/domain';
+import type { MutationCall } from '@sync/core';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -42,7 +43,7 @@ export interface SavePlan {
   isNew: boolean;
   /** Where to go once saved. */
   path: string;
-  mutations: { name: string; args: Record<string, unknown> }[];
+  mutations: MutationCall<ActivityMutation>[];
 }
 
 type Org = SiteConfig['organization'];
@@ -193,7 +194,7 @@ export class ActivityDraft implements DraftFields {
       standbyOnly: this.standbyOnly,
     };
     const owner = [this.org, ...this.org.partners].find((u) => u.id === fields.ownerOrgId);
-    const invite = (u: SiteUnit) => ({ name: 'setUnitStatus', args: { unit: unitRef(u), status: 'invited', at: now } });
+    const invite = (u: SiteUnit): MutationCall<ActivityMutation> => ({ name: 'setUnitStatus', args: { unit: unitRef(u), status: 'invited', at: now } });
     const mutations: SavePlan['mutations'] = [];
     if (!this.edited) {
       mutations.push({ name: 'createActivity', args: { ...fields, mode: 'full' } });

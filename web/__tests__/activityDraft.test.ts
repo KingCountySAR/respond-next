@@ -3,6 +3,9 @@ import { autorun } from 'mobx';
 import type { FieldActivityRec, SiteConfig, SiteUnit } from '@sync/domain';
 import { ActivityDraft, mapIdOf, type EditedActivity } from '../src/sections/field/activityDraft';
 
+/** A planned change's args, to read whichever fields it has. */
+const args = (m: { args: object }) => m.args as Record<string, unknown>;
+
 const unit = (id: string, missions: boolean, events: boolean): SiteUnit => ({ id, title: `${id.toUpperCase()} unit`, shortTitle: id.toUpperCase(), canCreateMissions: missions, canCreateEvents: events });
 const org: SiteConfig['organization'] = { ...unit('crt', true, true), partners: [unit('rmr', true, false), unit('ev', false, true)] };
 const NOW = 1_000_000;
@@ -102,13 +105,13 @@ describe('activity draft', () => {
     draft.set('ownerOrgId', 'rmr');
     const plan = draft.save(NOW, () => 'new')!;
     expect(plan).toMatchObject({ activityId: 'new', isNew: true, path: '/mission/new' });
-    expect(plan.mutations.map((m) => [m.name, m.args.status ?? m.args.title])).toEqual([
+    expect(plan.mutations.map((m) => [m.name, args(m).status ?? args(m).title])).toEqual([
       ['createActivity', 'Overdue climber'],
       ['setUnitStatus', 'responding'],
       ['setUnitStatus', 'invited'],
     ]);
     expect(plan.mutations[0]!.args).toMatchObject({ kind: 'mission', mapId: 'XYZ98', ownerOrgId: 'rmr', mode: 'full' });
-    expect(plan.mutations[2]!.args.unit).toEqual({ id: 'rmr', title: 'RMR unit', rosterName: 'RMR' });
+    expect(args(plan.mutations[2]!).unit).toEqual({ id: 'rmr', title: 'RMR unit', rosterName: 'RMR' });
   });
 
   it('puts the site unit on standby for an activity that starts later', () => {
@@ -117,7 +120,7 @@ describe('activity draft', () => {
     expect(draft.startsAfter(NOW)).toBe(true);
     const plan = draft.save(NOW, () => 'new')!;
     expect(plan.path).toBe('/event/new');
-    expect(plan.mutations.map((m) => m.args.status ?? m.args.kind)).toEqual(['training', 'standby']);
+    expect(plan.mutations.map((m) => args(m).status ?? args(m).kind)).toEqual(['training', 'standby']);
   });
 
   it('updates an edited one, keeping a non-mission kind and inviting a new owner', () => {
@@ -127,7 +130,7 @@ describe('activity draft', () => {
     const plan = draft.save(NOW, () => 'unused')!;
     expect(plan).toMatchObject({ activityId: 'a1', isNew: false, path: '/event/a1' });
     expect(plan.mutations.map((m) => m.name)).toEqual(['updateActivity', 'setUnitStatus']);
-    expect(plan.mutations[0]!.args.kind).toBe('other');
+    expect(args(plan.mutations[0]!).kind).toBe('other');
     expect(new ActivityDraft(org, { missions: true, now: NOW, activity: edited() }).save(NOW, () => 'x')!.mutations.map((m) => m.name)).toEqual(['updateActivity']);
   });
 

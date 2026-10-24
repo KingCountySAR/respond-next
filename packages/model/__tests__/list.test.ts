@@ -10,7 +10,7 @@ import { CRT, SYSTEM, addMember, startedActivity } from '../../domain/__tests__/
 async function listWith(...activities: [string, ReturnType<typeof startedActivity>][]) {
   const client = new SyncClient({ registry: activityRegistry, viewer: SYSTEM, transport: () => ({ open() {}, send() {}, close() {} }) });
   await client.open(ACTIVITY_LIST_ID);
-  const write = (id: string, e: ReturnType<typeof startedActivity>) => client.mutate(ACTIVITY_LIST_ID, 'setActivitySummary', { id, summary: activitySummary(e.view, id) });
+  const write = (id: string, e: ReturnType<typeof startedActivity>) => client.mutate(ACTIVITY_LIST_ID, 'setActivitySummary', { id, summary: activitySummary(e.view, id) as unknown as Record<string, unknown> });
   for (const [id, e] of activities) write(id, e);
   const { clock, set } = testClock(T0 + 2 * HOUR);
   return { list: new ActivityList(client, { clock }), write, setTime: set };

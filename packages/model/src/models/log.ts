@@ -4,9 +4,9 @@
  * activity model reads its activity. Command only.
  */
 import { compareShallow, computed, makeObservable } from 'mobx';
-import type { WireMutation } from '@sync/core';
-import type { SyncClient } from '@sync/client';
-import { Level, activityLogId, logEntryLevel, type LogEntryRec } from '@sync/domain';
+import type { MutationInput, MutationNamed, WireMutation } from '@sync/core';
+import type { ActivityClient } from '../client';
+import { Level, activityLogId, logEntryLevel, type ActivityMutation, type LogEntryRec } from '@sync/domain';
 import { RecordStore } from '../store';
 
 export class ActivityLog {
@@ -17,7 +17,7 @@ export class ActivityLog {
 
   /** The log scope must already be open on the client (`await client.open(activityLogId(activityId))`). */
   constructor(
-    private readonly client: SyncClient,
+    private readonly client: ActivityClient,
     readonly activityId: string,
   ) {
     this.scopeId = activityLogId(activityId);
@@ -36,7 +36,7 @@ export class ActivityLog {
   }
 
   /** @internal */
-  mutate(name: string, args: Record<string, unknown>): WireMutation {
+  mutate<N extends ActivityMutation['name']>(name: N, args: MutationInput<MutationNamed<ActivityMutation, N>>): WireMutation {
     return this.client.mutate(this.scopeId, name, args);
   }
 

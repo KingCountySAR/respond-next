@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { SyncClient } from '@sync/client';
+import type { ActivityClient } from '@sync/model';
 import { Hub, MemoryStorage } from '@sync/server';
 import { Level, activityLogId, activityProjector, activityRegistry, type ActivityViewer, type LogEntryRec } from '@sync/domain';
 import { ActivityLogWriter } from '../../server/src/activityLog';
@@ -14,7 +15,7 @@ async function until(check: () => boolean) {
   expect(check()).toBe(true);
 }
 
-const clients: SyncClient[] = [];
+const clients: ActivityClient[] = [];
 afterEach(() => clients.splice(0).forEach((c) => c.stop()));
 
 async function setup() {
@@ -29,8 +30,8 @@ async function setup() {
     await c.open(activityLogId('a1'));
     clients.push(c);
   }
-  const lines = (c: SyncClient) => [...c.snapshot(activityLogId('a1')).scan<LogEntryRec>('logEntry')].sort((x, y) => x.at - y.at || (x.id < y.id ? -1 : 1));
-  const texts = (c: SyncClient) => lines(c).map((l) => [l.level, l.text]);
+  const lines = (c: ActivityClient) => [...c.snapshot(activityLogId('a1')).scan<LogEntryRec>('logEntry')].sort((x, y) => x.at - y.at || (x.id < y.id ? -1 : 1));
+  const texts = (c: ActivityClient) => lines(c).map((l) => [l.level, l.text]);
   const synced = () => until(() => alice!.status.pending === 0 && anna!.status.pending === 0);
   return { hub, log, alice: alice!, anna: anna!, lines, texts, synced };
 }

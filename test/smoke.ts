@@ -6,13 +6,14 @@
  * Usage: npm run smoke [-- ws://host:port/api/sync]
  */
 import { SyncClient, WebSocketTransport } from '@sync/client';
+import type { ActivityClient } from '@sync/model';
 import { activityRegistry, asActivityViewer, currentParticipantStatus, participantIdFor, viewerOfSession, type DevSignInRequest, type ParticipantRec, type SessionResponse } from '@sync/domain';
 
 const base = process.argv[2] ?? 'ws://localhost:4000/api/sync';
 const activityId = `smoke-${Date.now()}`;
 const CRT = { id: 'org-crt', title: 'Cascade Rescue Team', rosterName: 'CRT' };
 
-async function makeClient(request: DevSignInRequest): Promise<SyncClient> {
+async function makeClient(request: DevSignInRequest): Promise<ActivityClient> {
   const res = await fetch(new URL('/api/auth/dev', base.replace(/^ws/, 'http')), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) });
   if (!res.ok) throw new Error(`sign-in as ${request.email}: HTTP ${res.status} ${await res.text()}`);
   const { session } = (await res.json()) as SessionResponse;

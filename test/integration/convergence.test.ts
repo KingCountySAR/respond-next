@@ -48,7 +48,7 @@ describe('convergence over a bad network', () => {
         else if (roll < 0.5) client.mutate(ACTIVITY, 'renamePerson', { id: person.id, name: `r${Math.floor(rand() * 1000)}` });
         else if (roll < 0.8) {
           const backdate = rand() < 0.3 ? Math.floor(rand() * 30 * 60_000) : 0;
-          client.mutate(ACTIVITY, 'setStatus', { personId: person.id, status: pick(STATUSES), at: client.now() - backdate });
+          client.mutate(ACTIVITY, 'setStatus', { personId: person.id, status: pick(STATUSES)!, at: client.now() - backdate });
         } else if (viewer.tier === 'command' && roll < 0.95) client.mutate(ACTIVITY, 'setNote', { id: person.id, note: `n${seed}-${roll}` });
         else if (viewer.tier === 'command') client.mutate(ACTIVITY, 'removePerson', { id: person.id });
       } catch (err) {
