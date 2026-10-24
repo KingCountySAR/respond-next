@@ -202,7 +202,8 @@ const SENTENCES: Record<string, Sentence> = {
   createPlace: ({ a, by }) => auto(`${by} created place ${str(a.name)}`),
   updatePlace: ({ a, by, named }) => audit(`${by} edited ${named('place', a.id)}`),
   deletePlace: ({ a, by, named }) => auto(`${by} deleted ${named('place', a.placeId)}`),
-  createEquipment: ({ a, by, named }) => audit(`${by} added ${named('equipment', a.id)}`),
+  // Dropped from the catalog straight onto a team or place: one change, one line.
+  createEquipment: ({ a, by, named, view }) => audit(`${by} added ${named('equipment', a.id)}${a.assignedTo ? ` to ${targetName(view, a.assignedTo as never)}` : ''}`),
   assignEquipment: ({ a, by, named, view }) => audit(`${by} moved ${named('equipment', a.equipmentId)} to ${targetName(view, (a.target ?? null) as never)}`),
   correctParticipantStatus: ({ a, by, person, view }) => audit(`${by} corrected ${person(view.get<ParticipantStatusRec>('participantStatus', str(a.entryId))?.participantId)}'s timeline`),
   setEta: ({ a, by, person }) => audit(a.eta === null ? `${by} cleared ${person(a.participantId)}'s ETA` : `${by} updated ${person(a.participantId)}'s ETA`),

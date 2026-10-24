@@ -36,7 +36,7 @@ async function setup() {
 }
 
 describe('the activity log', () => {
-  it('says who changed what, team status and GAR at level 3 and the rest at 4', async () => {
+  it('says who changed what, team status and GAR at Auto and the rest at Audit', async () => {
     const s = await setup();
     const now = Date.now();
     s.alice.mutate('a1', 'createActivity', activityArgs({ startTime: now - 1000 }));
@@ -49,9 +49,11 @@ describe('the activity log', () => {
     s.alice.mutate('a1', 'createTeam', { id: 't1', name: 'Team 1' });
     s.alice.mutate('a1', 'setTeamStatus', { teamId: 't1', status: 'inTransit', at: now + 2 });
     s.alice.mutate('a1', 'updateTeam', { id: 't1', gar: 'amber', notes: 'Upper trail' });
+    s.alice.mutate('a1', 'createEquipment', { id: 'eq1', typeId: 'inventory-0', name: 'Sat phone', assignedTo: { kind: 'team', id: 't1' } });
+    s.alice.mutate('a1', 'createEquipment', { id: 'eq2', typeId: 'inventory-0', name: 'Litter', assignedTo: null });
     await s.synced();
 
-    await until(() => s.lines(s.alice).length === 8);
+    await until(() => s.lines(s.alice).length === 10);
     // Timed changes carry their own time, the rest the server's, so the order here is loose.
     expect(s.texts(s.alice).sort()).toEqual([
       [4, 'Alice Adams created Lost hiker, Mailbox Peak'],
@@ -62,6 +64,8 @@ describe('the activity log', () => {
       [3, 'Alice Adams set Team 1 from In Base to In Transit'],
       [3, "Alice Adams set Team 1's GAR from Green to Amber"],
       [4, 'Alice Adams edited Team 1 (notes)'],
+      [4, 'Alice Adams added Sat phone to Team 1'],
+      [4, 'Alice Adams added Litter'],
     ].sort());
   });
 
