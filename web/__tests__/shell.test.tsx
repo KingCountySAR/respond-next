@@ -53,16 +53,16 @@ describe('web shell', () => {
     expect(await screen.findByText('26-0123 Lost hikers')).toBeTruthy();
   });
 
-  it('keeps the ops dashboard to command and support', async () => {
+  it('keeps the ops dashboard to managers', async () => {
     server.renderApp(`/ops/${ACTIVITY}`);
     await signIn('Dana Field', 'kcsara:7');
-    expect(await screen.findByText('The operations dashboard is for command and support.')).toBeTruthy();
+    expect(await screen.findByText('The operations dashboard is for managers.')).toBeTruthy();
   });
 
   it('redirects legacy paths', async () => {
     server.renderApp(`/mission/${ACTIVITY}/ops`);
     await signIn('Dana Field', 'kcsara:7');
-    await screen.findByText('The operations dashboard is for command and support.');
+    await screen.findByText('The operations dashboard is for managers.');
     expect(window.location.pathname).toBe(`/ops/${ACTIVITY}`);
   });
 });

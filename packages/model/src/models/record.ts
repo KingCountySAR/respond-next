@@ -4,7 +4,7 @@ import { computed, makeObservable } from 'mobx';
 import type { Rec } from '@sync/core';
 import { equipmentAt, membersOf, type ActivityUnitRec, type EquipmentRec, type ParticipantRec, type Target } from '@sync/domain';
 import type { RecordStore } from '../store';
-import type { FieldActivity } from './activity';
+import type { RespondActivity } from './activity';
 import type { Kinds } from './kinds';
 
 /** A unit as the status mutations take it. */
@@ -22,7 +22,7 @@ export const byEquipment = (a: EquipmentRec, b: EquipmentRec) => a.category.loca
 /** One record's model: the record as this viewer sees it, and whether a local change is unconfirmed. */
 export abstract class RecordModel<R extends Rec, K extends Kinds> {
   constructor(
-    readonly activity: FieldActivity<K>,
+    readonly activity: RespondActivity<K>,
     readonly id: string,
     private readonly recordType: string,
   ) {
@@ -43,13 +43,13 @@ export abstract class RecordModel<R extends Rec, K extends Kinds> {
   }
 }
 
-export function participantsAt<K extends Kinds>(activity: FieldActivity<K>, target: Target): K['participant'][] {
+export function participantsAt<K extends Kinds>(activity: RespondActivity<K>, target: Target): K['participant'][] {
   return membersOf(activity.store, target)
     .sort(byPersonName)
     .map((p) => activity.participant(p.id)!);
 }
 
-export function equipmentModelsAt<K extends Kinds>(activity: FieldActivity<K>, target: Target): K['equipment'][] {
+export function equipmentModelsAt<K extends Kinds>(activity: RespondActivity<K>, target: Target): K['equipment'][] {
   return equipmentAt(activity.store, target)
     .sort(byEquipment)
     .map((e) => activity.equipmentItem(e.id)!);

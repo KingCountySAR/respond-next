@@ -5,7 +5,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
-import type { Session, Tier } from '@sync/domain';
+import { currentTier, type Session, type Tier } from '@sync/domain';
 
 export const SESSION_COOKIE = 'sync_session';
 // As the legacy app: a day.
@@ -13,9 +13,16 @@ export const SESSION_TTL_SECONDS = 60 * 60 * 24;
 
 /**
  * What a session stands for. Whether they're an admin is worked out on each request. `grants`: tiers
- * command gave them on particular missions, by activity id (none in sessions from before grants).
+ * a manager gave them on particular missions, by activity id (none in sessions from before grants).
  */
 export type SessionData = Omit<Session, 'admin'> & { orgId: string; grants?: Record<string, Tier> };
+
+/** A stored session in today's tier names. */
+const withCurrentTiers = (data: SessionData): SessionData => ({
+  ...data,
+  tier: currentTier(data.tier),
+  ...(data.grants && { grants: Object.fromEntries(Object.entries(data.grants).map(([activityId, tier]) => [activityId, currentTier(tier)])) }),
+});
 
 export interface SessionStore {
   create(data: SessionData): Promise<string>;
@@ -80,12 +87,12 @@ export class PostgresSessionStore implements SessionStore {
 
   async get(id: string): Promise<SessionData | undefined> {
     const { rows } = await this.pool.query<{ data: SessionData }>('SELECT data FROM sessions WHERE id = $1 AND expires > now()', [id]);
-    return rows[0]?.data;
+    return rows[0] && withCurrentTiers(rows[0].data);
   }
 
   async updatePerson(personRef: string, change: (data: SessionData) => Promise<SessionData>): Promise<void> {
     const { rows } = await this.pool.query<{ id: string; data: SessionData }>("SELECT id, data FROM sessions WHERE data->>'personRef' = $1 AND expires > now()", [personRef]);
-    for (const { id, data } of rows) await this.pool.query('UPDATE sessions SET data = $2 WHERE id = $1 AND expires > now()', [id, await change(data)]);
+    for (const { id, data } of rows) await this.pool.query('UPDATE sessions SET data = $2 WHERE id = $1 AND expires > now()', [id, await change(withCurrentTiers(data))]);
   }
 
   async remove(id: string): Promise<void> {

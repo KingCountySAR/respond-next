@@ -1,13 +1,13 @@
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect } from 'react';
-import { observer, useFieldActivity } from '@sync/model/react';
+import { observer, useRespondActivity } from '@sync/model/react';
 import { useRosterState } from './components/RosterPanel';
 import { DesktopActivityPage } from './DesktopActivityPage';
 import { MobileActivityPage } from './MobileActivityPage';
 
 export const ActivityPage = observer(function ActivityPage() {
-  const activity = useFieldActivity();
+  const activity = useRespondActivity();
   const roster = useRosterState();
   const rec = activity.record;
   const numberAndTitle = rec ? `${rec.idNumber} ${rec.title}` : '';

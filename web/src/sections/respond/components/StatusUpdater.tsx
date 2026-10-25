@@ -3,7 +3,7 @@ import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText,
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useState } from 'react';
 import { statusStepsUnder, type ParticipantStatus, type StatusStep } from '@sync/domain';
-import type { FieldActivity, UnitRef } from '@sync/model';
+import type { RespondActivity, UnitRef } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useHomeUnit } from '../../../shell/App';
 import { personName, useAuth } from '../../../shell/auth';
@@ -28,7 +28,7 @@ export interface StatusPerson {
  * A status button: the signed-in person's under their own unit, or, as Add Responder uses it,
  * someone else's (`person`) under the unit they're responding with (`unit`).
  */
-export const StatusUpdater = observer(function StatusUpdater({ activity, fullWidth, person: given, unit: givenUnit }: { activity: FieldActivity; fullWidth?: boolean; person?: StatusPerson; unit?: UnitRef }) {
+export const StatusUpdater = observer(function StatusUpdater({ activity, fullWidth, person: given, unit: givenUnit }: { activity: RespondActivity; fullWidth?: boolean; person?: StatusPerson; unit?: UnitRef }) {
   const { session } = useAuth();
   const homeUnit = useHomeUnit();
   const unit = givenUnit ?? homeUnit;
@@ -78,7 +78,7 @@ const UpdateStatusForm = observer(function UpdateStatusForm({
   label,
   onClose,
 }: {
-  activity: FieldActivity;
+  activity: RespondActivity;
   person: StatusPerson;
   /** Whether it's the signed-in person's own status. */
   self: boolean;

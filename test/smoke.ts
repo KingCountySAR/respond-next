@@ -1,8 +1,8 @@
 /**
  * End-to-end check against a running server with DEV_TOOLS=true (npm run dev, or a build run with
- * it set): a command and a field client over real WebSockets, one change each way.
- * Each signs in with the dev sign-in and connects with its session cookie. The field client is a
- * member of the dev seed (SMOKE_FIELD_EMAIL to use another).
+ * it set): a manage and a respond client over real WebSockets, one change each way.
+ * Each signs in with the dev sign-in and connects with its session cookie. The respond client is a
+ * member of the dev seed (SMOKE_RESPOND_EMAIL to use another).
  * Usage: npm run smoke [-- ws://host:port/api/sync]
  */
 import { SyncClient, WebSocketTransport } from '@sync/client';
@@ -29,18 +29,18 @@ async function waitFor(what: string, check: () => boolean, ms = 5000): Promise<v
   }
 }
 
-const command = await makeClient({ email: 'smoke-command@example.org', name: 'Smoke Command', tier: 'command', class: 'member' });
-const field = await makeClient({ email: process.env.SMOKE_FIELD_EMAIL ?? 'bo.okafor@crt.example.org', tier: 'field', class: 'member' });
-const bobRef = asActivityViewer(field.viewer).personRef!;
-for (const c of [command, field]) {
+const manage = await makeClient({ email: 'smoke-manager@example.org', name: 'Smoke Manager', tier: 'manage', class: 'member' });
+const respond = await makeClient({ email: process.env.SMOKE_RESPOND_EMAIL ?? 'bo.okafor@crt.example.org', tier: 'respond', class: 'member' });
+const bobRef = asActivityViewer(respond.viewer).personRef!;
+for (const c of [manage, respond]) {
   await c.start();
   await c.open(activityId);
 }
-await waitFor('both clients live', () => command.status.state === 'live' && field.status.state === 'live');
+await waitFor('both clients live', () => manage.status.state === 'live' && respond.status.state === 'live');
 
 const bob = participantIdFor(bobRef);
 const t0 = Date.now();
-command.mutate(activityId, 'createActivity', {
+manage.mutate(activityId, 'createActivity', {
   idNumber: '',
   kind: 'mission',
   title: 'Smoke test',
@@ -52,21 +52,21 @@ command.mutate(activityId, 'createActivity', {
   mode: 'full',
   standbyOnly: false,
 });
-command.mutate(activityId, 'addComm', { id: 'smoke-comm', from: 'Base', to: 'All', message: 'Command only' });
-command.mutate(activityId, 'addParticipant', { personRef: bobRef, firstname: 'Bob', lastname: 'Brown', unit: CRT, status: 'responding', at: command.now() - 30 * 60_000 });
-command.mutate(activityId, 'setMiles', { participantId: bob, miles: 42 });
-await waitFor('field client sees Bob', () => field.snapshot(activityId).get<ParticipantRec>('participant', bob)?.firstname === 'Bob');
-console.log(`field client saw the new person after ${Date.now() - t0} ms`);
-await waitFor("field client sees Bob's miles", () => field.snapshot(activityId).get<ParticipantRec>('participant', bob)?.miles === 42);
+manage.mutate(activityId, 'addComm', { id: 'smoke-comm', from: 'Base', to: 'All', message: 'Managers only' });
+manage.mutate(activityId, 'addParticipant', { personRef: bobRef, firstname: 'Bob', lastname: 'Brown', unit: CRT, status: 'responding', at: manage.now() - 30 * 60_000 });
+manage.mutate(activityId, 'setMiles', { participantId: bob, miles: 42 });
+await waitFor('respond client sees Bob', () => respond.snapshot(activityId).get<ParticipantRec>('participant', bob)?.firstname === 'Bob');
+console.log(`respond client saw the new person after ${Date.now() - t0} ms`);
+await waitFor("respond client sees Bob's miles", () => respond.snapshot(activityId).get<ParticipantRec>('participant', bob)?.miles === 42);
 // The comm went before Bob, and messages arrive in order, so it would be here by now if it leaked.
-if (field.snapshot(activityId).get('comm', 'smoke-comm')) throw new Error('field client received a command-only comm');
+if (respond.snapshot(activityId).get('comm', 'smoke-comm')) throw new Error('respond client received a manager-only comm');
 
-field.mutate(activityId, 'setParticipantStatus', { participantId: bob, status: 'staging', unit: CRT, at: field.now() - 15 * 60_000 });
-await waitFor('command client sees the backdated status', () => currentParticipantStatus(command.snapshot(activityId), bob)?.status === 'staging');
-await waitFor('all pending confirmed', () => command.status.pending === 0 && field.status.pending === 0);
-const s = currentParticipantStatus(command.snapshot(activityId), bob)!;
-console.log(`command client sees Bob '${s.status}' since ${Math.round((command.now() - s.at) / 60_000)} min ago; miles ${command.snapshot(activityId).get<ParticipantRec>('participant', bob)?.miles}`);
+respond.mutate(activityId, 'setParticipantStatus', { participantId: bob, status: 'staging', unit: CRT, at: respond.now() - 15 * 60_000 });
+await waitFor('manager client sees the backdated status', () => currentParticipantStatus(manage.snapshot(activityId), bob)?.status === 'staging');
+await waitFor('all pending confirmed', () => manage.status.pending === 0 && respond.status.pending === 0);
+const s = currentParticipantStatus(manage.snapshot(activityId), bob)!;
+console.log(`manager client sees Bob '${s.status}' since ${Math.round((manage.now() - s.at) / 60_000)} min ago; miles ${manage.snapshot(activityId).get<ParticipantRec>('participant', bob)?.miles}`);
 
-command.stop();
-field.stop();
+manage.stop();
+respond.stop();
 console.log('smoke test passed');

@@ -3,8 +3,8 @@
  * Every derived value is a MobX computed that calls the domain query, so the rules live in one place
  * (`@sync/domain`) and an `observer` component re-renders only when a value it read changes.
  *
- * Two levels, because the views nest: `FieldActivity` is what every viewer can read, and `CommandActivity`
- * extends it with what only command sees and does. A field record type says which fields a field
+ * Two levels, because the views nest: `RespondActivity` is what every viewer can read, and `ManageActivity`
+ * extends it with what only managers see and do. A respond record type says which fields a respond
  * viewer gets; fields only members get are optional, because external people don't get them.
  *
  * Writes go through `client.mutate`, never into the observables: the change shows up when the
@@ -42,14 +42,14 @@ import {
 import { Clock } from '../clock';
 import { RecordStore } from '../store';
 import { Comm } from './comm';
-import { CommandEquipment, FieldEquipment } from './equipment';
-import { CommandGroup, FieldGroup } from './group';
-import type { CommandKinds, Kinds } from './kinds';
-import { CommandParticipant, FieldParticipant } from './participant';
-import { CommandPlace, FieldPlace } from './place';
+import { ManageEquipment, RespondEquipment } from './equipment';
+import { ManageGroup, RespondGroup } from './group';
+import type { ManageKinds, Kinds } from './kinds';
+import { ManageParticipant, RespondParticipant } from './participant';
+import { ManagePlace, RespondPlace } from './place';
 import { byEquipment, byName, byPersonName, unitRef, type UnitRef } from './record';
-import { CommandTeam, FieldTeam } from './team';
-import { CommandUnit, FieldUnit } from './unit';
+import { ManageTeam, RespondTeam } from './team';
+import { ManageUnit, RespondUnit } from './unit';
 
 export interface ActivityModelOptions {
   /** Defaults to the client's server-corrected clock, ticking each second. */
@@ -57,7 +57,7 @@ export interface ActivityModelOptions {
 }
 
 export type ModelKind = Exclude<keyof Kinds, 'activity'>;
-type ModelClasses<K extends Kinds> = { [T in ModelKind]: new (activity: FieldActivity<K>, id: string) => K[T] };
+type ModelClasses<K extends Kinds> = { [T in ModelKind]: new (activity: RespondActivity<K>, id: string) => K[T] };
 
 const RECORD_TYPE: Record<ModelKind, string> = {
   participant: 'participant',
@@ -68,17 +68,17 @@ const RECORD_TYPE: Record<ModelKind, string> = {
   equipment: 'equipment',
 };
 
-/** The model for the client's viewer: `CommandActivity` for command and support, else `FieldActivity`. */
-export function createActivityModel(client: ActivityClient, activityId: string, options?: ActivityModelOptions): FieldActivity {
-  return activityProjector.viewKey(client.viewerIn(activityId)) === 'command' ? new CommandActivity(client, activityId, options) : new FieldActivity(client, activityId, options);
+/** The model for the client's viewer: `ManageActivity` for managers, else `RespondActivity`. */
+export function createActivityModel(client: ActivityClient, activityId: string, options?: ActivityModelOptions): RespondActivity {
+  return activityProjector.viewKey(client.viewerIn(activityId)) === 'manage' ? new ManageActivity(client, activityId, options) : new RespondActivity(client, activityId, options);
 }
 
-export const isCommandActivity = (model: FieldActivity): model is CommandActivity => model instanceof CommandActivity;
+export const isManageActivity = (model: RespondActivity): model is ManageActivity => model instanceof ManageActivity;
 
 const byUnitName = (a: ActivityUnitRec, b: ActivityUnitRec) => (a.rosterName ?? a.title).localeCompare(b.rosterName ?? b.title);
 
 /** What every viewer can read and do. */
-export class FieldActivity<K extends Kinds = Kinds> {
+export class RespondActivity<K extends Kinds = Kinds> {
   readonly store = new RecordStore(ACTIVITY_INDEXES);
   readonly clock: Clock;
   readonly viewKey: ViewKey;
@@ -95,7 +95,7 @@ export class FieldActivity<K extends Kinds = Kinds> {
   ) {
     this.clock = options.clock ?? new Clock(() => client.now());
     this.viewKey = activityProjector.viewKey(client.viewerIn(activityId)) as ViewKey;
-    makeObservable<FieldActivity<K>, 'follow'>(this, {
+    makeObservable<RespondActivity<K>, 'follow'>(this, {
       missing: observable,
       follow: action,
       record: computed,
@@ -126,7 +126,7 @@ export class FieldActivity<K extends Kinds = Kinds> {
 
   /** External people get no assignments, so where someone is can't be shown to them. */
   get canSeeAssignments(): boolean {
-    return this.viewKey !== 'field:external';
+    return this.viewKey !== 'respond:external';
   }
 
   get record(): K['activity'] | undefined {
@@ -211,7 +211,7 @@ export class FieldActivity<K extends Kinds = Kinds> {
   }
 
   /**
-   * Signs someone in, or updates them if they're already on the activity. Field viewers may only
+   * Signs someone in, or updates them if they're already on the activity. Respond viewers may only
    * sign in themselves.
    */
   addParticipant(person: { personRef: string; firstname: string; lastname: string }, unit: UnitRef, status: Exclude<ParticipantStatus, 'unknown'>, options: { at?: number } = {}): K['participant'] {
@@ -226,10 +226,10 @@ export class FieldActivity<K extends Kinds = Kinds> {
 
   /**
    * Makes this level's model for a record. A factory, not a table of classes: K appears only in
-   * what it returns, so a `FieldActivity<CommandKinds>` still counts as a `FieldActivity`.
+   * what it returns, so a `RespondActivity<ManageKinds>` still counts as a `RespondActivity`.
    */
   protected createModel(kind: ModelKind, id: string): K[ModelKind] {
-    return new FIELD_MODELS[kind](this as unknown as FieldActivity, id) as K[ModelKind];
+    return new RESPOND_MODELS[kind](this as unknown as RespondActivity, id) as K[ModelKind];
   }
 
   /** Models are cached by key, so a component holding one keeps the same object. */
@@ -252,8 +252,8 @@ export class FieldActivity<K extends Kinds = Kinds> {
   }
 }
 
-/** Command and support: every record in full, comms, and the operations actions. */
-export class CommandActivity extends FieldActivity<CommandKinds> {
+/** Managers: every record in full, comms, and the operations actions. */
+export class ManageActivity extends RespondActivity<ManageKinds> {
   constructor(client: ActivityClient, activityId: string, options?: ActivityModelOptions) {
     super(client, activityId, options);
     makeObservable(this, { comms: computed({ equals: compareShallow }) });
@@ -291,26 +291,26 @@ export class CommandActivity extends FieldActivity<CommandKinds> {
     return this.mutate('setUnitStatus', { unit: unitRef(unit), status, at: options.at });
   }
 
-  createTeam(name: string): CommandTeam {
+  createTeam(name: string): ManageTeam {
     const id = randomId();
     this.mutate('createTeam', { id, name });
     return this.team(id)!;
   }
 
-  createGroup(name: string): CommandGroup {
+  createGroup(name: string): ManageGroup {
     const id = randomId();
     this.mutate('createGroup', { id, name });
     return this.group(id)!;
   }
 
-  createPlace(fields: { name: string; lat?: number | null; lon?: number | null; notes?: string | null }): CommandPlace {
+  createPlace(fields: { name: string; lat?: number | null; lon?: number | null; notes?: string | null }): ManagePlace {
     const id = randomId();
     this.mutate('createPlace', { id, lat: null, lon: null, notes: null, ...fields });
     return this.place(id)!;
   }
 
   /** An item from `EQUIPMENT_CATALOG`; the custom type needs a `name`. */
-  addEquipment(typeId: string, assignedTo: Target | null, options: { name?: string } = {}): CommandEquipment {
+  addEquipment(typeId: string, assignedTo: Target | null, options: { name?: string } = {}): ManageEquipment {
     const id = randomId();
     this.mutate('createEquipment', { id, typeId, name: options.name, assignedTo });
     return this.equipmentItem(id)!;
@@ -323,8 +323,8 @@ export class CommandActivity extends FieldActivity<CommandKinds> {
     return this.comm(id)!;
   }
 
-  protected override createModel(kind: ModelKind, id: string): CommandKinds[ModelKind] {
-    return new COMMAND_MODELS[kind](this, id);
+  protected override createModel(kind: ModelKind, id: string): ManageKinds[ModelKind] {
+    return new MANAGE_MODELS[kind](this, id);
   }
 
   private commModel(id: string): Comm {
@@ -332,20 +332,20 @@ export class CommandActivity extends FieldActivity<CommandKinds> {
   }
 }
 
-const FIELD_MODELS: ModelClasses<Kinds> = {
-  participant: FieldParticipant,
-  team: FieldTeam,
-  group: FieldGroup,
-  place: FieldPlace,
-  unit: FieldUnit,
-  equipment: FieldEquipment,
+const RESPOND_MODELS: ModelClasses<Kinds> = {
+  participant: RespondParticipant,
+  team: RespondTeam,
+  group: RespondGroup,
+  place: RespondPlace,
+  unit: RespondUnit,
+  equipment: RespondEquipment,
 };
 
-const COMMAND_MODELS: ModelClasses<CommandKinds> = {
-  participant: CommandParticipant,
-  team: CommandTeam,
-  group: CommandGroup,
-  place: CommandPlace,
-  unit: CommandUnit,
-  equipment: CommandEquipment,
+const MANAGE_MODELS: ModelClasses<ManageKinds> = {
+  participant: ManageParticipant,
+  team: ManageTeam,
+  group: ManageGroup,
+  place: ManagePlace,
+  unit: ManageUnit,
+  equipment: ManageEquipment,
 };

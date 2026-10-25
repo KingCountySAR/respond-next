@@ -31,9 +31,9 @@ export interface Api {
   activities(): Promise<ActivitySummary[]>;
   /** An activity as they see it, read once; null when there's no such activity. Throws when the server can't be reached. */
   activity(activityId: string): Promise<ActivityResponse | null>;
-  /** Command on the activity only: a person's grant there, giving it (to someone on its roster), or taking it away. */
+  /** Managers of the activity only: a person's grant there, giving it (to someone on its roster), or taking it away. */
   grantOf(activityId: string, personRef: string): Promise<TierGrant | null>;
-  grant(activityId: string, personRef: string, tier: 'command' | 'support'): Promise<void>;
+  grant(activityId: string, personRef: string, tier: 'manage'): Promise<void>;
   revokeGrant(activityId: string, personRef: string): Promise<void>;
   /** Members of a unit matching a name or email; empty when there's no match. */
   searchMembers(unitId: string, query: string): Promise<MemberInfo[]>;

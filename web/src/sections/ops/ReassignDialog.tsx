@@ -1,7 +1,7 @@
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, MenuItem, Radio, RadioGroup, Select } from '@mui/material';
 import { useState } from 'react';
 import type { Target } from '@sync/domain';
-import type { CommandActivity } from '@sync/model';
+import type { ManageActivity } from '@sync/model';
 import type { MuiDialogProps, useDialogs } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
 
@@ -11,7 +11,7 @@ type Mode = 'available' | 'place' | 'team' | 'group';
  * The legacy DashboardResourceReassignmentDialog: where the people and equipment of a team, place or
  * group being removed go. Closes with the target, `{ target: null }` for back to the pool.
  */
-export function ReassignDialog({ activity, origin, title, action, onClose }: MuiDialogProps<{ target: Target | null }> & { activity: CommandActivity; origin: Target; title: string; action: string }) {
+export function ReassignDialog({ activity, origin, title, action, onClose }: MuiDialogProps<{ target: Target | null }> & { activity: ManageActivity; origin: Target; title: string; action: string }) {
   const teams = activity.teams.filter((t) => t.id !== origin.id && t.status !== 'disbanded');
   const places = activity.places.filter((p) => p.id !== origin.id);
   const groups = activity.groups.filter((g) => g.id !== origin.id);
@@ -82,7 +82,7 @@ export function ReassignDialog({ activity, origin, title, action, onClose }: Mui
  */
 export async function chooseReassignment(
   dialogs: ReturnType<typeof useDialogs>,
-  activity: CommandActivity,
+  activity: ManageActivity,
   origin: Target,
   options: { holdsResources: boolean; title: string; action: string; confirmPrompt?: string },
 ): Promise<Target | null | undefined> {

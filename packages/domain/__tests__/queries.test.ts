@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MapView, OverlayTx, mutationCtx, recKey, type Rec } from '@sync/core';
 import { activityPhase, getActivity, latestEntry, activityProjector, activityRegistry, statusCounts } from '@sync/domain';
-import { COMMAND, EXTERNAL, HOUR, T0, addMember, fieldMember, startedActivity } from './helpers';
+import { MANAGER, EXTERNAL, HOUR, T0, addMember, respondMember, startedActivity } from './helpers';
 
 describe('latestEntry', () => {
   const entry = (id: string, at: number, version: number) => ({ id, at, version });
@@ -49,7 +49,7 @@ describe('mutations are deterministic', () => {
     const args = def.args.parse({ teamId: 't1', reassignTo: null, at: T0 + 2 * HOUR });
     const writes = (side: 'client' | 'server') => {
       const tx = new OverlayTx(new MapView(e.records));
-      def.run(tx, args, mutationCtx(COMMAND, 'c-1', 7, side));
+      def.run(tx, args, mutationCtx(MANAGER, 'c-1', 7, side));
       return [...tx.writes.values()];
     };
     expect(writes('client')).toEqual(writes('server'));
@@ -71,17 +71,17 @@ describe('projection', () => {
   const keyFor = activityProjector.viewKey;
 
   it('keys views by tier and class', () => {
-    expect([keyFor(COMMAND), keyFor(fieldMember('kcsara:1')), keyFor(EXTERNAL), keyFor({ ...COMMAND, tier: 'support' })]).toEqual(['command', 'field:member', 'field:external', 'command']);
+    expect([keyFor(MANAGER), keyFor(respondMember('kcsara:1')), keyFor(EXTERNAL), keyFor({ ...MANAGER, tier: 'manage' })]).toEqual(['manage', 'respond:member', 'respond:external', 'manage']);
   });
 
-  it('shows command everything', () => {
+  it('shows managers everything', () => {
     const { records } = sample();
-    for (const r of records) expect(activityProjector.project('command', r)).toBe(r);
+    for (const r of records) expect(activityProjector.project('manage', r)).toBe(r);
   });
 
-  it('hides restricted records and fields from field members', () => {
+  it('hides restricted records and fields from respond-tier members', () => {
     const { records, pid } = sample();
-    const view = projectAll('field:member', records);
+    const view = projectAll('respond:member', records);
     const participant = view.get(`participant/${pid}`)!;
     expect(participant).toMatchObject({ personRef: 'kcsara:1', firstname: '1' });
     expect(participant).toMatchObject({ miles: 40 });
@@ -89,19 +89,19 @@ describe('projection', () => {
     expect(view.get('comm/c1')).toBeNull();
     const assignment = [...view.values()].find((r) => r?.type === 'assignment')!;
     expect(assignment.target).toEqual({ kind: 'team' });
-    // The briefing is for everyone: field members see the description and map.
+    // The briefing is for everyone: respond-tier members see the description and map.
     expect(view.get('activity/activity')).toHaveProperty('description');
     expect(view.get('activity/activity')).toHaveProperty('mapId');
   });
 
   it('shows external people less than members', () => {
     const { records, pid } = sample();
-    const view = projectAll('field:external', records);
+    const view = projectAll('respond:external', records);
     expect(view.get(`participant/${pid}`)).not.toHaveProperty('personRef');
     expect([...view.values()].filter((r) => r?.type === 'assignment')).toEqual([]);
   });
 
   it('hides record types it has no rule for', () => {
-    expect(activityProjector.project('field:member', { type: 'somethingNew', id: 'x', version: 1, secret: 1 })).toBeNull();
+    expect(activityProjector.project('respond:member', { type: 'somethingNew', id: 'x', version: 1, secret: 1 })).toBeNull();
   });
 });

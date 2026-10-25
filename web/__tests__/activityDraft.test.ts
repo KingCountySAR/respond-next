@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { autorun } from 'mobx';
-import type { FieldActivityRec, SiteConfig, SiteUnit } from '@sync/domain';
-import { ActivityDraft, mapIdOf, type EditedActivity } from '../src/sections/field/activityDraft';
+import type { RespondActivityRec, SiteConfig, SiteUnit } from '@sync/domain';
+import { ActivityDraft, mapIdOf, type EditedActivity } from '../src/sections/respond/activityDraft';
 
 /** A planned change's args, to read whichever fields it has. */
 const args = (m: { args: object }) => m.args as Record<string, unknown>;
@@ -11,7 +11,7 @@ const org: SiteConfig['organization'] = { ...unit('crt', true, true), partners: 
 const NOW = 1_000_000;
 const location = { title: 'Trailhead', lat: 47.4, lon: -121.6, address: null };
 
-const record = (fields: Partial<FieldActivityRec> = {}): FieldActivityRec => ({
+const record = (fields: Partial<RespondActivityRec> = {}): RespondActivityRec => ({
   type: 'activity',
   id: 'activity',
   version: 1,
@@ -32,7 +32,7 @@ const record = (fields: Partial<FieldActivityRec> = {}): FieldActivityRec => ({
   ...fields,
 });
 
-const edited = (fields: Partial<FieldActivityRec> = {}, units: string[] = ['crt']): EditedActivity => ({
+const edited = (fields: Partial<RespondActivityRec> = {}, units: string[] = ['crt']): EditedActivity => ({
   activityId: 'a1',
   record: record(fields),
   unit: (id) => (units.includes(id) ? { title: `${id} (listed)` } : undefined),

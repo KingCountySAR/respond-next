@@ -1,14 +1,14 @@
 import type { WireMutation } from '@sync/core';
 import { Level, commLevel, type CommRec } from '@sync/domain';
-import type { CommandActivity } from './activity';
-import type { CommandKinds } from './kinds';
+import type { ManageActivity } from './activity';
+import type { ManageKinds } from './kinds';
 import { RecordModel } from './record';
 
-/** A comms log entry. Command only: field viewers get no comms. */
-export class Comm extends RecordModel<CommRec, CommandKinds> {
-  declare readonly activity: CommandActivity;
+/** A comms log entry. Managers only: respond viewers get no comms. */
+export class Comm extends RecordModel<CommRec, ManageKinds> {
+  declare readonly activity: ManageActivity;
 
-  constructor(activity: CommandActivity, id: string) {
+  constructor(activity: ManageActivity, id: string) {
     super(activity, id, 'comm');
   }
 

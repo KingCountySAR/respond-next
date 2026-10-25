@@ -26,7 +26,7 @@ async function choose(label: string, option: string) {
 describe('activity edit', () => {
   it('creates a mission with a new location, owned by a partner, from Home', async () => {
     server.renderApp('/');
-    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
     fireEvent.click(await screen.findByText('New Mission'));
     expect(await screen.findByText(`${CRT.title} will start as a participating unit.`)).toBeTruthy();
 
@@ -63,14 +63,14 @@ describe('activity edit', () => {
 
   it('offers only units that may create the chosen type', async () => {
     server.renderApp('/event/new');
-    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
     fireEvent.mouseDown(within((await screen.findByText('Responsible Agency', { selector: 'label' })).parentElement!).getByRole('combobox'));
     expect((await screen.findAllByRole('option')).map((o) => o.textContent)).toEqual([CRT.title]); // the partner creates missions only
   });
 
   it('edits an activity, reusing a listed location', async () => {
     server.renderApp(`/mission/${ACTIVITY}/edit`);
-    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
     expect(await screen.findByDisplayValue(TITLE)).toBeTruthy();
     expect(screen.queryByText(/will start as a participating unit/)).toBeNull();
     typeInto('Name', 'Lost hikers, Mailbox Peak');
@@ -82,7 +82,7 @@ describe('activity edit', () => {
     expect(window.location.pathname).toBe(`/event/${ACTIVITY}`);
   });
 
-  it("tells a field member they can't", async () => {
+  it("tells a respond-tier member they can't", async () => {
     server.renderApp(`/mission/${ACTIVITY}/edit`);
     await signIn('Dana Field', 'kcsara:7');
     expect(await screen.findByDisplayValue(TITLE)).toBeTruthy();

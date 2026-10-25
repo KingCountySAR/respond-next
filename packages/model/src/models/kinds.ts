@@ -1,31 +1,31 @@
 /**
- * Every model takes its level's `Kinds`, so `CommandTeam.group` is a `CommandGroup` without
+ * Every model takes its level's `Kinds`, so `ManageTeam.group` is a `ManageGroup` without
  * overriding the getter (MobX doesn't allow overriding a computed).
  */
-import type { ActivityRec, FieldActivityRec } from '@sync/domain';
-import type { CommandEquipment, FieldEquipment } from './equipment';
-import type { CommandGroup, FieldGroup } from './group';
-import type { CommandParticipant, FieldParticipant } from './participant';
-import type { CommandPlace, FieldPlace } from './place';
-import type { CommandTeam, FieldTeam } from './team';
-import type { CommandUnit, FieldUnit } from './unit';
+import type { ActivityRec, RespondActivityRec } from '@sync/domain';
+import type { ManageEquipment, RespondEquipment } from './equipment';
+import type { ManageGroup, RespondGroup } from './group';
+import type { ManageParticipant, RespondParticipant } from './participant';
+import type { ManagePlace, RespondPlace } from './place';
+import type { ManageTeam, RespondTeam } from './team';
+import type { ManageUnit, RespondUnit } from './unit';
 
 /** The record and model types one level of the hierarchy uses. */
 export interface Kinds {
-  activity: FieldActivityRec;
-  participant: FieldParticipant;
-  team: FieldTeam;
-  group: FieldGroup;
-  place: FieldPlace;
-  unit: FieldUnit;
-  equipment: FieldEquipment;
+  activity: RespondActivityRec;
+  participant: RespondParticipant;
+  team: RespondTeam;
+  group: RespondGroup;
+  place: RespondPlace;
+  unit: RespondUnit;
+  equipment: RespondEquipment;
 }
-export interface CommandKinds extends Kinds {
+export interface ManageKinds extends Kinds {
   activity: ActivityRec;
-  participant: CommandParticipant;
-  team: CommandTeam;
-  group: CommandGroup;
-  place: CommandPlace;
-  unit: CommandUnit;
-  equipment: CommandEquipment;
+  participant: ManageParticipant;
+  team: ManageTeam;
+  group: ManageGroup;
+  place: ManagePlace;
+  unit: ManageUnit;
+  equipment: ManageEquipment;
 }

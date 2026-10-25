@@ -1,6 +1,6 @@
 import { Box, Chip } from '@mui/material';
 import type { BoxProps } from '@mui/material/Box';
-import type { FieldActivity } from '@sync/model';
+import type { RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { unitChipColor } from '../../../ui/status';
 
@@ -10,7 +10,7 @@ export const UnitChips = observer(function UnitChips({
   filter,
   setFilter,
   ...boxProps
-}: BoxProps & { activity: FieldActivity; filter?: string; setFilter?: (value: string) => void }) {
+}: BoxProps & { activity: RespondActivity; filter?: string; setFilter?: (value: string) => void }) {
   const onClick = (id: string) => (setFilter ? () => setFilter(filter === id ? '' : id) : undefined);
 
   return (

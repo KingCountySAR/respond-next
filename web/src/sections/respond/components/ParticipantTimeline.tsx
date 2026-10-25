@@ -2,21 +2,21 @@ import { Box, ButtonBase, Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
 import type { ParticipantStatusRec } from '@sync/domain';
-import { isCommandActivity, type FieldParticipant } from '@sync/model';
+import { isManageActivity, type RespondParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { statusText } from '../../../ui/status';
 import { TimePickerDialog } from '../../../ui/TimePickerDialog';
 import { useChange } from '../../../ui/useChange';
 
-/** Status entries, oldest first. Command can correct an entry's time. */
-export const ParticipantTimeline = observer(function ParticipantTimeline({ participant }: { participant: FieldParticipant }) {
+/** Status entries, oldest first. Managers can correct an entry's time. */
+export const ParticipantTimeline = observer(function ParticipantTimeline({ participant }: { participant: RespondParticipant }) {
   const change = useChange();
-  const command = isCommandActivity(participant.activity) ? participant.activity : undefined;
+  const manage = isManageActivity(participant.activity) ? participant.activity : undefined;
   return (
     <Stack spacing={2}>
       {[...participant.timeline].reverse().map((entry) => {
         const unit = participant.activity.unit(entry.unitId);
-        const onChange = command ? (time: number) => change(() => command.participant(participant.id)?.correctStatus(entry.id, { at: time })) : undefined;
+        const onChange = manage ? (time: number) => change(() => manage.participant(participant.id)?.correctStatus(entry.id, { at: time })) : undefined;
         return <ParticipantUpdateTile key={entry.id} entry={entry} unitName={unit?.name ?? ''} onChange={onChange} />;
       })}
     </Stack>

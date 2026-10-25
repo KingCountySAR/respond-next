@@ -3,7 +3,7 @@
  * data: the draft, its validation, which units may own it, and the changes saving it makes.
  */
 import { action, computed, makeObservable, observable, observableRef } from 'mobx';
-import { DEFAULT_EARLY_SIGN_IN_WINDOW, ownerOptions, type ActivityKind, type ActivityMutation, type FieldActivityRec, type Location, type SiteConfig, type SiteUnit } from '@sync/domain';
+import { DEFAULT_EARLY_SIGN_IN_WINDOW, ownerOptions, type ActivityKind, type ActivityMutation, type RespondActivityRec, type Location, type SiteConfig, type SiteUnit } from '@sync/domain';
 import type { MutationCall } from '@sync/core';
 
 const HOUR = 60 * 60 * 1000;
@@ -31,10 +31,10 @@ export interface DraftFields {
 
 export type DraftErrors = Partial<Record<'title' | 'location' | 'startTime', string>>;
 
-/** The activity being edited, as much as the draft needs of it (a `FieldActivity` will do). */
+/** The activity being edited, as much as the draft needs of it (a `RespondActivity` will do). */
 export interface EditedActivity {
   activityId: string;
-  record: FieldActivityRec | undefined;
+  record: RespondActivityRec | undefined;
   unit(id: string): { title: string } | undefined;
 }
 
@@ -117,7 +117,7 @@ export class ActivityDraft implements DraftFields {
     });
   }
 
-  private get existing(): FieldActivityRec | undefined {
+  private get existing(): RespondActivityRec | undefined {
     return this.edited?.record;
   }
 

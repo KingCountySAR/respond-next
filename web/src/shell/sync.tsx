@@ -27,7 +27,7 @@ export function SyncProvider({ session, options = {}, children }: { session: Ses
       new SyncClient({
         registry: activityRegistry,
         viewer: viewerOf(session),
-        // Command on a mission they have a grant on, or on any other kind of activity (members manage those).
+        // Managing a mission they have a grant on, or on any other kind of activity (members manage those).
         viewerIn: (_activityId, copy) => clientViewerOn(viewerOf(session), copy),
         transport: () => options.transport?.(session) ?? new WebSocketTransport(syncUrl()),
         // One store per user and tier: what's cached is that viewer's projection.

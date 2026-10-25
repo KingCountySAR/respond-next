@@ -10,7 +10,7 @@ import { SimLink, SimTransport } from './simLink';
 /** Who a pane signs in as, through the dev sign-in (as that person ref, without the directory). */
 export interface PaneViewer {
   user: string;
-  tier: 'command' | 'field';
+  tier: 'manage' | 'respond';
   class: 'member' | 'external';
   person?: { ref: string; firstname: string; lastname: string };
 }

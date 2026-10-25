@@ -7,7 +7,7 @@ export interface Session {
   email: string;
   /** The person this user is, e.g. `kcsara:85205`, or `adhoc:<email>` for someone the provider doesn't know. */
   personRef: string;
-  /** What their groups give them, everywhere; grants from command add to it on particular missions. */
+  /** What their groups give them, everywhere; grants from a manager add to it on particular missions. */
   tier: Tier;
   class: ActivityViewer['class'];
   /** Site admins and organization admins may open the organization admin page. */
@@ -22,7 +22,7 @@ export interface SessionResponse {
  * The development sign-in (`POST /api/auth/dev`): who to be, by email. Someone the member provider
  * doesn't know signs in under `name` instead. `personRef` (with `name`) is someone in particular,
  * without asking the provider. Without `tier`, a member's comes from their groups, as for a real
- * sign-in; anyone else is field.
+ * sign-in; anyone else is respond.
  */
 export interface DevSignInRequest {
   email: string;
@@ -34,7 +34,7 @@ export interface DevSignInRequest {
 
 export const viewerOfSession = (s: Pick<Session, 'userId' | 'tier' | 'class' | 'personRef' | 'name'>): ActivityViewer => ({ userId: s.userId, tier: s.tier, class: s.class, personRef: s.personRef, name: s.name });
 
-/** A tier someone at command gave a person on one activity, beside what their groups give them. */
+/** A tier someone managing an activity gave a person on one activity, beside what their groups give them. */
 export interface TierGrant {
   tier: Tier;
   /** The granter's email. */
@@ -49,5 +49,5 @@ export interface GrantResponse {
 
 /** `PUT /api/activities/:activityId/grants/:personRef`: someone on the activity's roster gets this tier there. */
 export interface GrantRequest {
-  tier: 'command' | 'support';
+  tier: 'manage';
 }

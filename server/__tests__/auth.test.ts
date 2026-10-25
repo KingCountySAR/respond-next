@@ -27,26 +27,26 @@ describe('dev sign-in', () => {
   it('signs a member in by email, as found by their provider', async () => {
     const crt = testApp().client();
     expect((await crt.json<SessionResponse>('/api/auth/session')).body.session).toBeNull();
-    const res = await crt.signIn('Avery.Lindqvist@crt.example.org', { tier: 'command' });
+    const res = await crt.signIn('Avery.Lindqvist@crt.example.org', { tier: 'manage' });
     expect(res.status).toBe(200);
-    const expected = { userId: 'kcsara:1', name: 'Avery Lindqvist', email: 'avery.lindqvist@crt.example.org', personRef: 'kcsara:1', tier: 'command', class: 'member', admin: false };
+    const expected = { userId: 'kcsara:1', name: 'Avery Lindqvist', email: 'avery.lindqvist@crt.example.org', personRef: 'kcsara:1', tier: 'manage', class: 'member', admin: false };
     expect(((await res.json()) as SessionResponse).session).toEqual(expected);
     expect((await crt.json<SessionResponse>('/api/auth/session')).body.session).toEqual(expected);
   });
 
   it('takes the tier from their groups unless one is chosen', async () => {
     const seed = testSeed();
-    seed.organizations[1]!.memberTiers = { Medical: 'command' };
+    seed.organizations[1]!.memberTiers = { Medical: 'manage' };
     const app = () => testApp({ organizations: OrganizationStore.memory(seed) }).client();
     const bo = app();
     await bo.signIn('bo.okafor@crt.example.org', { tier: undefined });
-    expect((await bo.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('command');
+    expect((await bo.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('manage');
     const chosen = app();
-    await chosen.signIn('bo.okafor@crt.example.org', { tier: 'support' });
-    expect((await chosen.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('support');
+    await chosen.signIn('bo.okafor@crt.example.org', { tier: 'manage' });
+    expect((await chosen.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('manage');
     const visitor = app();
     await visitor.signIn('pat@gmail.example', { name: 'Pat Visitor', tier: undefined });
-    expect((await visitor.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('field');
+    expect((await visitor.json<SessionResponse>('/api/auth/session')).body.session?.tier).toBe('respond');
   });
 
   it("signs someone from another organization in on this site's terms", async () => {
@@ -80,11 +80,11 @@ describe('dev sign-in', () => {
   it('impersonates a person ref, and gives a token instead of a cookie when asked', async () => {
     const crt = testApp().client();
     expect((await crt.signIn('x@harness.example', { personRef: 'kcsara:101' })).status).toBe(400);
-    await crt.signIn('x@harness.example', { name: 'Alice Adams', personRef: 'kcsara:101', tier: 'command' });
-    expect((await crt.json<SessionResponse>('/api/auth/session')).body.session).toMatchObject({ personRef: 'kcsara:101', name: 'Alice Adams', tier: 'command' });
+    await crt.signIn('x@harness.example', { name: 'Alice Adams', personRef: 'kcsara:101', tier: 'manage' });
+    expect((await crt.json<SessionResponse>('/api/auth/session')).body.session).toMatchObject({ personRef: 'kcsara:101', name: 'Alice Adams', tier: 'manage' });
 
     const pane = testApp();
-    const res = await pane.app.request('/api/auth/dev?token=1', { method: 'POST', headers: { host: 'crt.localhost', 'content-type': 'application/json' }, body: JSON.stringify({ email: 'bo.okafor@crt.example.org', tier: 'field', class: 'member' }) });
+    const res = await pane.app.request('/api/auth/dev?token=1', { method: 'POST', headers: { host: 'crt.localhost', 'content-type': 'application/json' }, body: JSON.stringify({ email: 'bo.okafor@crt.example.org', tier: 'respond', class: 'member' }) });
     expect(res.headers.get('set-cookie')).toBeNull();
     const { token } = (await res.json()) as { token: string };
     const asPane = await pane.app.request(`/api/auth/session?session=${token}`, { headers: { host: 'crt.localhost' } });
@@ -99,7 +99,7 @@ describe('dev sign-in', () => {
     const crt = testApp().client();
     expect((await crt.request('/api/sync')).status).toBe(401);
     // Identity in the URL, as the dev auth once took it, counts for nothing.
-    expect((await crt.request('/api/sync?user=alice&tier=command&person=kcsara:1')).status).toBe(401);
+    expect((await crt.request('/api/sync?user=alice&tier=manage&person=kcsara:1')).status).toBe(401);
   });
 
   it("doesn't exist unless asked for", async () => {

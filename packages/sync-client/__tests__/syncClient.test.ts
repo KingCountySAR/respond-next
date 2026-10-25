@@ -6,7 +6,7 @@ function countingClient() {
   const opened: Transport[] = [];
   const client = new SyncClient({
     registry: testRegistry,
-    viewer: { userId: 'u1', tier: 'command' },
+    viewer: { userId: 'u1', tier: 'manage' },
     transport: () => {
       const t: Transport = { open() {}, send() {}, close() {} };
       opened.push(t);

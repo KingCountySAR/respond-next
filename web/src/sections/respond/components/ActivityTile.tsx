@@ -5,7 +5,7 @@ import type { PropsWithChildren } from 'react';
 import { Link as RouterLink } from 'wouter';
 import type { ParticipantStatus } from '@sync/domain';
 import type { ActivityListItem } from '@sync/model';
-import { ActivityModelProvider, observer, useFieldActivity } from '@sync/model/react';
+import { ActivityModelProvider, observer, useRespondActivity } from '@sync/model/react';
 import caltopoLogo from '../../../assets/caltopo-logo.svg';
 import { NavigationApp, usePreferences } from '../../../shell/preferences';
 import { useSyncClient } from '../../../shell/sync';
@@ -69,7 +69,7 @@ function TileStatusUpdater({ activityId }: { activityId: string }) {
 }
 
 const LoadedStatusUpdater = observer(function LoadedStatusUpdater() {
-  const activity = useFieldActivity();
+  const activity = useRespondActivity();
   return activity.record ? <StatusUpdater activity={activity} /> : null;
 });
 

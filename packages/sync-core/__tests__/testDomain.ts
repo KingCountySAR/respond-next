@@ -1,6 +1,6 @@
 /**
  * A small domain for the sync engine's own tests (rebase, storage, convergence): a roster of people
- * with timed status entries and a command-only note. It exercises optimistic updates, rebasing,
+ * with timed status entries and a manager-only note. It exercises optimistic updates, rebasing,
  * field-level projection and backdated `at` times without depending on the activity rules.
  */
 import { z } from 'zod';
@@ -12,7 +12,7 @@ export type Status = (typeof STATUSES)[number];
 export interface Person extends Rec {
   type: 'person';
   name: string;
-  /** Command-only. */
+  /** Manager-only. */
   note?: string | null;
 }
 
@@ -24,7 +24,7 @@ export interface PersonStatus extends Rec {
   by: string;
 }
 
-const isCommand = (viewer: { tier: string }) => viewer.tier === 'command';
+const canManage = (viewer: { tier: string }) => viewer.tier === 'manage';
 const nameOf = (view: ReadView, personId: string) => view.get<Person>('person', personId)?.name ?? 'someone';
 
 export const addPerson = defineMutation({
@@ -52,7 +52,7 @@ export const setNote = defineMutation({
   name: 'setNote',
   version: 1,
   args: z.object({ id: z.string().min(1), note: z.string().nullable() }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Edit note for ${nameOf(view, a.id)}`,
   run(tx, a) {
     tx.update('person', a.id, { note: a.note });
@@ -75,7 +75,7 @@ export const removePerson = defineMutation({
   name: 'removePerson',
   version: 1,
   args: z.object({ id: z.string().min(1) }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Remove ${nameOf(view, a.id)}`,
   run(tx, a) {
     if (!tx.get('person', a.id)) throw new Rejection('not_found', 'That person was already removed');
@@ -88,9 +88,9 @@ export const removePerson = defineMutation({
 export const testRegistry = new MutationRegistry([addPerson, renamePerson, setNote, setStatus, removePerson]);
 
 export const testProjector: Projector = {
-  viewKey: (viewer) => (isCommand(viewer) ? 'command' : 'field'),
+  viewKey: (viewer) => (canManage(viewer) ? 'manage' : 'respond'),
   project(viewKey, rec) {
-    if (viewKey === 'field' && rec.type === 'person') {
+    if (viewKey === 'respond' && rec.type === 'person') {
       const { note: _note, ...rest } = rec;
       return rest as Rec;
     }

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { autorun, reaction } from 'mobx';
 import { Rejection } from '@sync/core';
-import { CommandActivity, createActivityModel, isCommandActivity, type CommandParticipant, type FieldActivity, type FieldParticipant } from '@sync/model';
-import { COMMAND, ACTIVITY_ID, CRT, EXTERNAL, HOUR, T0, activityArgs, fieldMember, offlineClient, sampleActivity, testClock } from './helpers';
+import { ManageActivity, createActivityModel, isManageActivity, type ManageParticipant, type RespondActivity, type RespondParticipant } from '@sync/model';
+import { MANAGER, ACTIVITY_ID, CRT, EXTERNAL, HOUR, T0, activityArgs, respondMember, offlineClient, sampleActivity, testClock } from './helpers';
 
 describe('reading', () => {
   it('reads like plain objects', async () => {
@@ -93,7 +93,7 @@ describe('time', () => {
     const client = await offlineClient();
     client.mutate(ACTIVITY_ID, 'createActivity', activityArgs({ startTime: T0, earlySignInWindow: HOUR }));
     const { clock, set } = testClock(T0 - 2 * HOUR);
-    const activity = new CommandActivity(client, ACTIVITY_ID, { clock });
+    const activity = new ManageActivity(client, ACTIVITY_ID, { clock });
 
     const phases: unknown[] = [];
     const stop = reaction(() => activity.phase, (p) => phases.push(p), { fireImmediately: true });
@@ -118,49 +118,49 @@ describe('writing', () => {
     expect(activity.team('t1')!.status).toBe('onScene');
   });
 
-  it('gives field viewers only self-service actions', async () => {
+  it('gives respond viewers only self-service actions', async () => {
     const { activity, anna } = await sampleActivity();
-    const field: FieldActivity = activity;
-    // @ts-expect-error assigning is command-only, so a field participant has no assign()
-    field.participant(anna)!.assign;
+    const respond: RespondActivity = activity;
+    // @ts-expect-error assigning is manager-only, so a respond participant has no assign()
+    respond.participant(anna)!.assign;
     expect(typeof activity.participant(anna)!.assign).toBe('function');
   });
 
   it('enforces the viewer rules locally', async () => {
-    const client = await offlineClient(fieldMember('kcsara:9'));
+    const client = await offlineClient(respondMember('kcsara:9'));
     const activity = createActivityModel(client, ACTIVITY_ID);
     expect(() => activity.mutate('createTeam', { id: 't9', name: 'Mine' })).toThrow(Rejection);
   });
 });
 
 describe('the model for each viewer', () => {
-  it('is CommandActivity for command and support, FieldActivity for everyone else', async () => {
+  it('is ManageActivity for managers, RespondActivity for everyone else', async () => {
     const kinds = await Promise.all(
-      [COMMAND, { ...COMMAND, tier: 'support' as const }, fieldMember('kcsara:9'), EXTERNAL].map(async (viewer) => {
+      [MANAGER, { ...MANAGER, tier: 'manage' as const }, respondMember('kcsara:9'), EXTERNAL].map(async (viewer) => {
         const model = createActivityModel(await offlineClient(viewer), ACTIVITY_ID);
-        return [isCommandActivity(model), model.viewKey, model.canSeeAssignments];
+        return [isManageActivity(model), model.viewKey, model.canSeeAssignments];
       }),
     );
     expect(kinds).toEqual([
-      [true, 'command', true],
-      [true, 'command', true],
-      [false, 'field:member', true],
-      [false, 'field:external', false],
+      [true, 'manage', true],
+      [true, 'manage', true],
+      [false, 'respond:member', true],
+      [false, 'respond:external', false],
     ]);
   });
 
-  it('types field records from the projection: member-only fields optional, command-only fields absent', async () => {
+  it('types respond records from the projection: member-only fields optional, manager-only fields absent', async () => {
     const { activity, anna } = await sampleActivity();
-    const field: FieldActivity = activity;
-    const rec = field.participant(anna)!.record!;
+    const respond: RespondActivity = activity;
+    const rec = respond.participant(anna)!.record!;
     expectTypeOf(rec.firstname).toEqualTypeOf<string>();
     expectTypeOf(rec.personRef).toEqualTypeOf<string | undefined>(); // external people don't get it
     expectTypeOf(rec.miles).toEqualTypeOf<number | null>(); // responders see mileage
-    // @ts-expect-error a team's notes are command-only
-    field.team('t1')!.record!.notes;
+    // @ts-expect-error a team's notes are manager-only
+    respond.team('t1')!.record!.notes;
     expectTypeOf(activity.team('t1')!.record!.notes).toEqualTypeOf<string | null>();
-    expectTypeOf(activity.participants).toEqualTypeOf<CommandParticipant[]>();
-    expectTypeOf(field.participants).toEqualTypeOf<FieldParticipant[]>();
-    expectTypeOf(activity.team('t1')!.members).toEqualTypeOf<CommandParticipant[]>();
+    expectTypeOf(activity.participants).toEqualTypeOf<ManageParticipant[]>();
+    expectTypeOf(respond.participants).toEqualTypeOf<RespondParticipant[]>();
+    expectTypeOf(activity.team('t1')!.members).toEqualTypeOf<ManageParticipant[]>();
   });
 });

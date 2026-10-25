@@ -1,16 +1,16 @@
 import { compareShallow, computed, makeObservable } from 'mobx';
 import type { WireMutation } from '@sync/core';
-import { groupTeams, type FieldGroupRec, type GroupRec, type Target } from '@sync/domain';
-import type { CommandActivity, FieldActivity } from './activity';
-import type { CommandEquipment } from './equipment';
-import type { CommandKinds, Kinds } from './kinds';
-import type { CommandParticipant } from './participant';
+import { groupTeams, type RespondGroupRec, type GroupRec, type Target } from '@sync/domain';
+import type { ManageActivity, RespondActivity } from './activity';
+import type { ManageEquipment } from './equipment';
+import type { ManageKinds, Kinds } from './kinds';
+import type { ManageParticipant } from './participant';
 import { byName, equipmentModelsAt, type Holder, participantsAt, RecordModel } from './record';
-import type { CommandTeam } from './team';
+import type { ManageTeam } from './team';
 
-/** Field viewers see a group's name; members also see its leader. */
-export class FieldGroup<R extends FieldGroupRec = FieldGroupRec, K extends Kinds = Kinds> extends RecordModel<R, K> implements Holder {
-  constructor(activity: FieldActivity<K>, id: string) {
+/** Respond viewers see a group's name; members also see its leader. */
+export class RespondGroup<R extends RespondGroupRec = RespondGroupRec, K extends Kinds = Kinds> extends RecordModel<R, K> implements Holder {
+  constructor(activity: RespondActivity<K>, id: string) {
     super(activity, id, 'group');
     makeObservable(this, { name: computed, leader: computed });
   }
@@ -29,10 +29,10 @@ export class FieldGroup<R extends FieldGroupRec = FieldGroupRec, K extends Kinds
   }
 }
 
-export class CommandGroup extends FieldGroup<GroupRec, CommandKinds> {
-  declare readonly activity: CommandActivity;
+export class ManageGroup extends RespondGroup<GroupRec, ManageKinds> {
+  declare readonly activity: ManageActivity;
 
-  constructor(activity: FieldActivity<CommandKinds>, id: string) {
+  constructor(activity: RespondActivity<ManageKinds>, id: string) {
     super(activity, id);
     makeObservable(this, {
       teams: computed({ equals: compareShallow }),
@@ -41,20 +41,20 @@ export class CommandGroup extends FieldGroup<GroupRec, CommandKinds> {
     });
   }
 
-  get teams(): CommandTeam[] {
+  get teams(): ManageTeam[] {
     return groupTeams(this.store, this.id)
       .sort(byName)
       .map((t) => this.activity.team(t.id)!);
   }
 
   /** People held by the group directly, not through its teams. */
-  get members(): CommandParticipant[] {
-    return participantsAt<CommandKinds>(this.activity, this.asTarget);
+  get members(): ManageParticipant[] {
+    return participantsAt<ManageKinds>(this.activity, this.asTarget);
   }
 
   /** Equipment held by the group directly. */
-  get equipment(): CommandEquipment[] {
-    return equipmentModelsAt<CommandKinds>(this.activity, this.asTarget);
+  get equipment(): ManageEquipment[] {
+    return equipmentModelsAt<ManageKinds>(this.activity, this.asTarget);
   }
 
   rename(name: string): WireMutation {
@@ -62,7 +62,7 @@ export class CommandGroup extends FieldGroup<GroupRec, CommandKinds> {
   }
 
   /** May be anyone on the activity, wherever they are; null clears it. */
-  setLeader(participant: CommandParticipant | null): WireMutation {
+  setLeader(participant: ManageParticipant | null): WireMutation {
     return this.activity.mutate('setGroupLeader', { groupId: this.id, participantId: participant?.id ?? null });
   }
 

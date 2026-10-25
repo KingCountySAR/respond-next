@@ -1,7 +1,7 @@
 import { Box, Button, Divider, Paper, Stack, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
 import { Link } from 'wouter';
-import type { FieldActivity } from '@sync/model';
+import type { RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useDialogs } from '../../shell/dialogs';
 import { ToolbarPage } from '../../shell/ToolbarPage';
@@ -15,7 +15,7 @@ import { ParticipantDialog, RosterPanel, type RosterState } from './components/R
 import { StatusUpdater } from './components/StatusUpdater';
 import { UnitChips } from './components/UnitChips';
 
-export const DesktopActivityPage = observer(function DesktopActivityPage({ activity, roster }: { activity: FieldActivity; roster: RosterState }) {
+export const DesktopActivityPage = observer(function DesktopActivityPage({ activity, roster }: { activity: RespondActivity; roster: RosterState }) {
   const { open } = useDialogs();
   const rec = activity.record!;
   const me = activity.me;

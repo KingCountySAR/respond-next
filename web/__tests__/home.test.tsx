@@ -37,7 +37,7 @@ describe('home', () => {
     const training = within(card('Rope rescue refresher'));
     expect(training.getByText('Not Started')).toBeTruthy();
     expect(training.getByText('Start Time')).toBeTruthy();
-    expect(screen.queryByText('New Mission')).toBeNull(); // field members don't create activities yet
+    expect(screen.queryByText('New Mission')).toBeNull(); // respond-tier members don't create activities yet
     expect(card(TITLE, 1).querySelector('a')?.getAttribute('href')).toBe(`/mission/${ACTIVITY}`);
   });
 
@@ -53,9 +53,9 @@ describe('home', () => {
     await waitFor(() => expect(within(card(TITLE, 1)).getByText('Demobilized')).toBeTruthy());
   });
 
-  it('offers command New Mission and New Event, and shows new activities without a refresh', async () => {
+  it('offers managers New Mission and New Event, and shows new activities without a refresh', async () => {
     server.renderApp('/');
-    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
     expect(await screen.findByText('New Mission')).toBeTruthy();
     expect(screen.getByText('New Event')).toBeTruthy();
     await screen.findByText(TITLE, { selector: 'h6' });

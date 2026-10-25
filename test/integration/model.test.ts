@@ -3,8 +3,8 @@ import { reaction } from 'mobx';
 import { SyncClient } from '@sync/client';
 import { Hub, MemoryStorage } from '@sync/server';
 import { activityProjector, activityRegistry, participantIdFor, type ActivityViewer } from '@sync/domain';
-import { createActivityModel, isCommandActivity, type CommandActivity } from '@sync/model';
-import { COMMAND, CRT, EXTERNAL, HOUR, T0, activityArgs, fieldMember } from '../../packages/domain/__tests__/helpers';
+import { createActivityModel, isManageActivity, type ManageActivity } from '@sync/model';
+import { MANAGER, CRT, EXTERNAL, HOUR, T0, activityArgs, respondMember } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from './sim';
 
 const ACTIVITY = 'e1';
@@ -20,7 +20,7 @@ describe('activity models over the network', () => {
     const hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: () => Date.now() });
     const net = new SimNetwork(hub, mulberry32(1));
     net.latencyMs = 50;
-    const viewers: ActivityViewer[] = [COMMAND, { ...COMMAND, userId: 'u-command-2' }, fieldMember('kcsara:1'), EXTERNAL];
+    const viewers: ActivityViewer[] = [MANAGER, { ...MANAGER, userId: 'u-manager-2' }, respondMember('kcsara:1'), EXTERNAL];
     const clients = viewers.map((viewer, i) => new SyncClient({ registry: activityRegistry, viewer, transport: net.transportFor(i, viewer) }));
     for (const c of clients) {
       await c.start();
@@ -28,7 +28,7 @@ describe('activity models over the network', () => {
     }
     const [mine, theirs, member, external] = clients.map((c) => createActivityModel(c, ACTIVITY));
     const stop = () => clients.forEach((c) => c.stop());
-    return { mine: mine as CommandActivity, theirs: theirs as CommandActivity, member: member!, external: external!, stop };
+    return { mine: mine as ManageActivity, theirs: theirs as ManageActivity, member: member!, external: external!, stop };
   }
 
   it("shows others' changes, and when your own are confirmed", async () => {
@@ -54,9 +54,9 @@ describe('activity models over the network', () => {
     stop();
   });
 
-  it('gives members and external people the field model over their projection', async () => {
+  it('gives members and external people the respond model over their projection', async () => {
     const { mine, member, external, stop } = await connect();
-    expect([isCommandActivity(mine), isCommandActivity(member), isCommandActivity(external)]).toEqual([true, false, false]);
+    expect([isManageActivity(mine), isManageActivity(member), isManageActivity(external)]).toEqual([true, false, false]);
     const anna = participantIdFor('kcsara:1');
     const ext = participantIdFor('adhoc:ext-1');
     mine.mutate('createActivity', activityArgs());
@@ -84,14 +84,14 @@ describe('activity models over the network', () => {
     expect(external.participant(anna)!.targetKind).toBeUndefined();
     expect(external.participant(anna)!.status).toBe('assigned');
 
-    // Self-service works from the field model; the server applies it for everyone.
+    // Self-service works from the respond model; the server applies it for everyone.
     member.me!.setEta(T0 + 3 * HOUR);
     await vi.advanceTimersByTimeAsync(1000);
     expect(mine.participant(anna)!.record?.eta).toBe(T0 + 3 * HOUR);
     stop();
   });
 
-  it('projects operations: names and equipment for the field, the rest for command', async () => {
+  it('projects operations: names and equipment for respond viewers, the rest for managers', async () => {
     const { mine, member, external, stop } = await connect();
     mine.mutate('createActivity', activityArgs());
     const anna = mine.addParticipant({ personRef: 'kcsara:1', firstname: 'Anna', lastname: 'Lee' }, CRT, 'staging', { at: T0 + HOUR });

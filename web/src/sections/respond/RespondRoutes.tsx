@@ -4,7 +4,7 @@ import { ActivityEditPage, ActivityNewPage } from './ActivityEditPage';
 import { ActivityPage } from './ActivityPage';
 
 // Mounted at /mission and /event. Order matters: specific paths before /:id.
-export function FieldRoutes({ type }: { type: 'missions' | 'events' }) {
+export function RespondRoutes({ type }: { type: 'missions' | 'events' }) {
   return (
     <Switch>
       <Route path="/new">

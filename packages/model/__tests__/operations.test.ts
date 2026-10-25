@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { autorun } from 'mobx';
 import { DEFAULT_PLACES } from '@sync/domain';
-import type { FieldActivity, FieldGroup, FieldPlace } from '@sync/model';
+import type { RespondActivity, RespondGroup, RespondPlace } from '@sync/model';
 import { CRT, HOUR, T0, sampleActivity } from './helpers';
 
 const AT = T0 + 2 * HOUR;
@@ -42,7 +42,7 @@ describe('teams, groups and places', () => {
     expect(litter.locationName).toBe(DEFAULT_PLACES.base);
   });
 
-  it('keeps place details for command', async () => {
+  it('keeps place details for managers', async () => {
     const { activity } = await sampleActivity();
     const lz = activity.createPlace({ name: 'LZ', lat: 47.5, lon: -121.8 });
     lz.update({ notes: 'Gravel lot' });
@@ -108,17 +108,17 @@ describe('comms', () => {
   });
 });
 
-describe('field viewers', () => {
+describe('respond viewers', () => {
   it('get no comms, team details or operations actions', async () => {
     const { activity } = await sampleActivity();
-    const field: FieldActivity = activity;
-    // @ts-expect-error comms are command-only
-    field.comms;
-    // @ts-expect-error team members are command-only
-    field.teams[0]?.members;
-    // @ts-expect-error moving equipment is command-only
-    field.equipment[0]?.assign;
-    expectTypeOf<NonNullable<FieldGroup['record']>['leaderParticipantId']>().toEqualTypeOf<string | null | undefined>(); // members only
-    expectTypeOf<NonNullable<FieldPlace['record']>>().not.toHaveProperty('notes');
+    const respond: RespondActivity = activity;
+    // @ts-expect-error comms are manager-only
+    respond.comms;
+    // @ts-expect-error team members are manager-only
+    respond.teams[0]?.members;
+    // @ts-expect-error moving equipment is manager-only
+    respond.equipment[0]?.assign;
+    expectTypeOf<NonNullable<RespondGroup['record']>['leaderParticipantId']>().toEqualTypeOf<string | null | undefined>(); // members only
+    expectTypeOf<NonNullable<RespondPlace['record']>>().not.toHaveProperty('notes');
   });
 });

@@ -1,6 +1,6 @@
 /**
- * Tiers granted by someone at command, beside what people's groups give them. A grant is for one
- * person (their person ref) on one activity, until it's removed: command there, not everywhere.
+ * Tiers granted by someone managing an activity, beside what people's groups give them. A grant is
+ * for one person (their person ref) on one activity, until it's removed: managing there, not everywhere.
  * A change brings the person's sessions up to date and closes their connections (see app.ts).
  */
 import pg from 'pg';
@@ -45,7 +45,9 @@ CREATE TABLE IF NOT EXISTS activity_grants (
   granted_by  text NOT NULL,
   granted_at  timestamptz NOT NULL,
   PRIMARY KEY (person_ref, activity_id)
-);`;
+);
+-- The tiers' former names.
+UPDATE activity_grants SET tier = CASE tier WHEN 'field' THEN 'respond' ELSE 'manage' END WHERE tier IN ('command', 'support', 'field');`;
 
 export class PostgresGrantStore implements GrantStore {
   private constructor(private readonly pool: pg.Pool) {}

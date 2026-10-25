@@ -7,7 +7,7 @@ import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
 import { useEffect, useState, type FunctionComponent, type ReactNode } from 'react';
 import type { ParticipantStatus } from '@sync/domain';
-import { isCommandActivity, type FieldParticipant } from '@sync/model';
+import { isManageActivity, type RespondParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useApi } from '../../../shell/api';
 import { useSyncClient } from '../../../shell/sync';
@@ -32,17 +32,17 @@ export function useRosterState(): RosterState {
   return { filter, setFilter, sortOnStatus, setSortOnStatus };
 }
 
-const enrouteRank = (p: FieldParticipant) => (p.isEnrouteOrStandby ? 1 : 0);
-const sortByStatus = (a: FieldParticipant, b: FieldParticipant) =>
+const enrouteRank = (p: RespondParticipant) => (p.isEnrouteOrStandby ? 1 : 0);
+const sortByStatus = (a: RespondParticipant, b: RespondParticipant) =>
   STATUS_SORT_ORDER.indexOf(a.status) - STATUS_SORT_ORDER.indexOf(b.status) || enrouteRank(b) - enrouteRank(a) || (a.record?.eta ?? Infinity) - (b.record?.eta ?? Infinity);
-const sortByFirstName = (a: FieldParticipant, b: FieldParticipant) => (a.record?.firstname ?? '').localeCompare(b.record?.firstname ?? '');
+const sortByFirstName = (a: RespondParticipant, b: RespondParticipant) => (a.record?.firstname ?? '').localeCompare(b.record?.firstname ?? '');
 
 interface RosterPanelProps {
-  participants: FieldParticipant[];
+  participants: RespondParticipant[];
   roster: RosterState;
   participantContainerComponent: FunctionComponent<{ children: ReactNode }>;
-  participantRowComponent: FunctionComponent<{ participant: FieldParticipant; onClick?: () => void }>;
-  onClick?: (participant: FieldParticipant) => void;
+  participantRowComponent: FunctionComponent<{ participant: RespondParticipant; onClick?: () => void }>;
+  onClick?: (participant: RespondParticipant) => void;
 }
 
 export const RosterPanel = observer(function RosterPanel({ participants, roster, participantContainerComponent: Participants, participantRowComponent: Row, onClick }: RosterPanelProps) {
@@ -92,7 +92,7 @@ function formatPhone(digits: string): string {
   return match ? ['(', match[2], ') ', match[3], '-', match[4]].join('') : '';
 }
 
-export const ParticipantDialog = observer(({ open, participant, onClose }: { open: boolean; onClose: () => void; participant?: FieldParticipant }) => {
+export const ParticipantDialog = observer(({ open, participant, onClose }: { open: boolean; onClose: () => void; participant?: RespondParticipant }) => {
   const isMobile = useMediaQuery(useTheme().breakpoints.down('md'));
 
   if (!participant) return <></>;
@@ -101,12 +101,12 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
   const memberId = participant.record?.personRef?.split(':')[1];
   const mobile = participant.contact?.mobile?.replace(/\D/g, '') ?? '';
   const email = participant.contact?.email ?? '';
-  const command = isCommandActivity(participant.activity);
-  // Field viewers may change only their own miles and status.
-  const canEditMiles = command || participant.isMe;
+  const manager = isManageActivity(participant.activity);
+  // Respond viewers may change only their own miles and status.
+  const canEditMiles = manager || participant.isMe;
   const record = participant.record;
   const unit = participant.unit?.record;
-  const statusPerson = record?.personRef && unit && !participant.activity.record?.closed && (command || participant.isMe) ? { personRef: record.personRef, firstname: record.firstname, lastname: record.lastname } : undefined;
+  const statusPerson = record?.personRef && unit && !participant.activity.record?.closed && (manager || participant.isMe) ? { personRef: record.personRef, firstname: record.firstname, lastname: record.lastname } : undefined;
 
   return (
     <AppDialog fullWidth open={open} onClose={onClose}>
@@ -153,7 +153,7 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
         </Stack>
       </DialogContent>
       <DialogActions>
-        <CommandGrantButton participant={participant} />
+        <ManageGrantButton participant={participant} />
         {statusPerson && unit && <StatusUpdater activity={participant.activity} person={statusPerson} unit={unit} />}
         <Button autoFocus onClick={onClose}>
           Close
@@ -163,7 +163,7 @@ export const ParticipantDialog = observer(({ open, participant, onClose }: { ope
   );
 });
 
-const ParticipantHoursText = observer(({ participant }: { participant: FieldParticipant }) => {
+const ParticipantHoursText = observer(({ participant }: { participant: RespondParticipant }) => {
   // Round to the nearest quarter hour.
   return (
     <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
@@ -175,7 +175,7 @@ const ParticipantHoursText = observer(({ participant }: { participant: FieldPart
   );
 });
 
-const ParticipantMiles = observer(function ParticipantMiles({ participant, canEdit }: { participant: FieldParticipant; canEdit: boolean }) {
+const ParticipantMiles = observer(function ParticipantMiles({ participant, canEdit }: { participant: RespondParticipant; canEdit: boolean }) {
   const [edit, setEdit] = useState(false);
   const miles = participant.record?.miles ?? 0;
   return (
@@ -201,15 +201,15 @@ const ParticipantMiles = observer(function ParticipantMiles({ participant, canEd
 });
 
 /**
- * For someone at command on this mission: give this person command here, or take it away. It counts
+ * For a manager of this mission: let this person manage it too, or take that away. It counts
  * on this mission only, at once. Not for other kinds: members manage those anyway.
  */
-function CommandGrantButton({ participant }: { participant: FieldParticipant }) {
+function ManageGrantButton({ participant }: { participant: RespondParticipant }) {
   const api = useApi();
   const client = useSyncClient();
   const personRef = participant.record?.personRef;
   const { activityId } = participant.activity;
-  const shown = participant.activity.record?.kind === 'mission' && client.viewerIn(activityId).tier === 'command' && !!personRef && !participant.isMe;
+  const shown = participant.activity.record?.kind === 'mission' && client.viewerIn(activityId).tier === 'manage' && !!personRef && !participant.isMe;
   // undefined until known; null for no grant.
   const [granted, setGranted] = useState<boolean | undefined>();
   const [error, setError] = useState<string | undefined>();
@@ -218,7 +218,7 @@ function CommandGrantButton({ participant }: { participant: FieldParticipant }) 
     if (!shown) return;
     let live = true;
     api.grantOf(activityId, personRef).then(
-      (g) => live && setGranted(g?.tier === 'command'),
+      (g) => live && setGranted(g?.tier === 'manage'),
       (err: unknown) => live && setError(err instanceof Error ? err.message : String(err)),
     );
     return () => {
@@ -231,7 +231,7 @@ function CommandGrantButton({ participant }: { participant: FieldParticipant }) 
     setError(undefined);
     try {
       if (granted) await api.revokeGrant(activityId, personRef);
-      else await api.grant(activityId, personRef, 'command');
+      else await api.grant(activityId, personRef, 'manage');
       setGranted(!granted);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -240,7 +240,7 @@ function CommandGrantButton({ participant }: { participant: FieldParticipant }) 
   return (
     <>
       {error && <Typography color="error" sx={{ mr: 'auto' }}>{error}</Typography>}
-      {granted !== undefined && <Button onClick={() => void change()}>{granted ? 'Remove command grant' : 'Grant command'}</Button>}
+      {granted !== undefined && <Button onClick={() => void change()}>{granted ? 'Remove manage access' : 'Grant manage access'}</Button>}
     </>
   );
 }

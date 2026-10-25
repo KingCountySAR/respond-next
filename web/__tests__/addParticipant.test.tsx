@@ -15,7 +15,7 @@ afterEach(() => {
   server.stop();
 });
 
-async function openAddDialog(name = 'Alice Adams', personRef = 'kcsara:101', tier: 'field' | 'command' = 'command') {
+async function openAddDialog(name = 'Alice Adams', personRef = 'kcsara:101', tier: 'respond' | 'manage' = 'manage') {
   server.renderApp(`/mission/${ACTIVITY}`);
   await signIn(name, personRef, tier);
   await screen.findByText(`26-0123 ${TITLE}`);
@@ -74,8 +74,8 @@ describe('add responder', () => {
     await waitFor(() => expect(currentParticipantStatus(server.seed.snapshot(ACTIVITY), participantIdFor('rmr:1'))?.unitId).toBe(RMR.id));
   });
 
-  it('refuses a field member adding someone else, with the reason', async () => {
-    const dialog = await openAddDialog('Dana Field', 'kcsara:7', 'field');
+  it('refuses a respond-tier member adding someone else, with the reason', async () => {
+    const dialog = await openAddDialog('Dana Field', 'kcsara:7', 'respond');
     await pick(dialog, CRT.title, 'lindq', /^Avery Lindqvist/);
     fireEvent.click(await dialog.findByRole('button', { name: 'Sign In' }));
     fireEvent.click((await confirmDialog()).getByRole('button', { name: 'Sign In' }));

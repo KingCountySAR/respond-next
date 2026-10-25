@@ -68,7 +68,7 @@ const logEntry = (mutationId: number, version: number, outcome: LogEntry['outcom
 });
 
 /** A fake transport for driving a Hub directly. */
-function fakeConnection(hub: Hub, tier = 'command') {
+function fakeConnection(hub: Hub, tier = 'manage') {
   const received: ServerMessage[] = [];
   const closes: number[] = [];
   const transport: HubConnection = {
@@ -180,7 +180,7 @@ describe.each(backends)('%s storage', (_name, makeBackend) => {
     const after = new Hub({ storage, registry: testRegistry, projector: testProjector, now: Date.now });
     const reloaded = await after.actor('e1');
     expect(reloaded.currentVersion).toBe(original.currentVersion);
-    expect(reloaded.projectedRecords('command')).toEqual(original.projectedRecords('command'));
+    expect(reloaded.projectedRecords('manage')).toEqual(original.projectedRecords('manage'));
 
     // The reloaded server remembers which mutations it has seen: a resend is ignored.
     const again = fakeConnection(after);
@@ -211,7 +211,7 @@ describe.each(backends)('%s storage', (_name, makeBackend) => {
     // B's next use of e1 loads the stored state, which includes A's change.
     const fresh = await hubB.actor('e1');
     expect(fresh.stale).toBe(false);
-    expect(fresh.projectedRecords('command').map((r) => r.name)).toEqual(['Bob']);
+    expect(fresh.projectedRecords('manage').map((r) => r.name)).toEqual(['Bob']);
     expect((await storage.load('e1'))?.version).toBe(1);
   });
 });

@@ -1,13 +1,13 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
-import type { FieldParticipant } from '@sync/model';
+import type { RespondParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { statusText } from '../../../ui/status';
 import { RosterRowCard } from './RosterPanel';
 
 /** A roster row, the same on desktop and mobile; marked when someone else set the status. */
-export const ParticipantTile = observer(function ParticipantTile({ participant, onClick }: { participant: FieldParticipant; onClick?: () => void }) {
+export const ParticipantTile = observer(function ParticipantTile({ participant, onClick }: { participant: RespondParticipant; onClick?: () => void }) {
   const eta = participant.record?.eta;
   const byName = participant.currentStatus?.byName;
   return (

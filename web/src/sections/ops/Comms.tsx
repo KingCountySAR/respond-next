@@ -32,7 +32,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type HTMLAttribut
 import { useReactToPrint } from 'react-to-print';
 import { LEVEL_NAMES, Level } from '@sync/domain';
 import type { Comm, LogLine } from '@sync/model';
-import { observer, useActivityLog, useCommandActivity } from '@sync/model/react';
+import { observer, useActivityLog, useManageActivity } from '@sync/model/react';
 import { useSite } from '../../shell/App';
 import { useSyncClient } from '../../shell/sync';
 import { buildTheme } from '../../shell/theme';
@@ -67,7 +67,7 @@ function storeLevel(level: CommLevel): void {
 }
 
 export const DashboardCommsManager = observer(function DashboardCommsManager() {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const change = useChange();
   const { confirm } = useDialogs();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -246,7 +246,7 @@ function renderContactOption(props: HTMLAttributes<HTMLLIElement> & { key?: Key 
 
 /** Logs a new entry, or (with `entry`) edits one, time included. Enter saves; Shift+Enter is a new line. */
 const DashboardCommsComposer = observer(function DashboardCommsComposer({ entry, onDone }: { entry?: Comm; onDone?: () => void }) {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const change = useChange();
   const fromRef = useRef<HTMLInputElement | null>(null);
   const blank = { from: '', to: '', message: '', at: Date.now() };
@@ -342,7 +342,7 @@ const DashboardCommsComposer = observer(function DashboardCommsComposer({ entry,
 });
 
 function DashboardCommsPrintButton({ communications }: { communications: LogItem[] }) {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const printable = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printable, documentTitle: `${activity.record?.title || 'activity'}-comms-log` });
   // Printed light whatever the screen's theme: dark mode's white text would print on white paper.
@@ -367,7 +367,7 @@ function DashboardCommsPrintButton({ communications }: { communications: LogItem
 const dateTime = (value: number) => `${new Date(value).toLocaleDateString('en-US')} ${format24HourTime(value)}`;
 
 const DashboardCommsPrintView = observer(function DashboardCommsPrintView({ communications }: { communications: LogItem[] }) {
-  const record = useCommandActivity().record;
+  const record = useManageActivity().record;
   const printedAt = Date.now();
   return (
     <Box sx={{ p: 2 }}>

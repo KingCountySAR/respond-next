@@ -2,8 +2,8 @@ import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutline
 import GroupsIcon from '@mui/icons-material/Groups';
 import { Alert, Box, Stack, Tab, Tabs, useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { isCommandActivity } from '@sync/model';
-import { observer, useCommandActivity, useFieldActivity } from '@sync/model/react';
+import { isManageActivity } from '@sync/model';
+import { observer, useManageActivity, useRespondActivity } from '@sync/model/react';
 import { ToolbarPage } from '../../shell/ToolbarPage';
 import { DashboardCommsManager } from './Comms';
 import { DnDProvider } from './dnd';
@@ -14,13 +14,13 @@ import { DashboardResourcesPanel } from './Resources';
 import { DashboardReadOnlyTeams, DashboardTeamManager } from './Teams';
 import { DashboardWeatherTile } from './Weather';
 
-/** The ops dashboard: command and support only, and only for activities with operations. */
+/** The ops dashboard: managers only, and only for activities with operations. */
 export const Dashboard = observer(function Dashboard() {
-  const activity = useFieldActivity();
-  if (!isCommandActivity(activity)) {
+  const activity = useRespondActivity();
+  if (!isManageActivity(activity)) {
     return (
       <ToolbarPage maxWidth={false}>
-        <Alert severity="warning">The operations dashboard is for command and support.</Alert>
+        <Alert severity="warning">The operations dashboard is for managers.</Alert>
       </ToolbarPage>
     );
   }
@@ -56,7 +56,7 @@ function CombinedTeamCommsPanel() {
 }
 
 const DashboardContent = observer(function DashboardContent() {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const record = activity.record!;
   const { lat, lon } = record.location;
 

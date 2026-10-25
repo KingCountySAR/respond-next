@@ -1,13 +1,13 @@
 import { Paper } from '@mui/material';
 import type { SxProps } from '@mui/material/styles';
 import { isActiveStatus } from '@sync/domain';
-import type { FieldActivity } from '@sync/model';
+import type { RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { OutputForm, OutputText, OutputTime } from '../../../ui/OutputForm';
 import { RelativeStyle } from '../../../ui/RelativeTimeText';
 import { phaseText } from '../../../ui/status';
 
-export const ManagerPanel = observer(function ManagerPanel({ activity, sx }: { activity: FieldActivity; sx?: SxProps }) {
+export const ManagerPanel = observer(function ManagerPanel({ activity, sx }: { activity: RespondActivity; sx?: SxProps }) {
   const rec = activity.record;
   if (!rec) return null;
   const counts = activity.statusCounts;

@@ -1,7 +1,13 @@
 import type { Viewer } from '@sync/core';
 
-export const TIERS = ['command', 'support', 'field'] as const;
+export const TIERS = ['manage', 'respond'] as const;
 export type Tier = (typeof TIERS)[number];
+
+/** The tiers' names before 2026-10-25 (support was manage in all but name), as stored sessions, grants and organizations may still have them. */
+const FORMER_TIERS: Record<string, Tier> = { command: 'manage', support: 'manage', field: 'respond' };
+
+/** A stored or sent tier, in today's names. */
+export const currentTier = <T>(tier: T): T | Tier => (typeof tier === 'string' && FORMER_TIERS[tier]) || tier;
 
 /**
  * Who is acting or viewing. `tier` comes from the activity's grants; `class` says whether the person
@@ -15,22 +21,21 @@ export interface ActivityViewer extends Viewer {
   /** Their name, as signed in: the activity log says who made each change. */
   name?: string;
   /**
-   * Their tier were the activity a mission, when its kind is what makes them command: members
+   * Their tier were the activity a mission, when its kind is what lets them manage it: members
    * manage trainings and other events. Only that tier may make one a mission.
    */
   missionTier?: Tier;
 }
 
 /** System mutations (member info, cross-activity sign-outs) run as this viewer. */
-export const SYSTEM_VIEWER: ActivityViewer = { userId: 'system', tier: 'command', class: 'member' };
+export const SYSTEM_VIEWER: ActivityViewer = { userId: 'system', tier: 'manage', class: 'member' };
 
 export const asActivityViewer = (viewer: Viewer): ActivityViewer => viewer as ActivityViewer;
 
 /** The server acting for itself (SYSTEM_VIEWER): member info, summaries, cross-activity sign-outs. */
 export const isSystemViewer = (viewer: Viewer): boolean => viewer.userId === SYSTEM_VIEWER.userId;
 
-/** Support uses the command rules for now; it's a separate tier so it can diverge later. */
-export const isCommand = (viewer: Viewer): boolean => viewer.tier === 'command' || viewer.tier === 'support';
+export const canManage = (viewer: Viewer): boolean => viewer.tier === 'manage';
 
-/** Whether they're command on missions: their own tier (with any grant), not one an event's kind gives them. */
-export const isMissionCommand = (viewer: Viewer): boolean => isCommand({ ...viewer, tier: asActivityViewer(viewer).missionTier ?? viewer.tier });
+/** Whether they manage missions: their own tier (with any grant), not one an event's kind gives them. */
+export const canManageMissions = (viewer: Viewer): boolean => canManage({ ...viewer, tier: asActivityViewer(viewer).missionTier ?? viewer.tier });

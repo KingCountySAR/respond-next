@@ -3,8 +3,8 @@ import { tableCellClasses } from '@mui/material/TableCell';
 import { differenceInCalendarDays, format as formatDate } from 'date-fns';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import type { FieldActivity } from '@sync/model';
-import { observer, useFieldActivity } from '@sync/model/react';
+import type { RespondActivity } from '@sync/model';
+import { observer, useRespondActivity } from '@sync/model/react';
 import { ActivityLayout } from '../../shell/ActivityLayout';
 import { ToolbarPage } from '../../shell/ToolbarPage';
 import { OutputForm, OutputText, OutputTime } from '../../ui/OutputForm';
@@ -26,7 +26,7 @@ export function RosterReportPage({ activityId }: { activityId: string }) {
   );
 }
 
-const rosterPeople = (activity: FieldActivity): RosterPerson[] =>
+const rosterPeople = (activity: RespondActivity): RosterPerson[] =>
   activity.participants.flatMap((p) => {
     const r = p.record;
     if (!r) return [];
@@ -34,7 +34,7 @@ const rosterPeople = (activity: FieldActivity): RosterPerson[] =>
   });
 
 const RosterReport = observer(function RosterReport() {
-  const activity = useFieldActivity();
+  const activity = useRespondActivity();
   const [lastNameFirst, setLastNameFirst] = useState(false);
   const [showColumnBorders, setShowColumnBorders] = useState(false);
   const [showStandby, setShowStandby] = useState(false);
@@ -88,7 +88,7 @@ const RosterReport = observer(function RosterReport() {
 });
 
 const Roster = observer(
-  forwardRef<HTMLTableElement, { activity: FieldActivity; entries: RosterEntry[]; bordered: boolean }>(function Roster({ activity, entries, bordered }, ref) {
+  forwardRef<HTMLTableElement, { activity: RespondActivity; entries: RosterEntry[]; bordered: boolean }>(function Roster({ activity, entries, bordered }, ref) {
     const a = activity.record!;
     return (
       <Table ref={ref} size="small" sx={bordered ? columnBordersStyle : undefined}>

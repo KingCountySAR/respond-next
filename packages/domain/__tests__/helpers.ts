@@ -3,10 +3,10 @@ import { activityRegistry, type ActivityMutation, type ActivityViewer } from '@s
 
 type CreateActivityArgs = MutationInput<MutationNamed<ActivityMutation, 'createActivity'>>;
 
-export const COMMAND: ActivityViewer = { userId: 'u-command', tier: 'command', class: 'member' };
-export const fieldMember = (personRef: string): ActivityViewer => ({ userId: `u-${personRef}`, tier: 'field', class: 'member', personRef });
-export const EXTERNAL: ActivityViewer = { userId: 'u-external', tier: 'field', class: 'external', personRef: 'adhoc:ext-1' };
-export const SYSTEM: ActivityViewer = { userId: 'system', tier: 'command', class: 'member' };
+export const MANAGER: ActivityViewer = { userId: 'u-manager', tier: 'manage', class: 'member' };
+export const respondMember = (personRef: string): ActivityViewer => ({ userId: `u-${personRef}`, tier: 'respond', class: 'member', personRef });
+export const EXTERNAL: ActivityViewer = { userId: 'u-external', tier: 'respond', class: 'external', personRef: 'adhoc:ext-1' };
+export const SYSTEM: ActivityViewer = { userId: 'system', tier: 'manage', class: 'member' };
 
 export const HOUR = 60 * 60 * 1000;
 export const T0 = Date.UTC(2026, 9, 16, 18, 0);
@@ -28,7 +28,7 @@ export class TestActivity {
   }
 
   /** Applies a mutation and returns the records it wrote; throws its Rejection. */
-  run(name: string, args: Record<string, unknown>, viewer: ActivityViewer = COMMAND): Rec[] {
+  run(name: string, args: Record<string, unknown>, viewer: ActivityViewer = MANAGER): Rec[] {
     const def = activityRegistry.latest(name);
     if (!def) throw new Error(`no mutation ${name}`);
     if (def.allow && !def.allow(viewer)) throw new Rejection('forbidden', 'Your role cannot make this change');
@@ -84,7 +84,7 @@ export function startedActivity(overrides: Record<string, unknown> = {}): TestAc
   return e;
 }
 
-/** Adds a member as command and returns their participant id. */
+/** Adds a member as a manager and returns their participant id. */
 export function addMember(e: TestActivity, personRef: string, status = 'staging', unit: { id: string; title: string; rosterName: string | null } = CRT, at = T0 + HOUR): string {
   e.run('addParticipant', { personRef, firstname: personRef.split(':')[1], lastname: 'Tester', unit, status, at });
   return e.all<{ personRef: string } & Rec>('participant').find((p) => p.personRef === personRef)!.id;

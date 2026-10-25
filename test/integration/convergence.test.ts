@@ -26,10 +26,10 @@ describe('convergence over a bad network', () => {
     const hub = new Hub({ storage, registry: testRegistry, projector: testProjector, now: () => Date.now() });
     const net = new SimNetwork(hub, rand);
     const viewers: Viewer[] = [
-      { userId: 'cmd1', tier: 'command' },
-      { userId: 'cmd2', tier: 'command' },
-      { userId: 'fld1', tier: 'field' },
-      { userId: 'fld2', tier: 'field' },
+      { userId: 'cmd1', tier: 'manage' },
+      { userId: 'cmd2', tier: 'manage' },
+      { userId: 'fld1', tier: 'respond' },
+      { userId: 'fld2', tier: 'respond' },
     ];
     const clients = viewers.map((viewer, i) => new SyncClient({ registry: testRegistry, viewer, transport: net.transportFor(i, viewer) }));
     for (const c of clients) {
@@ -49,8 +49,8 @@ describe('convergence over a bad network', () => {
         else if (roll < 0.8) {
           const backdate = rand() < 0.3 ? Math.floor(rand() * 30 * 60_000) : 0;
           client.mutate(ACTIVITY, 'setStatus', { personId: person.id, status: pick(STATUSES)!, at: client.now() - backdate });
-        } else if (viewer.tier === 'command' && roll < 0.95) client.mutate(ACTIVITY, 'setNote', { id: person.id, note: `n${seed}-${roll}` });
-        else if (viewer.tier === 'command') client.mutate(ACTIVITY, 'removePerson', { id: person.id });
+        } else if (viewer.tier === 'manage' && roll < 0.95) client.mutate(ACTIVITY, 'setNote', { id: person.id, note: `n${seed}-${roll}` });
+        else if (viewer.tier === 'manage') client.mutate(ACTIVITY, 'removePerson', { id: person.id });
       } catch (err) {
         if (!(err instanceof Rejection)) throw err;
       }
@@ -85,8 +85,8 @@ describe('convergence over a bad network', () => {
       expect(snap.pending, `client ${i} pending`).toEqual([]);
       const expected = actor.projectedRecords(testProjector.viewKey(viewers[i]!));
       expect(sortByKey(snap.all()), `client ${i} records`).toEqual(sortByKey(expected));
-      if (viewers[i]!.tier === 'field') {
-        for (const p of snap.scan('person')) expect(p, 'field view must not include notes').not.toHaveProperty('note');
+      if (viewers[i]!.tier === 'respond') {
+        for (const p of snap.scan('person')) expect(p, 'respond view must not include notes').not.toHaveProperty('note');
       }
     }
     for (const c of clients) c.stop();

@@ -54,7 +54,7 @@ export interface SyncAppOptions {
   buildId?: string;
   /** Member search and photos (for adding someone else to an activity), and sign-in lookups. */
   members?: MemberProviders;
-  /** Tiers granted by command, beside what members' groups give. */
+  /** Tiers granted by managers, beside what members' groups give. */
   grants?: GrantStore;
   /** The saved-location catalog. */
   locations?: LocationCatalog;
@@ -309,8 +309,8 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
     });
   }
 
-  // Tier grants: someone at command on an activity may give a person on its roster command (or
-  // support) there, and take it away. It counts on that activity only, at once: their sessions are
+  // Tier grants: someone managing an activity may let a person on its roster manage it too, and
+  // take that away. It counts on that activity only, at once: their sessions are
   // brought up to date and their connections closed, so their clients reconnect as who they are now.
   const { grants } = options;
   if (grants) {
@@ -319,23 +319,23 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
       hub.disconnectWhere((viewer) => viewer.userId === personRef);
     };
     const grantPath = '/api/activities/:activityId/grants/:personRef';
-    const atCommand = async (c: Context<Env>, next: () => Promise<void>) => {
-      if (tierOn(c.get('session'), c.req.param('activityId')!) !== 'command') return c.json({ error: 'Only command on this activity can grant tiers' }, 403);
+    const managing = async (c: Context<Env>, next: () => Promise<void>) => {
+      if (tierOn(c.get('session'), c.req.param('activityId')!) !== 'manage') return c.json({ error: 'Only a manager of this activity can grant tiers' }, 403);
       await next();
     };
-    app.get(grantPath, signedIn, atCommand, async (c) => c.json({ grant: (await grants.get(c.req.param('personRef')!, c.req.param('activityId')!)) ?? null } satisfies GrantResponse));
-    app.put(grantPath, signedIn, atCommand, async (c) => {
+    app.get(grantPath, signedIn, managing, async (c) => c.json({ grant: (await grants.get(c.req.param('personRef')!, c.req.param('activityId')!)) ?? null } satisfies GrantResponse));
+    app.put(grantPath, signedIn, managing, async (c) => {
       const { activityId, personRef } = c.req.param() as { activityId: string; personRef: string };
       const body = (await c.req.json().catch(() => undefined)) as { tier?: unknown } | undefined;
-      if (body?.tier !== 'command' && body?.tier !== 'support') return c.json({ error: 'tier: command or support' }, 400);
-      const roster = (await hub.actor(activityId)).projectedRecords('command');
+      if (body?.tier !== 'manage') return c.json({ error: 'tier: manage' }, 400);
+      const roster = (await hub.actor(activityId)).projectedRecords('manage');
       if (!roster.some((r) => r.type === 'participant' && (r as { personRef?: string }).personRef === personRef)) return c.json({ error: `${personRef} isn't on that activity's roster` }, 400);
       const grant = { tier: body.tier, grantedBy: c.get('session').email, grantedAt: Date.now() } as const;
       await grants.set(personRef, activityId, grant);
       await changed(personRef);
       return c.json({ grant } satisfies GrantResponse);
     });
-    app.delete(grantPath, signedIn, atCommand, async (c) => {
+    app.delete(grantPath, signedIn, managing, async (c) => {
       await grants.remove(c.req.param('personRef')!, c.req.param('activityId')!);
       await changed(c.req.param('personRef')!);
       return c.json({ grant: null } satisfies GrantResponse);
@@ -451,7 +451,7 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
 
   const { debugActivity } = options;
   if (debugActivity) {
-    app.get('/api/debug/activities/:id', async (c) => c.json(await debugActivity(c.req.param('id'), c.req.query('view') ?? 'command')));
+    app.get('/api/debug/activities/:id', async (c) => c.json(await debugActivity(c.req.param('id'), c.req.query('view') ?? 'manage')));
   }
 
   // Unknown API paths get a JSON 404 rather than the UI's index.html fallback.

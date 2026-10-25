@@ -1,7 +1,7 @@
 import { Autocomplete, Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, Stack, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { MEMBER_QUERY_MIN, type MemberInfo, type SiteUnit } from '@sync/domain';
-import type { FieldActivity } from '@sync/model';
+import type { RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useApi } from '../../../shell/api';
 import { useSite } from '../../../shell/App';
@@ -12,9 +12,9 @@ import { StatusUpdater } from './StatusUpdater';
 
 const SEARCH_DEBOUNCE_MS = 500;
 
-const getTitle = (activity: FieldActivity) => `Add ${activity.record?.kind === 'mission' ? 'Responder' : 'Participant'}`;
+const getTitle = (activity: RespondActivity) => `Add ${activity.record?.kind === 'mission' ? 'Responder' : 'Participant'}`;
 
-export function AddParticipantButton({ activity }: { activity: FieldActivity }) {
+export function AddParticipantButton({ activity }: { activity: RespondActivity }) {
   const { open } = useDialogs();
   return (
     <Button size="small" variant="outlined" onClick={() => open(AddParticipantDialog, { activity })}>
@@ -24,7 +24,7 @@ export function AddParticipantButton({ activity }: { activity: FieldActivity }) 
 }
 
 /** Pick a unit, find one of its members, and set their status: the legacy Add Responder dialog. */
-const AddParticipantDialog = observer(function AddParticipantDialog({ open, activity, onClose }: MuiDialogProps & { activity: FieldActivity }) {
+const AddParticipantDialog = observer(function AddParticipantDialog({ open, activity, onClose }: MuiDialogProps & { activity: RespondActivity }) {
   const [unit, setUnit] = useState<SiteUnit | undefined>(undefined);
   const [member, setMember] = useState<MemberInfo | undefined>(undefined);
   const participant = member ? activity.participantByRef(member.personRef) : undefined;

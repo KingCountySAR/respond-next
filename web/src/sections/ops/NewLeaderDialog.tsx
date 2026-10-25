@@ -1,13 +1,13 @@
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import { useState } from 'react';
 import type { Target } from '@sync/domain';
-import type { CommandParticipant, CommandTeam } from '@sync/model';
+import type { ManageParticipant, ManageTeam } from '@sync/model';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
 import { useChange } from '../../ui/useChange';
 
 /** Who leads a team its leader is leaving: one of those staying, none picked at first. Closes with their id. */
-export function NewLeaderDialog({ team, leaving, successors, onClose }: MuiDialogProps<{ participantId: string }> & { team: CommandTeam; leaving: CommandParticipant; successors: CommandParticipant[] }) {
+export function NewLeaderDialog({ team, leaving, successors, onClose }: MuiDialogProps<{ participantId: string }> & { team: ManageTeam; leaving: ManageParticipant; successors: ManageParticipant[] }) {
   const [picked, setPicked] = useState('');
   return (
     <AppDialog fullWidth open onClose={onClose}>
@@ -36,7 +36,7 @@ export function NewLeaderDialog({ team, leaving, successors, onClose }: MuiDialo
  * Moves a person on the dashboard. When they lead a team they're leaving and two or more stay, asks
  * who leads it now first; cancelling that leaves them where they are. Resolves with whether it moved.
  */
-export function useAssignResponder(): (p: CommandParticipant, target: Target | null, options?: { asLeader?: boolean }) => Promise<boolean> {
+export function useAssignResponder(): (p: ManageParticipant, target: Target | null, options?: { asLeader?: boolean }) => Promise<boolean> {
   const dialogs = useDialogs();
   const change = useChange();
   return async (p, target, options = {}) => {

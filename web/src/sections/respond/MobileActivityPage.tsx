@@ -3,7 +3,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
 import { useState, type ReactNode } from 'react';
-import type { FieldActivity } from '@sync/model';
+import type { RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useDialogs } from '../../shell/dialogs';
 import { MobilePageId, usePreferences } from '../../shell/preferences';
@@ -22,7 +22,7 @@ const MOBILE_STATUS_UPDATER_HEIGHT = 68.5;
 const MOBILE_ETA_INPUT_HEIGHT = 59.5;
 const ROSTER_PANEL_PADDING = 16;
 
-export const MobileActivityPage = observer(function MobileActivityPage({ activity, roster }: { activity: FieldActivity; roster: RosterState }) {
+export const MobileActivityPage = observer(function MobileActivityPage({ activity, roster }: { activity: RespondActivity; roster: RosterState }) {
   const { defaultMobileView } = usePreferences();
   const [bottomNav, setBottomNav] = useState<MobilePageId>(defaultMobileView);
   const me = activity.me;
@@ -60,7 +60,7 @@ export const MobileActivityPage = observer(function MobileActivityPage({ activit
   );
 });
 
-const MobileRosterScreen = observer(function MobileRosterScreen({ activity, roster }: { activity: FieldActivity; roster: RosterState }) {
+const MobileRosterScreen = observer(function MobileRosterScreen({ activity, roster }: { activity: RespondActivity; roster: RosterState }) {
   const { open } = useDialogs();
   return (
     <>
@@ -83,7 +83,7 @@ function RosterContainer({ children }: { children: ReactNode }) {
   return <Stack spacing={1}>{children}</Stack>;
 }
 
-function MobileManageScreen({ activity }: { activity: FieldActivity }) {
+function MobileManageScreen({ activity }: { activity: RespondActivity }) {
   return (
     <>
       <ActivityActionsBar activity={activity} />

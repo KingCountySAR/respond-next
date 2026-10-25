@@ -2,9 +2,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Component, StrictMode, type ReactNode } from 'react';
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { ActivityModelProvider, observer, useCommandActivity, useFieldActivity } from '@sync/model/react';
-import type { FieldParticipant } from '@sync/model';
-import { ACTIVITY_ID, CRT, HOUR, T0, activityArgs, fieldMember, offlineClient } from './helpers';
+import { ActivityModelProvider, observer, useManageActivity, useRespondActivity } from '@sync/model/react';
+import type { RespondParticipant } from '@sync/model';
+import { ACTIVITY_ID, CRT, HOUR, T0, activityArgs, respondMember, offlineClient } from './helpers';
 import { participantIdFor } from '@sync/domain';
 
 afterEach(cleanup);
@@ -30,12 +30,12 @@ async function setup() {
   }
   const renders: Record<string, number> = { list: 0 };
 
-  const Card = observer(({ p }: { p: FieldParticipant }) => {
+  const Card = observer(({ p }: { p: RespondParticipant }) => {
     renders[p.name] = (renders[p.name] ?? 0) + 1;
     return <li>{`${p.name}: ${p.status}`}</li>;
   });
   const Roster = observer(() => {
-    const activity = useFieldActivity();
+    const activity = useRespondActivity();
     renders.list!++;
     return (
       <ul>
@@ -93,30 +93,30 @@ describe('ActivityModelProvider', () => {
   });
 });
 
-describe('useCommandActivity', () => {
-  const CommandOnly = observer(() => <p>{`${useCommandActivity().teams.length} teams`}</p>);
+describe('useManageActivity', () => {
+  const ManageOnly = observer(() => <p>{`${useManageActivity().teams.length} teams`}</p>);
 
-  it('gives command screens the command model', async () => {
+  it('gives manage screens the manage model', async () => {
     const { client } = await setup();
     render(
       <ActivityModelProvider client={client} activityId={ACTIVITY_ID}>
-        <CommandOnly />
+        <ManageOnly />
       </ActivityModelProvider>,
     );
     expect(await screen.findByText('0 teams')).toBeTruthy();
   });
 
-  it('refuses field viewers', async () => {
-    const client = await offlineClient(fieldMember('kcsara:9'));
+  it('refuses respond viewers', async () => {
+    const client = await offlineClient(respondMember('kcsara:9'));
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {}); // React logs caught render errors
     render(
       <Catch>
         <ActivityModelProvider client={client} activityId={ACTIVITY_ID}>
-          <CommandOnly />
+          <ManageOnly />
         </ActivityModelProvider>
       </Catch>,
     );
-    expect(await screen.findByText(/useCommandActivity is for command and support viewers/)).toBeTruthy();
+    expect(await screen.findByText(/useManageActivity is for managers/)).toBeTruthy();
     quiet.mockRestore();
   });
 });

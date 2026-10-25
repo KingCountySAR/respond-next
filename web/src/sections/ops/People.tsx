@@ -2,7 +2,7 @@
 import { Chip, Stack, Typography } from '@mui/material';
 import type { MouseEvent, PointerEvent } from 'react';
 import type { ParticipantStatus } from '@sync/domain';
-import type { CommandEquipment, CommandParticipant } from '@sync/model';
+import type { ManageEquipment, ManageParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useDialogs } from '../../shell/dialogs';
 import { statusMuiColor, statusText } from '../../ui/status';
@@ -11,7 +11,7 @@ import { format24HourTime } from './opsRules';
 import { DashboardDraggableContainer } from './parts';
 
 /** A chip that, once confirmed, sets the person's status. */
-export function DashboardParticipantStatusButton({ participant, status }: { participant: CommandParticipant; status: Exclude<ParticipantStatus, 'unknown'> }) {
+export function DashboardParticipantStatusButton({ participant, status }: { participant: ManageParticipant; status: Exclude<ParticipantStatus, 'unknown'> }) {
   const { confirm } = useDialogs();
   const change = useChange();
   const label = statusText(status);
@@ -30,7 +30,7 @@ export function DashboardParticipantStatusButton({ participant, status }: { part
 }
 
 /** In the resource pool: the person, their ETA while still on the way, unit and tags. */
-export const DashboardParticipantCard = observer(function DashboardParticipantCard({ participant }: { participant: CommandParticipant }) {
+export const DashboardParticipantCard = observer(function DashboardParticipantCard({ participant }: { participant: ManageParticipant }) {
   const isAvailable = participant.status === 'staging';
   const eta = participant.record?.eta;
   return (
@@ -54,7 +54,7 @@ export const DashboardParticipantCard = observer(function DashboardParticipantCa
 });
 
 /** On a team, place or group: red, with an "Assigned" button, until their status says assigned. */
-export const DashboardTeamMember = observer(function DashboardTeamMember({ participant }: { participant: CommandParticipant }) {
+export const DashboardTeamMember = observer(function DashboardTeamMember({ participant }: { participant: ManageParticipant }) {
   const isAssigned = participant.status === 'assigned';
   return (
     <DashboardDraggableContainer variant="compact" sx={{ bgcolor: !isAssigned ? '#f0bcbc' : 'background.paper' }}>
@@ -68,7 +68,7 @@ export const DashboardTeamMember = observer(function DashboardTeamMember({ parti
   );
 });
 
-export function DashboardTeamEquipment({ item }: { item: CommandEquipment }) {
+export function DashboardTeamEquipment({ item }: { item: ManageEquipment }) {
   return (
     <DashboardDraggableContainer variant="compact">
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
@@ -81,4 +81,4 @@ export function DashboardTeamEquipment({ item }: { item: CommandEquipment }) {
 }
 
 /** Anyone on the target whose status isn't assigned (they're there, but not on the clock as assigned). */
-export const hasUnassignedPersonnel = (people: CommandParticipant[]): boolean => people.some((p) => p.status !== 'assigned');
+export const hasUnassignedPersonnel = (people: ManageParticipant[]): boolean => people.some((p) => p.status !== 'assigned');

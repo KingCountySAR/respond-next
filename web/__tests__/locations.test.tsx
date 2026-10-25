@@ -33,7 +33,7 @@ const savedActivityLocation = async () => {
 
 async function newMission(title: string) {
   server.renderApp('/mission/new');
-  await signIn('Alice Adams', 'kcsara:101', 'command');
+  await signIn('Alice Adams', 'kcsara:101', 'manage');
   fireEvent.change(await screen.findByLabelText('Name', { exact: false }), { target: { value: title } });
 }
 
@@ -81,7 +81,7 @@ describe('saved locations', () => {
 
   it('manages the catalog on the admin page', async () => {
     server.renderApp('/admin/locations');
-    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
     expect(await screen.findByText('Locations', { selector: 'h4' })).toBeTruthy();
 
     // Edit, keeping the description the activity dialog doesn't show.

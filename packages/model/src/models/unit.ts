@@ -5,17 +5,17 @@ import {
   isActiveStatus,
   statusCounts,
   type ActivityUnitRec,
-  type FieldUnitRec,
+  type RespondUnitRec,
   type ParticipantStatus,
   type UnitStatus,
 } from '@sync/domain';
-import type { CommandActivity, FieldActivity } from './activity';
-import type { CommandKinds, Kinds } from './kinds';
+import type { ManageActivity, RespondActivity } from './activity';
+import type { ManageKinds, Kinds } from './kinds';
 import { RecordModel } from './record';
 
 /** Every viewer sees the units taking part and their status. */
-export class FieldUnit<R extends FieldUnitRec = FieldUnitRec, K extends Kinds = Kinds> extends RecordModel<R, K> {
-  constructor(activity: FieldActivity<K>, id: string) {
+export class RespondUnit<R extends RespondUnitRec = RespondUnitRec, K extends Kinds = Kinds> extends RecordModel<R, K> {
+  constructor(activity: RespondActivity<K>, id: string) {
     super(activity, id, 'activityUnit');
     makeObservable(this, { status: computed, statusCounts: computedStruct, activeParticipantCount: computed });
   }
@@ -45,8 +45,8 @@ export class FieldUnit<R extends FieldUnitRec = FieldUnitRec, K extends Kinds = 
   }
 }
 
-export class CommandUnit extends FieldUnit<ActivityUnitRec, CommandKinds> {
-  declare readonly activity: CommandActivity;
+export class ManageUnit extends RespondUnit<ActivityUnitRec, ManageKinds> {
+  declare readonly activity: ManageActivity;
 
   setStatus(status: Exclude<UnitStatus, 'unknown'>, options: { at?: number } = {}): WireMutation {
     const unit = this.record;

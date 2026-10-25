@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import type { ActivityList } from '@sync/model';
-import { ActivityModelProvider, observer, useActivityList, useFieldActivity } from '@sync/model/react';
+import { ActivityModelProvider, observer, useActivityList, useRespondActivity } from '@sync/model/react';
 import { useSyncClient } from './sync';
 
 /**
  * Opens an activity on the session's SyncClient for the pages under it, which read it with
- * `useFieldActivity()` or `useCommandActivity()`. The legacy ActivityLayout's loading and
+ * `useRespondActivity()` or `useManageActivity()`. The legacy ActivityLayout's loading and
  * not-found text.
  *
  * Only an open activity is live. One the activity list has as closed, or doesn't have (closed long
@@ -36,7 +36,7 @@ const Opened = observer(function Opened({ list, activityId, children }: { list: 
  * or it's been removed. Offline, an activity this browser hasn't seen stays loading.
  */
 const WhenLoaded = observer(function WhenLoaded({ children }: { children: ReactNode }) {
-  const activity = useFieldActivity();
+  const activity = useRespondActivity();
   const rec = activity.record;
   if (rec && rec.removedAt === null) return <>{children}</>;
   return <div>{rec || activity.missing ? 'Activity not found' : 'Loading activity...'}</div>;

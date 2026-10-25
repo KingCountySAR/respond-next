@@ -4,11 +4,11 @@ import type { ActivityClient } from '@sync/model';
 import { Hub, MemoryStorage } from '@sync/server';
 import { Level, activityLogId, activityProjector, activityRegistry, type ActivityViewer, type LogEntryRec } from '@sync/domain';
 import { ActivityLogWriter } from '../../server/src/activityLog';
-import { COMMAND, CRT, activityArgs, fieldMember } from '../../packages/domain/__tests__/helpers';
+import { MANAGER, CRT, activityArgs, respondMember } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from './sim';
 
-const ALICE: ActivityViewer = { ...COMMAND, name: 'Alice Adams' };
-const ANNA: ActivityViewer = { ...fieldMember('kcsara:1'), name: 'Anna Lee' };
+const ALICE: ActivityViewer = { ...MANAGER, name: 'Alice Adams' };
+const ANNA: ActivityViewer = { ...respondMember('kcsara:1'), name: 'Anna Lee' };
 
 async function until(check: () => boolean) {
   for (let i = 0; i < 300 && !check(); i++) await new Promise((r) => setTimeout(r, 5));
@@ -77,12 +77,12 @@ describe('the activity log', () => {
     expect(byline('Anna Lee moved from Standby to Responding')).toBeUndefined();
   });
 
-  it('is for command only, can be starred, and only the server writes it', async () => {
+  it('is for managers only, can be starred, and only the server writes it', async () => {
     const s = await setup();
     s.alice.mutate('a1', 'createActivity', activityArgs({ startTime: Date.now() - 1000 }));
     await until(() => s.lines(s.alice).length === 1);
     await s.synced();
-    expect(s.lines(s.anna)).toEqual([]); // a field member on a mission
+    expect(s.lines(s.anna)).toEqual([]); // a respond-tier member on a mission
 
     s.alice.mutate(activityLogId('a1'), 'setLogFavorite', { id: s.lines(s.alice)[0]!.id, favorite: true });
     await until(() => s.lines(s.alice)[0]?.favorite === true && s.alice.status.pending === 0);
@@ -91,7 +91,7 @@ describe('the activity log', () => {
     expect(s.lines(s.alice).map((l) => l.text)).toEqual(['Lost hiker, Mailbox Peak created']);
   });
 
-  it('makes members command on an event, there as on the event', async () => {
+  it('lets members manage an event, there as on the event', async () => {
     const s = await setup();
     s.alice.mutate('a1', 'createActivity', activityArgs({ kind: 'training', startTime: Date.now() - 1000 }));
     await until(() => s.lines(s.anna).length === 1);

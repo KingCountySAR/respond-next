@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ClientActivityState, Rejection, type Rec, type WireMutation } from '@sync/core';
 import { currentStatus, testRegistry, type Person } from './testDomain';
 
-const viewer = { userId: 'u1', tier: 'command' };
+const viewer = { userId: 'u1', tier: 'manage' };
 const newState = () => new ClientActivityState('e1', testRegistry, () => viewer, 'client-a');
 
 let nextId = 1;

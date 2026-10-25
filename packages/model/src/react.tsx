@@ -7,7 +7,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type { OpenOptions } from '@sync/client';
 import type { ActivityClient } from './client';
 import { ACTIVITY_LIST_ID, activityLogId, activityProjector } from '@sync/domain';
-import { ActivityList, ActivityLog, createActivityModel, isCommandActivity, type CommandActivity, type FieldActivity } from './models';
+import { ActivityList, ActivityLog, createActivityModel, isManageActivity, type ManageActivity, type RespondActivity } from './models';
 
 export { observer, Observer } from 'mobx-react-lite';
 
@@ -61,13 +61,13 @@ function acquire<M extends { dispose(): void }>(client: ActivityClient, scopeId:
 }
 
 /** Whether the model is in the view the client's viewer has of the activity now; its kind can change that. */
-const fits = (client: ActivityClient, model: FieldActivity) => model.viewKey === activityProjector.viewKey(client.viewerIn(model.activityId));
+const fits = (client: ActivityClient, model: RespondActivity) => model.viewKey === activityProjector.viewKey(client.viewerIn(model.activityId));
 
 /**
  * The shared model for an activity, made anew when it no longer fits; see `acquire`. `open` says how
  * to open it if it isn't open (`client.open`'s options).
  */
-export function acquireActivityModel(client: ActivityClient, activityId: string, open?: OpenOptions): { ready: Promise<FieldActivity>; release: () => void } {
+export function acquireActivityModel(client: ActivityClient, activityId: string, open?: OpenOptions): { ready: Promise<RespondActivity>; release: () => void } {
   return acquire(client, activityId, () => createActivityModel(client, activityId), (model) => !fits(client, model), open);
 }
 
@@ -87,7 +87,7 @@ export function useActivityList(client: ActivityClient): ActivityList | null {
   return list;
 }
 
-/** An activity's log, open while any component uses it; null until it's loaded. Command only. */
+/** An activity's log, open while any component uses it; null until it's loaded. Managers only. */
 export function useActivityLog(client: ActivityClient, activityId: string): ActivityLog | null {
   const [log, setLog] = useState<ActivityLog | null>(null);
   useEffect(() => {
@@ -103,14 +103,14 @@ export function useActivityLog(client: ActivityClient, activityId: string): Acti
   return log;
 }
 
-const ActivityModelContext = createContext<FieldActivity | null>(null);
+const ActivityModelContext = createContext<RespondActivity | null>(null);
 
 /**
  * Opens the activity for the components under it. `live` false reads it once rather than subscribing
  * (see `OpenOptions`); it goes live when `live` turns true, or on the first change made to it.
  */
 export function ActivityModelProvider({ client, activityId, live = true, fallback = null, children }: { client: ActivityClient; activityId: string; live?: boolean; fallback?: ReactNode; children: ReactNode }) {
-  const [model, setModel] = useState<FieldActivity | null>(null);
+  const [model, setModel] = useState<RespondActivity | null>(null);
   // Bumped when the model stops fitting (a training became a mission, say), for a new one.
   const [generation, setGeneration] = useState(0);
   // How to open it, when the lease opens it; once it's open, `live` turning true makes it live.
@@ -142,20 +142,20 @@ export function ActivityModelProvider({ client, activityId, live = true, fallbac
   return model ? <ActivityModelContext.Provider value={model}>{children}</ActivityModelContext.Provider> : <>{fallback}</>;
 }
 
-function useModel(hook: string): FieldActivity {
+function useModel(hook: string): RespondActivity {
   const model = useContext(ActivityModelContext);
   if (!model) throw new Error(`${hook} must be used inside an ActivityModelProvider`);
   return model;
 }
 
-/** The activity as every viewer sees it. Works for command too, so field screens can be shown to command. */
-export function useFieldActivity(): FieldActivity {
-  return useModel('useFieldActivity');
+/** The activity as every viewer sees it. Works for managers too, so respond screens can be shown to managers. */
+export function useRespondActivity(): RespondActivity {
+  return useModel('useRespondActivity');
 }
 
-/** The command model. Throws for field viewers: only command screens call this. */
-export function useCommandActivity(): CommandActivity {
-  const model = useModel('useCommandActivity');
-  if (!isCommandActivity(model)) throw new Error('useCommandActivity is for command and support viewers');
+/** The manage model. Throws for respond viewers: only manage screens call this. */
+export function useManageActivity(): ManageActivity {
+  const model = useModel('useManageActivity');
+  if (!isManageActivity(model)) throw new Error('useManageActivity is for managers');
   return model;
 }

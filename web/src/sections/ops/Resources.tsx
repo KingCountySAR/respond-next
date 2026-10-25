@@ -4,8 +4,8 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { Badge, Box, Button, DialogActions, DialogContent, DialogTitle, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { useMemo, useState, type FormEvent } from 'react';
 import { EQUIPMENT_CATALOG, CUSTOM_EQUIPMENT_TYPE_ID, type EquipmentType } from '@sync/domain';
-import type { CommandParticipant } from '@sync/model';
-import { observer, useCommandActivity } from '@sync/model/react';
+import type { ManageParticipant } from '@sync/model';
+import { observer, useManageActivity } from '@sync/model/react';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
 import { useChange } from '../../ui/useChange';
@@ -18,16 +18,16 @@ import { DashboardParticipantCard } from './People';
 
 /** Who and what can be assigned. Dropping someone or something here takes them off where they were. */
 export const DashboardResourcesPanel = observer(function DashboardResourcesPanel() {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const change = useChange();
   const assign = useAssignResponder();
   const [tab, setTab] = useState<'responders' | 'equipment'>('responders');
   const [query, setQuery] = useState('');
   const pool = resourcePool(activity, query);
 
-  const handleDrop = (item: CommandParticipant | EquipmentDrag, type: string) => {
+  const handleDrop = (item: ManageParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
-      const p = item as CommandParticipant;
+      const p = item as ManageParticipant;
       // Whatever their status: someone on a team, place or group can always go back to the pool.
       if (p.target) assign(p, null);
     } else if (type === 'equipment') {

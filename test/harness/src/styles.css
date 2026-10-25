@@ -81,7 +81,7 @@ button {
   min-width: 0;
 }
 
-.pane.command {
+.pane.manage {
   border-top: 3px solid var(--accent);
 }
 

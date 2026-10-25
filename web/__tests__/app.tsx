@@ -15,7 +15,7 @@ import { SummaryWriter } from '../../server/src/summaries';
 import { ActivityLogWriter } from '../../server/src/activityLog';
 import type { Api } from '../src/shell/api';
 import { App } from '../src/shell/App';
-import { COMMAND, CRT, RMR, activityArgs } from '../../packages/domain/__tests__/helpers';
+import { MANAGER, CRT, RMR, activityArgs } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from '../../test/integration/sim';
 
 export { CRT, RMR };
@@ -77,8 +77,8 @@ function apiFor(locations: MemoryLocationCatalog, orgs: OrganizationStore, hub: 
   const people = { members, grants };
   let data: SessionData | null = null;
   const toSession = ({ orgId: _, grants: _grants, ...rest }: SessionData): Session => ({ ...rest, admin: orgs.isAdmin(rest.email) });
-  const atCommand = (activityId: string) => {
-    if (!data || tierOn(data, activityId) !== 'command') throw new Error('Only command on this activity can grant tiers');
+  const managing = (activityId: string) => {
+    if (!data || tierOn(data, activityId) !== 'manage') throw new Error('Only a manager of this activity can grant tiers');
   };
   // As the server: their session brought up to date, and their connections closed.
   const changed = async (personRef: string) => {
@@ -114,18 +114,18 @@ function apiFor(locations: MemoryLocationCatalog, orgs: OrganizationStore, hub: 
       return read.version ? { activityId, ...read } : null;
     },
     async grantOf(activityId, personRef) {
-      atCommand(activityId);
+      managing(activityId);
       return (await grants.get(personRef, activityId)) ?? null;
     },
     async grant(activityId, personRef, tier) {
-      atCommand(activityId);
-      const roster = (await hub.actor(activityId)).projectedRecords('command');
+      managing(activityId);
+      const roster = (await hub.actor(activityId)).projectedRecords('manage');
       if (!roster.some((r) => r.type === 'participant' && (r as { personRef?: string }).personRef === personRef)) throw new Error(`${personRef} isn't on that activity's roster`);
       await grants.set(personRef, activityId, { tier, grantedBy: data!.email, grantedAt: Date.now() });
       await changed(personRef);
     },
     async revokeGrant(activityId, personRef) {
-      atCommand(activityId);
+      managing(activityId);
       await grants.remove(personRef, activityId);
       await changed(personRef);
     },
@@ -158,7 +158,7 @@ export const ACTIVITY = 'a1';
 export const TITLE = 'Lost hiker, Mailbox Peak';
 
 /**
- * A server with one activity on it, set up by a command client (`seed`): Dana Field (kcsara:7)
+ * A server with one activity on it, set up by a manager client (`seed`): Dana Field (kcsara:7)
  * staging under CRT. Each app rendered connects as its own client.
  */
 export async function serverWithActivity(options: { siteAdmins?: string[]; devSignIn?: boolean; googleSignIn?: boolean } = {}) {
@@ -174,7 +174,7 @@ export async function serverWithActivity(options: { siteAdmins?: string[]; devSi
   const hub: Hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now, onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID || id === ACTIVITY_ARCHIVE_ID });
   const net = new SimNetwork(hub, mulberry32(1));
   net.latencyMs = 10;
-  const seed = new SyncClient({ registry: activityRegistry, viewer: COMMAND, transport: net.transportFor(0, COMMAND) });
+  const seed = new SyncClient({ registry: activityRegistry, viewer: MANAGER, transport: net.transportFor(0, MANAGER) });
   await seed.start();
   await seed.open(ACTIVITY);
   seed.mutate(ACTIVITY, 'createActivity', activityArgs({ startTime: Date.now() - 60 * 60 * 1000, description: 'Hiker overdue since 1800.', mapId: 'ABC12' }));
@@ -184,9 +184,9 @@ export async function serverWithActivity(options: { siteAdmins?: string[]; devSi
   const organizations = OrganizationStore.memory(organizationSeed(), { envAdmins: options.siteAdmins });
   const grants = new MemoryGrantStore();
   const { api, current, changed } = apiFor(locations, organizations, hub, grants);
-  /** Someone at command gives this person command on an activity, as through the API. */
-  const grantCommand = async (personRef: string, activityId = ACTIVITY) => {
-    await grants.set(personRef, activityId, { tier: 'command', grantedBy: 'alice.adams@crt.example.org', grantedAt: Date.now() });
+  /** A manager gives this person manage access on an activity, as through the API. */
+  const grantManage = async (personRef: string, activityId = ACTIVITY) => {
+    await grants.set(personRef, activityId, { tier: 'manage', grantedBy: 'alice.adams@crt.example.org', grantedAt: Date.now() });
     await changed(personRef);
   };
   // Each connection is the session as it is when it opens, as the server's WebSocket upgrade.
@@ -204,19 +204,19 @@ export async function serverWithActivity(options: { siteAdmins?: string[]; devSi
     const index = nextClient++;
     return render(<App bootstrap={async () => site()} api={api} sync={{ transport: transport(index), persistence: () => new MemoryPersistence() }} />);
   };
-  return { net, seed, locations, organizations, grants, grantCommand, renderApp, stop: () => seed.stop() };
+  return { net, seed, locations, organizations, grants, grantManage, renderApp, stop: () => seed.stop() };
 }
 
 /** Signs in by email (`given.family@crt.example.org`); everyone named here is in CRT's directory. */
-export async function signIn(name: string, personRef: string, tier: 'field' | 'command' = 'field') {
+export async function signIn(name: string, personRef: string, tier: 'respond' | 'manage' = 'respond') {
   fireEvent.click(await screen.findByText('Dev sign-in'));
   const email = `${name.toLowerCase().split(' ').join('.')}@crt.example.org`;
   const known = await directories.kcsara.byEmail(email);
   if (known?.member.personRef !== personRef) throw new Error(`${name} is not ${personRef} in the test directory`);
   fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: email } });
-  if (tier !== 'field') {
+  if (tier !== 'respond') {
     fireEvent.mouseDown(screen.getByLabelText('Tier'));
-    fireEvent.click(await screen.findByRole('option', { name: tier === 'command' ? 'Command' : 'Support' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'Manage' }));
   }
   fireEvent.click(screen.getByText('dev sign in'));
   await waitFor(() => expect(screen.queryByText('dev sign in')).toBeNull());

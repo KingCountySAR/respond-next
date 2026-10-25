@@ -1,6 +1,6 @@
 /** The dashboard's rules that aren't the domain's: orders, counts, names and suggestions, as the legacy dashboard had them. */
 import { DEFAULT_PLACES, type Gar, type Level, type TeamStatus } from '@sync/domain';
-import type { CommandActivity, CommandParticipant, CommandTeam, Comm, LogLine } from '@sync/model';
+import type { ManageActivity, ManageParticipant, ManageTeam, Comm, LogLine } from '@sync/model';
 
 export { TEAM_STATUS_TEXT } from '@sync/domain';
 
@@ -11,7 +11,7 @@ export const GAR_COLORS: Record<Gar, string> = { green: 'green', amber: 'goldenr
 /** 24-hour hours and minutes, e.g. 14:05. */
 export const format24HourTime = (value: number): string => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(value);
 
-const byFirstThenLast = (a: CommandParticipant, b: CommandParticipant) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+const byFirstThenLast = (a: ManageParticipant, b: ManageParticipant) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 export const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
 
 // --- Teams ----------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ export function compareTeamNames(left: string, right: string): number {
 const GAR_PRIORITY: (Gar | undefined)[] = ['red', 'amber', 'green'];
 
 /** Active teams by GAR (red first), then name; disbanded teams last, by name. */
-export function sortTeams(left: Pick<CommandTeam, 'name' | 'status' | 'gar'>, right: Pick<CommandTeam, 'name' | 'status' | 'gar'>): number {
+export function sortTeams(left: Pick<ManageTeam, 'name' | 'status' | 'gar'>, right: Pick<ManageTeam, 'name' | 'status' | 'gar'>): number {
   const [ld, rd] = [left.status === 'disbanded', right.status === 'disbanded'];
   if (ld !== rd) return ld ? 1 : -1;
   if (!ld) {
@@ -58,7 +58,7 @@ export function sortTeams(left: Pick<CommandTeam, 'name' | 'status' | 'gar'>, ri
 }
 
 /** The team leader, then everyone else by name. */
-export function teamRoster(team: CommandTeam): { leader: CommandParticipant | undefined; others: CommandParticipant[] } {
+export function teamRoster(team: ManageTeam): { leader: ManageParticipant | undefined; others: ManageParticipant[] } {
   const leader = team.leader;
   return { leader, others: team.members.filter((p) => p.id !== leader?.id).sort(byFirstThenLast) };
 }
@@ -74,7 +74,7 @@ export function uniqueNameError(name: string, others: string[], what: string): s
 // --- Responders -----------------------------------------------------------------------------
 
 /** The header's counts: on their way, waiting at base, and out in the field. */
-export function responderSummary(activity: CommandActivity): { responding: number; available: number; field: number } {
+export function responderSummary(activity: ManageActivity): { responding: number; available: number; field: number } {
   const counts = activity.statusCounts;
   const inField = activity.teams.filter((t) => t.status !== 'inBase' && t.status !== 'disbanded').reduce((n, t) => n + t.members.length, 0);
   const atPlaces = activity.places.filter((p) => p.name !== DEFAULT_PLACES.base).reduce((n, p) => n + p.members.length, 0);
@@ -82,7 +82,7 @@ export function responderSummary(activity: CommandActivity): { responding: numbe
 }
 
 /** Names, unit and tags, for the responder search. */
-export function matchesResponder(p: CommandParticipant, query: string): boolean {
+export function matchesResponder(p: ManageParticipant, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return [p.record?.firstname, p.record?.lastname, p.unit?.name, ...p.tags].filter(Boolean).join(' ').toLowerCase().includes(q);
@@ -92,9 +92,9 @@ export function matchesResponder(p: CommandParticipant, query: string): boolean 
  * The resource pool: unassigned people who are available (by name), then those still responding
  * (earliest ETA first, unknown ETAs last by name).
  */
-export function resourcePool(activity: CommandActivity, query: string): { available: CommandParticipant[]; responding: CommandParticipant[] } {
+export function resourcePool(activity: ManageActivity, query: string): { available: ManageParticipant[]; responding: ManageParticipant[] } {
   const free = activity.participants.filter((p) => !p.target && matchesResponder(p, query));
-  const eta = (p: CommandParticipant) => p.record?.eta ?? null;
+  const eta = (p: ManageParticipant) => p.record?.eta ?? null;
   return {
     available: free.filter((p) => p.status === 'staging').sort(byFirstThenLast),
     responding: free
@@ -119,7 +119,7 @@ export function countByName(items: { name: string }[]): [string, number][] {
 }
 
 /** On scene (teams there), assigned (other teams and groups, with who holds it) and staged (by place). */
-export function equipmentSummary(activity: CommandActivity) {
+export function equipmentSummary(activity: ManageActivity) {
   const onScene = activity.teams.filter((t) => t.status === 'onScene');
   const holders = [...activity.teams.filter((t) => t.status !== 'onScene'), ...activity.groups];
   const assigned = new Map<string, { count: number; holders: Set<string> }>();
@@ -143,7 +143,7 @@ export function equipmentSummary(activity: CommandActivity) {
 const PREDEFINED_COMMS_CONTACTS = ['All Teams', 'Incident Commander'];
 
 /** From/to suggestions: the usual ones, active teams, places, and everyone the log has named. */
-export function commsContacts(activity: CommandActivity): string[] {
+export function commsContacts(activity: ManageActivity): string[] {
   const names = new Set<string>(PREDEFINED_COMMS_CONTACTS);
   for (const t of activity.teams) if (t.status !== 'disbanded') names.add(t.name);
   for (const p of activity.places) names.add(p.name);

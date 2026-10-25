@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { currentUnitOf, currentUnitStatus, getActivity, participantIdFor, participantTimeline, statusOf, statusSteps, statusStepsUnder, timeOnClock, type ParticipantRec } from '@sync/domain';
-import { COMMAND, CRT, EXTERNAL, HOUR, RMR, SYSTEM, T0, addMember, fieldMember, startedActivity } from './helpers';
+import { MANAGER, CRT, EXTERNAL, HOUR, RMR, SYSTEM, T0, addMember, respondMember, startedActivity } from './helpers';
 
 const timeline = (e: ReturnType<typeof startedActivity>, pid: string) => participantTimeline(e.view, pid).map((s) => `${s.status}@${s.unitId}`);
 
@@ -29,11 +29,11 @@ describe('adding participants', () => {
     expect(timeline(e, pid)).toHaveLength(1);
   });
 
-  it('lets field members sign only themselves in', () => {
+  it('lets respond-tier members sign only themselves in', () => {
     const e = startedActivity();
     const args = { personRef: 'kcsara:2', firstname: 'Anna', lastname: 'B', unit: CRT, status: 'responding', at: T0 + HOUR };
-    expect(e.rejects('addParticipant', args, fieldMember('kcsara:9'))).toBe('forbidden');
-    expect(e.rejects('addParticipant', args, fieldMember('kcsara:2'))).toBeUndefined();
+    expect(e.rejects('addParticipant', args, respondMember('kcsara:9'))).toBe('forbidden');
+    expect(e.rejects('addParticipant', args, respondMember('kcsara:2'))).toBeUndefined();
   });
 });
 
@@ -61,21 +61,21 @@ describe('changing units', () => {
 });
 
 describe('standby-only and sign-in window', () => {
-  it('allows only standby for field users before sign-in opens; command may do anything', () => {
+  it('allows only standby for responders before sign-in opens; managers may do anything', () => {
     const e = startedActivity({ startTime: T0 + 10 * HOUR, earlySignInWindow: 4 * HOUR });
-    const me = fieldMember('kcsara:3');
+    const me = respondMember('kcsara:3');
     const args = (status: string) => ({ personRef: 'kcsara:3', firstname: 'Fred', lastname: 'C', unit: CRT, status, at: T0 + HOUR });
     expect(e.rejects('addParticipant', args('responding'), me)).toBe('standby_only');
     expect(e.rejects('addParticipant', args('standby'), me)).toBeUndefined();
-    expect(e.rejects('addParticipant', { ...args('responding'), personRef: 'kcsara:4' }, COMMAND)).toBeUndefined();
+    expect(e.rejects('addParticipant', { ...args('responding'), personRef: 'kcsara:4' }, MANAGER)).toBeUndefined();
   });
 
   it('keeps standbyOnly events standby-only unless already responding', () => {
     const e = startedActivity({ standbyOnly: true });
-    const me = fieldMember('kcsara:3');
+    const me = respondMember('kcsara:3');
     expect(e.rejects('addParticipant', { personRef: 'kcsara:3', firstname: 'Fred', lastname: 'C', unit: CRT, status: 'responding', at: T0 + HOUR }, me)).toBe('standby_only');
     const pid = addMember(e, 'kcsara:5', 'responding');
-    expect(e.rejects('setParticipantStatus', { participantId: pid, status: 'staging', unit: CRT, at: T0 + 2 * HOUR }, fieldMember('kcsara:5'))).toBeUndefined();
+    expect(e.rejects('setParticipantStatus', { participantId: pid, status: 'staging', unit: CRT, at: T0 + 2 * HOUR }, respondMember('kcsara:5'))).toBeUndefined();
   });
 
   it('offers the legacy status steps', () => {
@@ -93,12 +93,12 @@ describe('standby-only and sign-in window', () => {
 });
 
 describe('participant details', () => {
-  it('lets a field member set their own ETA, not someone else’s, and keeps miles command-or-self', () => {
+  it('lets a respond-tier member set their own ETA, not someone else’s, and keeps miles manager-or-self', () => {
     const e = startedActivity();
     const mine = addMember(e, 'kcsara:1');
     const theirs = addMember(e, 'kcsara:2');
-    expect(e.rejects('setEta', { participantId: mine, eta: T0 + 3 * HOUR }, fieldMember('kcsara:1'))).toBeUndefined();
-    expect(e.rejects('setEta', { participantId: theirs, eta: null }, fieldMember('kcsara:1'))).toBe('forbidden');
+    expect(e.rejects('setEta', { participantId: mine, eta: T0 + 3 * HOUR }, respondMember('kcsara:1'))).toBeUndefined();
+    expect(e.rejects('setEta', { participantId: theirs, eta: null }, respondMember('kcsara:1'))).toBe('forbidden');
     expect(e.get<ParticipantRec>('participant', mine)?.eta).toBe(T0 + 3 * HOUR);
     expect(e.rejects('setMiles', { participantId: theirs, miles: 12 }, EXTERNAL)).toBe('forbidden');
   });
@@ -107,7 +107,7 @@ describe('participant details', () => {
     const e = startedActivity();
     const pid = addMember(e, 'kcsara:1');
     const args = { participantId: pid, memberTags: ['EMT'], contact: { mobile: '206-555-0100', email: null } };
-    expect(e.rejects('setMemberInfo', args, COMMAND)).toBe('forbidden');
+    expect(e.rejects('setMemberInfo', args, MANAGER)).toBe('forbidden');
     e.run('setMemberInfo', args, SYSTEM);
     expect(e.get<ParticipantRec>('participant', pid)?.memberTags).toEqual(['EMT']);
     expect(e.get('contact', pid)).toMatchObject({ participantId: pid, mobile: '206-555-0100' });
@@ -121,11 +121,11 @@ describe('participant details', () => {
     expect(e.rejects('linkPerson', { participantId: adhoc, personRef: 'kcsara:7' })).toBeUndefined();
   });
 
-  it('corrects a timeline entry in place (command only)', () => {
+  it('corrects a timeline entry in place (managers only)', () => {
     const e = startedActivity();
     const pid = addMember(e, 'kcsara:1', 'responding');
     const entry = participantTimeline(e.view, pid)[0]!;
-    expect(e.rejects('correctParticipantStatus', { entryId: entry.id, at: T0 }, fieldMember('kcsara:1'))).toBe('forbidden');
+    expect(e.rejects('correctParticipantStatus', { entryId: entry.id, at: T0 }, respondMember('kcsara:1'))).toBe('forbidden');
     e.run('correctParticipantStatus', { entryId: entry.id, at: T0, status: 'standby' });
     expect(participantTimeline(e.view, pid)[0]).toMatchObject({ id: entry.id, at: T0, status: 'standby' });
   });
@@ -205,12 +205,12 @@ describe('time on the clock', () => {
 });
 
 describe('who changed a status, and why', () => {
-  const BARRY = { ...COMMAND, name: 'Barry Jones' };
+  const BARRY = { ...MANAGER, name: 'Barry Jones' };
 
   it("names whoever set someone else's status, but not the participant's own", () => {
     const e = startedActivity();
     const pid = addMember(e, 'kcsara:1', 'standby');
-    e.run('setParticipantStatus', { participantId: pid, status: 'responding', unit: CRT, at: T0 + HOUR }, { ...fieldMember('kcsara:1'), name: 'Alan Smith' });
+    e.run('setParticipantStatus', { participantId: pid, status: 'responding', unit: CRT, at: T0 + HOUR }, { ...respondMember('kcsara:1'), name: 'Alan Smith' });
     e.run('setParticipantStatus', { participantId: pid, status: 'staging', unit: CRT, at: T0 + 2 * HOUR }, BARRY);
     const [staging, responding] = participantTimeline(e.view, pid);
     expect(staging).toMatchObject({ byName: 'Barry Jones' });

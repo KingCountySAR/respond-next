@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { keyOf } from '@sync/core';
 import { Level, commLevel, currentTarget, groupTeams, statusOf, teamMembers, teamNameConflict, teamStatusOf, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec } from '@sync/domain';
-import { HOUR, T0, addMember, fieldMember, startedActivity, type TestActivity } from './helpers';
+import { HOUR, T0, addMember, respondMember, startedActivity, type TestActivity } from './helpers';
 
 const placeId = (e: TestActivity, name: string) => e.all<PlaceRec>('place').find((p) => p.name === name)!.id;
 const team = (id: string) => ({ kind: 'team', id }) as const;
@@ -63,11 +63,11 @@ describe('assigning participants', () => {
     expect(leader()).toBeNull();
   });
 
-  it('rejects missing targets, field users and light-mode events', () => {
+  it('rejects missing targets, responders and light-mode events', () => {
     const e = startedActivity();
     const pid = addMember(e, 'kcsara:1');
     expect(e.rejects('assign', { participantId: pid, target: team('nope'), at: T0 })).toBe('target_gone');
-    expect(e.rejects('assign', { participantId: pid, target: null, at: T0 }, fieldMember('kcsara:1'))).toBe('forbidden');
+    expect(e.rejects('assign', { participantId: pid, target: null, at: T0 }, respondMember('kcsara:1'))).toBe('forbidden');
     const light = startedActivity({ mode: 'light' });
     const p2 = addMember(light, 'kcsara:1');
     expect(light.rejects('assign', { participantId: p2, target: null, at: T0 })).toBe('light_mode');
@@ -196,14 +196,14 @@ describe('places, equipment and comms', () => {
     expect(e.rejects('createEquipment', { id: 'eq3', typeId: 'nope', assignedTo: null })).toBe('bad_args');
   });
 
-  it('soft-deletes comms and keeps them command-only', () => {
+  it('soft-deletes comms and keeps them manager-only', () => {
     const e = startedActivity();
     e.run('addComm', { id: 'c1', from: 'Base', to: 'Team 1', message: 'Check in at 1500', at: T0 + HOUR });
     e.run('editComm', { id: 'c1', favorite: true });
     e.run('deleteComm', { id: 'c1' });
     expect(e.get<CommRec>('comm', 'c1')).toMatchObject({ favorite: true, removed: true });
     expect(e.rejects('editComm', { id: 'c1', message: 'x' })).toBe('removed');
-    expect(e.rejects('addComm', { id: 'c2', from: '', to: '', message: 'hi', at: T0 }, fieldMember('kcsara:1'))).toBe('forbidden');
+    expect(e.rejects('addComm', { id: 'c2', from: '', to: '', message: 'hi', at: T0 }, respondMember('kcsara:1'))).toBe('forbidden');
   });
 
   it('puts comms logged by hand at Normal, starred ones at Important, and automated ones at Auto', () => {

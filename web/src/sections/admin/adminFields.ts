@@ -28,7 +28,7 @@ export const formatTags = (rules: Record<string, string>): string =>
     .map(([group, label]) => `${group} = ${label}`)
     .join('\n');
 
-/** Tier rules, one `Group title = command` (or support, or field) per line; the bad lines, to report. */
+/** Tier rules, one `Group title = manage` (or respond) per line; the bad lines, to report. */
 export function parseTiers(text: string): { rules: Record<string, Tier>; bad: string[] } {
   const rules: Record<string, Tier> = {};
   const bad: string[] = [];

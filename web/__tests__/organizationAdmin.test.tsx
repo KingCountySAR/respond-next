@@ -44,7 +44,7 @@ describe('organization admin', () => {
   it("lets an organization's admin change its settings but not its site", async () => {
     const { organizations, renderApp } = await start();
     renderApp('/');
-    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
     fireEvent.click(await screen.findByLabelText('account of current user'));
     fireEvent.click(within(screen.getByRole('menu')).getByText('Organizations'));
 
@@ -59,17 +59,17 @@ describe('organization admin', () => {
     fireEvent.change(field(/^Primary color$/), { target: { value: '#123456' } });
     fireEvent.change(field(/^Member tags/), { target: { value: 'CRT Medical = MED\nCRT K9 = K9' } });
     fireEvent.change(field(/^Member tiers/), { target: { value: 'CRT Leader = boss' } });
-    expect(screen.getByText('Not a tier (command, support or field): CRT Leader = boss')).toBeTruthy();
-    fireEvent.change(field(/^Member tiers/), { target: { value: 'CRT Leader = Command' } });
+    expect(screen.getByText('Not a tier (manage or respond): CRT Leader = boss')).toBeTruthy();
+    fireEvent.change(field(/^Member tiers/), { target: { value: 'CRT Leader = Manage' } });
     fireEvent.click(screen.getByText('Save'));
     expect(await screen.findByText('Cascade Rescue (CRT)')).toBeTruthy();
-    expect(organizations.get(CRT.id)).toMatchObject({ title: 'Cascade Rescue', brand: { primary: '#123456' }, memberTags: { 'CRT Medical': 'MED', 'CRT K9': 'K9' }, memberTiers: { 'CRT Leader': 'command' }, hostnames: ['crt.localhost'] });
+    expect(organizations.get(CRT.id)).toMatchObject({ title: 'Cascade Rescue', brand: { primary: '#123456' }, memberTags: { 'CRT Medical': 'MED', 'CRT K9': 'K9' }, memberTiers: { 'CRT Leader': 'manage' }, hostnames: ['crt.localhost'] });
   });
 
   it('takes app icons by size, needing a 512 one', async () => {
     const { organizations, renderApp } = await start();
     renderApp('/');
-    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
     fireEvent.click(await screen.findByLabelText('account of current user'));
     fireEvent.click(within(screen.getByRole('menu')).getByText('Organizations'));
     fireEvent.click(await screen.findByText('Cascade Rescue Team (CRT)'));

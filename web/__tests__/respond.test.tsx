@@ -38,7 +38,7 @@ describe('the activity page', () => {
     expect(card.getByText(/^CRT/)).toBeTruthy();
   });
 
-  it('changes your own status, and command sees it', async () => {
+  it('changes your own status, and a manager sees it', async () => {
     await openAs('Dana Field', 'kcsara:7');
     fireEvent.click(screen.getByRole('button', { name: 'Depart Base' }));
     const dialog = within(await screen.findByRole('dialog'));
@@ -70,9 +70,9 @@ describe('the activity page', () => {
     expect(dialog.getAllByText('Available').length).toBeGreaterThan(0);
   });
 
-  it("lets command change someone's status from their dialog, and shows who did", async () => {
+  it("lets a manager change someone's status from their dialog, and shows who did", async () => {
     server.renderApp(`/mission/${ACTIVITY}`);
-    await signIn('Alice Adams', 'kcsara:101', 'command');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
     await screen.findByText(`26-0123 ${TITLE}`);
     fireEvent.click(rosterCard('Dana Field'));
     const dialog = within(await screen.findByRole('dialog'));
@@ -86,14 +86,14 @@ describe('the activity page', () => {
     expect(within(rosterCard('Dana Field')).getByTitle('Status set by Alice Adams')).toBeTruthy();
   });
 
-  it("doesn't offer field users someone else's status", async () => {
+  it("doesn't offer responders someone else's status", async () => {
     await openAs('Eli Ng', 'kcsara:9');
     fireEvent.click(rosterCard('Dana Field'));
     const dialog = within(await screen.findByRole('dialog'));
     expect(dialog.queryByRole('button', { name: 'Depart Base' })).toBeNull();
   });
 
-  it('refuses a field user completing the activity, with the reason', async () => {
+  it('refuses a responder completing the activity, with the reason', async () => {
     await openAs('Dana Field', 'kcsara:7');
     fireEvent.click(screen.getByRole('button', { name: 'Complete' }));
     fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Complete' }));

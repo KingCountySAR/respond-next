@@ -10,8 +10,8 @@ import { Autocomplete, Box, Button, DialogActions, DialogContent, DialogTitle, I
 import Linkify from 'linkify-react';
 import { useState, type FormEvent } from 'react';
 import { DEFAULT_PLACES } from '@sync/domain';
-import type { CommandActivity, CommandGroup, CommandParticipant, CommandPlace } from '@sync/model';
-import { observer, useCommandActivity } from '@sync/model/react';
+import type { ManageActivity, ManageGroup, ManageParticipant, ManagePlace } from '@sync/model';
+import { observer, useManageActivity } from '@sync/model/react';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
 import { useChange } from '../../ui/useChange';
@@ -30,7 +30,7 @@ const deleteIcon = <DeleteOutlineIcon sx={{ fontSize: 16, color: 'darkred' }} />
 // --- Description ----------------------------------------------------------------------------
 
 export const DashboardActivityDescription = observer(function DashboardActivityDescription() {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const { open } = useDialogs();
   const description = activity.record?.description ?? '';
   return (
@@ -44,7 +44,7 @@ export const DashboardActivityDescription = observer(function DashboardActivityD
   );
 });
 
-function DescriptionEditDialog({ activity, onClose }: MuiDialogProps<null> & { activity: CommandActivity }) {
+function DescriptionEditDialog({ activity, onClose }: MuiDialogProps<null> & { activity: ManageActivity }) {
   const change = useChange();
   const [description, setDescription] = useState(activity.record?.description ?? '');
   const save = (e: FormEvent) => {
@@ -75,7 +75,7 @@ const GROUP_NAME_OPTIONS = ['Rescue Group', 'Medical Group', 'Rigging Group', '4
 
 /** A "+ groups" button: names a new group. */
 export function DashboardAddGroupButton() {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const change = useChange();
   const { open } = useDialogs();
   const add = async () => {
@@ -93,7 +93,7 @@ export function DashboardAddGroupButton() {
 }
 
 export const DashboardGroupManager = observer(function DashboardGroupManager() {
-  const groups = useCommandActivity().groups;
+  const groups = useManageActivity().groups;
   return (
     <Stack spacing={1}>
       {groups.map((group) => (
@@ -103,8 +103,8 @@ export const DashboardGroupManager = observer(function DashboardGroupManager() {
   );
 });
 
-const GroupTile = observer(function GroupTile({ group }: { group: CommandGroup }) {
-  const activity = useCommandActivity();
+const GroupTile = observer(function GroupTile({ group }: { group: ManageGroup }) {
+  const activity = useManageActivity();
   const dialogs = useDialogs();
   const change = useChange();
   const members = group.members;
@@ -134,18 +134,18 @@ const GroupTile = observer(function GroupTile({ group }: { group: CommandGroup }
   ];
 
   // A person dropped on the title leads the group, wherever they are; in the body, joins it.
-  const handleHeaderDrop = (item: CommandParticipant | EquipmentDrag, type: string) => {
+  const handleHeaderDrop = (item: ManageParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
-      const p = item as CommandParticipant;
+      const p = item as ManageParticipant;
       if (leader?.id !== p.id) change(() => group.setLeader(p));
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, group.asTarget));
     }
   };
 
-  const handleBodyDrop = (item: CommandParticipant | EquipmentDrag, type: string) => {
+  const handleBodyDrop = (item: ManageParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
-      const p = item as CommandParticipant;
+      const p = item as ManageParticipant;
       if (!members.some((m) => m.id === p.id)) assign(p, group.asTarget);
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, group.asTarget));
@@ -224,7 +224,7 @@ const GroupTile = observer(function GroupTile({ group }: { group: CommandGroup }
 });
 
 /** Names a group (new when `group` is null), suggesting the usual names not taken yet. Closes with the name. */
-function GroupEditDialog({ activity, group, onClose }: MuiDialogProps<string> & { activity: CommandActivity; group: CommandGroup | null }) {
+function GroupEditDialog({ activity, group, onClose }: MuiDialogProps<string> & { activity: ManageActivity; group: ManageGroup | null }) {
   const [name, setName] = useState(group?.name ?? '');
   const [error, setError] = useState<string>();
   const others = activity.groups.filter((g) => g.id !== group?.id).map((g) => g.name);
@@ -272,14 +272,14 @@ const DEFAULT_PLACE_NAMES: string[] = Object.values(DEFAULT_PLACES);
 const isDefaultPlace = (place: { name: string }) => DEFAULT_PLACE_NAMES.includes(place.name);
 
 /** The default places (Command Post, Field) first, then the rest by name. */
-const placeOrder = (a: CommandPlace, b: CommandPlace) => {
+const placeOrder = (a: ManagePlace, b: ManagePlace) => {
   const [ia, ib] = [DEFAULT_PLACE_NAMES.indexOf(a.name), DEFAULT_PLACE_NAMES.indexOf(b.name)];
   if (ia !== ib) return ia === -1 ? 1 : ib === -1 ? -1 : ia - ib;
   return a.name.localeCompare(b.name);
 };
 
 export function DashboardAddPlaceButton() {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const change = useChange();
   const { open } = useDialogs();
   const add = async () => {
@@ -297,7 +297,7 @@ export function DashboardAddPlaceButton() {
 }
 
 export const DashboardPlaceManager = observer(function DashboardPlaceManager() {
-  const places = [...useCommandActivity().places].sort(placeOrder);
+  const places = [...useManageActivity().places].sort(placeOrder);
   return (
     <Stack spacing={1}>
       {places.map((place) => (
@@ -307,8 +307,8 @@ export const DashboardPlaceManager = observer(function DashboardPlaceManager() {
   );
 });
 
-const PlaceTile = observer(function PlaceTile({ place }: { place: CommandPlace }) {
-  const activity = useCommandActivity();
+const PlaceTile = observer(function PlaceTile({ place }: { place: ManagePlace }) {
+  const activity = useManageActivity();
   const dialogs = useDialogs();
   const change = useChange();
   const members = place.members;
@@ -335,9 +335,9 @@ const PlaceTile = observer(function PlaceTile({ place }: { place: CommandPlace }
   const editAction: BoxAction = { id: 'edit', label: `Edit ${place.name}`, icon: editIcon, onClick: () => void editPlace() };
   const actions = isDefaultPlace(place) ? [editAction] : [editAction, { id: 'delete', label: `Delete ${place.name}`, icon: deleteIcon, onClick: () => void deletePlace() }];
 
-  const handleDrop = (item: CommandParticipant | EquipmentDrag, type: string) => {
+  const handleDrop = (item: ManageParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
-      const p = item as CommandParticipant;
+      const p = item as ManageParticipant;
       if (!members.some((m) => m.id === p.id)) assign(p, place.asTarget);
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, place.asTarget));
@@ -426,7 +426,7 @@ export function validatePlace(values: { name: string; lat: string; lon: string }
 }
 
 /** Edits a place (new when null). A default place keeps its name and has no coordinates. Closes with the fields. */
-function PlaceEditDialog({ activity, place, onClose }: MuiDialogProps<PlaceFields> & { activity: CommandActivity; place: CommandPlace | null }) {
+function PlaceEditDialog({ activity, place, onClose }: MuiDialogProps<PlaceFields> & { activity: ManageActivity; place: ManagePlace | null }) {
   const isDefault = !!place && isDefaultPlace(place);
   const [values, setValues] = useState({ name: place?.name ?? '', lat: place?.lat?.toString() ?? '', lon: place?.lon?.toString() ?? '', notes: place?.notes ?? '' });
   const [errors, setErrors] = useState<PlaceErrors>({});
@@ -472,7 +472,7 @@ function PlaceEditDialog({ activity, place, onClose }: MuiDialogProps<PlaceField
 
 /** What's on scene, assigned out, and staged at places. */
 export const DashboardEquipmentSummary = observer(function DashboardEquipmentSummary() {
-  const summary = equipmentSummary(useCommandActivity());
+  const summary = equipmentSummary(useManageActivity());
   const icon = <Inventory2Icon fontSize="small" />;
   return (
     <Stack spacing={1}>

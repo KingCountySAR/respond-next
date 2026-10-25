@@ -73,7 +73,7 @@ export function testApp(options: Partial<SyncAppOptions> = {}) {
         return { status: res.status, body: (await res.json()) as T };
       },
       async signIn(email: string, more: { name?: string; personRef?: string; tier?: string; class?: string } = {}) {
-        const res = await request('/api/auth/dev', { method: 'POST', body: { email, tier: 'field', class: 'member', ...more } });
+        const res = await request('/api/auth/dev', { method: 'POST', body: { email, tier: 'respond', class: 'member', ...more } });
         const set = res.headers.get('set-cookie');
         if (set) cookie = set.split(';')[0];
         return res;

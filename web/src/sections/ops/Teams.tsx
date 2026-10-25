@@ -4,8 +4,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Button, Chip, DialogActions, DialogContent, DialogTitle, Divider, IconButton, MenuItem, Paper, Select, Stack, TextField, Typography, type SelectChangeEvent } from '@mui/material';
 import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
 import { GARS, teamNameConflict, type Gar, type TeamStatus } from '@sync/domain';
-import type { CommandActivity, CommandEquipment, CommandParticipant, CommandTeam } from '@sync/model';
-import { observer, useCommandActivity } from '@sync/model/react';
+import type { ManageActivity, ManageEquipment, ManageParticipant, ManageTeam } from '@sync/model';
+import { observer, useManageActivity } from '@sync/model/react';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
 import { useChange } from '../../ui/useChange';
@@ -20,7 +20,7 @@ import { chooseReassignment } from './ReassignDialog';
 type ExpandCommand = { expanded: boolean; nonce: number };
 
 export const DashboardTeamManager = observer(function DashboardTeamManager() {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const change = useChange();
   const [expandCommand, setExpandCommand] = useState<ExpandCommand | undefined>(undefined);
   const [expandedTeamIds, setExpandedTeamIds] = useState<Record<string, boolean>>({});
@@ -62,8 +62,8 @@ export const DashboardTeamManager = observer(function DashboardTeamManager() {
   );
 });
 
-const DashboardTeamCard = observer(function DashboardTeamCard({ team, expandCommand, onExpandedChange }: { team: CommandTeam; expandCommand?: ExpandCommand; onExpandedChange?: (expanded: boolean) => void }) {
-  const activity = useCommandActivity();
+const DashboardTeamCard = observer(function DashboardTeamCard({ team, expandCommand, onExpandedChange }: { team: ManageTeam; expandCommand?: ExpandCommand; onExpandedChange?: (expanded: boolean) => void }) {
+  const activity = useManageActivity();
   const change = useChange();
   const { open } = useDialogs();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -87,9 +87,9 @@ const DashboardTeamCard = observer(function DashboardTeamCard({ team, expandComm
    * A person dropped on the open card's header leads the team, as does the first person on a team
    * with no leader (the legacy app's leader was the team's first member).
    */
-  const dropOn = (asLeader: boolean) => (item: CommandParticipant | EquipmentDrag, type: string) => {
+  const dropOn = (asLeader: boolean) => (item: ManageParticipant | EquipmentDrag, type: string) => {
     if (type === 'participant') {
-      const p = item as CommandParticipant;
+      const p = item as ManageParticipant;
       const lead = asLeader || !team.leader;
       if (lead ? team.leader?.id === p.id : members.some((m) => m.id === p.id)) return;
       assign(p, team.asTarget, { asLeader: lead });
@@ -211,10 +211,10 @@ const STATUS_COLORS: Record<TeamStatus, 'default' | 'info' | 'warning' | 'succes
   disbanded: 'default',
 };
 
-const holdsResources = (team: CommandTeam) => team.members.length + team.equipment.length > 0;
+const holdsResources = (team: ManageTeam) => team.members.length + team.equipment.length > 0;
 
-const TeamStatusSelect = observer(function TeamStatusSelect({ team }: { team: CommandTeam }) {
-  const activity = useCommandActivity();
+const TeamStatusSelect = observer(function TeamStatusSelect({ team }: { team: ManageTeam }) {
+  const activity = useManageActivity();
   const dialogs = useDialogs();
   const change = useChange();
 
@@ -263,7 +263,7 @@ const TeamStatusSelect = observer(function TeamStatusSelect({ team }: { team: Co
 const GAR_TEXT: Record<Gar, string> = { green: 'Green', amber: 'Amber', red: 'Red' };
 
 /** The legacy DashboardTeamEditDialog: name, GAR, assignment and notes, and Delete. */
-function DashboardTeamEditDialog({ team, activity, onClose }: MuiDialogProps<null> & { team: CommandTeam; activity: CommandActivity }) {
+function DashboardTeamEditDialog({ team, activity, onClose }: MuiDialogProps<null> & { team: ManageTeam; activity: ManageActivity }) {
   const dialogs = useDialogs();
   const change = useChange();
   const [values, setValues] = useState({ name: team.name, gar: team.gar ?? 'green', assignment: team.assignment ?? '', notes: team.notes ?? '' });
@@ -332,7 +332,7 @@ function DashboardTeamEditDialog({ team, activity, onClose }: MuiDialogProps<nul
 
 /** The phone view's teams: tap to open, nothing to change. */
 export const DashboardReadOnlyTeams = observer(function DashboardReadOnlyTeams() {
-  const teams = useCommandActivity().teams;
+  const teams = useManageActivity().teams;
   return (
     <Paper variant="outlined" sx={{ p: 1, borderRadius: 2, flex: 1, minWidth: 180 }}>
       <Stack spacing={1}>
@@ -350,10 +350,10 @@ export const DashboardReadOnlyTeams = observer(function DashboardReadOnlyTeams()
   );
 });
 
-const DashboardReadOnlyTeamCard = observer(function DashboardReadOnlyTeamCard({ team }: { team: CommandTeam }) {
+const DashboardReadOnlyTeamCard = observer(function DashboardReadOnlyTeamCard({ team }: { team: ManageTeam }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { leader, others } = teamRoster(team);
-  const equipment: CommandEquipment[] = [...team.equipment].sort(byName);
+  const equipment: ManageEquipment[] = [...team.equipment].sort(byName);
   return (
     <Box>
       <StatusContainer color={team.status === 'disbanded' ? 'grey' : team.gar && GAR_COLORS[team.gar]} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>

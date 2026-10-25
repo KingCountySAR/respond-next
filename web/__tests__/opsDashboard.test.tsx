@@ -21,7 +21,7 @@ const byName = <T extends { name: string }>(type: string, name: string) => recor
 
 async function openDashboard() {
   server.renderApp(`/ops/${ACTIVITY}`);
-  await signIn('Alice Adams', 'kcsara:101', 'command');
+  await signIn('Alice Adams', 'kcsara:101', 'manage');
   await screen.findByText('Communications');
 }
 
@@ -301,7 +301,7 @@ describe('ops dashboard', () => {
     window.matchMedia = ((query: string) => ({ matches: query.includes('max-width:1023.95px') && !query.includes('min-width'), media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false })) as typeof window.matchMedia;
     try {
       server.renderApp(`/ops/${ACTIVITY}`);
-      await signIn('Alice Adams', 'kcsara:101', 'command');
+      await signIn('Alice Adams', 'kcsara:101', 'manage');
       fireEvent.click(await screen.findByText('Team 1'));
       expect(screen.getByText('Dana Field', { selector: 'p' })).toBeTruthy(); // the leader, as text
       expect(screen.queryByText('Communications')).toBeNull();

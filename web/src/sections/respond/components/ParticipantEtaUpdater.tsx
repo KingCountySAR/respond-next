@@ -4,14 +4,14 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import { Button, ButtonBase, IconButton, Stack, Typography } from '@mui/material';
 import { format as formatDate } from 'date-fns';
 import { useState } from 'react';
-import type { FieldParticipant } from '@sync/model';
+import type { RespondParticipant } from '@sync/model';
 import { usePreferences } from '../../../shell/preferences';
 import { TimePickerDialog } from '../../../ui/TimePickerDialog';
 import { useDebouncedCallback } from '../../../ui/useDebouncedCallback';
 
 const toMilliseconds = (minutes: number) => minutes * 60 * 1000;
 
-export function ParticipantEtaUpdater({ participant }: { participant: FieldParticipant }) {
+export function ParticipantEtaUpdater({ participant }: { participant: RespondParticipant }) {
   const { etaIncrement, etaPreset1, etaPreset2, etaPreset3 } = usePreferences();
   const now = () => participant.activity.clock.now();
 

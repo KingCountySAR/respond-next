@@ -1,15 +1,15 @@
 import { compareShallow, computed, makeObservable } from 'mobx';
 import type { WireMutation } from '@sync/core';
-import { DEFAULT_PLACES, type FieldPlaceRec, type PlaceRec, type Target } from '@sync/domain';
-import type { CommandActivity, FieldActivity } from './activity';
-import type { CommandEquipment } from './equipment';
-import type { CommandKinds, Kinds } from './kinds';
-import type { CommandParticipant } from './participant';
+import { DEFAULT_PLACES, type RespondPlaceRec, type PlaceRec, type Target } from '@sync/domain';
+import type { ManageActivity, RespondActivity } from './activity';
+import type { ManageEquipment } from './equipment';
+import type { ManageKinds, Kinds } from './kinds';
+import type { ManageParticipant } from './participant';
 import { equipmentModelsAt, type Holder, participantsAt, RecordModel } from './record';
 
-/** Field viewers see a place's name only. */
-export class FieldPlace<R extends FieldPlaceRec = FieldPlaceRec, K extends Kinds = Kinds> extends RecordModel<R, K> implements Holder {
-  constructor(activity: FieldActivity<K>, id: string) {
+/** Respond viewers see a place's name only. */
+export class RespondPlace<R extends RespondPlaceRec = RespondPlaceRec, K extends Kinds = Kinds> extends RecordModel<R, K> implements Holder {
+  constructor(activity: RespondActivity<K>, id: string) {
     super(activity, id, 'place');
     makeObservable(this, { name: computed });
   }
@@ -28,10 +28,10 @@ export class FieldPlace<R extends FieldPlaceRec = FieldPlaceRec, K extends Kinds
   }
 }
 
-export class CommandPlace extends FieldPlace<PlaceRec, CommandKinds> {
-  declare readonly activity: CommandActivity;
+export class ManagePlace extends RespondPlace<PlaceRec, ManageKinds> {
+  declare readonly activity: ManageActivity;
 
-  constructor(activity: FieldActivity<CommandKinds>, id: string) {
+  constructor(activity: RespondActivity<ManageKinds>, id: string) {
     super(activity, id);
     makeObservable(this, {
       members: computed({ equals: compareShallow }),
@@ -51,12 +51,12 @@ export class CommandPlace extends FieldPlace<PlaceRec, CommandKinds> {
     return this.record?.notes ?? null;
   }
 
-  get members(): CommandParticipant[] {
-    return participantsAt<CommandKinds>(this.activity, this.asTarget);
+  get members(): ManageParticipant[] {
+    return participantsAt<ManageKinds>(this.activity, this.asTarget);
   }
 
-  get equipment(): CommandEquipment[] {
-    return equipmentModelsAt<CommandKinds>(this.activity, this.asTarget);
+  get equipment(): ManageEquipment[] {
+    return equipmentModelsAt<ManageKinds>(this.activity, this.asTarget);
   }
 
   /** Blank notes clear them. */

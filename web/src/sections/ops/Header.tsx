@@ -1,7 +1,7 @@
 import { Box, Paper, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { observer, useCommandActivity } from '@sync/model/react';
+import { observer, useManageActivity } from '@sync/model/react';
 import { activityPath } from '../../ui/paths';
 import { responderSummary } from './opsRules';
 import { DashboardMetricTile } from './parts';
@@ -38,7 +38,7 @@ function DashboardClock() {
 }
 
 const DashboardActivityDetails = observer(function DashboardActivityDetails() {
-  const activity = useCommandActivity();
+  const activity = useManageActivity();
   const record = activity.record!;
   const isMission = record.kind === 'mission';
   return (
@@ -63,7 +63,7 @@ const DashboardActivityDetails = observer(function DashboardActivityDetails() {
 
 /** Responding, Available and Field counts. */
 export const DashboardResponderSummary = observer(function DashboardResponderSummary({ variant = 'desktop' }: { variant?: 'desktop' | 'mobile' }) {
-  const summary = responderSummary(useCommandActivity());
+  const summary = responderSummary(useManageActivity());
   const lines = [
     ['Responding', summary.responding],
     ['Available', summary.available],

@@ -1,10 +1,10 @@
-/** Units, assignments, teams, groups, places, equipment and comms. All command only. */
+/** Units, assignments, teams, groups, places, equipment and comms. All managers only. */
 import { z } from 'zod';
 import { Rejection, defineMutation, type MutationCtx, type Tx } from '@sync/core';
 import { equipmentType, CUSTOM_EQUIPMENT_TYPE_ID } from '../equipment';
 import { currentTarget, groupTeams, membersOf, participantName, targetName, teamMembers, teamNameConflict, teamStatusOf } from '../queries';
 import { GARS, TEAM_STATUSES, Target, UNIT_STATUSES, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec, type TeamStatusRec } from '../schema';
-import { isCommand } from '../viewer';
+import { canManage } from '../viewer';
 import { at, emptyTarget, id, idSource, moveParticipant, optionalText, requireOpen, requireOperations, requireParticipant, requireTarget } from './common';
 
 const nameOf = (tx: { get: Tx['get'] }, type: string, recId: string) => tx.get<{ name: string } & TeamRec>(type, recId)?.name ?? `the ${type}`;
@@ -33,7 +33,7 @@ export const setUnitStatus = defineMutation({
   version: 1,
   timed: true,
   args: z.object({ unit: z.object({ id, title: z.string().trim().min(1), rosterName: z.string().trim().nullable() }), status: z.enum(UNIT_STATUSES).exclude(['unknown']), at }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a) => `Set ${a.unit.rosterName ?? a.unit.title} to ${a.status}`,
   run(tx, a, ctx) {
     requireOpen(tx);
@@ -50,7 +50,7 @@ export const assign = defineMutation({
   timed: true,
   /** `newLeaderId`: if `participantId` leads a team, `newLeaderId` specifies the new leader of that team. */
   args: z.object({ participantId: id, target: Target.nullable(), asLeader: z.boolean().default(false), newLeaderId: id.optional(), at }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => (a.target ? `Assign ${participantName(view, a.participantId)} to ${targetName(view, a.target)}` : `Unassign ${participantName(view, a.participantId)}`),
   run(tx, a, ctx) {
     requireOperations(tx);
@@ -68,7 +68,7 @@ export const createTeam = defineMutation({
   name: 'createTeam',
   version: 1,
   args: z.object({ id, name: z.string().trim().min(1) }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a) => `Create team ${a.name}`,
   run(tx, a) {
     requireOperations(tx);
@@ -82,7 +82,7 @@ export const updateTeam = defineMutation({
   name: 'updateTeam',
   version: 1,
   args: z.object({ id, name: z.string().trim().min(1).optional(), gar: z.enum(GARS).optional(), assignment: optionalText.optional(), notes: optionalText.optional() }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Edit ${nameOf(view, 'team', a.id)}`,
   run(tx, { id: teamId, ...fields }) {
     requireOperations(tx);
@@ -100,7 +100,7 @@ export const setTeamStatus = defineMutation({
   version: 1,
   timed: true,
   args: z.object({ teamId: id, status: z.enum(TEAM_STATUSES).exclude(['disbanded']), at }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Set ${nameOf(view, 'team', a.teamId)} to ${a.status}`,
   run(tx, a, ctx) {
     requireOperations(tx);
@@ -113,7 +113,7 @@ export const setTeamLeader = defineMutation({
   name: 'setTeamLeader',
   version: 1,
   args: z.object({ teamId: id, participantId: id.nullable() }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => (a.participantId ? `Make ${participantName(view, a.participantId)} leader of ${nameOf(view, 'team', a.teamId)}` : `Clear the leader of ${nameOf(view, 'team', a.teamId)}`),
   run(tx, a) {
     requireOperations(tx);
@@ -133,7 +133,7 @@ export const disbandTeam = defineMutation({
   version: 1,
   timed: true,
   args: Reassign.extend({ teamId: id }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Disband ${nameOf(view, 'team', a.teamId)}`,
   run(tx, a, ctx) {
     requireOperations(tx);
@@ -152,7 +152,7 @@ export const deleteTeam = defineMutation({
   version: 1,
   timed: true,
   args: Reassign.extend({ teamId: id }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Delete ${nameOf(view, 'team', a.teamId)}`,
   run(tx, a, ctx) {
     requireOperations(tx);
@@ -169,7 +169,7 @@ export const createGroup = defineMutation({
   name: 'createGroup',
   version: 1,
   args: z.object({ id, name: z.string().trim().min(1) }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a) => `Create group ${a.name}`,
   run(tx, a) {
     requireOperations(tx);
@@ -182,7 +182,7 @@ export const updateGroup = defineMutation({
   name: 'updateGroup',
   version: 1,
   args: z.object({ id, name: z.string().trim().min(1) }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Rename ${nameOf(view, 'group', a.id)} to ${a.name}`,
   run(tx, a) {
     requireOperations(tx);
@@ -196,7 +196,7 @@ export const setGroupLeader = defineMutation({
   name: 'setGroupLeader',
   version: 1,
   args: z.object({ groupId: id, participantId: id.nullable() }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => (a.participantId ? `Make ${participantName(view, a.participantId)} leader of ${nameOf(view, 'group', a.groupId)}` : `Clear the leader of ${nameOf(view, 'group', a.groupId)}`),
   run(tx, a) {
     requireOperations(tx);
@@ -219,7 +219,7 @@ export const deleteGroup = defineMutation({
   version: 1,
   timed: true,
   args: Reassign.extend({ groupId: id }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Delete ${nameOf(view, 'group', a.groupId)}`,
   run(tx, a, ctx) {
     requireOperations(tx);
@@ -237,7 +237,7 @@ export const setTeamGroup = defineMutation({
   version: 1,
   timed: true,
   args: z.object({ teamId: id, groupId: id.nullable(), newLeaderId: id.optional(), disbandGroup: z.boolean().default(false), at }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => (a.groupId ? `Move ${nameOf(view, 'team', a.teamId)} to ${nameOf(view, 'group', a.groupId)}` : `Take ${nameOf(view, 'team', a.teamId)} out of its group`),
   run(tx, a, ctx) {
     requireOperations(tx);
@@ -270,7 +270,7 @@ export const createPlace = defineMutation({
   name: 'createPlace',
   version: 1,
   args: PlaceFields.extend({ id }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a) => `Create place ${a.name}`,
   run(tx, a) {
     requireOperations(tx);
@@ -283,7 +283,7 @@ export const updatePlace = defineMutation({
   name: 'updatePlace',
   version: 1,
   args: PlaceFields.partial().extend({ id }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Edit ${nameOf(view, 'place', a.id)}`,
   run(tx, { id: placeId, ...fields }) {
     requireOperations(tx);
@@ -297,7 +297,7 @@ export const deletePlace = defineMutation({
   version: 1,
   timed: true,
   args: Reassign.extend({ placeId: id }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Delete ${nameOf(view, 'place', a.placeId)}`,
   run(tx, a, ctx) {
     requireOperations(tx);
@@ -315,7 +315,7 @@ export const createEquipment = defineMutation({
   name: 'createEquipment',
   version: 1,
   args: z.object({ id, typeId: id, name: z.string().trim().min(1).optional(), assignedTo: Target.nullable() }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a) => `Add ${a.name ?? equipmentType(a.typeId)?.name ?? 'equipment'}`,
   run(tx, a) {
     requireOperations(tx);
@@ -332,7 +332,7 @@ export const assignEquipment = defineMutation({
   name: 'assignEquipment',
   version: 1,
   args: z.object({ equipmentId: id, target: Target.nullable() }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Move ${nameOf(view, 'equipment', a.equipmentId)} to ${targetName(view, a.target)}`,
   run(tx, a) {
     requireOperations(tx);
@@ -349,7 +349,7 @@ export const addComm = defineMutation({
   version: 1,
   timed: true,
   args: z.object({ id, from: z.string().trim(), to: z.string().trim(), message: z.string().trim().min(1), at }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a) => `Log "${a.message.length > 40 ? `${a.message.slice(0, 40)}…` : a.message}"`,
   run(tx, a, ctx) {
     requireOperations(tx);
@@ -363,7 +363,7 @@ export const editComm = defineMutation({
   name: 'editComm',
   version: 1,
   args: z.object({ id, from: z.string().trim().optional(), to: z.string().trim().optional(), message: z.string().trim().min(1).optional(), at: at.optional(), favorite: z.boolean().optional() }),
-  allow: isCommand,
+  allow: canManage,
   describe: () => 'Edit a comms entry',
   run(tx, { id: commId, ...fields }) {
     requireOperations(tx);
@@ -379,7 +379,7 @@ export const deleteComm = defineMutation({
   name: 'deleteComm',
   version: 1,
   args: z.object({ id }),
-  allow: isCommand,
+  allow: canManage,
   describe: () => 'Delete a comms entry',
   run(tx, a) {
     requireOperations(tx);

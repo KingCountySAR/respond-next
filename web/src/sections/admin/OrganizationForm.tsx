@@ -168,7 +168,7 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
       />
       <TextField
         label="Member tiers"
-        helperText={badTiers.length ? `Not a tier (command, support or field): ${badTiers.join('; ')}` : "The tier its members sign in at, from their groups, one per line: Group title = command (or support). Everyone else is field."}
+        helperText={badTiers.length ? `Not a tier (manage or respond): ${badTiers.join('; ')}` : "The tier its members sign in at, from their groups, one per line: Group title = manage. Everyone else is respond."}
         error={badTiers.length > 0}
         value={values.memberTiers}
         onChange={text('memberTiers')}

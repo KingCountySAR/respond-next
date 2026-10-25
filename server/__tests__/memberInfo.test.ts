@@ -13,7 +13,7 @@ const members = fixtureMembers('kcsara', [
 
 /** The fixture, with CRT's tag for its Medical group, as the member providers give it. */
 function tagged(fixture = new FixtureDirectory({ CRT: members })): PersonLookup {
-  return { lookup: async (ref) => fixture.lookup(ref).then((f) => f && { member: f.member, tags: tagsFor(f.member.groups, { Medical: 'MED' }), tier: 'field' as const }) };
+  return { lookup: async (ref) => fixture.lookup(ref).then((f) => f && { member: f.member, tags: tagsFor(f.member.groups, { Medical: 'MED' }), tier: 'respond' as const }) };
 }
 
 function setup(directory: PersonLookup = tagged()) {
@@ -21,7 +21,7 @@ function setup(directory: PersonLookup = tagged()) {
   const hub: Hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now, onCommit: (id, view) => writer.onCommit(id, view) });
   writer = new MemberInfoWriter(() => hub, directory);
   const push = (name: string, args: Record<string, unknown>) => hub.pushAsSystem('a1', SYSTEM_VIEWER, [{ name, args: { at: Date.now(), ...args } }]);
-  const records = async <T extends Rec>(type: string) => (await hub.actor('a1')).projectedRecords('command').filter((r) => r.type === type) as T[];
+  const records = async <T extends Rec>(type: string) => (await hub.actor('a1')).projectedRecords('manage').filter((r) => r.type === type) as T[];
   return { hub, writer, push, records };
 }
 

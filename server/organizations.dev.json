@@ -160,7 +160,7 @@
         "Rope": "Rope"
       },
       "memberTiers": {
-        "Leader": "command"
+        "Leader": "manage"
       },
       "canCreateMissions": true,
       "canCreateEvents": true,
@@ -200,7 +200,7 @@
         "Rope": "Rope"
       },
       "memberTiers": {
-        "Leader": "command"
+        "Leader": "manage"
       },
       "canCreateMissions": true,
       "canCreateEvents": true,

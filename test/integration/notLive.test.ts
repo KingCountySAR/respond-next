@@ -3,10 +3,10 @@ import { MemoryPersistence, SyncClient, type ActivityDownload } from '@sync/clie
 import type { ActivityClient } from '@sync/model';
 import { Hub, MemoryStorage } from '@sync/server';
 import { activityProjector, activityRegistry, getActivity, type ActivityViewer } from '@sync/domain';
-import { COMMAND, activityArgs } from '../../packages/domain/__tests__/helpers';
+import { MANAGER, activityArgs } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from './sim';
 
-const SECOND_COMMAND: ActivityViewer = { ...COMMAND, userId: 'u-command-2' };
+const SECOND_MANAGER: ActivityViewer = { ...MANAGER, userId: 'u-manager-2' };
 
 async function until(check: () => boolean) {
   for (let i = 0; i < 200 && !check(); i++) await new Promise((r) => setTimeout(r, 5));
@@ -16,12 +16,12 @@ async function until(check: () => boolean) {
 const clients: ActivityClient[] = [];
 afterEach(() => clients.splice(0).forEach((c) => c.stop()));
 
-/** A closed activity made by one command client, and a second client to open it, not live. */
+/** A closed activity made by one manager client, and a second client to open it, not live. */
 async function setup(download?: (hub: Hub) => (activityId: string) => Promise<ActivityDownload>) {
   const hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now });
   const net = new SimNetwork(hub, mulberry32(3));
   net.latencyMs = 10;
-  const author = new SyncClient({ registry: activityRegistry, viewer: COMMAND, transport: net.transportFor(0, COMMAND) });
+  const author = new SyncClient({ registry: activityRegistry, viewer: MANAGER, transport: net.transportFor(0, MANAGER) });
   await author.start();
   await author.open('a1');
   author.mutate('a1', 'createActivity', activityArgs());
@@ -31,10 +31,10 @@ async function setup(download?: (hub: Hub) => (activityId: string) => Promise<Ac
   const persistence = new MemoryPersistence();
   const reader = new SyncClient({
     registry: activityRegistry,
-    viewer: SECOND_COMMAND,
-    transport: net.transportFor(1, SECOND_COMMAND),
+    viewer: SECOND_MANAGER,
+    transport: net.transportFor(1, SECOND_MANAGER),
     persistence,
-    download: download?.(hub) ?? ((activityId) => hub.read(activityId, SECOND_COMMAND)),
+    download: download?.(hub) ?? ((activityId) => hub.read(activityId, SECOND_MANAGER)),
   });
   await reader.start();
   clients.push(author, reader);
@@ -94,7 +94,7 @@ describe('activities opened not live', () => {
     let failures = 1;
     const s = await setup((hub) => async (activityId) => {
       if (failures-- > 0) throw new Error('offline');
-      return hub.read(activityId, SECOND_COMMAND);
+      return hub.read(activityId, SECOND_MANAGER);
     });
     s.net.cut(1);
     await s.reader.open('a1', { live: false });

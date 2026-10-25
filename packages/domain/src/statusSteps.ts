@@ -37,7 +37,7 @@ export const STANDBY_ONLY_STATUSES: ReadonlySet<ParticipantStatus> = new Set(['s
 /** Light mode has no remote role and no assignments. */
 const LIGHT_MODE_EXCLUDED: ReadonlySet<ParticipantStatus> = new Set(['remote', 'assigned']);
 
-/** The activity fields the rules read; every viewer has them, so field UI can offer the same steps. */
+/** The activity fields the rules read; every viewer has them, so respond UI can offer the same steps. */
 export type StatusRules = Pick<ActivityRec, 'startTime' | 'earlySignInWindow' | 'standbyOnly' | 'mode'>;
 
 /**

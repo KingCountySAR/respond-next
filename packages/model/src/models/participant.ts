@@ -11,20 +11,20 @@ import {
   timeOnClock,
   type StatusStep,
   targetName,
-  type FieldContactRec,
-  type FieldParticipantRec,
+  type RespondContactRec,
+  type RespondParticipantRec,
   type ParticipantRec,
   type ParticipantStatus,
   type ParticipantStatusRec,
   type Target,
 } from '@sync/domain';
-import type { CommandActivity, FieldActivity } from './activity';
-import type { CommandKinds, Kinds } from './kinds';
+import type { ManageActivity, RespondActivity } from './activity';
+import type { ManageKinds, Kinds } from './kinds';
 import { RecordModel, unitRef, type UnitRef } from './record';
-import type { CommandTeam } from './team';
+import type { ManageTeam } from './team';
 
-export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRec, K extends Kinds = Kinds> extends RecordModel<R, K> {
-  constructor(activity: FieldActivity<K>, id: string) {
+export class RespondParticipant<R extends RespondParticipantRec = RespondParticipantRec, K extends Kinds = Kinds> extends RecordModel<R, K> {
+  constructor(activity: RespondActivity<K>, id: string) {
     super(activity, id, 'participant');
     makeObservable(this, {
       name: computed,
@@ -74,9 +74,9 @@ export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRe
     return participantTimeline(this.store, this.id);
   }
 
-  /** Phone and email from the member database. Members and command only. */
-  get contact(): FieldContactRec | undefined {
-    return this.store.get<FieldContactRec>('contact', this.id);
+  /** Phone and email from the member database. Members and managers only. */
+  get contact(): RespondContactRec | undefined {
+    return this.store.get<RespondContactRec>('contact', this.id);
   }
 
   /** Which kind of place they're at, null when unassigned, undefined when this viewer can't see it. */
@@ -95,7 +95,7 @@ export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRe
     return activity ? statusStepsUnder(activity, current && { status: current.status, unitId: current.unitId }, unitId, this.activity.clock.now()) : [];
   }
 
-  /** Member database tags, then the ones command added for this activity. */
+  /** Member database tags, then the ones managers added for this activity. */
   get tags(): string[] {
     const r = this.record;
     return r ? [...r.memberTags, ...r.activityTags] : [];
@@ -125,7 +125,7 @@ export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRe
   }
 
   /**
-   * Under their current unit unless `unit` is given; `at` defaults to now. Field viewers may only
+   * Under their current unit unless `unit` is given; `at` defaults to now. Respond viewers may only
    * change themselves, within the activity's standby-only and light-mode rules.
    */
   setStatus(status: Exclude<ParticipantStatus, 'unknown'>, options: { at?: number; unit?: UnitRef } = {}): WireMutation {
@@ -143,10 +143,10 @@ export class FieldParticipant<R extends FieldParticipantRec = FieldParticipantRe
   }
 }
 
-export class CommandParticipant extends FieldParticipant<ParticipantRec, CommandKinds> {
-  declare readonly activity: CommandActivity;
+export class ManageParticipant extends RespondParticipant<ParticipantRec, ManageKinds> {
+  declare readonly activity: ManageActivity;
 
-  constructor(activity: FieldActivity<CommandKinds>, id: string) {
+  constructor(activity: RespondActivity<ManageKinds>, id: string) {
     super(activity, id);
     makeObservable(this, {
       target: computedStruct,
@@ -164,7 +164,7 @@ export class CommandParticipant extends FieldParticipant<ParticipantRec, Command
     return targetName(this.store, this.target);
   }
 
-  get team(): CommandTeam | undefined {
+  get team(): ManageTeam | undefined {
     const t = this.target;
     return t?.kind === 'team' ? this.activity.team(t.id) : undefined;
   }
@@ -173,7 +173,7 @@ export class CommandParticipant extends FieldParticipant<ParticipantRec, Command
    * Whoever could take over the team this person leads when they leave it for `target`, when there's
    * a choice to make: two or more staying (one staying takes over by itself). Empty otherwise.
    */
-  successorsLeaving(target: Target | null): CommandParticipant[] {
+  successorsLeaving(target: Target | null): ManageParticipant[] {
     const team = this.team;
     if (!team || team.leader?.id !== this.id || sameTarget(team.asTarget, target)) return [];
     const staying = team.members.filter((m) => m.id !== this.id);

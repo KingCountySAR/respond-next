@@ -1,7 +1,7 @@
 /**
  * An activity's log (see `@sync/domain`'s activityLog.ts): a readable line for each change made to it,
  * which the ops dashboard shows beside the comms entries. It reads the log scope the same way an
- * activity model reads its activity. Command only.
+ * activity model reads its activity. Managers only.
  */
 import { compareShallow, computed, makeObservable } from 'mobx';
 import type { MutationInput, MutationNamed, WireMutation } from '@sync/core';

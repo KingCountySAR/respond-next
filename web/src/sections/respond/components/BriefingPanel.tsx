@@ -1,12 +1,12 @@
 import { Paper } from '@mui/material';
 import type { SxProps } from '@mui/material/styles';
-import type { FieldActivity } from '@sync/model';
+import type { RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { OutputForm, OutputLink, OutputLinkified, OutputText, OutputTime } from '../../../ui/OutputForm';
 import { RelativeStyle } from '../../../ui/RelativeTimeText';
 import { phaseText } from '../../../ui/status';
 
-export const BriefingPanel = observer(function BriefingPanel({ activity, sx }: { activity: FieldActivity; sx?: SxProps }) {
+export const BriefingPanel = observer(function BriefingPanel({ activity, sx }: { activity: RespondActivity; sx?: SxProps }) {
   const rec = activity.record;
   if (!rec) return null;
 

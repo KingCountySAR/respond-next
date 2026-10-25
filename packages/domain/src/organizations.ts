@@ -4,7 +4,7 @@
  * hostname; its brand, member provider and sign-in provider are its own or the nearest ancestor's.
  */
 import { z } from 'zod';
-import { TIERS, type Tier } from './viewer';
+import { TIERS, currentTier, type Tier } from './viewer';
 
 const id = z.string().regex(/^[a-z0-9][a-z0-9-]*$/, 'lowercase letters, digits and dashes');
 const email = z.string().trim().toLowerCase().email();
@@ -62,12 +62,12 @@ export type OrganizationPartner = z.infer<typeof OrganizationPartner>;
 export const TagRules = z.record(z.string().trim().min(1)).default({});
 export type TagRules = z.infer<typeof TagRules>;
 
-/** Group title (in the member provider) to the tier it gives, e.g. "ESAR Operations Leader" to command. */
-export const TierRules = z.record(z.enum(TIERS)).default({});
+/** Group title (in the member provider) to the tier it gives, e.g. "ESAR Operations Leader" to manage. Stored rules may have the former names. */
+export const TierRules = z.record(z.preprocess(currentTier, z.enum(TIERS))).default({});
 export type TierRules = z.infer<typeof TierRules>;
 
-/** The highest of these tiers: command, then support, then field. Field when there are none. */
-export const highestTier = (tiers: Tier[]): Tier => TIERS.find((t) => tiers.includes(t)) ?? 'field';
+/** The higher of these tiers: manage, then respond. Respond when there are none. */
+export const highestTier = (tiers: Tier[]): Tier => TIERS.find((t) => tiers.includes(t)) ?? 'respond';
 
 export const Organization = z.object({
   id,
@@ -95,7 +95,7 @@ export const Organization = z.object({
   memberTags: TagRules,
   /**
    * The tiers its members sign in at, from their groups, for the same members as `memberTags`.
-   * The highest a member's groups give wins; with none, they're field.
+   * The highest a member's groups give wins; with none, they're respond.
    */
   memberTiers: TierRules,
   canCreateMissions: z.boolean().default(false),

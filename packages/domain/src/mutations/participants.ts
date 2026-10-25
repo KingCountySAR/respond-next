@@ -3,8 +3,8 @@ import { Rejection, defineMutation, type MutationCtx, type Tx } from '@sync/core
 import { currentParticipantStatus, findParticipantByPersonRef, participantIdFor, participantName, statusOf } from '../queries';
 import { PARTICIPANT_STATUSES, type ActivityRec, type ActivityUnitRec, type ParticipantRec, type ParticipantStatus, type ParticipantStatusRec } from '../schema';
 import { STANDBY_ONLY_STATUSES, allowedInMode, isStandbyOnly } from '../statusSteps';
-import { asActivityViewer, isCommand, isSystemViewer } from '../viewer';
-import { actorName, addStatus, at, id, idSource, requireOpen, requireParticipant, requireSelfOrCommand } from './common';
+import { asActivityViewer, canManage, isSystemViewer } from '../viewer';
+import { actorName, addStatus, at, id, idSource, requireOpen, requireParticipant, requireSelfOrManager } from './common';
 
 const PersonRef = z.string().regex(/^[a-z0-9-]+:.+$/, 'Expected <source>:<id>');
 const Status = z.enum(PARTICIPANT_STATUSES).exclude(['unknown']);
@@ -26,10 +26,10 @@ function ensureUnit(tx: Tx, ctx: MutationCtx, nextId: () => string, unit: Unit, 
   } else if (existing.title !== unit.title || existing.rosterName !== unit.rosterName) tx.update('activityUnit', unit.id, { title: unit.title, rosterName: unit.rosterName });
 }
 
-/** Field users signing themselves in follow the activity's standby-only and light-mode rules. */
+/** Responders signing themselves in follow the activity's standby-only and light-mode rules. */
 function checkSelfStatus(ctx: MutationCtx, activity: ActivityRec, current: ParticipantStatus, next: ParticipantStatus, at: number): void {
   if (!allowedInMode(activity, next)) throw new Rejection('light_mode', 'That status isn’t used on this event');
-  if (isCommand(ctx.viewer)) return;
+  if (canManage(ctx.viewer)) return;
   if (isStandbyOnly(activity, current, at) && !STANDBY_ONLY_STATUSES.has(next)) {
     throw new Rejection('standby_only', 'This event is standby only for now');
   }
@@ -71,7 +71,7 @@ export const addParticipant = defineMutation({
   describe: (a) => `Add ${a.firstname} ${a.lastname} as ${a.status}`.replace(/\s+/g, ' '),
   run(tx, a, ctx) {
     const activity = requireOpen(tx);
-    if (!isCommand(ctx.viewer) && asActivityViewer(ctx.viewer).personRef !== a.personRef) throw new Rejection('forbidden', 'You can only sign yourself in');
+    if (!canManage(ctx.viewer) && asActivityViewer(ctx.viewer).personRef !== a.personRef) throw new Rejection('forbidden', 'You can only sign yourself in');
     const existing = findParticipantByPersonRef(tx, a.personRef);
     const participantId = existing?.id ?? participantIdFor(a.personRef);
     checkSelfStatus(ctx, activity, existing ? statusOf(tx, participantId, a.at) : 'unknown', a.status, a.at);
@@ -92,7 +92,7 @@ export const setParticipantStatus = defineMutation({
   run(tx, a, ctx) {
     const activity = requireOpen(tx);
     const participant = requireParticipant(tx, a.participantId);
-    requireSelfOrCommand(ctx, participant);
+    requireSelfOrManager(ctx, participant);
     checkSelfStatus(ctx, activity, statusOf(tx, a.participantId, a.at), a.status, a.at);
     const nextId = idSource(ctx);
     ensureUnit(tx, ctx, nextId, a.unit, a.status, a.at);
@@ -100,12 +100,12 @@ export const setParticipantStatus = defineMutation({
   },
 });
 
-/** Fixes a mistaken entry's time or status. Command only; the log keeps the original. */
+/** Fixes a mistaken entry's time or status. Managers only; the log keeps the original. */
 export const correctParticipantStatus = defineMutation({
   name: 'correctParticipantStatus',
   version: 1,
   args: z.object({ entryId: id, status: Status.optional(), at: at.optional() }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Correct ${participantName(view, view.get<ParticipantStatusRec>('participantStatus', a.entryId)?.participantId)}'s timeline`,
   run(tx, a, ctx) {
     const activity = requireOpen(tx);
@@ -122,7 +122,7 @@ export const setEta = defineMutation({
   describe: (a, view) => (a.eta === null ? `Clear ${participantName(view, a.participantId)}'s ETA` : `Set ${participantName(view, a.participantId)}'s ETA`),
   run(tx, a, ctx) {
     requireOpen(tx);
-    requireSelfOrCommand(ctx, requireParticipant(tx, a.participantId));
+    requireSelfOrManager(ctx, requireParticipant(tx, a.participantId));
     tx.update('participant', a.participantId, { eta: a.eta });
   },
 });
@@ -134,7 +134,7 @@ export const setMiles = defineMutation({
   describe: (a, view) => `Set ${participantName(view, a.participantId)}'s miles`,
   run(tx, a, ctx) {
     requireOpen(tx);
-    requireSelfOrCommand(ctx, requireParticipant(tx, a.participantId));
+    requireSelfOrManager(ctx, requireParticipant(tx, a.participantId));
     tx.update('participant', a.participantId, { miles: a.miles });
   },
 });
@@ -143,7 +143,7 @@ export const setActivityTags = defineMutation({
   name: 'setActivityTags',
   version: 1,
   args: z.object({ participantId: id, tags: z.array(z.string().trim().min(1)) }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Tag ${participantName(view, a.participantId)}`,
   run(tx, a) {
     requireOpen(tx);
@@ -178,7 +178,7 @@ export const linkPerson = defineMutation({
   name: 'linkPerson',
   version: 1,
   args: z.object({ participantId: id, personRef: PersonRef }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a, view) => `Link ${participantName(view, a.participantId)} to ${a.personRef}`,
   run(tx, a) {
     requireOpen(tx);

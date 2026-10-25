@@ -86,9 +86,8 @@ export function LoginPanel() {
         <TextField label="Person" helperText="Optional: be this person ref (e.g. kcsara:85205) without the directory" value={form.personRef} onChange={set('personRef')} />
         <TextField select label="Tier" value={form.tier} onChange={set('tier')}>
           <MenuItem value="">From their groups</MenuItem>
-          <MenuItem value="field">Field</MenuItem>
-          <MenuItem value="support">Support</MenuItem>
-          <MenuItem value="command">Command</MenuItem>
+          <MenuItem value="respond">Respond</MenuItem>
+          <MenuItem value="manage">Manage</MenuItem>
         </TextField>
         <TextField select label="Class" value={form.class} onChange={set('class')}>
           <MenuItem value="member">Member</MenuItem>

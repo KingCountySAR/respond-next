@@ -3,12 +3,12 @@ import { encode, type ClientMessage, type ReadView, type ServerMessage } from '@
 import { ActorUnloadedError, Hub, MemoryStorage } from '@sync/server';
 import { testProjector, testRegistry, type Person } from '../../sync-core/__tests__/testDomain';
 
-const COMMAND = { userId: 'u1', tier: 'command' };
-const SYSTEM = { userId: 'system', tier: 'command' };
+const MANAGER = { userId: 'u1', tier: 'manage' };
+const SYSTEM = { userId: 'system', tier: 'manage' };
 
 function connect(hub: Hub, activityId: string) {
   const received: ServerMessage[] = [];
-  const handlers = hub.connect({ viewer: COMMAND, send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} });
+  const handlers = hub.connect({ viewer: MANAGER, send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} });
   const send = (msg: ClientMessage) => handlers.message(encode(msg));
   send({ t: 'hello', clientId: 'c1', build: 'test', subs: [{ activityId, since: 0 }] });
   let nextId = 1;
@@ -55,18 +55,18 @@ describe('hub', () => {
     for (const id of ['a1', 'a2']) {
       await hub.pushAsSystem(id, SYSTEM, [
         { name: 'addPerson', args: { id: 'p1', name: 'Anna' } },
-        { name: 'setNote', args: { id: 'p1', note: 'command only' } },
+        { name: 'setNote', args: { id: 'p1', note: 'managers only' } },
       ]);
     }
     const received: ServerMessage[] = [];
-    const field = { userId: 'u2', tier: 'field' };
-    // Command on a1 only; undefined, the usual case, is the connection's own viewer.
-    const handlers = hub.connect({ viewer: field, viewerIn: (id) => (id === 'a1' ? { ...field, tier: 'command' } : undefined), send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} });
+    const respond = { userId: 'u2', tier: 'respond' };
+    // Managing a1 only; undefined, the usual case, is the connection's own viewer.
+    const handlers = hub.connect({ viewer: respond, viewerIn: (id) => (id === 'a1' ? { ...respond, tier: 'manage' } : undefined), send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} });
     const send = (msg: ClientMessage) => handlers.message(encode(msg));
     send({ t: 'hello', clientId: 'c2', build: 'test', subs: [{ activityId: 'a1', since: 0 }, { activityId: 'a2', since: 0 }] });
     await settle();
     const notes = Object.fromEntries(received.flatMap((m) => (m.t === 'reset' ? [[m.activityId, (m.records[0] as Person & { note?: string }).note]] : [])));
-    expect(notes).toEqual({ a1: 'command only', a2: undefined });
+    expect(notes).toEqual({ a1: 'managers only', a2: undefined });
 
     for (const activityId of ['a1', 'a2']) send({ t: 'push', activityId, mutations: [{ id: activityId === 'a1' ? 1 : 2, name: 'setNote', v: 1, args: { id: 'p1', note: 'changed' }, clientTime: 0 }] });
     await settle();
@@ -98,7 +98,7 @@ describe('idle activities', () => {
     advance(61_000);
     expect(await hub.unloadIdle()).toBe(1);
     expect(hub.loadedCount).toBe(0);
-    const read = await hub.read('a1', COMMAND);
+    const read = await hub.read('a1', MANAGER);
     expect([read.version, read.records.map((r) => (r as Person).name)]).toEqual([1, ['Anna']]);
     expect(hub.loadedCount).toBe(1);
   });
@@ -106,7 +106,7 @@ describe('idle activities', () => {
   it('keeps an activity someone is subscribed to, and unloads it after they leave', async () => {
     const { hub, advance } = idleHub();
     const received: ServerMessage[] = [];
-    const handlers = hub.connect({ viewer: COMMAND, send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} });
+    const handlers = hub.connect({ viewer: MANAGER, send: (text) => received.push(JSON.parse(text) as ServerMessage), close: () => {} });
     handlers.message(encode({ t: 'hello', clientId: 'c1', build: 'test', subs: [{ activityId: 'a1', since: 0 }] }));
     await settle();
     advance(61_000);
@@ -123,7 +123,7 @@ describe('idle activities', () => {
     const actor = await hub.actor('a1');
     advance(61_000);
     expect(await actor.unloadIfIdle(1_000_000)).toBe(true);
-    await expect(actor.read(COMMAND)).rejects.toBeInstanceOf(ActorUnloadedError);
+    await expect(actor.read(MANAGER)).rejects.toBeInstanceOf(ActorUnloadedError);
   });
 
   it('subscribes on a fresh actor when the old one unloads at the same moment', async () => {
@@ -146,9 +146,9 @@ describe('idle activities', () => {
 
   it('reads an activity once without subscribing to it', async () => {
     const { hub } = idleHub();
-    expect((await hub.read('nothing', COMMAND)).version).toBe(0);
+    expect((await hub.read('nothing', MANAGER)).version).toBe(0);
     await hub.pushAsSystem('a1', SYSTEM, [{ name: 'addPerson', args: { id: 'p1', name: 'Anna' } }]);
-    expect(await hub.read('a1', COMMAND)).toMatchObject({ version: 1, view: 'command' });
+    expect(await hub.read('a1', MANAGER)).toMatchObject({ version: 1, view: 'manage' });
     expect((await hub.actor('a1')).subscriberCount).toBe(0);
   });
 });

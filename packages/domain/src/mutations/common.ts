@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Rejection, type MutationCtx, type ReadView, type Tx } from '@sync/core';
 import { currentParticipantStatus, currentTarget, getActivity, hasOperations, membersOf, sameTarget, targetExists, targetName } from '../queries';
 import { Target, type EquipmentRec, type ActivityRec, type ParticipantRec, type ParticipantStatus, type TeamRec } from '../schema';
-import { asActivityViewer, isCommand, isSystemViewer } from '../viewer';
+import { asActivityViewer, canManage, isSystemViewer } from '../viewer';
 
 export const id = z.string().min(1);
 export const at = z.number().finite();
@@ -40,9 +40,9 @@ export function requireParticipant(view: ReadView, participantId: string): Parti
   return p;
 }
 
-/** Command may change anyone; field users only themselves. */
-export function requireSelfOrCommand(ctx: MutationCtx, participant: ParticipantRec): void {
-  if (isCommand(ctx.viewer)) return;
+/** Managers may change anyone; responders only themselves. */
+export function requireSelfOrManager(ctx: MutationCtx, participant: ParticipantRec): void {
+  if (canManage(ctx.viewer)) return;
   const personRef = asActivityViewer(ctx.viewer).personRef;
   if (!personRef || personRef !== participant.personRef) throw new Rejection('forbidden', 'You can only change your own entry');
 }

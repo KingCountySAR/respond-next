@@ -5,9 +5,9 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation } from 'wouter';
 import { randomId } from '@sync/core';
-import { DEFAULT_EARLY_SIGN_IN_WINDOW, fromSaved, isMissionCommand } from '@sync/domain';
-import type { FieldActivity } from '@sync/model';
-import { observer, useFieldActivity } from '@sync/model/react';
+import { DEFAULT_EARLY_SIGN_IN_WINDOW, fromSaved, canManageMissions } from '@sync/domain';
+import type { RespondActivity } from '@sync/model';
+import { observer, useRespondActivity } from '@sync/model/react';
 import { useSite } from '../../shell/App';
 import { useDialogs } from '../../shell/dialogs';
 import { useSyncClient } from '../../shell/sync';
@@ -30,10 +30,10 @@ export function ActivityNewPage({ activityType }: { activityType: ActivityType }
 
 /** Edit an activity; under ActivityLayout. */
 export const ActivityEditPage = observer(function ActivityEditPage({ activityType }: { activityType: ActivityType }) {
-  return <ActivityEditForm activityType={activityType} activity={useFieldActivity()} />;
+  return <ActivityEditForm activityType={activityType} activity={useRespondActivity()} />;
 });
 
-const ActivityEditForm = observer(function ActivityEditForm({ activityType, activity }: { activityType: ActivityType; activity?: FieldActivity }) {
+const ActivityEditForm = observer(function ActivityEditForm({ activityType, activity }: { activityType: ActivityType; activity?: RespondActivity }) {
   const org = useSite().organization;
   const client = useSyncClient();
   const [, navigate] = useLocation();
@@ -64,8 +64,8 @@ const ActivityEditForm = observer(function ActivityEditForm({ activityType, acti
   };
 
   const selectedType = draft.isMission ? 'missions' : 'events';
-  // Members may create and manage other events; missions are for command.
-  const missionCommand = isMissionCommand(activity ? client.viewerIn(activity.activityId) : client.viewer);
+  // Members may create and manage other events; missions are for managers.
+  const manageMissions = canManageMissions(activity ? client.viewerIn(activity.activityId) : client.viewer);
   const ownerChoices = draft.ownerChoices;
   const startsLater = draft.startsAfter(Date.now());
 
@@ -85,7 +85,7 @@ const ActivityEditForm = observer(function ActivityEditForm({ activityType, acti
               <FormControl fullWidth>
                 <InputLabel id="activity-type-label">Type</InputLabel>
                 <Select labelId="activity-type-label" label="Type" value={selectedType} onChange={(event) => draft.set('isMission', event.target.value === 'missions')}>
-                  <MenuItem value="missions" disabled={!missionCommand}>
+                  <MenuItem value="missions" disabled={!manageMissions}>
                     Mission
                   </MenuItem>
                   <MenuItem value="events">Event</MenuItem>

@@ -39,15 +39,15 @@ describe('activities over HTTP', () => {
     const { client, grants } = await setup();
     const bo = client();
     await bo.signIn('bo.okafor@crt.example.org');
-    const field = await bo.json<ActivityResponse>('/api/activities/a1');
-    expect(field.status).toBe(200);
-    expect(field.body).toMatchObject({ activityId: 'a1', version: 2, view: 'field:member' });
-    expect(field.body.records.some((r) => r.type === 'activity')).toBe(true);
+    const respond = await bo.json<ActivityResponse>('/api/activities/a1');
+    expect(respond.status).toBe(200);
+    expect(respond.body).toMatchObject({ activityId: 'a1', version: 2, view: 'respond:member' });
+    expect(respond.body.records.some((r) => r.type === 'activity')).toBe(true);
 
-    await grants.set(BO, 'a1', { tier: 'command', grantedBy: 'avery.lindqvist@crt.example.org', grantedAt: Date.now() });
+    await grants.set(BO, 'a1', { tier: 'manage', grantedBy: 'avery.lindqvist@crt.example.org', grantedAt: Date.now() });
     const granted = client();
     await granted.signIn('bo.okafor@crt.example.org');
-    expect((await granted.json<ActivityResponse>('/api/activities/a1')).body.view).toBe('command');
+    expect((await granted.json<ActivityResponse>('/api/activities/a1')).body.view).toBe('manage');
   });
 
   it("say not found for an activity there isn't, and for the list scopes", async () => {

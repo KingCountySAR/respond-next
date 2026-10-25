@@ -1,16 +1,16 @@
 /**
  * What each view may see: the security boundary. Views are keyed by tier and class, so a change is
- * projected once per key however many people are connected. Command and support see everything.
+ * projected once per key however many people are connected. Managers see everything.
  *
- * The field lists below also define the field record types (`FieldParticipantRec`, ...), so the UI's
- * types can't drift from what the server actually sends.
+ * The field lists below also define the respond views' record types (`RespondParticipantRec`, ...),
+ * so the UI's types can't drift from what the server actually sends.
  */
 import type { Projector, ReadView, Rec, Viewer } from '@sync/core';
 import { getActivity } from './queries';
 import type { ActivityRec, ActivityUnitRec, AssignmentRec, ContactRec, EquipmentRec, GroupRec, ParticipantRec, PlaceRec, Target, TeamRec, TeamStatusRec } from './schema';
-import { asActivityViewer, isCommand, type ActivityViewer } from './viewer';
+import { asActivityViewer, canManage, type ActivityViewer } from './viewer';
 
-export type ViewKey = 'command' | 'field:member' | 'field:external';
+export type ViewKey = 'manage' | 'respond:member' | 'respond:external';
 
 /** A record type's declared fields, without the `[field: string]: unknown` index signature. */
 type KnownKeys<T> = keyof { [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K] };
@@ -26,28 +26,28 @@ const MEMBER_GROUP_FIELDS = fields<GroupRec>()(['name', 'leaderParticipantId']);
 const EXTERNAL_GROUP_FIELDS = fields<GroupRec>()(['name']);
 const PLACE_FIELDS = fields<PlaceRec>()(['name']);
 
-// --- Field record types -----------------------------------------------------------------------
+// --- Respond record types -----------------------------------------------------------------------
 
 type BaseKeys = 'type' | 'id' | 'version' | 'deleted';
 type Visible<R, F extends readonly unknown[]> = Pick<R, Extract<BaseKeys | F[number], keyof R>>;
-/** Fields every field viewer gets, plus the ones only members get (absent for external people). */
-type FieldView<R, Member extends readonly unknown[], External extends readonly unknown[]> = Visible<R, External> &
+/** Fields every respond viewer gets, plus the ones only members get (absent for external people). */
+type RespondView<R, Member extends readonly unknown[], External extends readonly unknown[]> = Visible<R, External> &
   Partial<Pick<R, Extract<Exclude<Member[number], External[number]>, keyof R>>>;
 
-export type FieldActivityRec = Visible<ActivityRec, typeof ACTIVITY_FIELDS>;
-export type FieldParticipantRec = FieldView<ParticipantRec, typeof MEMBER_PARTICIPANT_FIELDS, typeof EXTERNAL_PARTICIPANT_FIELDS>;
+export type RespondActivityRec = Visible<ActivityRec, typeof ACTIVITY_FIELDS>;
+export type RespondParticipantRec = RespondView<ParticipantRec, typeof MEMBER_PARTICIPANT_FIELDS, typeof EXTERNAL_PARTICIPANT_FIELDS>;
 /** Members only; external people get no assignments. The target says only which kind of place. */
-export type FieldAssignmentRec = Visible<AssignmentRec, typeof ASSIGNMENT_FIELDS> & { target: Pick<Target, 'kind'> | null };
-export type FieldTeamRec = Visible<TeamRec, typeof TEAM_FIELDS>;
+export type RespondAssignmentRec = Visible<AssignmentRec, typeof ASSIGNMENT_FIELDS> & { target: Pick<Target, 'kind'> | null };
+export type RespondTeamRec = Visible<TeamRec, typeof TEAM_FIELDS>;
 /** Members only. */
-export type FieldTeamStatusRec = TeamStatusRec;
-export type FieldGroupRec = FieldView<GroupRec, typeof MEMBER_GROUP_FIELDS, typeof EXTERNAL_GROUP_FIELDS>;
-export type FieldPlaceRec = Visible<PlaceRec, typeof PLACE_FIELDS>;
-/** Every field viewer sees units (and their statuses) and equipment in full. */
-export type FieldUnitRec = ActivityUnitRec;
-export type FieldEquipmentRec = EquipmentRec;
+export type RespondTeamStatusRec = TeamStatusRec;
+export type RespondGroupRec = RespondView<GroupRec, typeof MEMBER_GROUP_FIELDS, typeof EXTERNAL_GROUP_FIELDS>;
+export type RespondPlaceRec = Visible<PlaceRec, typeof PLACE_FIELDS>;
+/** Every respond viewer sees units (and their statuses) and equipment in full. */
+export type RespondUnitRec = ActivityUnitRec;
+export type RespondEquipmentRec = EquipmentRec;
 /** Members only. */
-export type FieldContactRec = ContactRec;
+export type RespondContactRec = ContactRec;
 
 // --- Rules ------------------------------------------------------------------------------------
 
@@ -66,13 +66,13 @@ const only =
   (rec) =>
     pick(rec, keep);
 
-/** Field members see which kind of place someone is at, but not which team or place. */
+/** Respond-tier members see which kind of place someone is at, but not which team or place. */
 const assignmentKindOnly: Rule = (rec) => {
   const target = rec.target as { kind: string } | null;
   return { ...pick(rec, ASSIGNMENT_FIELDS), target: target ? { kind: target.kind } : null };
 };
 
-const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
+const RESPOND_RULES: Record<'member' | 'external', Record<string, Rule>> = {
   member: {
     activity: only(ACTIVITY_FIELDS),
     activityUnit: all,
@@ -110,15 +110,15 @@ const FIELD_RULES: Record<'member' | 'external', Record<string, Rule>> = {
 };
 
 /**
- * Who a viewer is on an activity: the limits of command and support are for missions only, so
- * members manage trainings and other events as command (for now). Undefined, as they are, for
- * missions, external people, command already, and an activity not yet known.
+ * Who a viewer is on an activity: the limit on who manages is for missions only, so members
+ * manage trainings and other events (for now). Undefined, as they are, for missions, external
+ * people, managers already, and an activity not yet known.
  */
 export function viewerOnActivity(viewer: Viewer, view: ReadView): ActivityViewer | undefined {
   const v = asActivityViewer(viewer);
-  if (isCommand(v) || v.class !== 'member') return undefined;
+  if (canManage(v) || v.class !== 'member') return undefined;
   const kind = getActivity(view)?.kind;
-  return kind && kind !== 'mission' ? { ...v, tier: 'command', missionTier: v.tier } : undefined;
+  return kind && kind !== 'mission' ? { ...v, tier: 'manage', missionTier: v.tier } : undefined;
 }
 
 /**
@@ -128,19 +128,19 @@ export function viewerOnActivity(viewer: Viewer, view: ReadView): ActivityViewer
 export function clientViewerOn(viewer: ActivityViewer, copy: { view: string | undefined; records: ReadView }): ActivityViewer | undefined {
   const byKind = viewerOnActivity(viewer, copy.records);
   if (byKind) return byKind;
-  return copy.view === 'command' && !isCommand(viewer) ? { ...viewer, tier: 'command' } : undefined;
+  return copy.view === 'manage' && !canManage(viewer) ? { ...viewer, tier: 'manage' } : undefined;
 }
 
 export const activityProjector: Projector = {
   viewerIn: viewerOnActivity,
   viewKey(viewer: Viewer): ViewKey {
-    if (isCommand(viewer)) return 'command';
-    return asActivityViewer(viewer).class === 'member' ? 'field:member' : 'field:external';
+    if (canManage(viewer)) return 'manage';
+    return asActivityViewer(viewer).class === 'member' ? 'respond:member' : 'respond:external';
   },
   project(viewKey, rec) {
-    if (viewKey === 'command') return rec;
-    const rules = FIELD_RULES[viewKey === 'field:member' ? 'member' : 'external'];
-    // Unknown record types are hidden: a new type is invisible to field views until a rule says otherwise.
+    if (viewKey === 'manage') return rec;
+    const rules = RESPOND_RULES[viewKey === 'respond:member' ? 'member' : 'external'];
+    // Unknown record types are hidden: a new type is invisible to respond views until a rule says otherwise.
     return (rules[rec.type] ?? none)(rec);
   },
 };

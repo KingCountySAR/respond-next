@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Rejection, randomId } from '@sync/core';
 import { PARTICIPANT_STATUSES, TEAM_STATUSES, statusSteps, type ParticipantStatus, type Target, type TeamStatus } from '@sync/domain';
-import { isCommandActivity, type CommandActivity, type CommandParticipant, type FieldActivity, type FieldParticipant, type UnitRef } from '@sync/model';
-import { observer, useFieldActivity } from '@sync/model/react';
+import { isManageActivity, type ManageActivity, type ManageParticipant, type RespondActivity, type RespondParticipant, type UnitRef } from '@sync/model';
+import { observer, useRespondActivity } from '@sync/model/react';
 import type { PaneViewer } from './ClientPane';
 
 const UNIT: UnitRef = { id: 'org-crt', title: 'Cascade Rescue Team', rosterName: 'CRT' };
@@ -37,7 +37,7 @@ function newActivityArgs(now: number) {
 }
 
 export const ActivityView = observer(function ActivityView({ viewer }: { viewer: PaneViewer }) {
-  const activity = useFieldActivity();
+  const activity = useRespondActivity();
   const [error, setError] = useState<string>();
   const [minutesAgo, setMinutesAgo] = useState(0);
   const act: Act = {
@@ -51,17 +51,17 @@ export const ActivityView = observer(function ActivityView({ viewer }: { viewer:
     },
     at: () => (minutesAgo ? activity.clock.now() - minutesAgo * 60_000 : undefined),
   };
-  const command = isCommandActivity(activity) ? activity : undefined;
+  const manage = isManageActivity(activity) ? activity : undefined;
   const rec = activity.record;
 
   if (!rec) {
-    return command ? (
+    return manage ? (
       <div>
-        <button onClick={() => act.run(() => command.mutate('createActivity', newActivityArgs(activity.clock.now())))}>Create activity</button>
+        <button onClick={() => act.run(() => manage.mutate('createActivity', newActivityArgs(activity.clock.now())))}>Create activity</button>
         {error && <p className="error">{error}</p>}
       </div>
     ) : (
-      <p className="muted">No activity yet. A command client creates it.</p>
+      <p className="muted">No activity yet. A manager client creates it.</p>
     );
   }
 
@@ -73,7 +73,7 @@ export const ActivityView = observer(function ActivityView({ viewer }: { viewer:
           {rec.kind} · {activity.phase}
           {rec.mode === 'light' && ' · light mode'}
         </span>
-        {command && (rec.closed ? <button onClick={() => act.run(() => command.reopen())}>Reopen</button> : <button onClick={() => act.run(() => command.close())}>Close</button>)}
+        {manage && (rec.closed ? <button onClick={() => act.run(() => manage.reopen())}>Reopen</button> : <button onClick={() => act.run(() => manage.close())}>Close</button>)}
         <label className="muted">
           changes happen
           <select value={minutesAgo} onChange={(e) => setMinutesAgo(Number(e.target.value))}>
@@ -89,13 +89,13 @@ export const ActivityView = observer(function ActivityView({ viewer }: { viewer:
       <Me activity={activity} viewer={viewer} act={act} />
       <Roster activity={activity} act={act} />
       {activity.hasOperations && <Teams activity={activity} act={act} />}
-      {command && activity.hasOperations && <Comms activity={command} act={act} />}
+      {manage && activity.hasOperations && <Comms activity={manage} act={act} />}
     </div>
   );
 });
 
 /** Self-service: sign in, then the status buttons the domain offers. */
-const Me = observer(function Me({ activity, viewer, act }: { activity: FieldActivity; viewer: PaneViewer; act: Act }) {
+const Me = observer(function Me({ activity, viewer, act }: { activity: RespondActivity; viewer: PaneViewer; act: Act }) {
   const person = viewer.person;
   if (!person) return null;
   const me = activity.me;
@@ -128,13 +128,13 @@ const Me = observer(function Me({ activity, viewer, act }: { activity: FieldActi
   );
 });
 
-const Roster = observer(function Roster({ activity, act }: { activity: FieldActivity; act: Act }) {
-  const command = isCommandActivity(activity) ? activity : undefined;
+const Roster = observer(function Roster({ activity, act }: { activity: RespondActivity; act: Act }) {
+  const manage = isManageActivity(activity) ? activity : undefined;
   const [name, setName] = useState('');
   const add = (e: FormEvent) => {
     e.preventDefault();
     const [firstname = '', ...rest] = name.trim().split(/\s+/);
-    if (command && firstname) act.run(() => command.addParticipant({ personRef: `adhoc:${randomId()}`, firstname, lastname: rest.join(' ') }, UNIT, 'responding', { at: act.at() }));
+    if (manage && firstname) act.run(() => manage.addParticipant({ personRef: `adhoc:${randomId()}`, firstname, lastname: rest.join(' ') }, UNIT, 'responding', { at: act.at() }));
     setName('');
   };
   return (
@@ -142,7 +142,7 @@ const Roster = observer(function Roster({ activity, act }: { activity: FieldActi
       <h3>
         Roster <span className="muted">({activity.participants.length})</span>
       </h3>
-      {command && (
+      {manage && (
         <form className="row" onSubmit={add}>
           <input placeholder="First Last" value={name} onChange={(e) => setName(e.target.value)} />
           <button type="submit">Add responding</button>
@@ -150,7 +150,7 @@ const Roster = observer(function Roster({ activity, act }: { activity: FieldActi
       )}
       <table>
         <tbody>
-          {activity.participants.map((p) => (command ? <CommandRow key={p.id} p={p as CommandParticipant} activity={command} act={act} /> : <FieldRow key={p.id} p={p} />))}
+          {activity.participants.map((p) => (manage ? <ManageRow key={p.id} p={p as ManageParticipant} activity={manage} act={act} /> : <RespondRow key={p.id} p={p} />))}
         </tbody>
       </table>
     </section>
@@ -159,7 +159,7 @@ const Roster = observer(function Roster({ activity, act }: { activity: FieldActi
 
 const Pending = observer(({ on }: { on: boolean }) => (on ? <span className="pending" title="not synced yet" /> : null));
 
-const FieldRow = observer(function FieldRow({ p }: { p: FieldParticipant }) {
+const RespondRow = observer(function RespondRow({ p }: { p: RespondParticipant }) {
   const where = p.targetKind === undefined ? 'hidden' : (p.targetKind ?? 'unassigned');
   return (
     <tr className={p.isMe ? 'mine' : undefined}>
@@ -176,7 +176,7 @@ const FieldRow = observer(function FieldRow({ p }: { p: FieldParticipant }) {
   );
 });
 
-const CommandRow = observer(function CommandRow({ p, activity, act }: { p: CommandParticipant; activity: CommandActivity; act: Act }) {
+const ManageRow = observer(function ManageRow({ p, activity, act }: { p: ManageParticipant; activity: ManageActivity; act: Act }) {
   const targets = [...activity.teams.filter((t) => t.status !== 'disbanded'), ...activity.places];
   return (
     <tr className={p.isMe ? 'mine' : undefined}>
@@ -215,19 +215,19 @@ const CommandRow = observer(function CommandRow({ p, activity, act }: { p: Comma
   );
 });
 
-const Teams = observer(function Teams({ activity, act }: { activity: FieldActivity; act: Act }) {
-  const command = isCommandActivity(activity) ? activity : undefined;
+const Teams = observer(function Teams({ activity, act }: { activity: RespondActivity; act: Act }) {
+  const manage = isManageActivity(activity) ? activity : undefined;
   const [name, setName] = useState('');
   const base = activity.places.find((p) => p.isBase);
   return (
     <section>
       <h3>Teams</h3>
-      {command && (
+      {manage && (
         <form
           className="row"
           onSubmit={(e) => {
             e.preventDefault();
-            if (name.trim()) act.run(() => command.createTeam(name.trim()));
+            if (name.trim()) act.run(() => manage.createTeam(name.trim()));
             setName('');
           }}
         >
@@ -236,8 +236,8 @@ const Teams = observer(function Teams({ activity, act }: { activity: FieldActivi
         </form>
       )}
       <ul className="teams">
-        {command
-          ? command.teams.map((t) => (
+        {manage
+          ? manage.teams.map((t) => (
               <li key={t.id}>
                 <Pending on={t.isPending} />
                 <strong>{t.name}</strong>{' '}
@@ -262,7 +262,7 @@ const Teams = observer(function Teams({ activity, act }: { activity: FieldActivi
   );
 });
 
-const Comms = observer(function Comms({ activity, act }: { activity: CommandActivity; act: Act }) {
+const Comms = observer(function Comms({ activity, act }: { activity: ManageActivity; act: Act }) {
   const [entry, setEntry] = useState({ from: '', to: '', message: '' });
   return (
     <section>

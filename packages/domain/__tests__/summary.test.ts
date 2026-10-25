@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { activityProjector, activitySummary, participantIdFor } from '@sync/domain';
-import { CRT, HOUR, RMR, SYSTEM, T0, TestActivity, addMember, fieldMember, startedActivity } from './helpers';
+import { CRT, HOUR, RMR, SYSTEM, T0, TestActivity, addMember, respondMember, startedActivity } from './helpers';
 
 describe('activity summaries', () => {
   it('carry the activity, its units with active counts, and everyone with a status', () => {
@@ -33,10 +33,10 @@ describe('activity summaries', () => {
   it('is written only by the server, and every view sees it', () => {
     const list = new TestActivity();
     const summary = activitySummary(startedActivity().view, 'a1')!;
-    expect(list.rejects('setActivitySummary', { id: 'a1', summary }, fieldMember('kcsara:1'))).toBe('forbidden');
+    expect(list.rejects('setActivitySummary', { id: 'a1', summary }, respondMember('kcsara:1'))).toBe('forbidden');
     list.run('setActivitySummary', { id: 'a1', summary }, SYSTEM);
     const rec = list.get('activitySummary', 'a1')!;
-    expect(activityProjector.project('field:external', rec)).toEqual(rec);
+    expect(activityProjector.project('respond:external', rec)).toEqual(rec);
     list.run('setActivitySummary', { id: 'a1', summary: null }, SYSTEM);
     expect(list.get('activitySummary', 'a1')).toBeUndefined();
   });

@@ -3,7 +3,7 @@ import { SyncClient } from '@sync/client';
 import { Hub, MemoryStorage } from '@sync/server';
 import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_HISTORY_DAYS, ACTIVITY_LIST_ID, SYSTEM_VIEWER, activityProjector, activityRegistry, participantIdFor, type ActivitySummaryRec } from '@sync/domain';
 import { SummaryWriter } from '../../server/src/summaries';
-import { COMMAND, CRT, HOUR, T0, activityArgs, fieldMember } from '../../packages/domain/__tests__/helpers';
+import { MANAGER, CRT, HOUR, T0, activityArgs, respondMember } from '../../packages/domain/__tests__/helpers';
 import { SimNetwork, mulberry32 } from './sim';
 
 beforeEach(() => {
@@ -21,23 +21,23 @@ async function setup(storage = new MemoryStorage()) {
   const hub: Hub = new Hub({ storage, registry: activityRegistry, projector: activityProjector, now: () => Date.now(), onCommit: summaries.onCommit, readOnly: (id) => id === ACTIVITY_LIST_ID || id === ACTIVITY_ARCHIVE_ID });
   const net = new SimNetwork(hub, mulberry32(1));
   net.latencyMs = 20;
-  const viewers = [COMMAND, fieldMember('kcsara:1')];
-  const [command, field] = viewers.map((viewer, i) => new SyncClient({ registry: activityRegistry, viewer, transport: net.transportFor(i, viewer) }));
-  for (const c of [command!, field!]) await c.start();
-  await command!.open('a1');
-  await field!.open(ACTIVITY_LIST_ID);
+  const viewers = [MANAGER, respondMember('kcsara:1')];
+  const [manage, respond] = viewers.map((viewer, i) => new SyncClient({ registry: activityRegistry, viewer, transport: net.transportFor(i, viewer) }));
+  for (const c of [manage!, respond!]) await c.start();
+  await manage!.open('a1');
+  await respond!.open(ACTIVITY_LIST_ID);
   const summaryWrites = () => storage.log.filter((e) => e.activityId === ACTIVITY_LIST_ID).length;
-  const listed = () => field!.snapshot(ACTIVITY_LIST_ID).get<ActivitySummaryRec>('activitySummary', 'a1');
+  const listed = () => respond!.snapshot(ACTIVITY_LIST_ID).get<ActivitySummaryRec>('activitySummary', 'a1');
   const archived = async () => (await hub.read(ACTIVITY_ARCHIVE_ID, SYSTEM_VIEWER)).records.find((r) => r.id === 'a1') as ActivitySummaryRec | undefined;
   const later = (ms: number) => (shift += ms);
-  return { hub, storage, summaries, command: command!, field: field!, summaryWrites, listed, archived, later, stop: () => [command, field].forEach((c) => c!.stop()) };
+  return { hub, storage, summaries, manage: manage!, respond: respond!, summaryWrites, listed, archived, later, stop: () => [manage, respond].forEach((c) => c!.stop()) };
 }
 
 describe('activity summaries on the server', () => {
   it('list an activity after the debounce, once for a burst of changes', async () => {
     const s = await setup();
-    s.command.mutate('a1', 'createActivity', activityArgs());
-    s.command.mutate('a1', 'addParticipant', { personRef: 'kcsara:1', firstname: 'Anna', lastname: 'Lee', unit: CRT, status: 'staging', at: T0 + HOUR });
+    s.manage.mutate('a1', 'createActivity', activityArgs());
+    s.manage.mutate('a1', 'addParticipant', { personRef: 'kcsara:1', firstname: 'Anna', lastname: 'Lee', unit: CRT, status: 'staging', at: T0 + HOUR });
     await vi.advanceTimersByTimeAsync(1000);
     expect(s.listed()).toBeUndefined(); // still inside the 2 s debounce
     await vi.advanceTimersByTimeAsync(2000);
@@ -49,9 +49,9 @@ describe('activity summaries on the server', () => {
 
   it('writes within 5 s even while changes keep coming', async () => {
     const s = await setup();
-    s.command.mutate('a1', 'createActivity', activityArgs());
+    s.manage.mutate('a1', 'createActivity', activityArgs());
     for (let i = 0; i < 6; i++) {
-      s.command.mutate('a1', 'updateActivity', { title: `Title ${i}` });
+      s.manage.mutate('a1', 'updateActivity', { title: `Title ${i}` });
       await vi.advanceTimersByTimeAsync(1000);
     }
     expect(s.summaryWrites()).toBeGreaterThanOrEqual(1);
@@ -60,10 +60,10 @@ describe('activity summaries on the server', () => {
 
   it('drops a removed activity from the list', async () => {
     const s = await setup();
-    s.command.mutate('a1', 'createActivity', activityArgs());
+    s.manage.mutate('a1', 'createActivity', activityArgs());
     await vi.advanceTimersByTimeAsync(3000);
     expect(s.listed()).toBeDefined();
-    s.command.mutate('a1', 'removeActivity', {});
+    s.manage.mutate('a1', 'removeActivity', {});
     await vi.advanceTimersByTimeAsync(3000);
     expect(s.listed()).toBeUndefined();
     s.stop();
@@ -71,8 +71,8 @@ describe('activity summaries on the server', () => {
 
   it('keeps every activity in the archive, and in the list only while open or recent', async () => {
     const s = await setup();
-    s.command.mutate('a1', 'createActivity', activityArgs());
-    s.command.mutate('a1', 'closeActivity', {});
+    s.manage.mutate('a1', 'createActivity', activityArgs());
+    s.manage.mutate('a1', 'closeActivity', {});
     await vi.advanceTimersByTimeAsync(3000);
     expect(s.listed()?.activity.closed).toBe(true); // ended today
     expect((await s.archived())?.activity.closed).toBe(true);
@@ -89,7 +89,7 @@ describe('activity summaries on the server', () => {
     expect((await s.archived())?.activity.title).toBe('Lost hiker, Mailbox Peak');
 
     // Reactivated: back in the list.
-    s.command.mutate('a1', 'reopenActivity', {});
+    s.manage.mutate('a1', 'reopenActivity', {});
     await vi.advanceTimersByTimeAsync(3000);
     expect(s.listed()?.activity.closed).toBe(false);
     s.stop();
@@ -99,12 +99,12 @@ describe('activity summaries on the server', () => {
     const s = await setup();
     const rejected: string[] = [];
     // Passes the client's own checks (the list has no activity record yet), so only the server can refuse it.
-    await s.command.open(ACTIVITY_LIST_ID);
-    s.command.onReject((r) => rejected.push(r.message));
-    s.command.mutate(ACTIVITY_LIST_ID, 'createActivity', activityArgs());
+    await s.manage.open(ACTIVITY_LIST_ID);
+    s.manage.onReject((r) => rejected.push(r.message));
+    s.manage.mutate(ACTIVITY_LIST_ID, 'createActivity', activityArgs());
     await vi.advanceTimersByTimeAsync(500);
     expect(rejected).toEqual(['Only the server changes this']);
-    expect(s.command.snapshot(ACTIVITY_LIST_ID).get('activity', 'activity')).toBeUndefined();
+    expect(s.manage.snapshot(ACTIVITY_LIST_ID).get('activity', 'activity')).toBeUndefined();
     s.stop();
   });
 
@@ -113,7 +113,7 @@ describe('activity summaries on the server', () => {
     // An older server, without summaries.
     const old = new Hub({ storage, registry: activityRegistry, projector: activityProjector, now: () => Date.now() });
     const net = new SimNetwork(old, mulberry32(2));
-    const client = new SyncClient({ registry: activityRegistry, viewer: COMMAND, transport: net.transportFor(0, COMMAND) });
+    const client = new SyncClient({ registry: activityRegistry, viewer: MANAGER, transport: net.transportFor(0, MANAGER) });
     await client.start();
     await client.open('a1');
     client.mutate('a1', 'createActivity', activityArgs());
@@ -131,8 +131,8 @@ describe('activity summaries on the server', () => {
   it("doesn't load archived activities at startup, and drops those that aged out while it was down", async () => {
     const storage = new MemoryStorage();
     const first = await setup(storage);
-    first.command.mutate('a1', 'createActivity', activityArgs());
-    first.command.mutate('a1', 'closeActivity', {});
+    first.manage.mutate('a1', 'createActivity', activityArgs());
+    first.manage.mutate('a1', 'closeActivity', {});
     await vi.advanceTimersByTimeAsync(3000);
     expect(first.listed()).toBeDefined();
     first.stop();

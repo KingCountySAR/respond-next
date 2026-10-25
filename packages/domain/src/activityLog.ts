@@ -3,7 +3,7 @@
  * Standby to Responding", or "Team 2 created", with who made it beside), shown in the ops dashboard's
  * comms log beside the comms entries. The server writes the lines after each commit, from the change
  * and the records it touched, into a scope of their own beside the activity (`activityLogId`), so the
- * activity stays small and only the dashboard syncs them. Command only, like comms.
+ * activity stays small and only the dashboard syncs them. Managers only, like comms.
  *
  * What the legacy app logged by itself as automated comms is Auto: team status and GAR, groups
  * formed, renamed, led and ended, places set up and ended, team leaders, and the activity closing or
@@ -15,7 +15,7 @@ import { Rejection, defineMutation, type ReadView, type Rec } from '@sync/core';
 import { GAR_TEXT, PARTICIPANT_STATUS_TEXT, TEAM_STATUS_TEXT, UNIT_STATUS_TEXT } from './labels';
 import { compareEntries, findParticipantByPersonRef, fullName, participantName, targetName } from './queries';
 import { ACTIVITY_RECORD_ID, type ActivityUnitRec, type GroupRec, type AssignmentRec, Level, type LogLevel, type ParticipantRec, type ParticipantStatusRec, type TeamRec, type TeamStatusRec, type UnitStatusRec } from './schema';
-import { SYSTEM_VIEWER, isCommand, isSystemViewer } from './viewer';
+import { SYSTEM_VIEWER, canManage, isSystemViewer } from './viewer';
 
 const PREFIX = '$log:';
 
@@ -52,7 +52,7 @@ const Line = z.object({ id: z.string().min(1), at: z.number().finite(), by: z.st
 
 /**
  * Adds lines to a log scope (an id already there is left alone, favorite and all), and keeps its copy
- * of the activity record, which says who is who there (members are command on events). The server's own.
+ * of the activity record, which says who is who there (members manage events). The server's own.
  */
 export const appendLog = defineMutation({
   name: 'appendLog',
@@ -70,7 +70,7 @@ export const setLogFavorite = defineMutation({
   name: 'setLogFavorite',
   version: 1,
   args: z.object({ id: z.string().min(1), favorite: z.boolean() }),
-  allow: isCommand,
+  allow: canManage,
   describe: (a) => (a.favorite ? 'Star a log line' : 'Unstar a log line'),
   run(tx, a) {
     if (!tx.get('logEntry', a.id)) throw new Rejection('not_found', 'That log line no longer exists');

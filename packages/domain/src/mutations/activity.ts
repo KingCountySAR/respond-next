@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Rejection, defineMutation } from '@sync/core';
 import { DEFAULT_EARLY_SIGN_IN_WINDOW, currentParticipantStatus, getActivity, isActiveStatus } from '../queries';
 import { DEFAULT_PLACES, ACTIVITY_KINDS, ACTIVITY_MODES, ACTIVITY_RECORD_ID, Location, type ParticipantRec } from '../schema';
-import { asActivityViewer, isCommand, isMissionCommand } from '../viewer';
+import { asActivityViewer, canManage, canManageMissions } from '../viewer';
 import { addStatus, at, id, idSource, requireActivity, requireOpen } from './common';
 
 const ActivityFields = z.object({
@@ -24,11 +24,11 @@ export const createActivity = defineMutation({
   name: 'createActivity',
   version: 1,
   args: ActivityFields.extend({ earlySignInWindow: ActivityFields.shape.earlySignInWindow.default(DEFAULT_EARLY_SIGN_IN_WINDOW) }),
-  // Command creates missions; members may create trainings and other events too.
-  allow: (viewer) => isCommand(viewer) || asActivityViewer(viewer).class === 'member',
+  // Managers create missions; members may create trainings and other events too.
+  allow: (viewer) => canManage(viewer) || asActivityViewer(viewer).class === 'member',
   describe: (a) => `Create ${a.title}`,
   run(tx, a, ctx) {
-    if (a.kind === 'mission' && !isMissionCommand(ctx.viewer)) throw new Rejection('forbidden', 'Only command can create a mission');
+    if (a.kind === 'mission' && !canManageMissions(ctx.viewer)) throw new Rejection('forbidden', 'Only a manager can create a mission');
     if (getActivity(tx)) throw new Rejection('exists', 'This event already exists');
     tx.put({ type: 'activity', id: ACTIVITY_RECORD_ID, ...a, endTime: null, closed: false, removedAt: null });
     const nextId = idSource(ctx);
@@ -40,11 +40,11 @@ export const updateActivity = defineMutation({
   name: 'updateActivity',
   version: 1,
   args: ActivityFields.partial(),
-  allow: isCommand,
+  allow: canManage,
   describe: (_a, view) => `Edit ${getActivity(view)?.title ?? 'the event'}`,
   run(tx, a, ctx) {
     const activity = requireOpen(tx);
-    if (a.kind === 'mission' && activity.kind !== 'mission' && !isMissionCommand(ctx.viewer)) throw new Rejection('forbidden', 'Only command can make this a mission');
+    if (a.kind === 'mission' && activity.kind !== 'mission' && !canManageMissions(ctx.viewer)) throw new Rejection('forbidden', 'Only a manager can make this a mission');
     tx.update('activity', ACTIVITY_RECORD_ID, a);
   },
 });
@@ -55,7 +55,7 @@ export const closeActivity = defineMutation({
   version: 1,
   timed: true,
   args: z.object({ at }),
-  allow: isCommand,
+  allow: canManage,
   describe: (_a, view) => `Close ${getActivity(view)?.title ?? 'the event'}`,
   run(tx, a, ctx) {
     requireOpen(tx);
@@ -72,7 +72,7 @@ export const reopenActivity = defineMutation({
   name: 'reopenActivity',
   version: 1,
   args: z.object({}),
-  allow: isCommand,
+  allow: canManage,
   describe: (_a, view) => `Reopen ${getActivity(view)?.title ?? 'the event'}`,
   run(tx) {
     const activity = requireActivity(tx);
@@ -87,7 +87,7 @@ export const removeActivity = defineMutation({
   version: 1,
   timed: true,
   args: z.object({ at }),
-  allow: isCommand,
+  allow: canManage,
   describe: (_a, view) => `Remove ${getActivity(view)?.title ?? 'the event'}`,
   run(tx, a) {
     requireActivity(tx);

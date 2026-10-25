@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Route, Switch } from 'wouter';
-import { FieldRoutes, Home } from '../sections/field';
+import { RespondRoutes, Home } from '../sections/respond';
 
-// Field is what most people open, so it loads with the shell, as in the legacy app; the rest load
+// Respond is what most people open, so it loads with the shell, as in the legacy app; the rest load
 // when their route is first visited.
 const OpsRoutes = lazy(() => import('../sections/ops').then((m) => ({ default: m.OpsRoutes })));
 const ReportRoutes = lazy(() => import('../sections/reports').then((m) => ({ default: m.ReportRoutes })));
@@ -17,10 +17,10 @@ export function AppRoutes() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/mission" nest>
-        <FieldRoutes type="missions" />
+        <RespondRoutes type="missions" />
       </Route>
       <Route path="/event" nest>
-        <FieldRoutes type="events" />
+        <RespondRoutes type="events" />
       </Route>
       <Route path="/ops" nest>
         <Suspense fallback={loading}>

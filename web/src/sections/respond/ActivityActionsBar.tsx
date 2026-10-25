@@ -1,13 +1,13 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Button, IconButton, Stack } from '@mui/material';
 import { Link, useLocation } from 'wouter';
-import type { FieldActivity } from '@sync/model';
+import type { RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useDialogs } from '../../shell/dialogs';
 import { activityPath } from '../../ui/paths';
 import { useChange } from '../../ui/useChange';
 
-export const ActivityActionsBar = observer(function ActivityActionsBar({ activity }: { activity: FieldActivity }) {
+export const ActivityActionsBar = observer(function ActivityActionsBar({ activity }: { activity: RespondActivity }) {
   const [, navigate] = useLocation();
   const change = useChange();
   const rec = activity.record;
