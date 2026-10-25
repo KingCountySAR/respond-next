@@ -38,12 +38,13 @@ const RosterReport = observer(function RosterReport() {
   const [lastNameFirst, setLastNameFirst] = useState(false);
   const [showColumnBorders, setShowColumnBorders] = useState(false);
   const [showStandby, setShowStandby] = useState(false);
+  const [groupByUnit, setGroupByUnit] = useState(false);
 
   useEffect(() => {
     document.title = `Roster - ${activity.record?.title ?? ''}`;
   }, [activity.record?.title]);
 
-  const entries = rosterEntries(rosterPeople(activity), (unitId) => activity.unit(unitId)?.name ?? '', { lastNameFirst, showStandby });
+  const entries = rosterEntries(rosterPeople(activity), (unitId) => activity.unit(unitId)?.name ?? '', { lastNameFirst, showStandby, groupByUnit });
 
   const download = () => {
     const blob = new Blob([rosterCsv(entries, (t) => formatDate(t, 'MM/dd/yy hh:mm a'))], { type: 'text/csv;charset=utf-8;' });
@@ -71,7 +72,8 @@ const RosterReport = observer(function RosterReport() {
           <FormGroup>
             <FormControlLabel control={<Switch />} label="Include Standby" onChange={() => setShowStandby(!showStandby)} />
             <FormControlLabel control={<Switch />} label="Show Column Borders" onChange={() => setShowColumnBorders(!showColumnBorders)} />
-            <FormControlLabel control={<Switch />} label="Last Name, First, Name" onChange={() => setLastNameFirst(!lastNameFirst)} />
+            <FormControlLabel control={<Switch />} label="Last Name, First Name" onChange={() => setLastNameFirst(!lastNameFirst)} />
+            <FormControlLabel control={<Switch />} label="Group By Unit" onChange={() => setGroupByUnit(!groupByUnit)} />
           </FormGroup>
           <Button variant="outlined" onClick={download}>
             Download (csv)

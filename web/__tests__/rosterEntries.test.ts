@@ -20,14 +20,14 @@ describe('roster entries', () => {
     expect(stamps(e!)).toEqual([1, 2, 3, 4]);
   });
 
-  it('starts a new row for each sign in after a sign out, newest first, with miles on the first', () => {
+  it('starts a new row for each sign in after a sign out, oldest first, with miles on the first', () => {
     const entries = rosterEntries([person('a', [['responding', 1], ['clear', 2], ['responding', 3, 'rmr'], ['staging', 4, 'rmr']], 5)], title, opts);
     expect(entries.map(stamps)).toEqual([
-      [3, 4, 0, 0],
       [1, 0, 0, 2],
+      [3, 4, 0, 0],
     ]);
-    expect(entries.map((e) => e.organizationName)).toEqual([units.rmr, units.crt]);
-    expect(entries.map((e) => e.miles)).toEqual([undefined, 5]);
+    expect(entries.map((e) => e.organizationName)).toEqual([units.crt, units.rmr]);
+    expect(entries.map((e) => e.miles)).toEqual([5, undefined]);
   });
 
   it('ignores stages out of order', () => {
@@ -40,13 +40,13 @@ describe('roster entries', () => {
   it('starts a stint for someone added straight to staging or an assignment, at that time', () => {
     const entries = rosterEntries([person('s', [['staging', 5], ['demobilizing', 6]]), person('t', [['assigned', 7], ['staging', 8]])], title, opts);
     expect(entries.map((e) => [e.participantId, ...stamps(e)])).toEqual([
-      ['t', 7, 8, 0, 0],
       ['s', 5, 5, 6, 0],
+      ['t', 7, 8, 0, 0],
     ]);
     // Again after a sign out.
     expect(rosterEntries([person('u', [['responding', 1], ['clear', 2], ['assigned', 3]])], title, opts).map(stamps)).toEqual([
-      [3, 0, 0, 0],
       [1, 0, 0, 2],
+      [3, 0, 0, 0],
     ]);
   });
 
@@ -55,6 +55,20 @@ describe('roster entries', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({ participantName: 'S, Pat', organizationName: units.crt, miles: undefined });
     expect(stamps(entries[0]!)).toEqual([0, 0, 0, 0]);
+  });
+
+  it('sorts by the name as shown, by unit first when grouped', () => {
+    const people = [
+      { ...person('z', [['responding', 1]]), firstname: 'Al' },
+      { ...person('b', [['responding', 2, 'rmr']]), firstname: 'Cy' },
+      { ...person('a10', [['responding', 3]]), firstname: 'Cy' },
+      { ...person('a9', [['responding', 4]]), firstname: 'cy' },
+    ];
+    const names = (o: Partial<typeof opts> & { groupByUnit?: boolean }) => rosterEntries(people, title, { ...opts, ...o }).map((e) => e.participantName);
+    expect(names({})).toEqual(['Al Z', 'cy A9', 'Cy A10', 'Cy B']);
+    expect(names({ lastNameFirst: true })).toEqual(['A9, cy', 'A10, Cy', 'B, Cy', 'Z, Al']);
+    expect(names({ groupByUnit: true })).toEqual(['Al Z', 'cy A9', 'Cy A10', 'Cy B']);
+    expect(names({ groupByUnit: true, lastNameFirst: true })).toEqual(['A9, cy', 'A10, Cy', 'Z, Al', 'B, Cy']);
   });
 
   it('pads to the minimum rows', () => {

@@ -34,7 +34,7 @@ describe('roster report', () => {
     fireEvent.click(screen.getByLabelText('Include Standby'));
     expect(await table().findByText('Ann Standby')).toBeTruthy();
 
-    fireEvent.click(screen.getByLabelText('Last Name, First, Name'));
+    fireEvent.click(screen.getByLabelText('Last Name, First Name'));
     expect(screen.getByText('Rope, Sam')).toBeTruthy();
 
     server.seed.mutate(ACTIVITY, 'setParticipantStatus', { participantId: participantIdFor('kcsara:8'), status: 'demobilizing', unit: CRT });

@@ -91,8 +91,12 @@ function scrubTimeline(timeline: RosterPerson['timeline']): RosterPerson['timeli
   return kept;
 }
 
-/** The rows, newest stint first, as the legacy report listed them. */
-export function rosterEntries(people: RosterPerson[], unitName: (unitId: string) => string, options: { lastNameFirst: boolean; showStandby: boolean }): RosterEntry[] {
+/** The rows by name as shown (so last name first changes the order), optionally by unit first, and a person's stints oldest first. */
+export function rosterEntries(
+  people: RosterPerson[],
+  unitName: (unitId: string) => string,
+  options: { lastNameFirst: boolean; showStandby: boolean; groupByUnit?: boolean },
+): RosterEntry[] {
   const entries: RosterEntry[] = [];
   for (const person of people) {
     const name = options.lastNameFirst ? `${person.lastname}, ${person.firstname}` : `${person.firstname} ${person.lastname}`;
@@ -119,7 +123,13 @@ export function rosterEntries(people: RosterPerson[], unitName: (unitId: string)
     if (first) first.miles = person.miles ?? 0;
     if (options.showStandby && !first) create(person.unitId);
   }
-  return entries;
+  const byText = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true });
+  return entries.sort(
+    (a, b) =>
+      (options.groupByUnit ? byText(a.organizationName, b.organizationName) : 0) || //
+      byText(a.participantName, b.participantName) ||
+      a.timestamps[RosterStage.SignIn] - b.timestamps[RosterStage.SignIn],
+  );
 }
 
 const CSV_HEADER = '"participant_id","participant_name","organization_name","sign_in","arrive_base","depart_base","sign_out","miles"';
