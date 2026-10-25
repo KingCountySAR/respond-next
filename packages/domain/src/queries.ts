@@ -186,6 +186,23 @@ export const currentTeamStatus = (view: ReadView, teamId: string, asOf?: number)
 
 export const teamStatusOf = (view: ReadView, teamId: string, asOf?: number) => currentTeamStatus(view, teamId, asOf)?.status ?? 'inBase';
 
+const teamNumbers = (name: string): number[] => (name.match(/\d+/g) ?? []).map(Number);
+
+/**
+ * Why a team can't be named `name` beside the `others`: one has the same name (ignoring case and
+ * outside spaces), or a number in it ("Team 13" and "Dog 13" would both be called 13 on the radio).
+ */
+export function teamNameConflict(name: string, others: string[]): string | undefined {
+  const key = name.trim().toLowerCase();
+  const numbers = teamNumbers(name);
+  for (const other of others) {
+    if (other.trim().toLowerCase() === key) return `There is already a team named ${other.trim()}`;
+    const shared = teamNumbers(other).find((n) => numbers.includes(n));
+    if (shared !== undefined) return `${other.trim()} already uses ${shared}`;
+  }
+  return undefined;
+}
+
 export const groupTeams = (view: ReadView, groupId: string): TeamRec[] => [...scanWhere<TeamRec>(view, 'team', 'groupId', groupId)];
 
 /** The group whose leader this participant is, if any. */

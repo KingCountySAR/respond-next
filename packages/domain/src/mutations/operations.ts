@@ -2,7 +2,7 @@
 import { z } from 'zod';
 import { Rejection, defineMutation, type MutationCtx, type Tx } from '@sync/core';
 import { equipmentType, CUSTOM_EQUIPMENT_TYPE_ID } from '../equipment';
-import { currentTarget, groupTeams, membersOf, participantName, targetName, teamMembers, teamStatusOf } from '../queries';
+import { currentTarget, groupTeams, membersOf, participantName, targetName, teamMembers, teamNameConflict, teamStatusOf } from '../queries';
 import { GARS, TEAM_STATUSES, Target, UNIT_STATUSES, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec, type TeamStatusRec } from '../schema';
 import { isCommand } from '../viewer';
 import { at, emptyTarget, id, idSource, moveParticipant, optionalText, requireOpen, requireOperations, requireParticipant, requireTarget } from './common';
@@ -13,6 +13,13 @@ function requireRec<T>(tx: Tx, type: string, recId: string): T {
   const rec = tx.get(type, recId);
   if (!rec) throw new Rejection('not_found', `That ${type} no longer exists`);
   return rec as T;
+}
+
+/** No other team has this name or a number in it. */
+function requireUniqueTeamName(tx: Tx, name: string, teamId: string): void {
+  const others = [...tx.scan<TeamRec>('team')].filter((t) => t.id !== teamId).map((t) => t.name);
+  const conflict = teamNameConflict(name, others);
+  if (conflict) throw new Rejection('name_taken', conflict);
 }
 
 function requireNew(tx: Tx, type: string, recId: string): void {
@@ -66,6 +73,7 @@ export const createTeam = defineMutation({
   run(tx, a) {
     requireOperations(tx);
     requireNew(tx, 'team', a.id);
+    requireUniqueTeamName(tx, a.name, a.id);
     tx.put({ type: 'team', id: a.id, name: a.name, gar: 'green', assignment: null, notes: null, leaderParticipantId: null, groupId: null });
   },
 });
@@ -78,7 +86,9 @@ export const updateTeam = defineMutation({
   describe: (a, view) => `Edit ${nameOf(view, 'team', a.id)}`,
   run(tx, { id: teamId, ...fields }) {
     requireOperations(tx);
-    requireRec(tx, 'team', teamId);
+    const team = requireRec<TeamRec>(tx, 'team', teamId);
+    // Only a new name is checked, so a team brought over with another's name can still be edited.
+    if (fields.name !== undefined && fields.name !== team.name) requireUniqueTeamName(tx, fields.name, teamId);
     // Blank text clears the field, as the legacy app's empty strings did.
     const clean = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v === '' ? null : v]));
     tx.update('team', teamId, clean);

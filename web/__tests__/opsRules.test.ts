@@ -11,6 +11,9 @@ describe('ops dashboard rules', () => {
     expect(nextTeamNumber([])).toBe(1);
     expect(nextTeamNumber(['Team 1', 'team 3', 'Hasty'])).toBe(2);
     expect(nextTeamNumber(['Team 1', 'Team 2'])).toBe(3);
+    // Any number in any name is taken.
+    expect(nextTeamNumber(['Dog 1', 'Team 2', 'Rescue 3'])).toBe(4);
+    expect(nextTeamNumber(['Alpha 1 Bravo 2'])).toBe(3);
   });
 
   it('orders team names as the legacy dashboard did', () => {

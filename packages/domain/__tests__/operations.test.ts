@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { keyOf } from '@sync/core';
-import { Level, commLevel, currentTarget, groupTeams, statusOf, teamMembers, teamStatusOf, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec } from '@sync/domain';
+import { Level, commLevel, currentTarget, groupTeams, statusOf, teamMembers, teamNameConflict, teamStatusOf, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec } from '@sync/domain';
 import { HOUR, T0, addMember, fieldMember, startedActivity, type TestActivity } from './helpers';
 
 const placeId = (e: TestActivity, name: string) => e.all<PlaceRec>('place').find((p) => p.name === name)!.id;
@@ -118,6 +118,21 @@ describe('teams', () => {
     expect(e.rejects('setTeamLeader', { teamId: t, participantId: pid })).toBe('not_member');
     e.run('updateTeam', { id: t, gar: 'amber', assignment: 'Segment 4', notes: '' });
     expect(e.get<TeamRec>('team', t)).toMatchObject({ gar: 'amber', assignment: 'Segment 4', notes: null });
+  });
+
+  it("refuses a team name another team has, or one of its numbers", () => {
+    const e = startedActivity();
+    withTeam(e, 't1', 'Team 1');
+    withTeam(e, 't2', 'Team 2');
+    withTeam(e, 'th', 'Hasty');
+    expect(e.rejects('createTeam', { id: 't3', name: ' hasty ' })).toBe('name_taken');
+    expect(e.rejects('createTeam', { id: 't3', name: 'Dog 1' })).toBe('name_taken');
+    expect(e.rejects('updateTeam', { id: 't2', name: 'Alpha 3 Bravo 1' })).toBe('name_taken');
+    expect(teamNameConflict('Dog 13', ['Team 12', 'Team 13'])).toBe('Team 13 already uses 13');
+    e.run('createTeam', { id: 't3', name: 'Dog 3' });
+    e.run('updateTeam', { id: 't1', name: 'TEAM 1' }); // its own name, recased
+    e.run('updateTeam', { id: 't2', name: 'Team 2', gar: 'red' });
+    expect(e.get<TeamRec>('team', 't1')?.name).toBe('TEAM 1');
   });
 });
 

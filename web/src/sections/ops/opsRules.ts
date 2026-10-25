@@ -16,9 +16,9 @@ export const byName = (a: { name: string }, b: { name: string }) => a.name.local
 
 // --- Teams ----------------------------------------------------------------------------------
 
-/** The lowest n with no "Team n" yet. */
+/** The lowest n no team name has as a number, so "Dog 13" keeps the next new team from being Team 13. */
 export function nextTeamNumber(names: string[]): number {
-  const used = new Set(names.flatMap((name) => /^team\s+(\d+)$/i.exec(name.trim())?.[1] ?? []).map(Number));
+  const used = new Set(names.flatMap((name) => name.match(/\d+/g) ?? []).map(Number));
   let n = 1;
   while (used.has(n)) n += 1;
   return n;

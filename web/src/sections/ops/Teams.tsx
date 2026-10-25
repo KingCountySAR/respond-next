@@ -3,7 +3,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Button, Chip, DialogActions, DialogContent, DialogTitle, Divider, IconButton, MenuItem, Paper, Select, Stack, TextField, Typography, type SelectChangeEvent } from '@mui/material';
 import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
-import { GARS, type Gar, type TeamStatus } from '@sync/domain';
+import { GARS, teamNameConflict, type Gar, type TeamStatus } from '@sync/domain';
 import type { CommandActivity, CommandEquipment, CommandParticipant, CommandTeam } from '@sync/model';
 import { observer, useCommandActivity } from '@sync/model/react';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
@@ -271,11 +271,10 @@ function DashboardTeamEditDialog({ team, activity, onClose }: MuiDialogProps<nul
 
   const save = (e: FormEvent) => {
     e.preventDefault();
-    const error = uniqueNameError(
-      values.name,
-      activity.teams.filter((t) => t.id !== team.id).map((t) => t.name),
-      'Team',
-    );
+    const others = activity.teams.filter((t) => t.id !== team.id).map((t) => t.name);
+    // As the mutation does, only a new name is checked against the others' names and numbers.
+    const conflict = values.name.trim() !== team.name ? teamNameConflict(values.name, others) : undefined;
+    const error = uniqueNameError(values.name, others, 'Team') ?? (conflict && `${conflict}.`);
     if (error) {
       setNameError(error);
       return;
