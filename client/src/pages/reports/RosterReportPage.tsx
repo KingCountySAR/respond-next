@@ -31,8 +31,9 @@ export function RosterReportPage({ activityId }: { activityId: string }) {
   const [lastNameFirst, setLastNameFirst] = useState(false);
   const [showColumnBorders, setShowColumnBorders] = useState(false);
   const [showStandby, setShowStandby] = useState(false);
+  const [groupByUnit, setGroupByUnit] = useState(false);
 
-  const rosterEntries = activity ? getRosterEntries(activity, lastNameFirst, showStandby) : [];
+  const rosterEntries = activity ? getRosterEntries(activity, lastNameFirst, showStandby, groupByUnit) : [];
 
   const download = () => {
     const data = rosterEntries.map((e) => {
@@ -70,7 +71,8 @@ export function RosterReportPage({ activityId }: { activityId: string }) {
             <FormGroup>
               <FormControlLabel control={<Switch />} label="Include Standby" onChange={() => setShowStandby(!showStandby)} />
               <FormControlLabel control={<Switch />} label="Show Column Borders" onChange={() => setShowColumnBorders(!showColumnBorders)} />
-              <FormControlLabel control={<Switch />} label="Last Name, First, Name" onChange={() => setLastNameFirst(!lastNameFirst)} />
+              <FormControlLabel control={<Switch />} label="Last Name, First Name" onChange={() => setLastNameFirst(!lastNameFirst)} />
+              <FormControlLabel control={<Switch />} label="Group By Unit" onChange={() => setGroupByUnit(!groupByUnit)} />
             </FormGroup>
             <Button variant="outlined" onClick={download}>
               Download (csv)
@@ -259,7 +261,7 @@ const isComplete = (entry: RosterEntry): boolean => {
   return !!entry.timestamps[RosterStage.SignOut];
 };
 
-const getRosterEntries = (activity: Activity, lastNameFirst: boolean, showStandby: boolean) => {
+const getRosterEntries = (activity: Activity, lastNameFirst: boolean, showStandby: boolean, groupByUnit: boolean) => {
   if (!activity) return [];
 
   const rosterEntries: Array<RosterEntry> = [];
@@ -305,5 +307,12 @@ const getRosterEntries = (activity: Activity, lastNameFirst: boolean, showStandb
     buildRosterEntries(participant);
   });
 
-  return rosterEntries;
+  const byText = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true });
+  // Sorts on the displayed name, so toggling lastNameFirst changes the order. Sign-in time keeps a participant's repeat sessions chronological.
+  return rosterEntries.sort(
+    (a, b) =>
+      (groupByUnit ? byText(a.organizationName, b.organizationName) : 0) || //
+      byText(a.participantName, b.participantName) ||
+      a.timestamps[RosterStage.SignIn] - b.timestamps[RosterStage.SignIn],
+  );
 };
