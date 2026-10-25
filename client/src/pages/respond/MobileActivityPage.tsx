@@ -1,7 +1,6 @@
 import AnnouncementIcon from '@mui/icons-material/Announcement';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { ReactNode, useState } from 'react';
@@ -16,8 +15,9 @@ import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
 import { ActivityViewModel } from '@/client/pages/respond/activityViewModel';
 import { BriefingPanel } from '@/client/pages/respond/components/BriefingPanel';
 import { ManagerPanel } from '@/client/pages/respond/components/ManagerPanel';
+import { ParticipantTile } from '@/client/pages/respond/components/ParticipantTile';
 import { ParticipatingOrgChips } from '@/client/pages/respond/components/ParticipatingOrgChips';
-import { ParticipantDialog, RosterPanel, RosterRowCard } from '@/client/pages/respond/components/RosterPanel';
+import { ParticipantDialog, RosterPanel } from '@/client/pages/respond/components/RosterPanel';
 import { MobilePageId } from '@/client/types';
 
 import { ActivityActionsBar } from './ActivityPage';
@@ -81,7 +81,7 @@ const MobileRosterScreen = observer(function MobileRosterScreen({ activity }: { 
         <RosterPanel //
           roster={activity.roster}
           participantContainerComponent={RosterContainer}
-          participantRowComponent={RosterRow}
+          participantRowComponent={ParticipantTile}
           onClick={(p) => {
             if (!p.participant) return;
             openParticipantDialog(p);
@@ -89,30 +89,6 @@ const MobileRosterScreen = observer(function MobileRosterScreen({ activity }: { 
         />
       </Box>
     </>
-  );
-});
-
-const RosterRow = observer(function RosterRow({ participant, onClick }: { participant: ParticipantDomainModel; onClick?: () => void }) {
-  return (
-    <RosterRowCard status={participant.status} onClick={onClick}>
-      <Stack direction="row" sx={{ justifyContent: 'space-between', flexGrow: 1, m: '5px', ml: '8px' }}>
-        <Stack>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            {participant.fullName}
-          </Typography>
-          <Typography variant="body2">
-            {participant.organizationName} {participant.tags.join(', ')}
-          </Typography>
-        </Stack>
-        <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-            {participant.lastEditedByOther && <InfoOutlinedIcon fontSize="small" color="warning" titleAccess="Latest status was updated by someone else" />}
-            <Typography variant="body2">{participant.statusText}</Typography>
-          </Stack>
-          <Typography variant="body2">{participant.etaText ? `ETA ${participant.etaText}` : null}</Typography>
-        </Stack>
-      </Stack>
-    </RosterRowCard>
   );
 });
 

@@ -1,6 +1,4 @@
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Button, Divider, Typography } from '@mui/material';
-import { format as formatDate } from 'date-fns';
 import { observer } from 'mobx-react-lite';
 import { ReactNode } from 'react';
 import { Link } from 'wouter';
@@ -10,15 +8,15 @@ import { Box, Paper, Stack } from '@respond/components/Material';
 import { ParticipantEtaUpdater } from '@respond/components/participant/ParticipantEtaUpdater';
 import { StatusUpdater } from '@respond/components/StatusUpdater';
 import { ToolbarPage } from '@respond/components/ToolbarPage';
-import { ParticipantStatus } from '@respond/shared/types/activity';
 
 import { ParticipantDomainModel } from '@/client/models/participantDomainModel';
 import { ActivityViewModel } from '@/client/pages/respond/activityViewModel';
 import AddParticipantButton from '@/client/pages/respond/components/AddParticipantButton';
 import { BriefingPanel } from '@/client/pages/respond/components/BriefingPanel';
 import { ManagerPanel } from '@/client/pages/respond/components/ManagerPanel';
+import { ParticipantTile } from '@/client/pages/respond/components/ParticipantTile';
 import { ParticipatingOrgChips } from '@/client/pages/respond/components/ParticipatingOrgChips';
-import { ParticipantDialog, RosterPanel, RosterRowCard } from '@/client/pages/respond/components/RosterPanel';
+import { ParticipantDialog, RosterPanel } from '@/client/pages/respond/components/RosterPanel';
 
 import { ActivityActionsBar } from './ActivityPage';
 
@@ -36,7 +34,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
         </Typography>
         <ActivityActionsBar vm={vm} />
       </Stack>
-      <Stack direction="row" spacing={1} divider={<Divider orientation="vertical" flexItem />} sx={{ flex: '1 1 auto' }}>
+      <Stack direction="row" spacing={1} divider={<Divider orientation="vertical" flexItem />} sx={{ flex: '1 1 auto', paddingBottom: 2 }}>
         <Box sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column' }}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <ParticipatingOrgChips activity={activity} filter={vm.roster.filter} setFilter={(f) => vm.roster.setFilter(f)} sx={{ display: 'flex', flexDirection: 'row' }} />
@@ -50,7 +48,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
           <RosterPanel //
             roster={vm.roster}
             participantContainerComponent={RosterContainer}
-            participantRowComponent={RosterRow}
+            participantRowComponent={ParticipantTile}
             onClick={(p) => {
               if (!p.participant) return;
               openParticipantDialog(p);
@@ -73,32 +71,6 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ vm }:
         </Stack>
       </Stack>
     </ToolbarPage>
-  );
-});
-
-const RosterRow = observer(function RosterRow({ participant, onClick }: { participant: ParticipantDomainModel; onClick?: () => void }) {
-  return (
-    <RosterRowCard status={participant.status ?? ParticipantStatus.NotResponding} onClick={onClick}>
-      <Stack direction="column" sx={{ m: '5px', ml: '8px', flexGrow: 1 }}>
-        <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
-          <Stack>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
-              {participant.fullName}
-            </Typography>
-            <Typography variant="body2">
-              {participant.organizationName} {participant.tags.join(', ')}
-            </Typography>
-          </Stack>
-          <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-              {participant.lastEditedByOther && <InfoOutlinedIcon sx={{ fontSize: 16 }} color="disabled" titleAccess="Latest status was updated by someone else" />}
-              <Typography variant="body2">{participant.statusText}</Typography>
-            </Stack>
-            <Typography variant="body2">{participant.isEnrouteOrStandby && participant.eta ? <>ETA {formatDate(participant.eta, 'HHmm')}</> : <></>}</Typography>
-          </Stack>
-        </Stack>
-      </Stack>
-    </RosterRowCard>
   );
 });
 
