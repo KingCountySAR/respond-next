@@ -1,4 +1,3 @@
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PhoneIcon from '@mui/icons-material/Phone';
 import { Box, Button, ButtonBase, Chip, DialogActions, DialogContent, DialogTitle, Divider, Paper, Stack, Typography, useMediaQuery } from '@mui/material';
 import Card from '@mui/material/Card';
@@ -86,17 +85,6 @@ export function RosterRowCard({ status, children, onClick, ...props }: PaperProp
     </Card>
   );
 }
-
-/** A roster row's status, marked when someone else set it. */
-export const RosterStatusText = observer(function RosterStatusText({ participant }: { participant: FieldParticipant }) {
-  const byName = participant.currentStatus?.byName;
-  return (
-    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-      {byName && <InfoOutlinedIcon sx={{ fontSize: 16 }} color="action" titleAccess={`Status set by ${byName}`} />}
-      <Typography variant="body2">{statusText(participant.status)}</Typography>
-    </Stack>
-  );
-});
 
 /** `(206) 555-0100` from a stored number, as the legacy dialog showed it. */
 function formatPhone(digits: string): string {

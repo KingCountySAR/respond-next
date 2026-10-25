@@ -2,9 +2,8 @@ import AnnouncementIcon from '@mui/icons-material/Announcement';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { BottomNavigation, BottomNavigationAction, Box, Paper, Stack, Typography } from '@mui/material';
-import { format as formatDate } from 'date-fns';
 import { useState, type ReactNode } from 'react';
-import type { FieldActivity, FieldParticipant } from '@sync/model';
+import type { FieldActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useDialogs } from '../../shell/dialogs';
 import { MobilePageId, usePreferences } from '../../shell/preferences';
@@ -13,7 +12,8 @@ import { ActivityActionsBar } from './ActivityActionsBar';
 import { BriefingPanel } from './components/BriefingPanel';
 import { ManagerPanel } from './components/ManagerPanel';
 import { ParticipantEtaUpdater } from './components/ParticipantEtaUpdater';
-import { ParticipantDialog, RosterPanel, RosterRowCard, RosterStatusText, type RosterState } from './components/RosterPanel';
+import { ParticipantTile } from './components/ParticipantTile';
+import { ParticipantDialog, RosterPanel, type RosterState } from './components/RosterPanel';
 import { StatusUpdater } from './components/StatusUpdater';
 import { UnitChips } from './components/UnitChips';
 
@@ -70,7 +70,7 @@ const MobileRosterScreen = observer(function MobileRosterScreen({ activity, rost
           participants={activity.participants}
           roster={roster}
           participantContainerComponent={RosterContainer}
-          participantRowComponent={RosterRow}
+          participantRowComponent={ParticipantTile}
           onClick={(p) => open(ParticipantDialog, { participant: p })}
         />
       </Box>
@@ -78,27 +78,6 @@ const MobileRosterScreen = observer(function MobileRosterScreen({ activity, rost
   );
 });
 
-const RosterRow = observer(function RosterRow({ participant, onClick }: { participant: FieldParticipant; onClick?: () => void }) {
-  const eta = participant.record?.eta;
-  return (
-    <RosterRowCard status={participant.status} onClick={onClick}>
-      <Stack direction="row" sx={{ justifyContent: 'space-between', flexGrow: 1, m: '5px', ml: '8px' }}>
-        <Stack>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            {participant.name}
-          </Typography>
-          <Typography variant="body2">
-            {participant.unit?.name ?? ''} {participant.tags.join(', ')}
-          </Typography>
-        </Stack>
-        <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-          <RosterStatusText participant={participant} />
-          <Typography variant="body2">{participant.isEnrouteOrStandby && eta ? `ETA ${formatDate(eta, 'HHmm')}` : null}</Typography>
-        </Stack>
-      </Stack>
-    </RosterRowCard>
-  );
-});
 
 function RosterContainer({ children }: { children: ReactNode }) {
   return <Stack spacing={1}>{children}</Stack>;

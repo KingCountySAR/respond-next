@@ -1,8 +1,7 @@
 import { Box, Button, Divider, Paper, Stack, Typography } from '@mui/material';
-import { format as formatDate } from 'date-fns';
 import type { ReactNode } from 'react';
 import { Link } from 'wouter';
-import type { FieldActivity, FieldParticipant } from '@sync/model';
+import type { FieldActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useDialogs } from '../../shell/dialogs';
 import { ToolbarPage } from '../../shell/ToolbarPage';
@@ -11,7 +10,8 @@ import { AddParticipantButton } from './components/AddParticipantButton';
 import { BriefingPanel } from './components/BriefingPanel';
 import { ManagerPanel } from './components/ManagerPanel';
 import { ParticipantEtaUpdater } from './components/ParticipantEtaUpdater';
-import { ParticipantDialog, RosterPanel, RosterRowCard, RosterStatusText, type RosterState } from './components/RosterPanel';
+import { ParticipantTile } from './components/ParticipantTile';
+import { ParticipantDialog, RosterPanel, type RosterState } from './components/RosterPanel';
 import { StatusUpdater } from './components/StatusUpdater';
 import { UnitChips } from './components/UnitChips';
 
@@ -27,7 +27,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ activ
         </Typography>
         <ActivityActionsBar activity={activity} />
       </Stack>
-      <Stack direction="row" spacing={1} divider={<Divider orientation="vertical" flexItem />} sx={{ flex: '1 1 auto' }}>
+      <Stack direction="row" spacing={1} divider={<Divider orientation="vertical" flexItem />} sx={{ flex: '1 1 auto', paddingBottom: 2 }}>
         <Box sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column' }}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <UnitChips activity={activity} filter={roster.filter} setFilter={roster.setFilter} sx={{ display: 'flex', flexDirection: 'row' }} />
@@ -42,7 +42,7 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ activ
             participants={activity.participants}
             roster={roster}
             participantContainerComponent={RosterContainer}
-            participantRowComponent={RosterRow}
+            participantRowComponent={ParticipantTile}
             onClick={(p) => open(ParticipantDialog, { participant: p })}
           />
         </Box>
@@ -65,29 +65,6 @@ export const DesktopActivityPage = observer(function DesktopActivityPage({ activ
   );
 });
 
-const RosterRow = observer(function RosterRow({ participant, onClick }: { participant: FieldParticipant; onClick?: () => void }) {
-  const eta = participant.record?.eta;
-  return (
-    <RosterRowCard status={participant.status} onClick={onClick}>
-      <Stack direction="column" sx={{ m: '5px', ml: '8px', flexGrow: 1 }}>
-        <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
-          <Stack>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
-              {participant.name}
-            </Typography>
-            <Typography variant="body2">
-              {participant.unit?.name ?? ''} {participant.tags.join(', ')}
-            </Typography>
-          </Stack>
-          <Stack sx={{ textAlign: 'right', justifyContent: 'space-between' }}>
-            <RosterStatusText participant={participant} />
-            <Typography variant="body2">{participant.isEnrouteOrStandby && eta ? <>ETA {formatDate(eta, 'HHmm')}</> : <></>}</Typography>
-          </Stack>
-        </Stack>
-      </Stack>
-    </RosterRowCard>
-  );
-});
 
 function RosterContainer({ children }: { children: ReactNode }) {
   return <Stack spacing={1}>{children}</Stack>;
