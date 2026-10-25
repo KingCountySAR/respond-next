@@ -3,7 +3,7 @@ import Edit from '@mui/icons-material/Edit';
 import { Box, Button, FormControl, FormControlLabel, FormGroup, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import { randomId } from '@sync/core';
 import { DEFAULT_EARLY_SIGN_IN_WINDOW, fromSaved, canManageMissions } from '@sync/domain';
 import type { RespondActivity } from '@sync/model';
@@ -23,9 +23,10 @@ export type ActivityType = 'missions' | 'events';
 const windowValue = (w: number | null) => (w === null ? 'open' : String(w));
 const windowOf = (value: string) => EARLY_SIGN_IN_WINDOWS.find((o) => windowValue(o.window) === value)?.window ?? DEFAULT_EARLY_SIGN_IN_WINDOW;
 
-/** New mission (or event). */
+/** New mission (or event). From the ops home (`?then=ops`), saving opens its ops dashboard. */
 export function ActivityNewPage({ activityType }: { activityType: ActivityType }) {
-  return <ActivityEditForm activityType={activityType} />;
+  const toDashboard = new URLSearchParams(useSearch()).get('then') === 'ops';
+  return <ActivityEditForm activityType={activityType} toDashboard={toDashboard} />;
 }
 
 /** Edit an activity; under ActivityLayout. */
@@ -33,7 +34,7 @@ export const ActivityEditPage = observer(function ActivityEditPage({ activityTyp
   return <ActivityEditForm activityType={activityType} activity={useRespondActivity()} />;
 });
 
-const ActivityEditForm = observer(function ActivityEditForm({ activityType, activity }: { activityType: ActivityType; activity?: RespondActivity }) {
+const ActivityEditForm = observer(function ActivityEditForm({ activityType, activity, toDashboard }: { activityType: ActivityType; activity?: RespondActivity; toDashboard?: boolean }) {
   const org = useSite().organization;
   const client = useSyncClient();
   const [, navigate] = useLocation();
@@ -60,7 +61,7 @@ const ActivityEditForm = observer(function ActivityEditForm({ activityType, acti
     if (plan.isNew) await client.open(plan.activityId);
     const saved = change(() => plan.mutations.forEach((m) => client.mutate(plan.activityId, m.name, m.args)));
     // Optimistic, as the legacy app: a later refusal shows on the activity page.
-    if (saved) navigate(`~${plan.path}`);
+    if (saved) navigate(toDashboard ? `~/ops/${plan.activityId}` : `~${plan.path}`);
   };
 
   const selectedType = draft.isMission ? 'missions' : 'events';

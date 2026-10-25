@@ -71,7 +71,7 @@ describe('ActivityModelProvider', () => {
     expect(renders.list).toBe(before.list);
   });
 
-  it('shares one open activity through StrictMode remounts and closes it on unmount', async () => {
+  it('shares one open activity through StrictMode remounts and closes it a while after unmount', async () => {
     const { client, Roster } = await setup();
     const open = vi.spyOn(client, 'open');
     const close = vi.spyOn(client, 'close');
@@ -87,9 +87,25 @@ describe('ActivityModelProvider', () => {
     expect(open).toHaveBeenCalledTimes(1);
     expect(close).not.toHaveBeenCalled();
 
-    view.unmount();
-    await act(async () => {});
-    expect(close).toHaveBeenCalledWith(ACTIVITY_ID);
+    vi.useFakeTimers();
+    try {
+      view.unmount();
+      await act(async () => {});
+      expect(close).not.toHaveBeenCalled();
+      // Shown again meanwhile, as on another page: there on the first render, from the same open.
+      const again = render(
+        <ActivityModelProvider client={client} activityId={ACTIVITY_ID}>
+          <Roster />
+        </ActivityModelProvider>,
+      );
+      expect(screen.getByText('Anna Lee: staging')).toBeTruthy();
+      again.unmount();
+      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(close).toHaveBeenCalledWith(ACTIVITY_ID);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

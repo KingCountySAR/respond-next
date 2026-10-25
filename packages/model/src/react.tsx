@@ -22,9 +22,22 @@ interface Entry {
 const entries = new WeakMap<ActivityClient, Map<string, Entry>>();
 
 /**
+ * How long a scope stays open after its last release: going from one page to another that shows
+ * the same activity (an activity's page to its ops dashboard, waiting on the dashboard's code
+ * meanwhile) finds it still open and loaded, rather than reloading it.
+ */
+const LINGER_MS = 10_000;
+
+/** The scope's shared model, if it's open and loaded: what a component can show on its first render. */
+function loaded<M>(client: ActivityClient, scopeId: string): M | undefined {
+  return entries.get(client)?.get(scopeId)?.model as M | undefined;
+}
+
+/**
  * Opens the scope on the client (if it isn't already) and returns its shared model. Call `release`
- * when done; the last release disposes the model and closes the scope. A model `stale` says no
- * longer fits is replaced by a new one; its holders keep it until they release it.
+ * when done; the last release disposes the model and closes the scope, `LINGER_MS` later if no one
+ * has taken it again. A model `stale` says no longer fits is replaced by a new one; its holders
+ * keep it until they release it.
  */
 function acquire<M extends { dispose(): void }>(client: ActivityClient, scopeId: string, create: () => M, stale?: (model: M) => boolean, open?: OpenOptions): { ready: Promise<M>; release: () => void } {
   let byScope = entries.get(client);
@@ -45,8 +58,7 @@ function acquire<M extends { dispose(): void }>(client: ActivityClient, scopeId:
       if (released) return;
       released = true;
       held.refs--;
-      // Deferred, so a remount in the same tick (StrictMode, moving a subtree) keeps the scope open.
-      queueMicrotask(() => {
+      setTimeout(() => {
         if (held.refs > 0) return;
         // A replaced model goes, but the scope stays open for its replacement.
         const current = byScope.get(scopeId) === held;
@@ -55,7 +67,7 @@ function acquire<M extends { dispose(): void }>(client: ActivityClient, scopeId:
           model.dispose();
           if (current) client.close(scopeId);
         });
-      });
+      }, LINGER_MS);
     },
   };
 }
@@ -73,7 +85,7 @@ export function acquireActivityModel(client: ActivityClient, activityId: string,
 
 /** The activity list, open while any component uses it; null until it's loaded. */
 export function useActivityList(client: ActivityClient): ActivityList | null {
-  const [list, setList] = useState<ActivityList | null>(null);
+  const [list, setList] = useState<ActivityList | null>(() => loaded<ActivityList>(client, ACTIVITY_LIST_ID) ?? null);
   useEffect(() => {
     const lease = acquire(client, ACTIVITY_LIST_ID, () => new ActivityList(client));
     let live = true;
@@ -89,7 +101,7 @@ export function useActivityList(client: ActivityClient): ActivityList | null {
 
 /** An activity's log, open while any component uses it; null until it's loaded. Managers only. */
 export function useActivityLog(client: ActivityClient, activityId: string): ActivityLog | null {
-  const [log, setLog] = useState<ActivityLog | null>(null);
+  const [log, setLog] = useState<ActivityLog | null>(() => loaded<ActivityLog>(client, activityLogId(activityId)) ?? null);
   useEffect(() => {
     const lease = acquire(client, activityLogId(activityId), () => new ActivityLog(client, activityId));
     let live = true;
@@ -110,7 +122,10 @@ const ActivityModelContext = createContext<RespondActivity | null>(null);
  * (see `OpenOptions`); it goes live when `live` turns true, or on the first change made to it.
  */
 export function ActivityModelProvider({ client, activityId, live = true, fallback = null, children }: { client: ActivityClient; activityId: string; live?: boolean; fallback?: ReactNode; children: ReactNode }) {
-  const [model, setModel] = useState<RespondActivity | null>(null);
+  const [model, setModel] = useState<RespondActivity | null>(() => {
+    const open = loaded<RespondActivity>(client, activityId);
+    return open && fits(client, open) ? open : null;
+  });
   // Bumped when the model stops fitting (a training became a mission, say), for a new one.
   const [generation, setGeneration] = useState(0);
   // How to open it, when the lease opens it; once it's open, `live` turning true makes it live.

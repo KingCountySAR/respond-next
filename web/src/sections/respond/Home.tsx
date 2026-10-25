@@ -1,10 +1,9 @@
 import { Box, Button, Stack, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { Link } from 'wouter';
-import { canCreate, isActiveStatus, participantIdFor, type ParticipantStatus } from '@sync/domain';
+import { isActiveStatus, participantIdFor, type ParticipantStatus } from '@sync/domain';
 import type { ActivityList, ActivityListItem } from '@sync/model';
 import { observer, useActivityList } from '@sync/model/react';
-import { useSite } from '../../shell/App';
 import { useAuth } from '../../shell/auth';
 import { useSyncClient } from '../../shell/sync';
 import { ToolbarPage } from '../../shell/ToolbarPage';
@@ -12,6 +11,7 @@ import { OutputForm, OutputText, OutputTime } from '../../ui/OutputForm';
 import { phaseText } from '../../ui/status';
 import { ActivityStack } from './components/ActivityStack';
 import { ActivityTile } from './components/ActivityTile';
+import { useCanCreate } from '../../shell/useCanCreate';
 
 const MAX_COMPLETED_VISIBLE = 3;
 const COMPLETED_VISIBLE_DAYS = 3;
@@ -48,12 +48,7 @@ export function Home() {
 
 const HomeContent = observer(function HomeContent({ list }: { list: ActivityList }) {
   const { session } = useAuth();
-  // As the legacy app: when the organization (or a partner) may create that kind. Only managers may
-  // create missions; members may create other events too.
-  const org = useSite().organization;
-  const manager = session?.tier === 'manage';
-  const canCreateMissions = manager && canCreate(org, true);
-  const canCreateEvents = (manager || session?.class === 'member') && canCreate(org, false);
+  const { missions: canCreateMissions, events: canCreateEvents } = useCanCreate();
   const me = session?.personRef ? participantIdFor(session.personRef) : undefined;
 
   const mine: { item: ActivityListItem; status: ParticipantStatus }[] = [];

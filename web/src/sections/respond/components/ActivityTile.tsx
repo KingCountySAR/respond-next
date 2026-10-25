@@ -1,6 +1,5 @@
 import { NearMe } from '@mui/icons-material';
-import { Box, Card, CardActions, Chip, Grid, IconButton, Link, Typography } from '@mui/material';
-import type { BoxProps } from '@mui/material/Box';
+import { Box, Card, CardActions, Grid, IconButton, Link, Typography } from '@mui/material';
 import type { PropsWithChildren } from 'react';
 import { Link as RouterLink } from 'wouter';
 import type { ParticipantStatus } from '@sync/domain';
@@ -10,7 +9,6 @@ import caltopoLogo from '../../../assets/caltopo-logo.svg';
 import { NavigationApp, usePreferences } from '../../../shell/preferences';
 import { useSyncClient } from '../../../shell/sync';
 import { StatusChip } from '../../../ui/StatusChip';
-import { unitChipColor } from '../../../ui/status';
 import { StatusUpdater } from './StatusUpdater';
 
 /** The legacy URL for a listed activity. */
@@ -91,14 +89,3 @@ const NavigationButton = ({ lat, lon }: { lat: number | null; lon: number | null
     </>
   );
 };
-
-/** The legacy ParticipatingOrgChips, from a summary: each unit with its active count. */
-export const ListedUnitChips = observer(function ListedUnitChips({ item, ...boxProps }: BoxProps & { item: ActivityListItem }) {
-  return (
-    <Box {...boxProps}>
-      {item.units.map((unit) => (
-        <Chip key={unit.id} size="small" sx={{ mr: 1 }} label={`${unit.rosterName ?? unit.title} ${unit.activeCount || ''}`} color={unitChipColor(unit.status)} variant="outlined" />
-      ))}
-    </Box>
-  );
-});

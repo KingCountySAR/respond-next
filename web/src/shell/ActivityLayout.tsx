@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { ActivityList } from '@sync/model';
 import { ActivityModelProvider, observer, useActivityList, useRespondActivity } from '@sync/model/react';
 import { useSyncClient } from './sync';
+import { ToolbarPage } from './ToolbarPage';
 
 /**
  * Opens an activity on the session's SyncClient for the pages under it, which read it with
@@ -14,7 +15,7 @@ import { useSyncClient } from './sync';
  */
 export function ActivityLayout({ activityId, children }: { activityId: string; children: ReactNode }) {
   const list = useActivityList(useSyncClient());
-  if (!list) return <div>Loading activity...</div>;
+  if (!list) return <Placeholder>Loading activity...</Placeholder>;
   return (
     <Opened list={list} activityId={activityId}>
       {children}
@@ -25,7 +26,7 @@ export function ActivityLayout({ activityId, children }: { activityId: string; c
 const Opened = observer(function Opened({ list, activityId, children }: { list: ActivityList; activityId: string; children: ReactNode }) {
   const live = list.item(activityId)?.isActive ?? false;
   return (
-    <ActivityModelProvider client={useSyncClient()} activityId={activityId} live={live} fallback={<div>Loading activity...</div>}>
+    <ActivityModelProvider client={useSyncClient()} activityId={activityId} live={live} fallback={<Placeholder>Loading activity...</Placeholder>}>
       <WhenLoaded>{children}</WhenLoaded>
     </ActivityModelProvider>
   );
@@ -39,5 +40,14 @@ const WhenLoaded = observer(function WhenLoaded({ children }: { children: ReactN
   const activity = useRespondActivity();
   const rec = activity.record;
   if (rec && rec.removedAt === null) return <>{children}</>;
-  return <div>{rec || activity.missing ? 'Activity not found' : 'Loading activity...'}</div>;
+  return <Placeholder>{rec || activity.missing ? 'Activity not found' : 'Loading activity...'}</Placeholder>;
 });
+
+/** Under the toolbar, so the page frame stays put. */
+function Placeholder({ children }: { children: ReactNode }) {
+  return (
+    <ToolbarPage>
+      <div>{children}</div>
+    </ToolbarPage>
+  );
+}

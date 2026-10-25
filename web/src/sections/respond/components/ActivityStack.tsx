@@ -5,7 +5,8 @@ import { observer } from '@sync/model/react';
 import { OutputForm, OutputText, OutputTime } from '../../../ui/OutputForm';
 import { RelativeStyle } from '../../../ui/RelativeTimeText';
 import { phaseText } from '../../../ui/status';
-import { ActivityTile, ListedUnitChips } from './ActivityTile';
+import { ListedUnitChips } from '../../../ui/ListedUnitChips';
+import { ActivityTile } from './ActivityTile';
 
 interface ActivityStackProps {
   type: 'missions' | 'events';
