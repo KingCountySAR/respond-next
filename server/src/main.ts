@@ -3,6 +3,7 @@ import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
+import type { Context } from 'hono';
 import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, activityRegistry, siteActivityProjector } from '@sync/domain';
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
@@ -153,9 +154,12 @@ const { app, injectWebSocket } = createSyncApp(hub, {
 
 const ui = uiDir();
 if (ui) {
-  app.use('/*', serveStatic({ root: ui }));
+  // Built assets are named by their content, so they're kept for good; index.html, which names them, is checked each
+  // load so a deploy shows up. Scripts and styles go brotli or gzip, as the build wrote them.
+  const cache = (path: string, c: Context) => c.header('Cache-Control', /[\\/]assets[\\/]/.test(path) ? 'public, max-age=31536000, immutable' : 'no-cache');
+  app.use('/*', serveStatic({ root: ui, precompressed: true, onFound: cache }));
   // SPA fallback: client-side routes get index.html.
-  app.get('*', serveStatic({ path: `${ui}/index.html` }));
+  app.get('*', serveStatic({ path: `${ui}/index.html`, onFound: cache }));
 }
 
 const server = serve({ fetch: app.fetch, port }, (info) =>
