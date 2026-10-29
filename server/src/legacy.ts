@@ -266,7 +266,10 @@ export function convertActivity(a: LegacyActivity, orgs: LegacyOrganizations): C
     }
     const id = participantIdFor(personRef);
     participantIds.set(legacyId, id);
-    put({ type: 'participant', id, personRef, firstname: p.firstname, lastname: p.lastname, memberTags: p.tags ?? [], activityTags: [], eta: p.eta ?? null, miles: p.miles ?? null });
+    // Its tags are the ones it had then, from the unit of its latest status (the timeline is newest first).
+    const latest = p.timeline.find((t) => t.time != null);
+    const memberTagsUnitId = latest ? unitFor(latest.organizationId).id : null;
+    put({ type: 'participant', id, personRef, firstname: p.firstname, lastname: p.lastname, memberTags: p.tags ?? [], memberTagsUnitId, activityTags: [], eta: p.eta ?? null, miles: p.miles ?? null });
 
     p.timeline.forEach((t, i) => {
       if (t.time == null) {

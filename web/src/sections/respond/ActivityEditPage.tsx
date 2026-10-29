@@ -5,7 +5,7 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { randomId } from '@sync/core';
-import { DEFAULT_EARLY_SIGN_IN_WINDOW, fromSaved, canManageMissions } from '@sync/domain';
+import { fromSaved, canManageMissions } from '@sync/domain';
 import type { RespondActivity } from '@sync/model';
 import { observer, useRespondActivity } from '@sync/model/react';
 import { useSite } from '../../shell/App';
@@ -14,14 +14,10 @@ import { useSyncClient } from '../../shell/sync';
 import { ToolbarPage } from '../../shell/ToolbarPage';
 import { LocationAutocomplete } from '../../ui/locations/LocationAutocomplete';
 import { LocationEditDialog } from '../../ui/locations/LocationEditDialog';
-import { ActivityDraft, EARLY_SIGN_IN_WINDOWS } from './activityDraft';
+import { ActivityDraft, EARLY_SIGN_IN_WINDOWS, windowOf, windowValue } from './activityDraft';
 import { useChange } from '../../ui/useChange';
 
 export type ActivityType = 'missions' | 'events';
-
-// A Select's values are strings; "Open Immediately" (a null window) is 'open'.
-const windowValue = (w: number | null) => (w === null ? 'open' : String(w));
-const windowOf = (value: string) => EARLY_SIGN_IN_WINDOWS.find((o) => windowValue(o.window) === value)?.window ?? DEFAULT_EARLY_SIGN_IN_WINDOW;
 
 /** New mission (or event). From the ops home (`?then=ops`), saving opens its ops dashboard. */
 export function ActivityNewPage({ activityType }: { activityType: ActivityType }) {

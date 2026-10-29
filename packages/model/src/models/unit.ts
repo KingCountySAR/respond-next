@@ -3,7 +3,9 @@ import type { WireMutation } from '@sync/core';
 import {
   currentUnitStatus,
   isActiveStatus,
+  isUnitOut,
   statusCounts,
+  type SettableUnitStatus,
   type ActivityUnitRec,
   type RespondUnitRec,
   type ParticipantStatus,
@@ -17,7 +19,7 @@ import { RecordModel } from './record';
 export class RespondUnit<R extends RespondUnitRec = RespondUnitRec, K extends Kinds = Kinds> extends RecordModel<R, K> {
   constructor(activity: RespondActivity<K>, id: string) {
     super(activity, id, 'activityUnit');
-    makeObservable(this, { status: computed, statusCounts: computedStruct, activeParticipantCount: computed });
+    makeObservable(this, { status: computed, isOut: computed, statusCounts: computedStruct, activeParticipantCount: computed });
   }
 
   /** The roster name ("CRT") when there is one, else the full title. */
@@ -34,6 +36,11 @@ export class RespondUnit<R extends RespondUnitRec = RespondUnitRec, K extends Ki
     return currentUnitStatus(this.store, this.id)?.status ?? 'unknown';
   }
 
+  /** Stood down or declined: its members can't sign themselves in. */
+  get isOut(): boolean {
+    return isUnitOut(this.status);
+  }
+
   /** People responding under this unit, by status. */
   get statusCounts(): Record<ParticipantStatus, number> {
     return statusCounts(this.store, this.id);
@@ -48,7 +55,7 @@ export class RespondUnit<R extends RespondUnitRec = RespondUnitRec, K extends Ki
 export class ManageUnit extends RespondUnit<ActivityUnitRec, ManageKinds> {
   declare readonly activity: ManageActivity;
 
-  setStatus(status: Exclude<UnitStatus, 'unknown'>, options: { at?: number } = {}): WireMutation {
+  setStatus(status: SettableUnitStatus, options: { at?: number } = {}): WireMutation {
     const unit = this.record;
     if (!unit) throw new Error('This unit is no longer on the activity');
     return this.activity.setUnitStatus(unit, status, options);

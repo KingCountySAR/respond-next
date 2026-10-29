@@ -1,10 +1,10 @@
 /**
  * Which status changes a participant is offered, carried over from the legacy app's status buttons.
  * The UI labels each step from (from, to): demobilizing is "Turn Around" from responding and
- * "Depart Base" from staging.
+ * "Depart Base" from staging. Also the status changes a manager can make to a unit.
  */
 import { isActiveStatus, isRespondingStatus, signInOpensAt } from './queries';
-import type { ActivityRec, ParticipantStatus } from './schema';
+import type { ActivityRec, ParticipantStatus, UnitStatus } from './schema';
 
 const STEPS: Record<ParticipantStatus, ParticipantStatus[]> = {
   unknown: ['responding', 'standby', 'remote'],
@@ -81,4 +81,32 @@ export function statusStepsUnder(
     ];
   }
   return statusSteps(activity, current?.status ?? 'unknown', now).map((status) => ({ status }));
+}
+
+export type SettableUnitStatus = Exclude<UnitStatus, 'unknown'>;
+
+/** Which statuses a manager can move a unit to. Declining is only for a unit that hasn't come in. */
+const UNIT_STEPS: Record<UnitStatus, SettableUnitStatus[]> = {
+  unknown: ['standby', 'responding', 'notResponding', 'invited'],
+  invited: ['standby', 'responding', 'notResponding'],
+  notResponding: ['standby', 'responding'],
+  standby: ['responding', 'stoodDown'],
+  responding: ['standby', 'stoodDown'],
+  stoodDown: ['standby', 'responding'],
+};
+
+export const unitStatusSteps = (current: UnitStatus): SettableUnitStatus[] => UNIT_STEPS[current];
+
+/** A unit out of the activity: setting it signs its members out, and they can't sign themselves back in. */
+export const isUnitOut = (status: UnitStatus): boolean => status === 'notResponding' || status === 'stoodDown';
+
+const UNIT_RANK: Record<UnitStatus, number> = { unknown: 0, invited: 0, notResponding: 0, stoodDown: 0, standby: 1, responding: 2 };
+
+/**
+ * Where a member signing in moves their unit: up to standby for standby, up to responding for any
+ * responding status, never down. Undefined leaves the unit as it is.
+ */
+export function unitStatusAfterSignIn(unit: UnitStatus, member: ParticipantStatus): SettableUnitStatus | undefined {
+  const next = member === 'standby' ? 'standby' : isRespondingStatus(member) ? 'responding' : undefined;
+  return next && UNIT_RANK[next] > UNIT_RANK[unit] ? next : undefined;
 }

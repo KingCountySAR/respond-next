@@ -3,7 +3,7 @@ import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, activityProjector, activityRegistry } from '@sync/domain';
+import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, activityRegistry, siteActivityProjector } from '@sync/domain';
 import { Hub, MemoryStorage, PostgresStorage, type ActivityStorage } from '@sync/server';
 import { createSyncApp } from './app';
 import { SummaryWriter } from './summaries';
@@ -103,7 +103,8 @@ const activityLog = new ActivityLogWriter(() => hub);
 const hub: Hub = new Hub({
   storage,
   registry: activityRegistry,
-  projector: activityProjector,
+  // Each site sees its own activities, its partners' and those above it, and every mission in its tree.
+  projector: siteActivityProjector(organizations.seesActivity),
   now: Date.now,
   onCommit: (activityId, view, changes) => {
     summaries.onCommit(activityId, view);

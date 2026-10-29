@@ -1,5 +1,5 @@
 /** A test server with fictional organizations, and clients that sign in on one of its sites. */
-import { activityProjector, activityRegistry, OrganizationSeed } from '@sync/domain';
+import { activityRegistry, OrganizationSeed, siteActivityProjector } from '@sync/domain';
 import { Hub, MemoryStorage } from '@sync/server';
 import { createSyncApp, type SyncAppOptions } from '../src/app';
 import { MemoryGrantStore } from '../src/grants';
@@ -52,7 +52,7 @@ export function testApp(options: Partial<SyncAppOptions> = {}) {
   const organizations = options.organizations ?? OrganizationStore.memory(testSeed());
   const sessions = new MemorySessionStore();
   const members = new MemberProviders(organizations);
-  const hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: activityProjector, now: Date.now });
+  const hub = new Hub({ storage: new MemoryStorage(), registry: activityRegistry, projector: siteActivityProjector(organizations.seesActivity), now: Date.now });
   const grants = options.grants ?? new MemoryGrantStore();
   const { app } = createSyncApp(hub, { organizations, sessions, members, grants, devSignIn: true, ...options });
 

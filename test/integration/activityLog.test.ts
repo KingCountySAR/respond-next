@@ -56,13 +56,14 @@ describe('the activity log', () => {
     s.alice.mutate('a1', 'createEquipment', { id: 'eq2', typeId: 'inventory-0', name: 'Litter', assignedTo: null });
     await s.synced();
 
-    await until(() => s.lines(s.alice).length === 10);
+    await until(() => s.lines(s.alice).length === 11);
     // Timed changes carry their own time, the rest the server's, so the order here is loose.
     expect(s.texts(s.alice).sort()).toEqual([
       [4, 'Lost hiker, Mailbox Peak created'],
       [4, 'CRT moved to Standby'],
       [4, 'Anna Lee signed in as Standby'],
       [4, 'Anna Lee is Responding (was Standby)'],
+      [4, 'CRT moved to Responding'],
       [4, 'Team 1 created'],
       [3, 'Team 1 is In Transit (was In Base)'],
       [3, "Team 1's GAR is Amber (was Green)"],

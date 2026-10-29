@@ -2,8 +2,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormHelperText, IconButton, Stack } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { useState } from 'react';
-import { statusStepsUnder, type ParticipantStatus, type StatusStep } from '@sync/domain';
-import type { RespondActivity, UnitRef } from '@sync/model';
+import { UNIT_STATUS_TEXT, isActiveStatus, statusStepsUnder, unitStatusAfterSignIn, type ParticipantStatus, type StatusStep } from '@sync/domain';
+import { isManageActivity, type RespondActivity, type UnitRef } from '@sync/model';
 import { observer } from '@sync/model/react';
 import { useHomeUnit } from '../../../shell/App';
 import { personName, useAuth } from '../../../shell/auth';
@@ -37,8 +37,15 @@ export const StatusUpdater = observer(function StatusUpdater({ activity, fullWid
   if (!person || !activity.record) return null;
 
   const me = activity.participantByRef(person.personRef);
-  const steps = me ? me.statusStepsUnder(unit.id) : statusStepsUnder(activity.record, undefined, unit.id, activity.clock.now());
-  if (!steps.length) return null;
+  // Members can't sign themselves in under a unit that has stood down or declined; managers can.
+  const unitModel = activity.unit(unit.id);
+  const turnedAway = !isManageActivity(activity) && !!unitModel?.isOut;
+  const steps = (me ? me.statusStepsUnder(unit.id) : statusStepsUnder(activity.record, undefined, unit.id, activity.clock.now())).filter((s) => !turnedAway || !isActiveStatus(s.status));
+  if (!steps.length) {
+    if (!turnedAway) return null;
+    const name = unit.rosterName ?? unit.title;
+    return <Alert severity="info">{unitModel?.status === 'stoodDown' ? `${name} has stood down from this event` : `${name} isn’t responding to this event`}</Alert>;
+  }
   const from = me?.status ?? 'unknown';
   const unitName = (id: string) => activity.unit(id)?.name ?? id;
   const options = steps.map((s) => ({ id: stepId(s), text: stepText(from, s, unitName) }));
@@ -106,9 +113,15 @@ const UpdateStatusForm = observer(function UpdateStatusForm({
       text: `${self ? 'You are' : `${person.firstname} is`} currently assigned to a Team or Place on the Operations Dashboard. Changing ${self ? 'your' : 'their'} status may cause a discrepancy.`,
     });
   }
-  if (!activity.unit(unit.id)) {
+  // The first to sign in under a unit that isn't in yet (new, or only invited) brings it in.
+  const unitStatus = activity.unit(unit.id)?.status ?? 'unknown';
+  const unitNext = unitStatus === 'unknown' || unitStatus === 'invited' ? unitStatusAfterSignIn(unitStatus, status) : undefined;
+  if (unitNext) {
     const name = unit.rosterName ?? unit.title;
-    top.push({ severity: 'warning', text: `You are the first responder for ${name}. Make sure you are authorized to commit ${name} to this ${isMission ? 'mission' : 'event'}.` });
+    top.push({
+      severity: 'warning',
+      text: `You are the first responder for ${name}, so this moves ${name} to ${UNIT_STATUS_TEXT[unitNext]}. Make sure you are authorized to commit ${name} to this ${isMission ? 'mission' : 'event'}.`,
+    });
   }
   let timeError: FormError | undefined;
   const lastChange = me?.currentStatus?.at;

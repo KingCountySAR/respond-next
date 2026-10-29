@@ -25,6 +25,10 @@ export interface ActivityViewer extends Viewer {
    * manage trainings and other events. Only that tier may make one a mission.
    */
   missionTier?: Tier;
+  /** Server side: the site they signed in on, which decides the activities they may see (`siteActivityProjector`). */
+  siteId?: string;
+  /** On an activity their site may not see: they see none of it, and change nothing. */
+  hidden?: boolean;
 }
 
 /** System mutations (member info, cross-activity sign-outs) run as this viewer. */

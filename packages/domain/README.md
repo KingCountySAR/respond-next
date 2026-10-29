@@ -8,7 +8,7 @@ The activity model, the same for missions, trainings and other activities: the r
 | --- | --- |
 | `src/schema.ts` | Record interfaces (`ActivityRec`, `ParticipantRec`, `ParticipantStatusRec`, `AssignmentRec`, `TeamRec`, ...), status lists, `Target`, `DEFAULT_PLACES` |
 | `src/queries.ts` | Pure reads over a `ReadView`: current status, unit, assignment, team members, counts, the comms log, activity phase |
-| `src/statusSteps.ts` | The status buttons offered from each status, standby-only and light-mode rules |
+| `src/statusSteps.ts` | The status buttons offered from each status, standby-only and light-mode rules; unit status steps and how sign-ins move a unit |
 | `src/equipment.ts` | The equipment catalogue (legacy ids `inventory-0..38`) |
 | `src/viewer.ts` | `ActivityViewer` (tier, class, personRef), `canManage`, `SYSTEM_VIEWER` |
 | `src/mutations/*.ts` | Every mutation, grouped by activity, participants and operations; `common.ts` has shared checks and helpers |
@@ -16,7 +16,7 @@ The activity model, the same for missions, trainings and other activities: the r
 | `src/activityLog.ts` | The activity log: `activityLogId` (its scope), `LogEntryRec`, `appendLog` (the server's) and `setLogFavorite`, and `narrate`, which words a committed change as log lines (Auto for what the legacy app logged by itself, Audit for the rest; see `Level` in `schema.ts`) |
 | `src/labels.ts` | The words shown for participant, team and unit statuses and GAR, for the UI and the log alike |
 | `src/site.ts`, `src/members.ts`, `src/locations.ts` | `SavedLocation` (the catalog's entries; `fromSaved` makes an activity location of one), and what `/api/bootstrap` sends (`SiteConfig`: the site's unit, its partners, which may create missions or events; `ownerOptions`, `canCreate`), and `MemberInfo`, what member search returns |
-| `src/projector.ts` | `activityProjector`: respond views per record type, and the respond record types derived from them (`RespondParticipantRec`, ...) |
+| `src/projector.ts` | `activityProjector`: respond views per record type, and the respond record types derived from them (`RespondParticipantRec`, ...). `siteActivityProjector`: the same, hiding activities (and their summaries) from sites that don't see them |
 | `src/index.ts` | Exports all of the above, plus `activityMutations` and `activityRegistry` |
 
 An activity is a flat set of records, each `{ type, id, version, ...fields }`. There is one `activity` record (id `ACTIVITY_RECORD_ID`). Things that change over time (participant status, assignment, team status, unit status) are not fields on the thing; they are separate timed entries with an `at`. The current value is the latest entry, which is what the queries work out for you.

@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { createNodeWebSocket } from '@hono/node-ws';
-import { PROTOCOL, type Rec, type Viewer } from '@sync/core';
+import { HIDDEN_VIEW, PROTOCOL, type Rec, type Viewer } from '@sync/core';
 import {
   ACTIVITY_ARCHIVE_ID,
   MEMBER_QUERY_MAX,
@@ -11,6 +11,7 @@ import {
   isValidPoint,
   viewerOfSession,
   type ActivitiesResponse,
+  type ActivityViewer,
   type ActivityResponse,
   type AdminMemberProvidersResponse,
   type AdminOrganizationsResponse,
@@ -66,9 +67,12 @@ export interface SyncAppOptions {
 
 type Env = { Variables: { site: Organization; session: SessionData } };
 
+/** Who someone is, on the site they signed in on: which decides the activities they see. */
+const viewerOf = (session: SessionData): ActivityViewer => ({ ...viewerOfSession(session), siteId: session.orgId });
+
 /** Who someone is on one activity: as signed in, unless they have a grant there. */
 function viewerOn(session: SessionData, activityId: string): Viewer {
-  const viewer = viewerOfSession(session);
+  const viewer = viewerOf(session);
   const tier = tierOn(session, activityOfScope(activityId));
   return tier === viewer.tier ? viewer : { ...viewer, tier };
 }
@@ -234,7 +238,7 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
     upgradeWebSocket((c) => {
       const offered = (c.req.header('sec-websocket-protocol') ?? '').split(',').map((p) => p.trim());
       const session = c.get('session');
-      const viewer = viewerOfSession(session);
+      const viewer = viewerOf(session);
       let handlers: ReturnType<Hub['connect']> | undefined;
       return {
         onOpen(_evt, ws) {
@@ -269,7 +273,7 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
   // from the archive, and one activity as the viewer sees it, once. A completed activity's page reads
   // it this way rather than subscribing.
   app.get('/api/activities', signedIn, async (c) => {
-    const { records } = await hub.read(ACTIVITY_ARCHIVE_ID, viewerOfSession(c.get('session')));
+    const { records } = await hub.read(ACTIVITY_ARCHIVE_ID, viewerOf(c.get('session')));
     const data = records.filter((r) => r.type === 'activitySummary').map(({ version: _, ...summary }: Rec) => summary as unknown as ActivitiesResponse['data'][number]);
     return c.json({ data } satisfies ActivitiesResponse);
   });
@@ -278,7 +282,7 @@ export function createSyncApp(hub: Hub, options: SyncAppOptions) {
     // The list and archive are scopes, not activities.
     if (activityId.startsWith('$')) return c.json({ error: 'not_found' }, 404);
     const read = await hub.read(activityId, viewerOn(c.get('session'), activityId));
-    if (read.version === 0) return c.json({ error: 'not_found' }, 404);
+    if (read.version === 0 || read.view === HIDDEN_VIEW) return c.json({ error: 'not_found' }, 404);
     return c.json({ activityId, ...read } satisfies ActivityResponse);
   });
 

@@ -62,6 +62,36 @@ describe('organization store', () => {
     ]);
     // RMR doesn't get itself as a partner.
     expect(partners('org-rmr')).toEqual([['org-sheriff', true, false]]);
+
+    // It operates with the rest of its tree and its partners, but not itself.
+    const operational = (id: string) => orgs.siteConfig(orgs.get(id)!, { devSignIn: false, buildId: '' }).operational.map((u) => [u.id, u.seesOwners] as const);
+    expect(operational('org-crt')).toEqual([
+      ['org-cvsc', ['org-cvsc', 'org-sheriff', 'org-rmr']],
+      ['org-rmr', ['org-rmr', 'org-cvsc', 'org-sheriff']],
+      ['org-sheriff', ['org-sheriff']],
+    ]);
+    expect(operational('org-sheriff')).toEqual([]);
+  });
+
+  it("shows a site the activities it's on, owns, or owned by it, one above it, or a partner of either, missions included", () => {
+    const seed = testSeed();
+    seed.organizations.push({ ...seed.organizations[2]!, id: 'org-sheriff', parentId: null, title: 'Sheriff', hostnames: [], emailDomains: [], partners: [] });
+    seed.organizations[0]!.partners = [{ id: 'org-sheriff', canCreateMissions: true, canCreateEvents: false }];
+    const orgs = OrganizationStore.memory(seed);
+    for (const kind of ['mission', 'training'] as const) {
+      const sees = (site: string, ownerOrgId: string, unitIds: string[] = []) => orgs.seesActivity(site, { kind, ownerOrgId, unitIds });
+      expect(sees('org-rmr', 'org-rmr')).toBe(true);
+      // The umbrella's, and its partner's.
+      expect(sees('org-rmr', 'org-cvsc')).toBe(true);
+      expect(sees('org-rmr', 'org-sheriff')).toBe(true);
+      // Not a sibling's, unless it names the owner as a partner or is on it.
+      expect(sees('org-rmr', 'org-crt')).toBe(false);
+      expect(sees('org-crt', 'org-rmr')).toBe(true);
+      expect(sees('org-rmr', 'org-crt', ['org-crt', 'org-rmr'])).toBe(true);
+      // Nor, for the umbrella, those below it, nor the sheriff the umbrella's.
+      expect(sees('org-cvsc', 'org-crt')).toBe(false);
+      expect(sees('org-sheriff', 'org-cvsc')).toBe(false);
+    }
   });
 
   it('keeps the legacy id when a save leaves it out', async () => {

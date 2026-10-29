@@ -69,7 +69,7 @@ describe('add responder', () => {
     await pick(dialog, RMR.title, 'pike', /^Rowan Pike/);
     fireEvent.click(await dialog.findByRole('button', { name: /Sign In/ }));
     const confirm = await confirmDialog();
-    expect(confirm.getByText(`You are the first responder for ${RMR.rosterName}. Make sure you are authorized to commit ${RMR.rosterName} to this mission.`)).toBeTruthy();
+    expect(confirm.getByText(`You are the first responder for ${RMR.rosterName}, so this moves ${RMR.rosterName} to Responding. Make sure you are authorized to commit ${RMR.rosterName} to this mission.`)).toBeTruthy();
     fireEvent.click(confirm.getByRole('button', { name: /Sign In/ }));
     await waitFor(() => expect(currentParticipantStatus(server.seed.snapshot(ACTIVITY), participantIdFor('rmr:1'))?.unitId).toBe(RMR.id));
   });

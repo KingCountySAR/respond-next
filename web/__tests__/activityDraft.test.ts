@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { autorun } from 'mobx';
 import type { RespondActivityRec, SiteConfig, SiteUnit } from '@sync/domain';
-import { ActivityDraft, mapIdOf, type EditedActivity } from '../src/sections/respond/activityDraft';
+import { ActivityDraft, EARLY_SIGN_IN_WINDOWS, mapIdOf, windowOf, windowValue, type EditedActivity } from '../src/sections/respond/activityDraft';
+
+describe('early sign-in window choices', () => {
+  it('round-trips every choice through the select, Open Immediately (null) included', () => {
+    for (const { window } of EARLY_SIGN_IN_WINDOWS) expect(windowOf(windowValue(window))).toBe(window);
+  });
+});
 
 /** A planned change's args, to read whichever fields it has. */
 const args = (m: { args: object }) => m.args as Record<string, unknown>;

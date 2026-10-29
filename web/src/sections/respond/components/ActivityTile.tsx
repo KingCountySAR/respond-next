@@ -56,11 +56,12 @@ export const ActivityTile = observer(function ActivityTile({ item, status, child
 
 /**
  * The status button for an activity in a list. Changing status needs the activity itself, so the
- * tile opens it (listed activities that are still active are few) and the button appears once it's loaded.
+ * tile reads it once (listed activities that are still active are few) and the button appears once
+ * it's loaded. It goes live only when a change is made to it; the list keeps the tile current.
  */
 function TileStatusUpdater({ activityId }: { activityId: string }) {
   return (
-    <ActivityModelProvider client={useSyncClient()} activityId={activityId}>
+    <ActivityModelProvider client={useSyncClient()} activityId={activityId} live={false}>
       <LoadedStatusUpdater />
     </ActivityModelProvider>
   );

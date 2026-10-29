@@ -47,6 +47,8 @@ export interface ActivitySummary {
   type: 'activitySummary';
   /** The activity's id. */
   id: string;
+  /** The unit responsible for it, which with its kind and units decides which sites see it. */
+  ownerOrgId: string;
   activity: Pick<ActivityRec, 'idNumber' | 'kind' | 'title' | 'location' | 'mapId' | 'startTime' | 'endTime' | 'earlySignInWindow' | 'mode' | 'standbyOnly' | 'closed'>;
   units: { id: string; title: string; rosterName: string | null; status: UnitStatus; activeCount: number }[];
   /**
@@ -79,6 +81,7 @@ export function activitySummary(view: ReadView, activityId: string): ActivitySum
   return {
     type: 'activitySummary',
     id: activityId,
+    ownerOrgId: a.ownerOrgId,
     activity: {
       idNumber: a.idNumber,
       kind: a.kind,

@@ -1,5 +1,6 @@
 import {
   ACCESS_CHANGED,
+  HIDDEN_VIEW,
   MapView,
   OverlayTx,
   Rejection,
@@ -134,7 +135,7 @@ export class ActivityActor {
   /** The activity as `viewer` sees it, once: what a subscription starts with, without the subscription. */
   read(viewer: Viewer): Promise<ActivityRead> {
     return this.serial(() => {
-      const viewKey = this.deps.projector.viewKey(this.deps.projector.viewerIn?.(viewer, this.view) ?? viewer);
+      const viewKey = this.deps.projector.viewKey(this.deps.projector.viewerIn?.(viewer, this.view, this.activityId) ?? viewer);
       return { version: this.version, view: viewKey, records: this.projectedRecords(viewKey) };
     });
   }
@@ -201,7 +202,7 @@ export class ActivityActor {
 
   /** Who the connection is here, given the records as they are in `view` (e.g. an activity's kind). */
   private viewerOf(conn: ActorConn, view: ReadView = this.view): Viewer {
-    return this.deps.projector.viewerIn?.(conn.viewer, view) ?? conn.viewer;
+    return this.deps.projector.viewerIn?.(conn.viewer, view, this.activityId) ?? conn.viewer;
   }
 
   private viewKeyOf(conn: ActorConn): string {
@@ -297,6 +298,7 @@ export class ActivityActor {
     if (!def) return reject('unknown_mutation', `Unknown change type ${m.name}@${m.v}`);
     // Who they are as of the changes before this one in the batch.
     const viewer = this.viewerOf(conn, batch);
+    if (this.deps.projector.viewKey(viewer) === HIDDEN_VIEW) return reject('not_found', "That activity isn't here");
     if (def.allow && !def.allow(viewer)) return reject('forbidden', 'Your role cannot make this change');
     const parsed = def.args.safeParse(m.args);
     if (!parsed.success) return reject('bad_args', parsed.error.issues[0]?.message ?? 'Invalid change');

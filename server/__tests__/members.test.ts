@@ -67,6 +67,13 @@ describe('member tags', () => {
     expect((await members.lookup('kcsara:1'))?.tags).toEqual(['FLD']);
     expect((await members.lookup('kcsara:3'))?.tags).toEqual(['MED']);
   });
+
+  it("under a unit, only that unit's and those above it: Bo responding with RMR isn't tagged as CRT's", async () => {
+    const members = providers({ Medical: 'Umbrella MED' });
+    expect((await members.lookup('kcsara:3'))?.tags).toEqual(['MED', 'Umbrella MED']);
+    expect((await members.lookup('kcsara:3', 'org-crt'))?.tags).toEqual(['MED', 'Umbrella MED']);
+    expect((await members.lookup('kcsara:3', 'org-rmr'))?.tags).toEqual(['Umbrella MED']);
+  });
 });
 
 describe('member tiers', () => {

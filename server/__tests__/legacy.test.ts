@@ -148,7 +148,7 @@ describe('legacy import', () => {
     const v = view(legacy());
     const anna = participantIdFor('members:85205');
     const ben = participantIdFor('members:1234');
-    expect(v.get('participant', anna)).toMatchObject({ personRef: 'members:85205', firstname: 'Anna', memberTags: ['OL'], miles: 40, eta: null });
+    expect(v.get('participant', anna)).toMatchObject({ personRef: 'members:85205', firstname: 'Anna', memberTags: ['OL'], memberTagsUnitId: expect.any(String), miles: 40, eta: null });
     expect(statusOf(v, anna)).toBe('assigned');
     expect(statusOf(v, anna, T0 + 20 * MIN)).toBe('responding');
     expect(currentUnitOf(v, anna)).toBe('esar');

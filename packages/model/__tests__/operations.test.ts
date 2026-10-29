@@ -59,7 +59,7 @@ describe('units', () => {
     expect([crt.name, crt.title, crt.status]).toEqual(['CRT', 'Cascade Rescue Team', 'responding']);
     crt.setStatus('stoodDown', { at: AT });
     expect(crt.status).toBe('stoodDown');
-    expect(crt.statusCounts).toMatchObject({ staging: 2 });
+    expect(crt.statusCounts).toMatchObject({ staging: 0, clear: 2 });
     expect(activity.participant(anna)!.unit).toBe(crt);
   });
 

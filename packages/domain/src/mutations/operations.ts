@@ -2,10 +2,12 @@
 import { z } from 'zod';
 import { Rejection, defineMutation, type MutationCtx, type Tx } from '@sync/core';
 import { equipmentType, CUSTOM_EQUIPMENT_TYPE_ID } from '../equipment';
-import { currentTarget, groupTeams, membersOf, participantName, targetName, teamMembers, teamNameConflict, teamStatusOf } from '../queries';
-import { GARS, TEAM_STATUSES, Target, UNIT_STATUSES, type CommRec, type EquipmentRec, type GroupRec, type PlaceRec, type TeamRec, type TeamStatusRec } from '../schema';
+import { UNIT_STATUS_TEXT } from '../labels';
+import { currentParticipantStatus, currentTarget, currentUnitStatus, groupTeams, isActiveStatus, membersOf, participantName, targetName, teamMembers, teamNameConflict, teamStatusOf } from '../queries';
+import { GARS, TEAM_STATUSES, Target, UNIT_STATUSES, type CommRec, type EquipmentRec, type GroupRec, type ParticipantRec, type PlaceRec, type TeamRec, type TeamStatusRec } from '../schema';
+import { isUnitOut, unitStatusSteps } from '../statusSteps';
 import { canManage } from '../viewer';
-import { at, emptyTarget, id, idSource, moveParticipant, optionalText, requireOpen, requireOperations, requireParticipant, requireTarget } from './common';
+import { addStatus, at, emptyTarget, id, idSource, moveParticipant, optionalText, requireOpen, requireOperations, requireParticipant, requireTarget } from './common';
 
 const nameOf = (tx: { get: Tx['get'] }, type: string, recId: string) => tx.get<{ name: string } & TeamRec>(type, recId)?.name ?? `the ${type}`;
 
@@ -35,10 +37,23 @@ export const setUnitStatus = defineMutation({
   args: z.object({ unit: z.object({ id, title: z.string().trim().min(1), rosterName: z.string().trim().nullable() }), status: z.enum(UNIT_STATUSES).exclude(['unknown']), at }),
   allow: canManage,
   describe: (a) => `Set ${a.unit.rosterName ?? a.unit.title} to ${a.status}`,
+  /**
+   * Only the unit steps, though the status it already has is no change (two managers stood it down
+   * at once). A unit that stands down or declines signs out everyone active under it.
+   */
   run(tx, a, ctx) {
     requireOpen(tx);
+    const current = currentUnitStatus(tx, a.unit.id)?.status ?? 'unknown';
+    if (current === a.status) return;
+    if (!unitStatusSteps(current).includes(a.status)) throw new Rejection('unit_step', `${a.unit.rosterName ?? a.unit.title} can’t go from ${UNIT_STATUS_TEXT[current]} to ${UNIT_STATUS_TEXT[a.status]}`);
     if (!tx.get('activityUnit', a.unit.id)) tx.put({ type: 'activityUnit', id: a.unit.id, title: a.unit.title, rosterName: a.unit.rosterName });
-    tx.put({ type: 'unitStatus', id: ctx.newId(), unitId: a.unit.id, status: a.status, at: a.at, by: ctx.viewer.userId });
+    const nextId = idSource(ctx);
+    tx.put({ type: 'unitStatus', id: nextId(), unitId: a.unit.id, status: a.status, at: a.at, by: ctx.viewer.userId });
+    if (!isUnitOut(a.status)) return;
+    for (const p of [...tx.scan<ParticipantRec>('participant')]) {
+      const status = currentParticipantStatus(tx, p.id, a.at);
+      if (status?.unitId === a.unit.id && isActiveStatus(status.status)) addStatus(tx, ctx, nextId, p.id, a.unit.id, 'clear', a.at, a.status === 'stoodDown' ? 'Unit stood down' : 'Unit not responding');
+    }
   },
 });
 

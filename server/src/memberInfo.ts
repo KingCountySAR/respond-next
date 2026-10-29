@@ -1,22 +1,21 @@
 /**
- * Fills in what the member database knows about each person on an activity: their tags (their
- * organizations' labels for their groups) and their phone and email. After a commit, anyone not looked up yet (since this server
- * started) is looked up, and `setMemberInfo` is written when it differs from what the activity has.
+ * Fills in what the member database knows about each person on an activity: their tags (the labels
+ * the unit they respond under, and those above it, give their groups) and their phone and email. After a commit, anyone
+ * under a unit their tags aren't from (`memberTagsUnitId`) is looked up, and `setMemberInfo` written. Once written they
+ * stay, so the activity reads later as it did then.
  */
 import type { ReadView } from '@sync/core';
-import { SYSTEM_VIEWER, isReservedScope, type ContactRec, type ParticipantRec } from '@sync/domain';
+import { SYSTEM_VIEWER, currentUnitOf, isReservedScope, type ParticipantRec } from '@sync/domain';
 import type { Hub } from '@sync/server';
 import type { MemberDetails } from './members';
 
-/** Where member info comes from: the member providers, by person ref. */
+/** Where member info comes from: the member providers, by person ref, with the tags of the unit they respond under. */
 export interface PersonLookup {
-  lookup(personRef: string): Promise<MemberDetails | undefined>;
+  lookup(personRef: string, unitId?: string): Promise<MemberDetails | undefined>;
 }
 
-const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
-
 export class MemberInfoWriter {
-  /** `<activity>/<participant>/<personRef>` once looked up (or being looked up). */
+  /** `<activity>/<participant>/<personRef>/<unit>` once looked up (or being looked up): a new unit means new tags. */
   private readonly done = new Set<string>();
   private readonly running = new Set<Promise<void>>();
 
@@ -30,10 +29,13 @@ export class MemberInfoWriter {
   readonly onCommit = (activityId: string, view: ReadView): void => {
     if (isReservedScope(activityId)) return;
     for (const p of view.scan<ParticipantRec>('participant')) {
-      const key = `${activityId}/${p.id}/${p.personRef}`;
+      // Only those under a unit their tags aren't from yet.
+      const unitId = currentUnitOf(view, p.id);
+      if (!unitId || p.memberTagsUnitId === unitId) continue;
+      const key = `${activityId}/${p.id}/${p.personRef}/${unitId}`;
       if (this.done.has(key)) continue;
       this.done.add(key);
-      const run = this.write(activityId, p, view.get<ContactRec>('contact', p.id), key).finally(() => this.running.delete(run));
+      const run = this.write(activityId, p, unitId, key).finally(() => this.running.delete(run));
       this.running.add(run);
     }
   };
@@ -43,15 +45,14 @@ export class MemberInfoWriter {
     while (this.running.size) await Promise.all([...this.running]);
   }
 
-  private async write(activityId: string, p: ParticipantRec, contact: ContactRec | undefined, key: string): Promise<void> {
+  private async write(activityId: string, p: ParticipantRec, unitId: string, key: string): Promise<void> {
     try {
-      const found = await this.directory.lookup(p.personRef);
+      const found = await this.directory.lookup(p.personRef, unitId);
       if (!found) return;
       const next = { mobile: found.member.mobilephone ?? null, email: found.member.email ?? null };
-      const nextContact = next.mobile || next.email ? next : null;
-      const unchanged = sameList(p.memberTags, found.tags) && (nextContact ? contact?.mobile === next.mobile && contact?.email === next.email : !contact);
-      if (unchanged) return;
-      await this.hub().pushAsSystem(activityId, SYSTEM_VIEWER, [{ name: 'setMemberInfo', args: { participantId: p.id, memberTags: found.tags, contact: nextContact } }]);
+      const contact = next.mobile || next.email ? next : null;
+      // Written even when the tags are the same, to record the unit they're for.
+      await this.hub().pushAsSystem(activityId, SYSTEM_VIEWER, [{ name: 'setMemberInfo', args: { participantId: p.id, memberTags: found.tags, unitId, contact } }]);
     } catch (err) {
       this.done.delete(key); // try again on the next commit
       console.error(`sync: could not look up ${p.personRef} for ${activityId}`, err);

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { currentParticipantStatus, participantIdFor } from '@sync/domain';
+import { currentParticipantStatus, currentUnitStatus, participantIdFor } from '@sync/domain';
 import { ACTIVITY, TITLE, serverWithActivity, signIn } from './app';
 
 let server: Awaited<ReturnType<typeof serverWithActivity>>;
@@ -17,9 +17,9 @@ afterEach(() => {
 
 const dana = participantIdFor('kcsara:7');
 
-async function openAs(name: string, personRef: string) {
+async function openAs(name: string, personRef: string, tier?: 'manage') {
   server.renderApp(`/mission/${ACTIVITY}`);
-  await signIn(name, personRef);
+  await signIn(name, personRef, tier);
   await screen.findByText(`26-0123 ${TITLE}`);
 }
 
@@ -98,5 +98,43 @@ describe('the activity page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Complete' }));
     fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Complete' }));
     expect(await screen.findByText('Not changed')).toBeTruthy();
+  });
+});
+
+describe('unit status', () => {
+  it("lets a manager stand their organization down from the units menu, signing its members out", async () => {
+    await openAs('Alice Adams', 'kcsara:101', 'manage');
+    fireEvent.click(screen.getByText('CRT 1'));
+    expect(screen.queryByRole('menu')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Unit status' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Stand Down' }));
+    const dialog = within(await screen.findByRole('dialog'));
+    expect(dialog.getByText(/signs out the person active under CRT/)).toBeTruthy();
+    fireEvent.click(dialog.getByRole('button', { name: 'Stand Down' }));
+
+    await waitFor(() => expect(currentUnitStatus(server.seed.snapshot(ACTIVITY), 'org-crt')?.status).toBe('stoodDown'));
+    expect(currentParticipantStatus(server.seed.snapshot(ACTIVITY), dana)?.status).toBe('clear');
+    await waitFor(() => expect(screen.getByTitle('Stood Down').textContent).toMatch(/^CRT/));
+  });
+
+  it('lets a manager invite a partner outside their tree to a mission, once', async () => {
+    await openAs('Alice Adams', 'kcsara:101', 'manage');
+    fireEvent.click(screen.getByRole('button', { name: 'Unit status' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Invite unit…' }));
+    const invite = within(await screen.findByRole('dialog'));
+    fireEvent.click(invite.getByLabelText('RMR (Ridgeline Mountain Rescue)'));
+    fireEvent.click(invite.getByRole('button', { name: 'Invite' }));
+    await waitFor(() => expect(currentUnitStatus(server.seed.snapshot(ACTIVITY), 'org-rmr')?.status).toBe('invited'));
+    await waitFor(() => expect(screen.getByTitle('Invited').textContent).toMatch(/^RMR/));
+
+    // It's on now, and there's no one else.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Unit status' }));
+    expect((await screen.findByRole('menuitem', { name: 'Invite unit…' })).classList).toContain('Mui-disabled');
+  });
+
+  it("doesn't offer responders the units menu", async () => {
+    await openAs('Dana Field', 'kcsara:7');
+    expect(screen.queryByRole('button', { name: 'Unit status' })).toBeNull();
   });
 });

@@ -16,6 +16,7 @@ import {
   type MemberProviderView,
   type SignInProviderView,
   type OrganizationPartner,
+  type SeesActivity,
   type SiteConfig,
   type SiteUnit,
 } from '@sync/domain';
@@ -333,6 +334,29 @@ export class OrganizationStore {
     return [...found.values()];
   }
 
+  /**
+   * The units an organization operates with, and so may invite: everything else under its top-level organization (that
+   * one included), then its partners, by short title.
+   */
+  operationalUnitsOf(id: string): Organization[] {
+    const root = this.lineage(id).at(-1);
+    const tree = this.all().filter((o) => o.id !== id && !!root && this.lineage(o.id).includes(root));
+    const partners = this.partnersOf(id).flatMap((p) => this.orgs.get(p.id) ?? []);
+    const found = new Map([...tree, ...partners].filter((o) => o.id !== id).map((o) => [o.id, o]));
+    return [...found.values()].sort((a, b) => a.shortTitle.localeCompare(b.shortTitle));
+  }
+
+  /** The owners whose activities an organization sees without being on them: itself and those above it, and their partners. */
+  ownersSeenBy(id: string): string[] {
+    return [...this.lineage(id).map((o) => o.id), ...this.partnersOf(id).map((p) => p.id)];
+  }
+
+  /**
+   * Whether a site sees an activity, a mission or any other: one it's on, or one owned by it, an
+   * organization above it, or a partner of either.
+   */
+  readonly seesActivity: SeesActivity = (siteId, activity) => activity.unitIds.includes(siteId) || this.ownersSeenBy(siteId).includes(activity.ownerOrgId);
+
   brandOf(id: string): Brand {
     return this.lineage(id).find((o) => o.brand)?.brand ?? DEFAULT_BRAND;
   }
@@ -353,6 +377,7 @@ export class OrganizationStore {
     const brand = this.brandOf(org.id);
     return {
       organization: { ...unit(org, org), partners },
+      operational: this.operationalUnitsOf(org.id).map((o) => ({ id: o.id, title: o.title, shortTitle: o.shortTitle, seesOwners: this.ownersSeenBy(o.id) })),
       theme: { primary: brand.primary, primaryDark: brand.primaryDark },
       devSignIn: options.devSignIn,
       googleSignIn: options.googleSignIn ?? false,

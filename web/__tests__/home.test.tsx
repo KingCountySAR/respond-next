@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { currentParticipantStatus, participantIdFor } from '@sync/domain';
+import { currentParticipantStatus, currentUnitStatus, participantIdFor } from '@sync/domain';
 import { activityArgs } from '../../packages/domain/__tests__/helpers';
 import { ACTIVITY, TITLE, serverWithActivity, signIn } from './app';
 
@@ -39,6 +39,24 @@ describe('home', () => {
     expect(training.getByText('Start Time')).toBeTruthy();
     expect(screen.queryByText('New Mission')).toBeNull(); // respond-tier members don't create activities yet
     expect(card(TITLE, 1).querySelector('a')?.getAttribute('href')).toBe(`/mission/${ACTIVITY}`);
+  });
+
+  it("lets a manager stand their unit down from a mission's units menu", async () => {
+    server.renderApp('/');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
+    await waitFor(() => expect(screen.getAllByText(TITLE, { selector: 'h6' }).length).toBeGreaterThan(0));
+    const mission = within(card(TITLE, screen.getAllByText(TITLE, { selector: 'h6' }).length - 1));
+    fireEvent.click(mission.getByRole('button', { name: 'Unit status' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Stand Down' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Stand Down' }));
+    await waitFor(() => expect(currentUnitStatus(server.seed.snapshot(ACTIVITY), 'org-crt')?.status).toBe('stoodDown'));
+  });
+
+  it("doesn't offer responders the units menu", async () => {
+    server.renderApp('/');
+    await signIn('Dana Field', 'kcsara:7');
+    await waitFor(() => expect(screen.getAllByText(TITLE, { selector: 'h6' })).toHaveLength(2));
+    expect(screen.queryByRole('button', { name: 'Unit status' })).toBeNull();
   });
 
   it('changes status from a tile', async () => {

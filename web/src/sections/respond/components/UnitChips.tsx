@@ -1,10 +1,14 @@
 import { Box, Chip } from '@mui/material';
 import type { BoxProps } from '@mui/material/Box';
-import type { RespondActivity } from '@sync/model';
+import { isManageActivity, type RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
-import { unitChipColor } from '../../../ui/status';
+import { unitChipProps } from '../../../ui/status';
+import { UnitMenuChip } from '../../../ui/UnitStatusMenu';
 
-/** The legacy ParticipatingOrgChips: one chip per unit with its active count; clicking filters the roster. */
+/**
+ * The legacy ParticipatingOrgChips: one chip per unit with its active count; clicking filters the
+ * roster. Managers get a last chip whose menu changes their organization's status or invites a unit it operates with.
+ */
 export const UnitChips = observer(function UnitChips({
   activity,
   filter,
@@ -15,17 +19,21 @@ export const UnitChips = observer(function UnitChips({
 
   return (
     <Box {...boxProps}>
-      {activity.units.map((unit) => (
-        <Chip
-          key={unit.id}
-          size="small"
-          sx={{ mr: 1 }}
-          label={`${unit.name} ${unit.activeParticipantCount || ''}`}
-          color={unitChipColor(unit.status)}
-          variant={filter === unit.id ? 'filled' : 'outlined'}
-          onClick={onClick(unit.id)}
-        />
-      ))}
+      {activity.units.map((unit) => {
+        const { sx, ...look } = unitChipProps(unit.status);
+        return (
+          <Chip
+            key={unit.id}
+            size="small"
+            sx={{ mr: 1, ...sx }}
+            label={`${unit.name} ${unit.activeParticipantCount || ''}`}
+            {...look}
+            variant={filter === unit.id ? 'filled' : 'outlined'}
+            onClick={onClick(unit.id)}
+          />
+        );
+      })}
+      {isManageActivity(activity) && !activity.record?.closed && <UnitMenuChip activity={activity} />}
     </Box>
   );
 });

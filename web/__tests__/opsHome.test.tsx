@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { getActivity } from '@sync/domain';
+import { currentUnitStatus, getActivity } from '@sync/domain';
 import { activityArgs } from '../../packages/domain/__tests__/helpers';
 import { ACTIVITY, TITLE, serverWithActivity, signIn } from './app';
 
@@ -44,6 +44,19 @@ describe('ops home', () => {
     await server.seed.open('m2');
     server.seed.mutate('m2', 'createActivity', activityArgs({ title: 'Injured climber, Exit 38', startTime: Date.now() }));
     expect(await missions.findByText('Injured climber, Exit 38')).toBeTruthy();
+  });
+
+  it("stands the site's unit down from a mission card's units menu, staying on the page", async () => {
+    server.renderApp('/ops');
+    await signIn('Alice Adams', 'kcsara:101', 'manage');
+    const mission = (await (await section('Missions')).findByText(TITLE)).closest('a')!;
+    fireEvent.click(await within(mission).findByRole('button', { name: 'Unit status' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Stand Down' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Stand Down' }));
+
+    await waitFor(() => expect(currentUnitStatus(server.seed.snapshot(ACTIVITY), 'org-crt')?.status).toBe('stoodDown'));
+    expect(window.location.pathname).toBe('/ops');
+    expect(await within(mission).findByTitle('Stood Down')).toBeTruthy();
   });
 
   it('creates a mission with the same form, and opens its dashboard', async () => {

@@ -99,6 +99,11 @@ export interface ParticipantRec extends Rec {
   lastname: string;
   /** From the member database; only system mutations write it. */
   memberTags: string[];
+  /**
+   * The unit `memberTags` came from: they're looked up once the participant is first under a unit,
+   * and kept, so the activity reads later as it was. Missing until looked up; cleared on relinking.
+   */
+  memberTagsUnitId?: string | null;
   activityTags: string[];
   eta: number | null;
   miles: number | null;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { currentUnitOf, currentUnitStatus, getActivity, participantIdFor, participantTimeline, statusOf, statusSteps, statusStepsUnder, timeOnClock, type ParticipantRec } from '@sync/domain';
-import { MANAGER, CRT, EXTERNAL, HOUR, RMR, SYSTEM, T0, addMember, respondMember, startedActivity } from './helpers';
+import { MANAGER, CRT, EXTERNAL, HOUR, RMR, SYSTEM, T0, addMember, respondMember, startedActivity, type TestActivity } from './helpers';
 
 const timeline = (e: ReturnType<typeof startedActivity>, pid: string) => participantTimeline(e.view, pid).map((s) => `${s.status}@${s.unitId}`);
 
@@ -155,15 +155,63 @@ describe('closing an event', () => {
   });
 });
 
-describe("a unit's first responder", () => {
-  it('brings the unit on as standby or responding, and later responders leave it alone', () => {
+describe('unit status', () => {
+  const unitStatus = (e: TestActivity, unit = CRT) => currentUnitStatus(e.view, unit.id)?.status;
+  const setUnit = (e: TestActivity, status: string, at: number, unit = CRT) => e.run('setUnitStatus', { unit, status, at });
+
+  it('starts as standby or responding from its first responder', () => {
     const e = startedActivity();
     addMember(e, 'kcsara:1', 'standby');
-    expect(currentUnitStatus(e.view, CRT.id)?.status).toBe('standby');
-    addMember(e, 'kcsara:2', 'responding', CRT, T0 + 2 * HOUR);
-    expect(currentUnitStatus(e.view, CRT.id)?.status).toBe('standby');
+    expect(unitStatus(e)).toBe('standby');
     addMember(e, 'kcsara:3', 'responding', RMR);
-    expect(currentUnitStatus(e.view, RMR.id)?.status).toBe('responding');
+    expect(unitStatus(e, RMR)).toBe('responding');
+  });
+
+  it('moves up as members sign in, never down', () => {
+    const e = startedActivity();
+    setUnit(e, 'invited', T0);
+    const pid = addMember(e, 'kcsara:1', 'standby');
+    expect(unitStatus(e)).toBe('standby');
+    addMember(e, 'kcsara:2', 'responding', CRT, T0 + 2 * HOUR);
+    expect(unitStatus(e)).toBe('responding');
+    e.run('setParticipantStatus', { participantId: pid, status: 'clear', unit: CRT, at: T0 + 3 * HOUR });
+    expect(unitStatus(e)).toBe('responding');
+  });
+
+  it('follows the unit steps', () => {
+    const e = startedActivity();
+    addMember(e, 'kcsara:1', 'responding');
+    expect(e.rejects('setUnitStatus', { unit: CRT, status: 'notResponding', at: T0 + 2 * HOUR })).toBe('unit_step');
+    expect(e.rejects('setUnitStatus', { unit: CRT, status: 'invited', at: T0 + 2 * HOUR })).toBe('unit_step');
+    expect(e.run('setUnitStatus', { unit: CRT, status: 'responding', at: T0 + 2 * HOUR })).toEqual([]);
+    expect(e.rejects('setUnitStatus', { unit: CRT, status: 'stoodDown', at: T0 + 2 * HOUR })).toBeUndefined();
+    expect(e.rejects('setUnitStatus', { unit: CRT, status: 'responding', at: T0 + 3 * HOUR })).toBeUndefined();
+  });
+
+  it('signs out everyone active under a unit that stands down, and only them', () => {
+    const e = startedActivity();
+    const standby = addMember(e, 'kcsara:1', 'standby');
+    const field = addMember(e, 'kcsara:2', 'assigned');
+    const other = addMember(e, 'kcsara:3', 'responding', RMR);
+    setUnit(e, 'stoodDown', T0 + 2 * HOUR);
+    expect([statusOf(e.view, standby), statusOf(e.view, field), statusOf(e.view, other)]).toEqual(['clear', 'clear', 'responding']);
+    expect(participantTimeline(e.view, field)[0]).toMatchObject({ cause: 'Unit stood down', byName: expect.any(String) });
+  });
+
+  it("turns away members signing themselves in under a unit that's out, but not managers", () => {
+    const e = startedActivity();
+    setUnit(e, 'notResponding', T0);
+    const args = { personRef: 'kcsara:2', firstname: 'Anna', lastname: 'B', unit: CRT, status: 'responding', at: T0 + HOUR };
+    expect(e.rejects('addParticipant', args, respondMember('kcsara:2'))).toBe('unit_out');
+    expect(e.rejects('addParticipant', { ...args, status: 'standby' }, respondMember('kcsara:2'))).toBe('unit_out');
+    expect(e.rejects('addParticipant', args)).toBeUndefined();
+    expect(unitStatus(e)).toBe('responding');
+
+    setUnit(e, 'stoodDown', T0 + 2 * HOUR);
+    const pid = participantIdFor('kcsara:2');
+    expect(e.rejects('setParticipantStatus', { participantId: pid, status: 'responding', unit: CRT, at: T0 + 3 * HOUR }, respondMember('kcsara:2'))).toBe('unit_out');
+    setUnit(e, 'responding', T0 + 3 * HOUR);
+    expect(e.rejects('setParticipantStatus', { participantId: pid, status: 'responding', unit: CRT, at: T0 + 4 * HOUR }, respondMember('kcsara:2'))).toBeUndefined();
   });
 });
 

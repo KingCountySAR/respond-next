@@ -5,9 +5,11 @@
  * The field lists below also define the respond views' record types (`RespondParticipantRec`, ...),
  * so the UI's types can't drift from what the server actually sends.
  */
-import type { Projector, ReadView, Rec, Viewer } from '@sync/core';
+import { HIDDEN_VIEW, type Projector, type ReadView, type Rec, type Viewer } from '@sync/core';
+import { activityOfScope } from './activityLog';
 import { getActivity } from './queries';
-import type { ActivityRec, ActivityUnitRec, AssignmentRec, ContactRec, EquipmentRec, GroupRec, ParticipantRec, PlaceRec, Target, TeamRec, TeamStatusRec } from './schema';
+import { ACTIVITY_ARCHIVE_ID, ACTIVITY_LIST_ID, type ActivitySummary } from './summary';
+import type { ActivityKind, ActivityRec, ActivityUnitRec, AssignmentRec, ContactRec, EquipmentRec, GroupRec, ParticipantRec, PlaceRec, Target, TeamRec, TeamStatusRec } from './schema';
 import { asActivityViewer, canManage, type ActivityViewer } from './viewer';
 
 export type ViewKey = 'manage' | 'respond:member' | 'respond:external';
@@ -144,3 +146,52 @@ export const activityProjector: Projector = {
     return (rules[rec.type] ?? none)(rec);
   },
 };
+
+// --- Which sites see an activity -----------------------------------------------------------------
+
+/** What decides which sites see an activity. */
+export interface ActivityAudience {
+  kind: ActivityKind;
+  ownerOrgId: string;
+  unitIds: string[];
+}
+
+/** Whether a site (an organization) sees an activity; the server's organizations decide. */
+export type SeesActivity = (siteId: string, activity: ActivityAudience) => boolean;
+
+const audienceOf = (s: Pick<ActivitySummary, 'ownerOrgId' | 'activity' | 'units'>): ActivityAudience => ({ kind: s.activity.kind, ownerOrgId: s.ownerOrgId, unitIds: s.units.map((u) => u.id) });
+
+/**
+ * The activity projector, for viewers on a site (`siteId`): an activity their site doesn't see is
+ * hidden from them, and so is its summary in the list and archive. Those are projected per site
+ * (`respond:member@<site>`); activities aren't, since a viewer either sees all of one or none.
+ *
+ * An activity's log isn't checked: it has no units to check against. It's for managers only.
+ */
+export function siteActivityProjector(sees: SeesActivity): Projector {
+  return {
+    viewerIn(viewer, view, scopeId) {
+      const { siteId, ...v } = asActivityViewer(viewer);
+      if (!siteId) return viewerOnActivity(viewer, view);
+      if (scopeId === ACTIVITY_LIST_ID || scopeId === ACTIVITY_ARCHIVE_ID) return undefined;
+      const a = getActivity(view);
+      // A new activity (nothing yet) is anyone's to create.
+      if (a && activityOfScope(scopeId) === scopeId && !sees(siteId, { kind: a.kind, ownerOrgId: a.ownerOrgId, unitIds: [...view.scan<ActivityUnitRec>('activityUnit')].map((u) => u.id) })) {
+        return { ...v, hidden: true };
+      }
+      return viewerOnActivity(v, view) ?? v;
+    },
+    viewKey(viewer) {
+      const v = asActivityViewer(viewer);
+      if (v.hidden) return HIDDEN_VIEW;
+      const key = activityProjector.viewKey(viewer);
+      return v.siteId ? `${key}@${v.siteId}` : key;
+    },
+    project(viewKey, rec) {
+      if (viewKey === HIDDEN_VIEW) return null;
+      const [key, siteId] = viewKey.split('@') as [string, string | undefined];
+      if (siteId && rec.type === 'activitySummary' && !sees(siteId, audienceOf(rec as unknown as ActivitySummary))) return null;
+      return activityProjector.project(key, rec);
+    },
+  };
+}

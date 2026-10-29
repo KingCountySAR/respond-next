@@ -4,7 +4,7 @@ import { SYSTEM_VIEWER, activityProjector, activityRegistry, participantIdFor, t
 import { Hub, MemoryStorage } from '@sync/server';
 import { MemberInfoWriter, type PersonLookup } from '../src/memberInfo';
 import { FixtureDirectory, fixtureMembers, tagsFor } from '../src/members';
-import { CRT, activityArgs } from '../../packages/domain/__tests__/helpers';
+import { CRT, RMR, activityArgs } from '../../packages/domain/__tests__/helpers';
 
 const members = fixtureMembers('kcsara', [
   ['Bo', 'Okafor', 'Field', 'Medical'],
@@ -22,7 +22,9 @@ function setup(directory: PersonLookup = tagged()) {
   writer = new MemberInfoWriter(() => hub, directory);
   const push = (name: string, args: Record<string, unknown>) => hub.pushAsSystem('a1', SYSTEM_VIEWER, [{ name, args: { at: Date.now(), ...args } }]);
   const records = async <T extends Rec>(type: string) => (await hub.actor('a1')).projectedRecords('manage').filter((r) => r.type === type) as T[];
-  return { hub, writer, push, records };
+  /** A new writer, as after a server restart: it has looked no one up. */
+  const restart = (next: PersonLookup) => (writer = new MemberInfoWriter(() => hub, next));
+  return { hub, writer, push, records, restart };
 }
 
 const addParticipant = (personRef: string, firstname: string, lastname: string) => ({ personRef, firstname, lastname, unit: CRT, status: 'responding' });
@@ -42,7 +44,7 @@ describe('member info', () => {
     expect((await records<ParticipantRec>('participant')).find((p) => p.personRef === 'adhoc:x1')?.memberTags).toEqual([]);
   });
 
-  it("doesn't write when nothing changed, and looks each person up once", async () => {
+  it('looks each person up once under a unit, and writes only then', async () => {
     let lookups = 0;
     const fixture = tagged();
     const counting: PersonLookup = { lookup: (ref) => (lookups++, fixture.lookup(ref)) };
@@ -54,8 +56,38 @@ describe('member info', () => {
     await push('setEta', { participantId: participantIdFor('kcsara:2'), eta: Date.now() + 3600_000 });
     await writer.settled();
     expect(lookups).toBe(1);
-    // The contact was written once; the ETA is the only change since.
+    // The member info was written once; the ETA is the only change since.
     expect((await hub.actor('a1')).currentVersion).toBe(version + 1);
+  });
+
+  it("looks someone up again when they change units, for that unit's tags", async () => {
+    const units: (string | undefined)[] = [];
+    const fixture = tagged();
+    const { writer, push } = setup({ lookup: (ref, unitId) => (units.push(unitId), fixture.lookup(ref)) });
+    await push('createActivity', activityArgs({ startTime: Date.now() }));
+    await push('addParticipant', addParticipant('kcsara:2', 'Kai', 'Lindqvist'));
+    await writer.settled();
+    await push('setParticipantStatus', { participantId: participantIdFor('kcsara:2'), status: 'responding', unit: RMR });
+    await writer.settled();
+    expect(units).toEqual([CRT.id, RMR.id]);
+  });
+
+  it('keeps the tags from when someone came under their unit, even after a restart', async () => {
+    const fixture = tagged();
+    const { writer, push, records, restart } = setup(fixture);
+    await push('createActivity', activityArgs({ startTime: Date.now() }));
+    await push('addParticipant', addParticipant('kcsara:1', 'Bo', 'Okafor'));
+    await writer.settled();
+    expect((await records<ParticipantRec>('participant'))[0]).toMatchObject({ memberTags: ['MED'], memberTagsUnitId: CRT.id });
+
+    // Restarted, with Bo's groups changed since: the next commits look no one up.
+    let lookups = 0;
+    const restarted = restart({ lookup: (ref) => (lookups++, fixture.lookup(ref).then((f) => f && { ...f, tags: ['K9'] })) });
+    await push('setEta', { participantId: participantIdFor('kcsara:1'), eta: null });
+    await push('closeActivity', {});
+    await restarted.settled();
+    expect(lookups).toBe(0);
+    expect((await records<ParticipantRec>('participant'))[0]?.memberTags).toEqual(['MED']);
   });
 
   it('tries again on the next commit when a lookup fails', async () => {

@@ -60,7 +60,7 @@ export class SummaryWriter {
 
   /**
    * Notes what the archive and list hold, writes summaries for stored activities missing from the
-   * archive (those made before it existed; each is loaded once, ever), and prunes the list. Returns
+   * archive (those made before it existed; each is loaded once, ever) or without their owner, and prunes the list. Returns
    * how many it added.
    */
   async backfill(storage: ActivityStorage): Promise<number> {
@@ -73,7 +73,8 @@ export class SummaryWriter {
     }
     let added = 0;
     for (const id of await storage.activityIds()) {
-      if (isReservedScope(id) || this.summaries.has(id)) continue;
+      // Those from before summaries said their owner are written again, once.
+      if (isReservedScope(id) || this.summaries.get(id)?.ownerOrgId) continue;
       const read = await this.hub().read(id, SYSTEM_VIEWER);
       if (await this.write(id, new MapView(new Map(read.records.map((r) => [recKey(r), r]))))) added++;
     }

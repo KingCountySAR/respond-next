@@ -8,6 +8,11 @@ export interface SiteUnit {
   canCreateEvents: boolean;
 }
 
+export type OperationalUnit = Pick<SiteUnit, 'id' | 'title' | 'shortTitle'> & {
+  /** The owners whose activities it sees without being on them: itself and those above it, and their partners. */
+  seesOwners: string[];
+};
+
 /** What every client loads before anything else (`GET /api/bootstrap`): the site's name and colors. */
 export interface SiteConfig {
   /**
@@ -15,6 +20,11 @@ export interface SiteConfig {
    * partners are the other units it may create activities for.
    */
   organization: SiteUnit & { partners: SiteUnit[] };
+  /**
+   * The units it operates with: the rest of its organization tree, and its partners, by short title. Its managers may
+   * invite those that don't see an activity already. Units beyond these, for mutual aid, will go by link.
+   */
+  operational: OperationalUnit[];
   theme: { primary: string; primaryDark?: string };
   /** The dev sign-in is on (DEV_TOOLS): anyone may sign in as any email, and choose their tier. */
   devSignIn: boolean;
@@ -34,6 +44,13 @@ export function ownerOptions(org: SiteConfig['organization'], missions: boolean)
   const can = permission(missions);
   return [...(org[can] ? [org] : []), ...org.partners.filter((p) => p[can])];
 }
+
+/**
+ * The units a manager may invite to an activity: those that can't see it already, being neither on it
+ * nor its owner or the owner's partner.
+ */
+export const invitableUnits = (units: OperationalUnit[], activity: { ownerOrgId: string | undefined; has: (id: string) => boolean }): OperationalUnit[] =>
+  units.filter((u) => !activity.has(u.id) && !(activity.ownerOrgId && u.seesOwners.includes(activity.ownerOrgId)));
 
 /** Whether the site may create missions (or events) at all, for itself or a partner. */
 export const canCreate = (org: SiteConfig['organization'], missions: boolean): boolean => ownerOptions(org, missions).length > 0;

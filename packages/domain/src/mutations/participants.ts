@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { Rejection, defineMutation, type MutationCtx, type Tx } from '@sync/core';
-import { currentParticipantStatus, findParticipantByPersonRef, participantIdFor, participantName, statusOf } from '../queries';
+import { currentParticipantStatus, currentUnitStatus, findParticipantByPersonRef, isActiveStatus, participantIdFor, participantName, statusOf } from '../queries';
 import { PARTICIPANT_STATUSES, type ActivityRec, type ActivityUnitRec, type ParticipantRec, type ParticipantStatus, type ParticipantStatusRec } from '../schema';
-import { STANDBY_ONLY_STATUSES, allowedInMode, isStandbyOnly } from '../statusSteps';
+import { STANDBY_ONLY_STATUSES, allowedInMode, isStandbyOnly, isUnitOut, unitStatusAfterSignIn } from '../statusSteps';
 import { asActivityViewer, canManage, isSystemViewer } from '../viewer';
 import { actorName, addStatus, at, id, idSource, requireOpen, requireParticipant, requireSelfOrManager } from './common';
 
@@ -15,23 +15,32 @@ type Unit = z.infer<typeof Unit>;
 const isSystem = (ctx: MutationCtx) => ctx.viewer.userId === 'system';
 
 /**
- * Brings the unit onto the activity if this is its first responder, as the legacy app did: the unit's
- * status starts as standby or responding, from the person's status.
+ * Brings the unit onto the activity if this is its first responder, and moves it up to standby or
+ * responding as the person's status needs: an invited, declined or stood down unit comes back in,
+ * and a standby unit responds once one of its members does.
  */
 function ensureUnit(tx: Tx, ctx: MutationCtx, nextId: () => string, unit: Unit, status: ParticipantStatus, at: number): void {
   const existing = tx.get<ActivityUnitRec>('activityUnit', unit.id);
-  if (!existing) {
-    tx.put({ type: 'activityUnit', id: unit.id, title: unit.title, rosterName: unit.rosterName });
-    tx.put({ type: 'unitStatus', id: nextId(), unitId: unit.id, status: status === 'standby' ? 'standby' : 'responding', at, by: ctx.viewer.userId });
-  } else if (existing.title !== unit.title || existing.rosterName !== unit.rosterName) tx.update('activityUnit', unit.id, { title: unit.title, rosterName: unit.rosterName });
+  if (!existing) tx.put({ type: 'activityUnit', id: unit.id, title: unit.title, rosterName: unit.rosterName });
+  else if (existing.title !== unit.title || existing.rosterName !== unit.rosterName) tx.update('activityUnit', unit.id, { title: unit.title, rosterName: unit.rosterName });
+  const next = unitStatusAfterSignIn(currentUnitStatus(tx, unit.id)?.status ?? 'unknown', status);
+  if (next) tx.put({ type: 'unitStatus', id: nextId(), unitId: unit.id, status: next, at, by: ctx.viewer.userId });
 }
 
-/** Responders signing themselves in follow the activity's standby-only and light-mode rules. */
-function checkSelfStatus(ctx: MutationCtx, activity: ActivityRec, current: ParticipantStatus, next: ParticipantStatus, at: number): void {
+/**
+ * Responders signing themselves in follow the activity's standby-only and light-mode rules, and
+ * can't sign in under a unit that has stood down or declined.
+ */
+function checkSelfStatus(tx: Tx, ctx: MutationCtx, activity: ActivityRec, current: ParticipantStatus, next: ParticipantStatus, unit: Unit, at: number): void {
   if (!allowedInMode(activity, next)) throw new Rejection('light_mode', 'That status isn’t used on this event');
   if (canManage(ctx.viewer)) return;
   if (isStandbyOnly(activity, current, at) && !STANDBY_ONLY_STATUSES.has(next)) {
     throw new Rejection('standby_only', 'This event is standby only for now');
+  }
+  const unitStatus = currentUnitStatus(tx, unit.id)?.status;
+  if (unitStatus && isUnitOut(unitStatus) && isActiveStatus(next)) {
+    const name = unit.rosterName ?? unit.title;
+    throw new Rejection('unit_out', unitStatus === 'stoodDown' ? `${name} has stood down from this event` : `${name} isn’t responding to this event`);
   }
 }
 
@@ -74,7 +83,7 @@ export const addParticipant = defineMutation({
     if (!canManage(ctx.viewer) && asActivityViewer(ctx.viewer).personRef !== a.personRef) throw new Rejection('forbidden', 'You can only sign yourself in');
     const existing = findParticipantByPersonRef(tx, a.personRef);
     const participantId = existing?.id ?? participantIdFor(a.personRef);
-    checkSelfStatus(ctx, activity, existing ? statusOf(tx, participantId, a.at) : 'unknown', a.status, a.at);
+    checkSelfStatus(tx, ctx, activity, existing ? statusOf(tx, participantId, a.at) : 'unknown', a.status, a.unit, a.at);
     if (existing) tx.update('participant', participantId, { firstname: a.firstname, lastname: a.lastname });
     else tx.put({ type: 'participant', id: participantId, personRef: a.personRef, firstname: a.firstname, lastname: a.lastname, memberTags: [], activityTags: [], eta: null, miles: null });
     const nextId = idSource(ctx);
@@ -93,7 +102,7 @@ export const setParticipantStatus = defineMutation({
     const activity = requireOpen(tx);
     const participant = requireParticipant(tx, a.participantId);
     requireSelfOrManager(ctx, participant);
-    checkSelfStatus(ctx, activity, statusOf(tx, a.participantId, a.at), a.status, a.at);
+    checkSelfStatus(tx, ctx, activity, statusOf(tx, a.participantId, a.at), a.status, a.unit, a.at);
     const nextId = idSource(ctx);
     ensureUnit(tx, ctx, nextId, a.unit, a.status, a.at);
     applyStatus(tx, ctx, nextId, a.participantId, a.unit.id, a.status, a.at);
@@ -159,6 +168,8 @@ export const setMemberInfo = defineMutation({
   args: z.object({
     participantId: id,
     memberTags: z.array(z.string()),
+    /** The unit the tags are for; missing in changes written before tags followed the unit. */
+    unitId: id.optional(),
     contact: z.object({ mobile: z.string().nullable(), email: z.string().nullable() }).nullable(),
   }),
   allow: isSystemViewer,
@@ -166,7 +177,7 @@ export const setMemberInfo = defineMutation({
   run(tx, a, ctx) {
     if (!isSystem(ctx)) throw new Rejection('forbidden', 'Only the system writes member info');
     requireParticipant(tx, a.participantId);
-    tx.update('participant', a.participantId, { memberTags: a.memberTags });
+    tx.update('participant', a.participantId, a.unitId ? { memberTags: a.memberTags, memberTagsUnitId: a.unitId } : { memberTags: a.memberTags });
     // One contact record per participant, keyed by the participant's id.
     if (a.contact) tx.put({ type: 'contact', id: a.participantId, participantId: a.participantId, ...a.contact });
     else if (tx.get('contact', a.participantId)) tx.delete('contact', a.participantId);
@@ -185,6 +196,7 @@ export const linkPerson = defineMutation({
     requireParticipant(tx, a.participantId);
     const other = [...tx.scan<ParticipantRec>('participant')].find((p) => p.personRef === a.personRef && p.id !== a.participantId);
     if (other) throw new Rejection('exists', `${participantName(tx, other.id)} is already on this event as that person`);
-    tx.update('participant', a.participantId, { personRef: a.personRef });
+    // A different person: look them up again.
+    tx.update('participant', a.participantId, { personRef: a.personRef, memberTagsUnitId: null });
   },
 });

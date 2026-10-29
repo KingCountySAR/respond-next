@@ -1,5 +1,5 @@
 /** The legacy app's colors and button labels for statuses; their words are the domain's (labels.ts). */
-import { PARTICIPANT_STATUS_TEXT, type ActivityPhase, type ParticipantStatus, type StatusStep, type UnitStatus } from '@sync/domain';
+import { PARTICIPANT_STATUS_TEXT, UNIT_STATUS_TEXT, isUnitOut, type ActivityPhase, type ParticipantStatus, type SettableUnitStatus, type StatusStep, type UnitStatus } from '@sync/domain';
 
 export const statusText = (status: ParticipantStatus): string => PARTICIPANT_STATUS_TEXT[status];
 
@@ -70,5 +70,32 @@ export const phaseText = (phase: ActivityPhase | undefined): string => (phase ? 
 /** Roster order when sorting by status, as in the legacy roster. */
 export const STATUS_SORT_ORDER: ParticipantStatus[] = ['responding', 'staging', 'assigned', 'demobilizing', 'remote', 'standby', 'clear', 'notResponding', 'unknown'];
 
-/** The legacy organization chip colors: responding green, standby amber, anything else plain. */
-export const unitChipColor = (status: UnitStatus): 'success' | 'warning' | 'default' => (status === 'responding' ? 'success' : status === 'standby' ? 'warning' : 'default');
+const UNIT_CHIP_COLORS: Record<UnitStatus, 'success' | 'warning' | 'info' | 'default'> = {
+  unknown: 'default',
+  invited: 'info',
+  notResponding: 'default',
+  standby: 'warning',
+  responding: 'success',
+  stoodDown: 'default',
+};
+
+/** The legacy organization chip colors, responding green and standby amber, with invited blue. */
+export const unitChipColor = (status: UnitStatus) => UNIT_CHIP_COLORS[status];
+
+/** A unit chip's look: out units (stood down or declined) are struck through, and its tooltip names the status. */
+export const unitChipProps = (status: UnitStatus) => ({
+  color: unitChipColor(status),
+  title: UNIT_STATUS_TEXT[status],
+  sx: isUnitOut(status) ? { textDecoration: 'line-through' } : undefined,
+});
+
+const UNIT_STEP_TEXT: Record<SettableUnitStatus, string> = {
+  invited: 'Invite',
+  notResponding: 'Not Responding',
+  standby: 'Stand By',
+  responding: 'Respond',
+  stoodDown: 'Stand Down',
+};
+
+/** The menu label for moving a unit to `to`. */
+export const unitStepLabel = (to: SettableUnitStatus): string => UNIT_STEP_TEXT[to];

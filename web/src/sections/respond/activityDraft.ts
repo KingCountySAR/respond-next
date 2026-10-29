@@ -16,6 +16,14 @@ export const EARLY_SIGN_IN_WINDOWS: { window: number | null; label: string }[] =
   { window: null, label: 'Open Immediately' },
 ];
 
+/** A Select's values are strings; "Open Immediately" (a null window) is 'open'. */
+export const windowValue = (w: number | null): string => (w === null ? 'open' : String(w));
+export const windowOf = (value: string): number | null => {
+  const option = EARLY_SIGN_IN_WINDOWS.find((o) => windowValue(o.window) === value);
+  // Not `?? default`: Open Immediately's window is null.
+  return option ? option.window : DEFAULT_EARLY_SIGN_IN_WINDOW;
+};
+
 export interface DraftFields {
   title: string;
   isMission: boolean;
