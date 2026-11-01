@@ -8,32 +8,59 @@ import type { ManageParticipant } from '@sync/model';
 import { observer, useManageActivity } from '@sync/model/react';
 import { useDialogs, type MuiDialogProps } from '../../shell/dialogs';
 import { AppDialog } from '../../shell/dialogs/AppDialog';
+import { statusText } from '../../ui/status';
 import { useChange } from '../../ui/useChange';
 import { useAssignResponder } from './NewLeaderDialog';
 import { Draggable, Droppable } from './dnd';
 import { dropEquipment, type EquipmentDrag } from './drops';
-import { resourcePool } from './opsRules';
-import { DashboardBoxWithTitle, DashboardDraggableContainer, DashboardPanel, DashboardSearchBox, DashboardToggleButton } from './parts';
+import { isDeployable, roster, type RosterSort } from './opsRules';
+import { DashboardBoxWithTitle, DashboardDraggableContainer, DashboardPanel, DashboardSearchBox, DashboardSortMenu, DashboardToggleButton } from './parts';
 import { DashboardParticipantCard } from './People';
+
+const SORTS: { value: RosterSort; label: string }[] = [
+  { value: 'status', label: 'Status' },
+  { value: 'lastName', label: 'Last name' },
+  { value: 'firstName', label: 'First name' },
+  { value: 'unit', label: 'Unit' },
+];
 
 /** Who and what can be assigned. Dropping someone or something here takes them off where they were. */
 export const DashboardResourcesPanel = observer(function DashboardResourcesPanel() {
   const activity = useManageActivity();
   const change = useChange();
   const assign = useAssignResponder();
+  const { confirm } = useDialogs();
   const [tab, setTab] = useState<'responders' | 'equipment'>('responders');
   const [query, setQuery] = useState('');
-  const pool = resourcePool(activity, query);
+  const [sort, setSort] = useState<RosterSort>('status');
+  const groups = roster(activity, query, sort);
+  const available = activity.participants.filter((p) => p.status === 'staging' && !p.target).length;
 
-  const handleDrop = (item: ManageParticipant | EquipmentDrag, type: string) => {
+  const handleDrop = async (item: ManageParticipant | EquipmentDrag, type: string, source?: string) => {
     if (type === 'participant') {
       const p = item as ManageParticipant;
+      if (!p.target) return;
+      // Dragged from a team, it's plainly meant; from the roster itself, it could be a slip, so ask.
+      if (source === 'roster') {
+        const after = p.status === 'assigned' ? ` They'll be ${statusText('staging')}.` : '';
+        const ok = await confirm({ prompt: `Take ${p.name} off ${p.locationName}?${after}`, label: 'Unassign' });
+        if (!ok) return;
+      }
       // Whatever their status: someone on a team, place or group can always go back to the pool.
-      if (p.target) assign(p, null);
+      assign(p, null);
     } else if (type === 'equipment') {
       change(() => dropEquipment(activity, item as EquipmentDrag, null));
     }
   };
+
+  const card = (p: ManageParticipant) =>
+    isDeployable(p) ? (
+      <Draggable key={p.id} type="participant" item={p} source="roster">
+        <DashboardParticipantCard participant={p} showStatus={sort !== 'status'} />
+      </Draggable>
+    ) : (
+      <DashboardParticipantCard key={p.id} participant={p} showStatus={sort !== 'status'} />
+    );
 
   return (
     <DashboardPanel title="Resources" grow>
@@ -42,7 +69,7 @@ export const DashboardResourcesPanel = observer(function DashboardResourcesPanel
           <Tabs value={tab} onChange={(_, value) => setTab(value)} variant="fullWidth" sx={{ minHeight: 36, height: 36 }}>
             <Tab
               icon={
-                <Badge badgeContent={pool.available.length} color="info" sx={{ m: 0.5 }}>
+                <Badge badgeContent={available} color="info" sx={{ m: 0.5 }}>
                   <PeopleAltIcon fontSize="small" />
                 </Badge>
               }
@@ -55,25 +82,38 @@ export const DashboardResourcesPanel = observer(function DashboardResourcesPanel
           </Tabs>
         </Box>
 
-        {/* Kept mounted, so the search survives a look at the equipment. */}
+        {/* Kept mounted, so the search and sort survive a look at the equipment. */}
         <Box sx={{ display: tab === 'responders' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
           <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <DashboardSearchBox onChange={setQuery} />
-            {pool.available.length === 0 && pool.responding.length === 0 ? (
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <DashboardSearchBox placeholder="Search names, units, tags..." onChange={setQuery} sx={{ flex: 1 }} />
+              <DashboardSortMenu options={SORTS} value={sort} onChange={setSort} />
+            </Stack>
+            {groups.length === 0 ? (
               <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-                  All responders are assigned.
+                  {query.trim() ? 'No responders match.' : 'No one has responded yet.'}
                 </Typography>
               </Box>
+            ) : sort === 'lastName' || sort === 'firstName' ? (
+              <Stack spacing={1} sx={{ overflow: 'auto' }}>
+                {groups[0]!.people.map(card)}
+              </Stack>
             ) : (
               <Stack spacing={1} sx={{ overflow: 'auto' }}>
-                {pool.available.map((p) => (
-                  <Draggable key={p.id} type="participant" item={p}>
-                    <DashboardParticipantCard participant={p} />
-                  </Draggable>
-                ))}
-                {pool.responding.map((p) => (
-                  <DashboardParticipantCard key={p.id} participant={p} />
+                {groups.map((g) => (
+                  <DashboardBoxWithTitle
+                    key={g.key}
+                    title={g.title}
+                    collapsible
+                    adornment={
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {g.people.length}
+                      </Typography>
+                    }
+                  >
+                    <Stack spacing={0.5}>{g.people.map(card)}</Stack>
+                  </DashboardBoxWithTitle>
                 ))}
               </Stack>
             )}

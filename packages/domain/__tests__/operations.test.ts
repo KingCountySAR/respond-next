@@ -26,6 +26,19 @@ describe('assigning participants', () => {
     expect(statusOf(e.view, staging)).toBe('staging');
   });
 
+  it('assigns someone standing by or responding when asked to, as the dashboard does', () => {
+    const e = startedActivity();
+    const t = withTeam(e);
+    const enRoute = addMember(e, 'kcsara:1', 'responding');
+    const standby = addMember(e, 'kcsara:2', 'standby');
+    for (const p of [enRoute, standby]) e.run('assign', { participantId: p, target: team(t), markAssigned: true, at: T0 + 2 * HOUR });
+    expect([statusOf(e.view, enRoute), statusOf(e.view, standby)]).toEqual(['assigned', 'assigned']);
+
+    // Taken off, they're available, like anyone assigned.
+    e.run('assign', { participantId: enRoute, target: null, at: T0 + 3 * HOUR });
+    expect(statusOf(e.view, enRoute)).toBe('staging');
+  });
+
   it('applies follow-on status changes at the backdated time', () => {
     const e = startedActivity();
     const t = withTeam(e);

@@ -47,6 +47,9 @@ function drag(source: HTMLElement, target: HTMLElement) {
 /** The topmost dialog. */
 const topDialog = async () => within((await screen.findAllByRole('dialog')).at(-1)!);
 
+/** Somewhere on the roster to drop someone, whoever is on it. */
+const rosterSearch = () => panel('Resources').getByPlaceholderText('Search names, units, tags...');
+
 /** Picks an option of a MUI Select. */
 async function choose(select: HTMLElement, option: string) {
   fireEvent.mouseDown(select);
@@ -91,7 +94,8 @@ describe('ops dashboard', () => {
     // The first person on a team leads it, as the legacy app's first member did.
     await waitFor(() => expect(byName<TeamRec>('team', 'Team 1')?.leaderParticipantId).toBe(DANA));
     expect(statusOf(server.seed.snapshot(ACTIVITY), DANA)).toBe('assigned');
-    expect(await panel('Resources').findByText('All responders are assigned.')).toBeTruthy();
+    // Still on the roster, under Assigned, saying where.
+    expect(await panel('Resources').findByText('Team 1', { selector: 'span' })).toBeTruthy();
     expect(panel('Teams').getByText('1 members')).toBeTruthy();
 
     await choose(panel('Teams').getByRole('combobox', { name: 'Team 1 status' }), 'On Scene');
@@ -100,7 +104,7 @@ describe('ops dashboard', () => {
     await waitFor(() => expect(screen.getByText('Field', { selector: '.MuiPaper-root div' }).previousElementSibling?.textContent).toBe('1'));
 
     // Dragged back to the pool, they're available again.
-    drag(panel('Teams').getByText('Dana Field (CRT)'), panel('Resources').getByText('All responders are assigned.'));
+    drag(panel('Teams').getByRole('button', { name: 'Dana Field' }), rosterSearch());
     await waitFor(() => expect(statusOf(server.seed.snapshot(ACTIVITY), DANA)).toBe('staging'));
     expect(currentTarget(server.seed.snapshot(ACTIVITY), DANA)).toBeNull();
   });
@@ -119,11 +123,11 @@ describe('ops dashboard', () => {
     server.seed.mutate(ACTIVITY, 'assign', { participantId: DANA, target: { kind: 'team', id: t }, asLeader: true });
     for (const p of [avery, kai]) server.seed.mutate(ACTIVITY, 'assign', { participantId: p!, target: { kind: 'team', id: t } });
     await openDashboard();
-    const pool = () => panel('Resources').getByText('All responders are assigned.');
+    const pool = rosterSearch;
     const leader = () => byName<TeamRec>('team', 'Team 1')?.leaderParticipantId;
 
     // Cancelled, nothing moves.
-    drag(await panel('Teams').findByText('Dana Field (CRT)'), pool());
+    drag(await panel('Teams').findByRole('button', { name: 'Dana Field' }), pool());
     let dialog = await topDialog();
     expect(dialog.getByText('Dana Field is leaving Team 1. Who leads it now?')).toBeTruthy();
     expect(dialog.getByRole('button', { name: 'Make leader' }).hasAttribute('disabled')).toBe(true); // nobody picked at first
@@ -131,7 +135,7 @@ describe('ops dashboard', () => {
     await waitFor(() => expect(screen.queryAllByRole('dialog')).toEqual([]));
     expect(currentTarget(server.seed.snapshot(ACTIVITY), DANA)).toEqual({ kind: 'team', id: t });
 
-    drag(panel('Teams').getByText('Dana Field (CRT)'), pool());
+    drag(panel('Teams').getByRole('button', { name: 'Dana Field' }), pool());
     dialog = await topDialog();
     fireEvent.click(dialog.getByLabelText('Kai Lindqvist'));
     fireEvent.click(dialog.getByRole('button', { name: 'Make leader' }));
@@ -319,11 +323,8 @@ describe('ops dashboard', () => {
     await openDashboard();
     const teams = panel('Teams');
     expect(await teams.findByLabelText('One or more team members are not assigned to the activity.')).toBeTruthy();
-    fireEvent.click(teams.getByRole('button', { name: 'Set Assigned' }));
-    const confirm = await topDialog();
-    expect(confirm.getByText('Mark Avery Lindqvist as Assigned?')).toBeTruthy();
-    fireEvent.click(confirm.getByRole('button', { name: /ok|yes|confirm/i }));
-    await waitFor(() => expect(statusOf(server.seed.snapshot(ACTIVITY), participantIdFor('kcsara:1'))).toBe('assigned'));
+    // Their status is set from their dialog now, not a button on the card.
+    expect(teams.queryByRole('button', { name: 'Set Assigned' })).toBeNull();
   });
 
   it('takes someone off a team whatever their status', async () => {
@@ -333,8 +334,106 @@ describe('ops dashboard', () => {
     server.seed.mutate(ACTIVITY, 'assign', { participantId: avery, target: { kind: 'team', id: teamId }, asLeader: true });
     await openDashboard();
     // Still responding, not assigned: dragged back to the pool, they leave the team all the same.
-    drag(await panel('Teams').findByText('Avery Lindqvist (CRT)'), panel('Resources').getByText('Dana Field'));
+    drag(await panel('Teams').findByRole('button', { name: 'Avery Lindqvist' }), panel('Resources').getByText('Dana Field'));
     await waitFor(() => expect(currentTarget(server.seed.snapshot(ACTIVITY), avery)).toBeNull());
     expect(statusOf(server.seed.snapshot(ACTIVITY), avery)).toBe('responding');
+  });
+
+  it('shows the whole roster, grouped by status (available first), unit or not at all', async () => {
+    const at = Date.now();
+    server.seed.mutate(ACTIVITY, 'addParticipant', { personRef: 'kcsara:1', firstname: 'Avery', lastname: 'Lindqvist', unit: CRT, status: 'responding', at });
+    server.seed.mutate(ACTIVITY, 'addParticipant', { personRef: 'kcsara:9', firstname: 'Eli', lastname: 'Ng', unit: CRT, status: 'clear', at });
+    await openDashboard();
+    const resources = panel('Resources');
+    const names = () => resources.getAllByRole('button').filter((b) => b.classList.contains('MuiLink-root')).map((b) => b.textContent);
+    const groups = () => [...resources.getByPlaceholderText('Search names, units, tags...').closest('.MuiStack-root')!.parentElement!.querySelectorAll('p')].map((p) => p.textContent);
+
+    expect(await resources.findByText('Eli Ng')).toBeTruthy();
+    expect(groups()).toEqual(['Available', 'Responding', 'Signed Out']);
+    expect(names()).toEqual(['Dana Field', 'Avery Lindqvist', 'Eli Ng']);
+
+    fireEvent.click(resources.getByRole('button', { name: 'Sort' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'First name' }));
+    await waitFor(() => expect(names()).toEqual(['Avery Lindqvist', 'Dana Field', 'Eli Ng']));
+    expect(groups()).toEqual([]);
+    expect(resources.getByText('Signed Out')).toBeTruthy(); // ungrouped, each card says its status
+
+    fireEvent.click(resources.getByRole('button', { name: 'Sort' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Last name' }));
+    await waitFor(() => expect(names()).toEqual(['Dana Field', 'Avery Lindqvist', 'Eli Ng']));
+    expect(groups()).toEqual([]);
+
+    fireEvent.click(resources.getByRole('button', { name: 'Sort' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Unit' }));
+    await waitFor(() => expect(groups()).toEqual(['CRT']));
+
+    // The search takes a unit's name too.
+    fireEvent.change(resources.getByPlaceholderText('Search names, units, tags...'), { target: { value: 'rmr' } });
+    expect(await resources.findByText('No responders match.')).toBeTruthy();
+  });
+
+  it('drags only those coming, waiting or out, and confirms those not at base yet', async () => {
+    const teamId = seedTeam('Team 1');
+    const at = Date.now();
+    const avery = participantIdFor('kcsara:1');
+    const eli = participantIdFor('kcsara:9');
+    server.seed.mutate(ACTIVITY, 'addParticipant', { personRef: 'kcsara:1', firstname: 'Avery', lastname: 'Lindqvist', unit: CRT, status: 'responding', at });
+    server.seed.mutate(ACTIVITY, 'addParticipant', { personRef: 'kcsara:9', firstname: 'Eli', lastname: 'Ng', unit: CRT, status: 'clear', at });
+    await openDashboard();
+    const team = await panel('Teams').findByText('Team 1');
+
+    // Signed out: not draggable.
+    drag(await panel('Resources').findByText('Eli Ng'), team);
+    expect(screen.queryAllByRole('dialog')).toEqual([]);
+
+    // Responding: asks first; cancelled, nothing moves.
+    drag(panel('Resources').getByText('Avery Lindqvist'), team);
+    let dialog = await topDialog();
+    expect(dialog.getByText('Avery Lindqvist is Responding. Assign them to Team 1?')).toBeTruthy();
+    fireEvent.click(dialog.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryAllByRole('dialog')).toEqual([]));
+    expect(currentTarget(server.seed.snapshot(ACTIVITY), avery)).toBeNull();
+
+    drag(panel('Resources').getByText('Avery Lindqvist'), team);
+    dialog = await topDialog();
+    fireEvent.click(dialog.getByRole('button', { name: 'Assign' }));
+    await waitFor(() => expect(currentTarget(server.seed.snapshot(ACTIVITY), avery)).toEqual({ kind: 'team', id: teamId }));
+    expect(statusOf(server.seed.snapshot(ACTIVITY), avery)).toBe('assigned'); // as if they'd arrived first
+    expect(currentTarget(server.seed.snapshot(ACTIVITY), eli)).toBeNull();
+  });
+  it("opens a person's dialog from their name, but not when the press drags", async () => {
+    await openDashboard();
+    const name = await panel('Resources').findByRole('button', { name: 'Dana Field' });
+
+    fireEvent.pointerDown(name, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.click(name, { clientX: 40, clientY: 40 });
+    expect(screen.queryAllByRole('dialog')).toEqual([]);
+
+    fireEvent.pointerDown(name, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.click(name, { clientX: 2, clientY: 1 });
+    const dialog = await topDialog();
+    expect(dialog.getByText('Total Hours:')).toBeTruthy();
+    expect(dialog.getByText('Timeline')).toBeTruthy();
+  });
+
+  it('asks before taking someone off a team when they are dropped from the roster onto it', async () => {
+    const teamId = seedTeam('Team 1');
+    server.seed.mutate(ACTIVITY, 'assign', { participantId: DANA, target: { kind: 'team', id: teamId }, asLeader: true });
+    await openDashboard();
+    const dana = () => panel('Resources').getByRole('button', { name: 'Dana Field' });
+    await panel('Resources').findByText('Team 1', { selector: 'span' });
+
+    drag(dana(), rosterSearch());
+    let dialog = await topDialog();
+    expect(dialog.getByText("Take Dana Field off Team 1? They'll be Available.")).toBeTruthy();
+    fireEvent.click(dialog.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryAllByRole('dialog')).toEqual([]));
+    expect(currentTarget(server.seed.snapshot(ACTIVITY), DANA)).toEqual({ kind: 'team', id: teamId });
+
+    drag(dana(), rosterSearch());
+    dialog = await topDialog();
+    fireEvent.click(dialog.getByRole('button', { name: 'Unassign' }));
+    await waitFor(() => expect(currentTarget(server.seed.snapshot(ACTIVITY), DANA)).toBeNull());
+    expect(statusOf(server.seed.snapshot(ACTIVITY), DANA)).toBe('staging');
   });
 });

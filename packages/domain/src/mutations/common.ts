@@ -73,11 +73,13 @@ export function addStatus(tx: Tx, ctx: MutationCtx, nextId: () => string, partic
 /**
  * Moves a participant, keeping their status in step as the legacy app did: staging becomes assigned
  * when they're put somewhere, and assigned becomes staging when they're taken off. Other statuses
- * are left alone. When a team's leader leaves it, `newLeaderId` (one of those staying, picked by
- * whoever moved them) leads it; with none given (the one member left needs no picking), the first
- * member found does, and with nobody left it has no leader.
+ * are left alone, unless `markAssigned`: then someone standing by or responding who is put somewhere
+ * is assigned too, as if they'd arrived and then been assigned. When a team's leader leaves it,
+ * `newLeaderId` (one of those staying, picked by whoever moved them) leads it; with none given (the
+ * one member left needs no picking), the first member found does, and with nobody left it has no
+ * leader.
  */
-export function moveParticipant(tx: Tx, ctx: MutationCtx, nextId: () => string, participantId: string, target: Target | null, at: number, newLeaderId?: string): void {
+export function moveParticipant(tx: Tx, ctx: MutationCtx, nextId: () => string, participantId: string, target: Target | null, at: number, newLeaderId?: string, markAssigned = false): void {
   const previous = currentTarget(tx, participantId, at);
   if (sameTarget(previous, target)) return;
   tx.put({ type: 'assignment', id: nextId(), participantId, target, at, by: ctx.viewer.userId });
@@ -92,7 +94,8 @@ export function moveParticipant(tx: Tx, ctx: MutationCtx, nextId: () => string, 
 
   const status = currentParticipantStatus(tx, participantId, at);
   if (!status) return;
-  if (target && status.status === 'staging') addStatus(tx, ctx, nextId, participantId, status.unitId, 'assigned', at, `Assigned to ${targetName(tx, target)}`);
+  const assignable = status.status === 'staging' || (markAssigned && (status.status === 'standby' || status.status === 'responding'));
+  if (target && assignable) addStatus(tx, ctx, nextId, participantId, status.unitId, 'assigned', at, `Assigned to ${targetName(tx, target)}`);
   else if (!target && status.status === 'assigned') addStatus(tx, ctx, nextId, participantId, status.unitId, 'staging', at, 'Unassigned');
 }
 

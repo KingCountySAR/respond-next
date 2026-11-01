@@ -180,9 +180,9 @@ export class ManageParticipant extends RespondParticipant<ParticipantRec, Manage
     return staying.length >= 2 ? staying : [];
   }
 
-  /** `newLeaderId` leads the team they leave, if they lead it (see `successorsLeaving`). */
-  assign(target: Target | null, options: { asLeader?: boolean; newLeaderId?: string; at?: number } = {}): WireMutation {
-    return this.activity.mutate('assign', { participantId: this.id, target, asLeader: options.asLeader, newLeaderId: options.newLeaderId, at: options.at });
+  /** `newLeaderId` leads the team they leave, if they lead it (see `successorsLeaving`). `markAssigned`: see the assign mutation. */
+  assign(target: Target | null, options: { asLeader?: boolean; newLeaderId?: string; markAssigned?: boolean; at?: number } = {}): WireMutation {
+    return this.activity.mutate('assign', { participantId: this.id, target, asLeader: options.asLeader, newLeaderId: options.newLeaderId, markAssigned: options.markAssigned, at: options.at });
   }
 
   /** Fixes a past status entry (from `timeline`): its status, its time, or both. */

@@ -5,7 +5,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ErrorIcon from '@mui/icons-material/Error';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Box, Chip, IconButton, InputAdornment, Paper, Stack, TextField, Tooltip, Typography, type SxProps, type Theme } from '@mui/material';
+import SortIcon from '@mui/icons-material/Sort';
+import { Box, Chip, IconButton, InputAdornment, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Stack, TextField, Tooltip, Typography, type SxProps, type Theme } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { isValidElement, useEffect, useRef, useState, type ReactNode } from 'react';
 import { DragHandle } from './dnd';
@@ -210,7 +211,8 @@ export function DashboardDraggableContainer({ children, sx, showHandle = true, v
     boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
     transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background-color 120ms ease',
     ':hover': { bgcolor: 'grey.50', borderColor: 'primary.light', boxShadow: '0 6px 14px rgba(16,24,40,0.12)', '& .drag-handle': { opacity: 0.9 } },
-    ':active': { cursor: 'grabbing', transform: 'scale(0.97)' },
+    // Not when the press is on something clickable in the card (a name link, a status chip).
+    ':active:not(:has(button:active, [role="button"]:active))': { cursor: 'grabbing', transform: 'scale(0.97)' },
   };
   return (
     <Stack direction="row" spacing={compact ? 0.5 : 1} sx={[{ alignItems: 'center', justifyContent: 'flex-start' }, disabled ? base : draggable, ...sxList(sx)]}>
@@ -275,5 +277,35 @@ export function DashboardToggleButton({ on, title, label, onClick, children }: {
         {children}
       </IconButton>
     </Tooltip>
+  );
+}
+
+/** A square outlined icon button opening a menu of sorts; the current one is checked. */
+export function DashboardSortMenu<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (value: T) => void }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const current = options.find((o) => o.value === value)?.label;
+  return (
+    <>
+      <Tooltip title={`Sort by: ${current}`}>
+        <IconButton aria-label="Sort" aria-haspopup="menu" onClick={(e) => setAnchor(e.currentTarget)} sx={{ width: 32, height: 32, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+          <SortIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
+        {options.map((o) => (
+          <MenuItem
+            key={o.value}
+            selected={o.value === value}
+            onClick={() => {
+              onChange(o.value);
+              setAnchor(null);
+            }}
+          >
+            <ListItemIcon>{o.value === value && <CheckIcon fontSize="small" />}</ListItemIcon>
+            <ListItemText>{o.label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 }

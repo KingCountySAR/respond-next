@@ -1,5 +1,5 @@
 /** The dashboard's rules that aren't the domain's: orders, counts, names and suggestions, as the legacy dashboard had them. */
-import { DEFAULT_PLACES, type Gar, type Level, type TeamStatus } from '@sync/domain';
+import { DEFAULT_PLACES, PARTICIPANT_STATUS_TEXT, type Gar, type Level, type ParticipantStatus, type TeamStatus } from '@sync/domain';
 import type { ManageActivity, ManageParticipant, ManageTeam, Comm, LogLine } from '@sync/model';
 
 export { TEAM_STATUS_TEXT } from '@sync/domain';
@@ -88,25 +88,62 @@ export function matchesResponder(p: ManageParticipant, query: string): boolean {
   return [p.record?.firstname, p.record?.lastname, p.unit?.name, ...p.tags].filter(Boolean).join(' ').toLowerCase().includes(q);
 }
 
+/** Who can be dragged onto a team, place or group: those coming, waiting or already out. */
+const DEPLOYABLE: ParticipantStatus[] = ['standby', 'responding', 'staging', 'assigned'];
+export const isDeployable = (p: ManageParticipant): boolean => DEPLOYABLE.includes(p.status);
+
+export type RosterSort = 'status' | 'lastName' | 'firstName' | 'unit';
+
+const byLastThenFirst = (a: ManageParticipant, b: ManageParticipant) => {
+  const key = (p: ManageParticipant) => `${p.record?.lastname ?? ''} ${p.record?.firstname ?? ''}`;
+  return key(a).localeCompare(key(b), undefined, { sensitivity: 'base' });
+};
+
+/** The roster's status groups, available first. Unknown shows as not responding, so they share a group. */
+const ROSTER_STATUS_ORDER: ParticipantStatus[] = ['staging', 'responding', 'assigned', 'standby', 'remote', 'demobilizing', 'clear', 'notResponding'];
+const rosterStatus = (p: ManageParticipant): ParticipantStatus => (p.status === 'unknown' ? 'notResponding' : p.status);
+
+/** Earliest ETA first, unknown ETAs last by name. */
+function byEta(a: ManageParticipant, b: ManageParticipant): number {
+  const [ea, eb] = [a.record?.eta ?? null, b.record?.eta ?? null];
+  if (ea == null && eb == null) return byFirstThenLast(a, b);
+  if (ea == null) return 1;
+  if (eb == null) return -1;
+  return ea - eb || byFirstThenLast(a, b);
+}
+
+export interface RosterGroup {
+  key: string;
+  /** Empty when the roster isn't grouped (sorted by a name). */
+  title: string;
+  people: ManageParticipant[];
+}
+
 /**
- * The resource pool: unassigned people who are available (by name), then those still responding
- * (earliest ETA first, unknown ETAs last by name).
+ * Everyone on the activity who matches the search. By status: in groups, available first, those
+ * responding by ETA and the rest by name. By unit: in groups by unit name (no unit last), each by
+ * name. By last or first name: one untitled group.
  */
-export function resourcePool(activity: ManageActivity, query: string): { available: ManageParticipant[]; responding: ManageParticipant[] } {
-  const free = activity.participants.filter((p) => !p.target && matchesResponder(p, query));
-  const eta = (p: ManageParticipant) => p.record?.eta ?? null;
-  return {
-    available: free.filter((p) => p.status === 'staging').sort(byFirstThenLast),
-    responding: free
-      .filter((p) => p.status === 'responding')
-      .sort((a, b) => {
-        const [ea, eb] = [eta(a), eta(b)];
-        if (ea == null && eb == null) return byFirstThenLast(a, b);
-        if (ea == null) return 1;
-        if (eb == null) return -1;
-        return ea - eb || byFirstThenLast(a, b);
-      }),
-  };
+export function roster(activity: ManageActivity, query: string, sort: RosterSort): RosterGroup[] {
+  const people = activity.participants.filter((p) => matchesResponder(p, query)).sort(sort === 'lastName' ? byLastThenFirst : byFirstThenLast);
+  if (sort === 'lastName' || sort === 'firstName') return people.length ? [{ key: 'all', title: '', people }] : [];
+
+  if (sort === 'status') {
+    return ROSTER_STATUS_ORDER.map((status) => ({
+      key: status,
+      title: PARTICIPANT_STATUS_TEXT[status],
+      people: people.filter((p) => rosterStatus(p) === status).sort(status === 'responding' ? byEta : byFirstThenLast),
+    })).filter((g) => g.people.length > 0);
+  }
+
+  const byUnit = new Map<string, RosterGroup>();
+  for (const p of people) {
+    const id = p.unit?.id ?? '';
+    const group = byUnit.get(id) ?? { key: id || 'none', title: p.unit?.name ?? 'No unit', people: [] };
+    group.people.push(p);
+    byUnit.set(id, group);
+  }
+  return [...byUnit].sort(([a, ga], [b, gb]) => (!a !== !b ? (a ? -1 : 1) : ga.title.localeCompare(gb.title))).map(([, g]) => g);
 }
 
 // --- Equipment ------------------------------------------------------------------------------

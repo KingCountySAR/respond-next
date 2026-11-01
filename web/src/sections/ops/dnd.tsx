@@ -14,6 +14,8 @@ interface DraggedItem {
   data: unknown;
   /** Runs in the accepting Droppable before its onDrop; null cancels the drop (e.g. a dismissed form). */
   transform?: Transform;
+  /** Where the drag started, for a Droppable that treats its own items differently. */
+  source?: string;
   previewNode?: ReactNode;
 }
 
@@ -82,7 +84,7 @@ const useDnD = (): DnDContextType => {
 
 const DRAG_START_THRESHOLD_PX = 6;
 
-export function Draggable<T>({ type, item, transform, children }: { type: string; item: T; transform?: (item: T) => Promise<unknown> | unknown; children: ReactNode }) {
+export function Draggable<T>({ type, item, transform, source, children }: { type: string; item: T; transform?: (item: T) => Promise<unknown> | unknown; source?: string; children: ReactNode }) {
   const { startDrag, updateDrag, endDrag } = useDnD();
   const [isDragging, setIsDragging] = useState(false);
   const startPoint = useRef<Position | null>(null);
@@ -111,7 +113,7 @@ export function Draggable<T>({ type, item, transform, children }: { type: string
     if (started.current) {
       setIsDragging(false);
       endDrag(e, (element) => {
-        element.closest<HTMLElement>('[data-droppable]')?.dispatchEvent(new CustomEvent('custom-drop', { bubbles: true, detail: { type, data: item, transform } }));
+        element.closest<HTMLElement>('[data-droppable]')?.dispatchEvent(new CustomEvent('custom-drop', { bubbles: true, detail: { type, data: item, transform, source } }));
       });
     }
     startPoint.current = null;
@@ -137,7 +139,7 @@ export function DragHandle({ sx }: { sx?: SxProps<Theme> }) {
 }
 
 /** Takes drops of the `accepts` types (all when unset) whose closest Droppable is this one. */
-export function Droppable({ accepts, onDrop, children, grow }: { accepts?: string | string[]; onDrop: (item: any, type: string) => void; children: ReactNode; grow?: boolean }) {
+export function Droppable({ accepts, onDrop, children, grow }: { accepts?: string | string[]; onDrop: (item: any, type: string, source?: string) => void; children: ReactNode; grow?: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -145,10 +147,10 @@ export function Droppable({ accepts, onDrop, children, grow }: { accepts?: strin
     if (!element) return;
     const isAccepted = (type?: string) => !accepts || (!!type && (Array.isArray(accepts) ? accepts.includes(type) : accepts === type));
     const handleDrop = (e: Event) => {
-      const { type, data, transform } = (e as CustomEvent<DraggedItem>).detail;
+      const { type, data, transform, source } = (e as CustomEvent<DraggedItem>).detail;
       if (e.target !== element || !isAccepted(type)) return;
       void Promise.resolve(transform ? transform(data) : data).then((resolved) => {
-        if (resolved != null) onDrop(resolved, type);
+        if (resolved != null) onDrop(resolved, type, source);
       });
     };
     element.addEventListener('custom-drop', handleDrop);
