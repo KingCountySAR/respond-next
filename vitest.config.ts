@@ -19,7 +19,7 @@ export default defineConfig({
           include: ['web/__tests__/**/*.test.{ts,tsx}'],
           // Each file loads the app afresh; pre-bundled, MUI and friends load in one piece instead of
           // module by module, which halves the run.
-          deps: { optimizer: { client: { enabled: true, include: ['@mui/material', '@mui/icons-material', '@mui/x-date-pickers', '@mui/x-data-grid', 'react', 'react-dom', 'date-fns'] } } },
+          deps: { optimizer: { client: { enabled: true, include: ['@mui/material', '@mui/material/styles', '@emotion/react', '@emotion/styled', '@mui/icons-material', '@mui/x-date-pickers', '@mui/x-data-grid', 'react', 'react-dom', 'date-fns'] } } },
         },
       },
     ],
