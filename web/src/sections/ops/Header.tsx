@@ -1,9 +1,15 @@
-import { Box, Paper, Stack, Typography } from '@mui/material';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import CheckIcon from '@mui/icons-material/Check';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { Box, ButtonBase, Divider, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Paper, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Link } from 'wouter';
 import { observer, useManageActivity } from '@sync/model/react';
+import { useDialogs } from '../../shell/dialogs';
 import { activityPath } from '../../ui/paths';
 import { UnitChips } from '../../ui/UnitChips';
+import { useChange } from '../../ui/useChange';
 import { responderSummary } from './opsRules';
 import { DashboardMetricTile } from './parts';
 
@@ -42,20 +48,80 @@ const DashboardActivityDetails = observer(function DashboardActivityDetails() {
   const activity = useManageActivity();
   const record = activity.record!;
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
-      <Typography
-        variant="h5"
-        component={Link}
-        href={`~${activityPath(activity)}`}
-        sx={{ fontWeight: 700, lineHeight: 1.2, color: 'inherit', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-      >
-        {record.title}
-      </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', minWidth: 0 }}>
+      <DashboardActivityMenu />
       <Typography variant="subtitle1" sx={{ color: 'text.secondary', mt: 0.5 }}>
         {record.idNumber || ''} • {record.location.title || 'Location pending'}
       </Typography>
       <UnitChips activity={activity} sx={{ display: 'flex', flexWrap: 'wrap', rowGap: 0.5, mt: 1 }} />
     </Box>
+  );
+});
+
+/** The dashboard's views. Only the full one exists so far. */
+const VIEWS = [
+  { value: 'full', label: 'Full dashboard', ready: true },
+  { value: 'staging', label: 'Staging', ready: false },
+  { value: 'scribe', label: 'Scribe', ready: false },
+] as const;
+
+/** The title opens the activity's menu: the responder view, the dashboard's views, and closing or reopening it. */
+const DashboardActivityMenu = observer(function DashboardActivityMenu() {
+  const activity = useManageActivity();
+  const record = activity.record!;
+  const { confirm } = useDialogs();
+  const change = useChange();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const kind = record.kind === 'mission' ? 'mission' : 'event';
+
+  const handleCloseOrReopen = async () => {
+    setAnchor(null);
+    const label = record.closed ? 'Reopen' : 'Close';
+    const confirmed = await confirm({
+      title: `${label} ${kind}?`,
+      prompt: `${record.closed ? '' : `Everyone still on the ${kind} will be signed out. `}`,
+      label,
+    });
+    if (confirmed) change(() => (record.closed ? activity.reopen() : activity.close()));
+  };
+
+  return (
+    <>
+      <ButtonBase
+        onClick={(e) => setAnchor(e.currentTarget)}
+        aria-haspopup="menu"
+        aria-expanded={!!anchor}
+        sx={{ borderRadius: 1, px: 0.5, mx: -0.5, textAlign: 'left', '&:hover': { bgcolor: 'action.hover' } }}
+      >
+        <Typography variant="h5" component="span" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+          {record.title}
+        </Typography>
+        <ArrowDropDownIcon sx={{ color: 'text.secondary' }} />
+      </ButtonBase>
+      <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
+        <MenuItem component="a" href={activityPath(activity)} target="_blank" rel="noopener" onClick={() => setAnchor(null)}>
+          <ListItemIcon>
+            <OpenInNewIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Open responder view</ListItemText>
+        </MenuItem>
+        <Divider />
+        <ListSubheader sx={{ lineHeight: '32px' }}>Views</ListSubheader>
+        {VIEWS.map((v) => (
+          <MenuItem key={v.value} disabled={!v.ready} selected={v.value === 'full'} onClick={() => setAnchor(null)}>
+            <ListItemIcon>{v.value === 'full' && <CheckIcon fontSize="small" />}</ListItemIcon>
+            <ListItemText secondary={v.ready ? undefined : 'Coming soon'}>{v.label}</ListItemText>
+          </MenuItem>
+        ))}
+        <Divider />
+        <MenuItem onClick={handleCloseOrReopen}>
+          <ListItemIcon>{record.closed ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}</ListItemIcon>
+          <ListItemText>
+            {record.closed ? 'Reopen' : 'Close'} {kind}…
+          </ListItemText>
+        </MenuItem>
+      </Menu>
+    </>
   );
 });
 

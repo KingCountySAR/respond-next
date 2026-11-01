@@ -66,7 +66,7 @@ function seedTeam(name = 'Team 1') {
 describe('ops dashboard', () => {
   it('shows the activity, the responder counts, the pool, places and weather', async () => {
     await openDashboard();
-    expect(screen.getByRole('link', { name: TITLE }).getAttribute('href')).toBe(`/mission/${ACTIVITY}`);
+    expect(screen.getByRole('button', { name: TITLE })).toBeTruthy();
     const tile = (label: string) => screen.getByText(label, { selector: '.MuiPaper-root div' }).previousElementSibling?.textContent;
     // Dana, available at base: not on the way or in the field, but counted.
     expect([tile('On the way'), tile('Field'), tile('Total')]).toEqual(['0', '0', '1']);
@@ -78,6 +78,21 @@ describe('ops dashboard', () => {
     expect(await operations.findByText('41°F')).toBeTruthy(); // the activity location's forecast
     expect(operations.getByText('Hiker overdue since 1800.')).toBeTruthy();
     expect(document.title).toBe(`26-0123 ${TITLE} - Dashboard`);
+  });
+
+  it('opens the responder view and closes the mission from the title menu', async () => {
+    await openDashboard();
+    fireEvent.click(screen.getByRole('button', { name: TITLE }));
+    const responderView = await screen.findByRole('menuitem', { name: 'Open responder view' });
+    expect([responderView.getAttribute('href'), responderView.getAttribute('target')]).toEqual([`/mission/${ACTIVITY}`, '_blank']);
+    expect(screen.getByRole('menuitem', { name: /Staging/ }).getAttribute('aria-disabled')).toBe('true');
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Close mission…' }));
+    fireEvent.click((await topDialog()).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(getActivity(server.seed.snapshot(ACTIVITY))?.closed).toBe(true));
+
+    fireEvent.click(screen.getByRole('button', { name: TITLE }));
+    expect(await screen.findByRole('menuitem', { name: 'Reopen mission…' })).toBeTruthy();
   });
 
   it('adds a team, assigns by dragging, and sets its status', async () => {
