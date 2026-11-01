@@ -49,13 +49,7 @@ export const DashboardParticipantCard = observer(function DashboardParticipantCa
   const where = isResponding && eta ? `ETA: ${format24HourTime(eta)}` : participant.target ? participant.locationName : '';
   const deployable = isDeployable(participant);
   return (
-    <DashboardDraggableContainer
-      variant="compact"
-      disabled={!deployable}
-      showHandle={deployable}
-      // In dark mode, halfway between the group's paper (#121212) and grey[700] (#616161).
-      sx={participant.status !== 'staging' ? { opacity: 0.9, bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#3a3a3a' : theme.palette.grey[300]) } : undefined}
-    >
+    <DashboardDraggableContainer variant="compact" disabled={!deployable} showHandle={deployable} tone={participant.status === 'staging' ? 'normal' : 'faded'}>
       <Stack direction="column" spacing={0.25} sx={{ width: '100%', minWidth: 0 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
           <DashboardParticipantName participant={participant} variant="subtitle2" />
@@ -77,7 +71,7 @@ export const DashboardParticipantCard = observer(function DashboardParticipantCa
 export const DashboardTeamMember = observer(function DashboardTeamMember({ participant }: { participant: ManageParticipant }) {
   const isAssigned = participant.status === 'assigned';
   return (
-    <DashboardDraggableContainer variant="compact" sx={{ bgcolor: !isAssigned ? '#f0bcbc' : 'background.paper' }}>
+    <DashboardDraggableContainer variant="compact" tone={isAssigned ? 'normal' : 'attention'}>
       <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between', alignItems: 'center', flex: 1, minWidth: 0, width: '100%' }}>
         <Typography variant="body2" sx={{ flexGrow: 1 }}>
           <DashboardParticipantName participant={participant} variant="body2" /> ({participant.unit?.name})

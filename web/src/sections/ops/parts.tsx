@@ -13,6 +13,9 @@ import { DragHandle } from './dnd';
 
 const sxList = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : sx ? [sx] : []);
 
+/** The theme's card hover tint, laid over whatever the background is: darker in light mode, lighter in dark. */
+const hoverTint = (theme: Theme) => `linear-gradient(${theme.palette.card.hover}, ${theme.palette.card.hover})`;
+
 /** A column of the dashboard: a header with a title and actions over a body. */
 export function DashboardPanel({ title, icon, children, grow = false, actions }: { title: string; icon?: ReactNode; children: ReactNode; grow?: boolean; actions?: ReactNode }) {
   const theme = useTheme();
@@ -200,17 +203,33 @@ export function DashboardSearchBox({ placeholder, onChange, sx }: { placeholder?
   );
 }
 
-/** A card that looks draggable (grey when `disabled`, i.e. not draggable). */
-export function DashboardDraggableContainer({ children, sx, showHandle = true, variant = 'standard', disabled = false }: { children: ReactNode; sx?: SxProps<Theme>; showHandle?: boolean; variant?: 'standard' | 'compact'; disabled?: boolean }) {
+/** How a card stands out: as usual, faded (not available, or not draggable), or needing attention. Colors are the theme's `card`. */
+export type CardTone = 'normal' | 'faded' | 'attention';
+
+/** A card that looks draggable, unless `disabled` (not draggable: faded, without the grab look). */
+export function DashboardDraggableContainer({
+  children,
+  sx,
+  showHandle = true,
+  variant = 'standard',
+  disabled = false,
+  tone = disabled ? 'faded' : 'normal',
+}: {
+  children: ReactNode;
+  sx?: SxProps<Theme>;
+  showHandle?: boolean;
+  variant?: 'standard' | 'compact';
+  disabled?: boolean;
+  tone?: CardTone;
+}) {
   const compact = variant === 'compact';
-  const disabledBg = (theme: Theme) => (theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#ebebeb');
-  const base: SxProps<Theme> = { width: '100%', minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: compact ? 0.5 : 1, bgcolor: disabled ? disabledBg : 'background.paper' };
+  const base: SxProps<Theme> = { width: '100%', minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: compact ? 0.5 : 1, bgcolor: `card.${tone}`, opacity: tone === 'faded' ? 0.9 : 1 };
   const draggable: SxProps<Theme> = {
     ...base,
     cursor: 'grab',
-    boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
+    boxShadow: (theme) => theme.palette.card.shadow,
     transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background-color 120ms ease',
-    ':hover': { bgcolor: 'grey.50', borderColor: 'primary.light', boxShadow: '0 6px 14px rgba(16,24,40,0.12)', '& .drag-handle': { opacity: 0.9 } },
+    ':hover': { backgroundImage: hoverTint, borderColor: 'primary.light', boxShadow: (theme: Theme) => theme.palette.card.raisedShadow, '& .drag-handle': { opacity: 0.9 } },
     // Not when the press is on something clickable in the card (a name link, a status chip).
     ':active:not(:has(button:active, [role="button"]:active))': { cursor: 'grabbing', transform: 'scale(0.97)' },
   };
@@ -261,9 +280,9 @@ export function DashboardCopyChip({ value }: { value: string }) {
       sx={{
         px: 1,
         mt: 1,
-        boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
+        boxShadow: (theme) => theme.palette.card.shadow,
         transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background-color 120ms ease',
-        ':hover': { bgcolor: 'grey.50', borderColor: 'primary.light', boxShadow: '0 6px 14px rgba(16,24,40,0.12)', '& .drag-handle': { opacity: 0.9 } },
+        ':hover': { backgroundImage: hoverTint, borderColor: 'primary.light', boxShadow: (theme: Theme) => theme.palette.card.raisedShadow },
       }}
     />
   );
