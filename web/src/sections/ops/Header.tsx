@@ -61,13 +61,13 @@ const DashboardActivityDetails = observer(function DashboardActivityDetails() {
   );
 });
 
-/** Responding, Available and Field counts. */
+/** On the way, Field and Total counts. */
 export const DashboardResponderSummary = observer(function DashboardResponderSummary({ variant = 'desktop' }: { variant?: 'desktop' | 'mobile' }) {
   const summary = responderSummary(useManageActivity());
   const lines = [
-    ['Responding', summary.responding],
-    ['Available', summary.available],
+    ['On the way', summary.onTheWay],
     ['Field', summary.field],
+    ['Total', summary.total],
   ] as const;
   return (
     <>

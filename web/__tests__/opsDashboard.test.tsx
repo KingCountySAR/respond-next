@@ -67,8 +67,9 @@ describe('ops dashboard', () => {
   it('shows the activity, the responder counts, the pool, places and weather', async () => {
     await openDashboard();
     expect(screen.getByRole('link', { name: TITLE }).getAttribute('href')).toBe(`/mission/${ACTIVITY}`);
-    const available = screen.getByText('Available', { selector: '.MuiPaper-root div' }).previousElementSibling;
-    expect(available?.textContent).toBe('1');
+    const tile = (label: string) => screen.getByText(label, { selector: '.MuiPaper-root div' }).previousElementSibling?.textContent;
+    // Dana, available at base: not on the way or in the field, but counted.
+    expect([tile('On the way'), tile('Field'), tile('Total')]).toEqual(['0', '0', '1']);
     expect(panel('Resources').getByText('Dana Field')).toBeTruthy();
     expect(panel('Teams').getByText('There are no active teams.')).toBeTruthy();
     const operations = panel('Operations');
@@ -351,6 +352,10 @@ describe('ops dashboard', () => {
     expect(await resources.findByText('Eli Ng')).toBeTruthy();
     expect(groups()).toEqual(['Available', 'Responding', 'Signed Out']);
     expect(names()).toEqual(['Dana Field', 'Avery Lindqvist', 'Eli Ng']);
+    expect([...resources.getAllByText('1', { selector: '.MuiChip-label' })].length).toBe(3); // each group's count
+    // The header counts Eli, signed out, in the total; Avery is on the way.
+    const tile = (label: string) => screen.getByText(label, { selector: '.MuiPaper-root div' }).previousElementSibling?.textContent;
+    expect([tile('On the way'), tile('Total')]).toEqual(['1', '3']);
 
     fireEvent.click(resources.getByRole('button', { name: 'Sort' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: 'First name' }));

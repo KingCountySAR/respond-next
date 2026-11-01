@@ -73,12 +73,11 @@ export function uniqueNameError(name: string, others: string[], what: string): s
 
 // --- Responders -----------------------------------------------------------------------------
 
-/** The header's counts: on their way, waiting at base, and out in the field. */
-export function responderSummary(activity: ManageActivity): { responding: number; available: number; field: number } {
-  const counts = activity.statusCounts;
+/** The header's counts: on their way, out in the field (on teams or at places away from base), and everyone, signed out too. */
+export function responderSummary(activity: ManageActivity): { onTheWay: number; field: number; total: number } {
   const inField = activity.teams.filter((t) => t.status !== 'inBase' && t.status !== 'disbanded').reduce((n, t) => n + t.members.length, 0);
   const atPlaces = activity.places.filter((p) => p.name !== DEFAULT_PLACES.base).reduce((n, p) => n + p.members.length, 0);
-  return { responding: counts.responding, available: counts.staging, field: inField + atPlaces };
+  return { onTheWay: activity.statusCounts.responding, field: inField + atPlaces, total: activity.participants.length };
 }
 
 /** Names, unit and tags, for the responder search. */

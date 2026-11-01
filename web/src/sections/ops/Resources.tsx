@@ -1,7 +1,7 @@
 import CategoryIcon from '@mui/icons-material/Category';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import { Badge, Box, Button, DialogActions, DialogContent, DialogTitle, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, DialogActions, DialogContent, DialogTitle, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { useMemo, useState, type FormEvent } from 'react';
 import { EQUIPMENT_CATALOG, CUSTOM_EQUIPMENT_TYPE_ID, type EquipmentType } from '@sync/domain';
 import type { ManageParticipant } from '@sync/model';
@@ -34,7 +34,6 @@ export const DashboardResourcesPanel = observer(function DashboardResourcesPanel
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<RosterSort>('status');
   const groups = roster(activity, query, sort);
-  const available = activity.participants.filter((p) => p.status === 'staging' && !p.target).length;
 
   const handleDrop = async (item: ManageParticipant | EquipmentDrag, type: string, source?: string) => {
     if (type === 'participant') {
@@ -67,17 +66,7 @@ export const DashboardResourcesPanel = observer(function DashboardResourcesPanel
       <Droppable accepts={['participant', 'equipment']} onDrop={handleDrop} grow>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
           <Tabs value={tab} onChange={(_, value) => setTab(value)} variant="fullWidth" sx={{ minHeight: 36, height: 36 }}>
-            <Tab
-              icon={
-                <Badge badgeContent={available} color="info" sx={{ m: 0.5 }}>
-                  <PeopleAltIcon fontSize="small" />
-                </Badge>
-              }
-              iconPosition="start"
-              label={<Box sx={{ ml: 1 }}>Responders</Box>}
-              value="responders"
-              sx={{ minHeight: 42, py: 0, fontSize: '0.8125rem' }}
-            />
+            <Tab icon={<PeopleAltIcon fontSize="small" />} iconPosition="start" label={<Box sx={{ ml: 1 }}>Responders</Box>} value="responders" sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }} />
             <Tab icon={<Inventory2Icon fontSize="small" />} iconPosition="start" label={<Box sx={{ ml: 1 }}>Equipment</Box>} value="equipment" sx={{ minHeight: 36, py: 0, fontSize: '0.8125rem' }} />
           </Tabs>
         </Box>
@@ -106,11 +95,7 @@ export const DashboardResourcesPanel = observer(function DashboardResourcesPanel
                     key={g.key}
                     title={g.title}
                     collapsible
-                    adornment={
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        {g.people.length}
-                      </Typography>
-                    }
+                    adornment={<Chip label={g.people.length} size="small" sx={{ height: 20, fontWeight: 600 }} />}
                   >
                     <Stack spacing={0.5}>{g.people.map(card)}</Stack>
                   </DashboardBoxWithTitle>
