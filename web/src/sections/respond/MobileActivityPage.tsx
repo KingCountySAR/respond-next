@@ -16,7 +16,7 @@ import { ParticipantTile } from './components/ParticipantTile';
 import { ParticipantDialog } from '../../ui/participant/ParticipantDialog';
 import { RosterPanel, type RosterState } from './components/RosterPanel';
 import { StatusUpdater } from '../../ui/participant/StatusUpdater';
-import { UnitChips } from './components/UnitChips';
+import { UnitChips } from '../../ui/UnitChips';
 
 const MOBILE_BOTTOM_NAV_TAB_HEIGHT = 56;
 const MOBILE_STATUS_UPDATER_HEIGHT = 68.5;

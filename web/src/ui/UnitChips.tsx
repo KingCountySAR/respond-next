@@ -2,8 +2,8 @@ import { Box, Chip } from '@mui/material';
 import type { BoxProps } from '@mui/material/Box';
 import { isManageActivity, type RespondActivity } from '@sync/model';
 import { observer } from '@sync/model/react';
-import { unitChipProps } from '../../../ui/status';
-import { UnitMenuChip } from '../../../ui/UnitStatusMenu';
+import { unitChipProps } from './status';
+import { UnitMenuChip } from './UnitStatusMenu';
 
 /**
  * The legacy ParticipatingOrgChips: one chip per unit with its active count; clicking filters the

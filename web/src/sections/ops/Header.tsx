@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import { observer, useManageActivity } from '@sync/model/react';
 import { activityPath } from '../../ui/paths';
+import { UnitChips } from '../../ui/UnitChips';
 import { responderSummary } from './opsRules';
 import { DashboardMetricTile } from './parts';
 
@@ -40,7 +41,6 @@ function DashboardClock() {
 const DashboardActivityDetails = observer(function DashboardActivityDetails() {
   const activity = useManageActivity();
   const record = activity.record!;
-  const isMission = record.kind === 'mission';
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
       <Typography
@@ -52,11 +52,9 @@ const DashboardActivityDetails = observer(function DashboardActivityDetails() {
         {record.title}
       </Typography>
       <Typography variant="subtitle1" sx={{ color: 'text.secondary', mt: 0.5 }}>
-        {record.idNumber || ''}
+        {record.idNumber || ''} • {record.location.title || 'Location pending'}
       </Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-        {isMission ? 'Mission' : 'Event'} • {record.location.title || 'Location pending'}
-      </Typography>
+      <UnitChips activity={activity} sx={{ display: 'flex', flexWrap: 'wrap', rowGap: 0.5, mt: 1 }} />
     </Box>
   );
 });
