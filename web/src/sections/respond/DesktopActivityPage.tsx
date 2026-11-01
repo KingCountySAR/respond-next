@@ -11,8 +11,9 @@ import { BriefingPanel } from './components/BriefingPanel';
 import { ManagerPanel } from './components/ManagerPanel';
 import { ParticipantEtaUpdater } from './components/ParticipantEtaUpdater';
 import { ParticipantTile } from './components/ParticipantTile';
-import { ParticipantDialog, RosterPanel, type RosterState } from './components/RosterPanel';
-import { StatusUpdater } from './components/StatusUpdater';
+import { ParticipantDialog } from '../../ui/participant/ParticipantDialog';
+import { RosterPanel, type RosterState } from './components/RosterPanel';
+import { StatusUpdater } from '../../ui/participant/StatusUpdater';
 import { UnitChips } from './components/UnitChips';
 
 export const DesktopActivityPage = observer(function DesktopActivityPage({ activity, roster }: { activity: RespondActivity; roster: RosterState }) {

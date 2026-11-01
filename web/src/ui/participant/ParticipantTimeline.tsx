@@ -4,9 +4,9 @@ import { useState } from 'react';
 import type { ParticipantStatusRec } from '@sync/domain';
 import { isManageActivity, type RespondParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
-import { statusText } from '../../../ui/status';
-import { TimePickerDialog } from '../../../ui/TimePickerDialog';
-import { useChange } from '../../../ui/useChange';
+import { statusText } from '../status';
+import { TimePickerDialog } from '../TimePickerDialog';
+import { useChange } from '../useChange';
 
 /** Status entries, oldest first. Managers can correct an entry's time. */
 export const ParticipantTimeline = observer(function ParticipantTimeline({ participant }: { participant: RespondParticipant }) {

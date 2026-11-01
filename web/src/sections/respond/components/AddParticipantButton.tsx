@@ -7,8 +7,8 @@ import { useApi } from '../../../shell/api';
 import { useSite } from '../../../shell/App';
 import { useDialogs, type MuiDialogProps } from '../../../shell/dialogs';
 import { AppDialog } from '../../../shell/dialogs/AppDialog';
-import { ParticipantTimeline } from './ParticipantTimeline';
-import { StatusUpdater } from './StatusUpdater';
+import { ParticipantTimeline } from '../../../ui/participant/ParticipantTimeline';
+import { StatusUpdater } from '../../../ui/participant/StatusUpdater';
 
 const SEARCH_DEBOUNCE_MS = 500;
 

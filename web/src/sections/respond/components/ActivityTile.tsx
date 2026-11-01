@@ -9,7 +9,7 @@ import caltopoLogo from '../../../assets/caltopo-logo.svg';
 import { NavigationApp, usePreferences } from '../../../shell/preferences';
 import { useSyncClient } from '../../../shell/sync';
 import { StatusChip } from '../../../ui/StatusChip';
-import { StatusUpdater } from './StatusUpdater';
+import { StatusUpdater } from '../../../ui/participant/StatusUpdater';
 
 /** The legacy URL for a listed activity. */
 export const listedPath = (item: ActivityListItem): string => `/${item.isMission ? 'mission' : 'event'}/${item.id}`;

@@ -2,8 +2,8 @@ import { Button, Stack } from '@mui/material';
 import { useState } from 'react';
 import type { RespondParticipant } from '@sync/model';
 import { observer } from '@sync/model/react';
-import { ParticipantMilesInput } from '../../../ui/ParticipantMilesInput';
-import { useChange } from '../../../ui/useChange';
+import { ParticipantMilesInput } from '../ParticipantMilesInput';
+import { useChange } from '../useChange';
 
 export const ParticipantMilesUpdater = observer(function ParticipantMilesUpdater({
   participant,
