@@ -92,12 +92,18 @@ describe('ops home', () => {
     await signIn('Alice Adams', 'kcsara:101', 'manage');
     fireEvent.click(await screen.findByRole('link', { name: 'Operations' }));
     await waitFor(() => expect(window.location.pathname).toBe(`/ops/${ACTIVITY}`));
-    // In ops, the title is the ops home and the button goes back.
+    // On a dashboard, the title is the ops home and the button goes back.
     expect(screen.getByRole('link', { name: /Check-In$/ }).getAttribute('href')).toBe('/ops');
     fireEvent.click(await screen.findByRole('link', { name: 'Respond' }));
     await waitFor(() => expect(window.location.pathname).toBe(`/mission/${ACTIVITY}`));
     expect(screen.getByRole('link', { name: /Check-In$/ }).getAttribute('href')).toBe('/');
     expect(screen.getByRole('link', { name: 'Operations' }).getAttribute('href')).toBe(`/ops/${ACTIVITY}`);
+    // From the dashboard's title to the ops home, whose title is home.
+    fireEvent.click(screen.getByRole('link', { name: 'Operations' }));
+    await waitFor(() => expect(window.location.pathname).toBe(`/ops/${ACTIVITY}`));
+    fireEvent.click(screen.getByRole('link', { name: /Check-In$/ }));
+    await waitFor(() => expect(window.location.pathname).toBe('/ops'));
+    await waitFor(() => expect(screen.getByRole('link', { name: /Check-In$/ }).getAttribute('href')).toBe('/'));
   });
 
   it("doesn't offer respond-tier members the Operations button", async () => {

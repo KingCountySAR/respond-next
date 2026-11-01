@@ -31,7 +31,7 @@ export function ToolbarPage({ children, maxWidth }: { children: ReactNode; maxWi
       <AppBar sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, position: 'fixed' }}>
         <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            <Link href={inOps ? '~/ops' : '~/'} style={{ textDecoration: 'inherit', color: 'inherit' }}>
+            <Link href={OPS_ACTIVITY_PATH.test(path) ? '~/ops' : '~/'} style={{ textDecoration: 'inherit', color: 'inherit' }}>
               {shortTitle} Check-In
             </Link>
           </Typography>
@@ -61,7 +61,8 @@ export function ToolbarPage({ children, maxWidth }: { children: ReactNode; maxWi
   );
 }
 
-// The ops section, and the pages there or in the respond section about one activity.
+// The ops section, and the pages there or in the respond section about one activity. The title goes
+// home, except from a dashboard, where it goes to the ops home.
 const OPS_PATH = /^\/ops(?:\/|$)/;
 const OPS_ACTIVITY_PATH = /^\/ops\/([^/]+)/;
 const ACTIVITY_PATH = /^\/(?:mission|event)\/([^/]+)/;
