@@ -217,6 +217,9 @@ export function OrganizationForm({ initial, isNew, siteAdmin, all, memberProvide
         <FormControlLabel control={<Checkbox checked={values.canCreateMissions} onChange={(e) => set('canCreateMissions', e.target.checked)} />} label="Can create missions" />
         <FormControlLabel control={<Checkbox checked={values.canCreateEvents} onChange={(e) => set('canCreateEvents', e.target.checked)} />} label="Can create events" />
       </Stack>
+      <Typography variant="body2" color="text.secondary">
+        Organizations under this one may create them for it too, unless their partner entry for it says otherwise.
+      </Typography>
       <Typography variant="subtitle1">Partners</Typography>
       <Typography variant="body2" color="text.secondary">
         Organizations under this one have these partners too. Their own entry for the same partner replaces this one.

@@ -17,7 +17,8 @@ export type OperationalUnit = Pick<SiteUnit, 'id' | 'title' | 'shortTitle'> & {
 export interface SiteConfig {
   /**
    * The site's organization. Its people respond under it as their unit, as in the legacy app. Its
-   * partners are the other units it may create activities for.
+   * partners are the other units it may create activities for: those above it that may create them,
+   * nearest first, then its partners (see the server's `createsFor`).
    */
   organization: SiteUnit & { partners: SiteUnit[] };
   /**
