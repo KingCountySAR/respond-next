@@ -335,6 +335,23 @@ export class OrganizationStore {
   }
 
   /**
+   * The other units an organization may create activities for: those above it that may create them
+   * themselves (nearest first, each with its own flags), then its partners. A partner entry for one
+   * above it, its own or a nearer ancestor's, decides instead, as for any partner.
+   */
+  createsFor(id: string): OrganizationPartner[] {
+    const partners = this.partnersOf(id);
+    const entry = new Map(partners.map((p) => [p.id, p]));
+    const above = this.lineage(id).slice(1);
+    const inherited = above.flatMap((o): OrganizationPartner[] => {
+      const p = entry.get(o.id);
+      if (p) return [p];
+      return o.canCreateMissions || o.canCreateEvents ? [{ id: o.id, canCreateMissions: o.canCreateMissions, canCreateEvents: o.canCreateEvents }] : [];
+    });
+    return [...inherited, ...partners.filter((p) => !above.some((o) => o.id === p.id))];
+  }
+
+  /**
    * The units an organization operates with, and so may invite: everything else under its top-level organization (that
    * one included), then its partners, by short title.
    */
@@ -370,7 +387,7 @@ export class OrganizationStore {
       canCreateMissions: can.canCreateMissions,
       canCreateEvents: can.canCreateEvents,
     });
-    const partners = this.partnersOf(org.id).flatMap((p) => {
+    const partners = this.createsFor(org.id).flatMap((p) => {
       const partner = this.orgs.get(p.id);
       return partner ? [unit(partner, p)] : [];
     });
