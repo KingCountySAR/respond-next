@@ -113,6 +113,15 @@ describe('participant details', () => {
     expect(e.get('contact', pid)).toMatchObject({ participantId: pid, mobile: '206-555-0100' });
   });
 
+  it('corrects names only as the system', () => {
+    const e = startedActivity();
+    const pid = addMember(e, 'kcsara:1');
+    const args = { participantId: pid, firstname: 'Bob', lastname: 'Adams' };
+    expect(e.rejects('setParticipantName', args, MANAGER)).toBe('forbidden');
+    e.run('setParticipantName', args, SYSTEM);
+    expect(e.get<ParticipantRec>('participant', pid)).toMatchObject({ firstname: 'Bob', lastname: 'Adams' });
+  });
+
   it("won't link two participants to the same person", () => {
     const e = startedActivity();
     addMember(e, 'kcsara:1');
