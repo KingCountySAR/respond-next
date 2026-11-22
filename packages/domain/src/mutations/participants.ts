@@ -184,6 +184,23 @@ export const setMemberInfo = defineMutation({
   },
 });
 
+/**
+ * Corrects a participant's name from the member directory; only the system writes it. Written by the one-off fix for
+ * participants cedar named "Legal First Name: ..." (Nov 2026), so activities hold it.
+ */
+export const setParticipantName = defineMutation({
+  name: 'setParticipantName',
+  version: 1,
+  args: z.object({ participantId: id, firstname: z.string().trim().min(1), lastname: z.string().trim() }),
+  allow: isSystemViewer,
+  describe: (a, view) => `Rename ${participantName(view, a.participantId)} to ${a.firstname} ${a.lastname}`.trim(),
+  run(tx, a, ctx) {
+    if (!isSystem(ctx)) throw new Rejection('forbidden', 'Only the system corrects names');
+    requireParticipant(tx, a.participantId);
+    tx.update('participant', a.participantId, { firstname: a.firstname, lastname: a.lastname });
+  },
+});
+
 /** Ties an ad-hoc participant to a member record. */
 export const linkPerson = defineMutation({
   name: 'linkPerson',
