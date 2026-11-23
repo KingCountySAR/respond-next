@@ -6,3 +6,4 @@ dist/
 # Local overrides and secrets (OAuth client secret etc.)
 .env.local
 *.local
+*.local.json
