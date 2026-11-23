@@ -4,6 +4,70 @@ The sync engine from the [design doc](https://claude.ai/code/artifact/5d9c89c9-2
 
 Phase 1 gate: **convergence and network tests pass.**
 
+## Getting started
+
+You need Node 22.12+, npm 11 and Docker. Activities stay in a local database that starts out empty. You can run with
+fictional organizations and members, which needs nothing else, or with KCSARA's real ones.
+
+### With fictional members
+
+`server/organizations.dev.json` is a made-up umbrella, Cascade Valley SAR Council, over two units: Cascade Rescue
+Team and Ridgeline Mountain Rescue. Its members are fixtures, so it needs no clients or secrets.
+
+```sh
+npx npm@11 install
+npm run db                                          # Postgres in Docker
+npm run seed -- server/organizations.dev.json
+npm run dev
+```
+
+Open http://localhost:4000 (the council), http://crt.localhost:4000 or http://rmr.localhost:4000. Sign in with the
+dev sign-in on the login panel: it has no Google sign-in. Create `server/.env.local` with `SITE_ADMINS=<your email>`
+if you want the admin page.
+
+### With KCSARA's organizations
+
+This uses KCSARA's real organizations and members. Member lookups go to the production member provider, through production Hydra.
+You need two clients of your own:
+
+- **Hydra client**, for cedar. Ask an admin of the KCSARA VM for one. They create it from the `../vm` repo:
+  `node hydra.mjs create oauth2-client --name "Respond dev (<you>)" --grant-type client_credentials --scope members.read,d4h:members.read --format json`.
+  Its `client_id` and `client_secret` are yours.
+- **Google OAuth client** (a Web application, in any Google Cloud project), with
+  `http://localhost:4000/api/auth/callback` as an Authorized redirect URI.
+
+Fill in two git-ignored files:
+
+1. **`server/.env.local`**:
+   ```
+   SECRETS_KEY=<output of: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))">
+   SITE_ADMINS=<your email>
+   ```
+2. **`server/organizations.kcsara.local.json`**: KCSARA's seed file, which isn't in the repo. Ask the team for it.
+   Fill in its four blanks: the `clientId` and `clientSecret` of the `king-sar` member provider (your Hydra client) and of the
+   `king-google` sign-in provider (your Google client).
+
+Then:
+
+```sh
+npx npm@11 install
+npm run db                                                 # Postgres in Docker
+npm run seed -- server/organizations.kcsara.local.json     # KCSARA's organizations, with your clients
+npm run dev
+```
+
+Both seeds claim `localhost`, so one database can't hold both. To switch from the fictional seed, empty the
+organizations first (see Seeding, below).
+
+Open any organization's site at one of its `localhost` or `*.localhost` host names (its `hostnames` in the seed
+file), on port 4000. Sign in with Google, using an email the membership provider knows. The dev sign-in, on the
+same panel, also looks people up in the membership provider.
+
+Member info is real: names, phone numbers, emails and photos. Handle it as you would on the production site. If you
+change your seed file, run the seed again and restart `npm run dev`.
+
+`npm test` needs neither seed: it uses a fake membership provider.
+
 ## Layout
 
 | Path | Package | What it is |
@@ -50,7 +114,7 @@ npm run smoke            # end-to-end check against :4000; needs a server with D
 
 **Organizations and sites.** Organizations form a tree, an umbrella over its units (`server/src/organizations.ts`, schema in `packages/domain/src/organizations.ts`). Each has hostnames: a request's site is the organization with its hostname, and `/api/bootstrap` gives its title, partners and brand. Partners (the organizations it may create missions or events for) are its own and its ancestors'; its own entry for a partner, or a nearer ancestor's, sets what it may create for them. The brand (colors and app icons, served at the sizes the app uses and in the install manifest), the member provider and the sign-in provider are the organization's own, or else the nearest ancestor's. They live in the `organizations`, `member_providers`, `sign_in_providers` and `site_admins` tables (in memory without `DATABASE_URL`, where the server starts with none, so every site is a 404).
 
-**Seeding.** The server never reads a seed file. `npm run seed -- <file>` imports one into `DATABASE_URL` (from the environment, else `server/.env.local`, else `server/.env.development`, so the dev database by default): each member provider, sign-in provider and organization in the file replaces the stored one with its id, and its site admins are added. Nothing else is changed or removed, so it's safe to run again, and an import that doesn't hang together writes nothing. A provider without a `clientSecret` keeps the stored one (secrets are encrypted with `SECRETS_KEY`, so that must be set to import one). Restart a running server to see the changes. `server/organizations.dev.json` is a fictional umbrella (Cascade Valley SAR Council) over CRT and RMR; for real organizations, use a git-ignored file of your own. The `docker compose` app uses the same database as `npm run dev`.
+**Seeding.** The server never reads a seed file. `npm run seed -- <file>` imports one into `DATABASE_URL` (from the environment, else `server/.env.local`, else `server/.env.development`, so the dev database by default): each member provider, sign-in provider and organization in the file replaces the stored one with its id, and its site admins are added. Nothing else is changed or removed, so it's safe to run again, and an import that doesn't hang together writes nothing. A provider without a `clientSecret` keeps the stored one (secrets are encrypted with `SECRETS_KEY`, so that must be set to import one). Restart a running server to see the changes. `server/organizations.dev.json` is a fictional umbrella (Cascade Valley SAR Council) over CRT and RMR. For real organizations, use a file of your own kept out of git (`*.local.json` is ignored); KCSARA's comes from the team (see Getting started). The `docker compose` app uses the same database as `npm run dev`.
 
 To start the organizations over, keeping activities, empty their tables, seed again and restart the server:
 
