@@ -21,5 +21,12 @@ export function buildTheme(theme: SiteConfig['theme'], dark: boolean): Theme {
       danger: { main: 'rgb(192,0,0)', contrastText: '#fff' },
       card: CARD[dark ? 'dark' : 'light'],
     },
+    components: {
+      // On a narrow screen a dialog's buttons wrap to another row, rather than wrapping their labels.
+      MuiDialogActions: {
+        defaultProps: { disableSpacing: true },
+        styleOverrides: { root: { flexWrap: 'wrap', gap: 8, '& .MuiButton-root': { whiteSpace: 'nowrap' } } },
+      },
+    },
   });
 }
