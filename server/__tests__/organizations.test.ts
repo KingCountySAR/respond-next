@@ -73,6 +73,43 @@ describe('organization store', () => {
     expect(operational('org-sheriff')).toEqual([]);
   });
 
+  it('lets units create activities for those above them that may create them, unless a partner entry says otherwise', () => {
+    const seed = testSeed();
+    seed.organizations.push({ ...seed.organizations[2]!, id: 'org-sheriff', parentId: null, title: 'Sheriff', hostnames: [], emailDomains: [], partners: [] });
+    // The umbrella may create events (not missions), and is the Sheriff's partner for missions.
+    seed.organizations[0]!.canCreateEvents = true;
+    seed.organizations[0]!.partners = [{ id: 'org-sheriff', canCreateMissions: true, canCreateEvents: false }];
+    const orgs = OrganizationStore.memory(seed);
+    const partners = (id: string) => orgs.siteConfig(orgs.get(id)!, { devSignIn: false, buildId: '' }).organization.partners.map((p) => [p.id, p.canCreateMissions, p.canCreateEvents]);
+    // Those above come first, with their own flags, then the partners.
+    expect(partners('org-rmr')).toEqual([
+      ['org-cvsc', false, true],
+      ['org-sheriff', true, false],
+    ]);
+    expect(partners('org-crt')).toEqual([
+      ['org-cvsc', false, true],
+      ['org-rmr', true, false],
+      ['org-sheriff', true, false],
+    ]);
+    // A top-level organization has nothing above it.
+    expect(partners('org-cvsc')).toEqual([['org-sheriff', true, false]]);
+
+    // CRT's own entry for the umbrella decides, as for any partner.
+    seed.organizations[1]!.partners = [...(seed.organizations[1]!.partners ?? []), { id: 'org-cvsc', canCreateMissions: true, canCreateEvents: false }];
+    const withEntry = OrganizationStore.memory(seed);
+    expect(withEntry.siteConfig(withEntry.get('org-crt')!, { devSignIn: false, buildId: '' }).organization.partners.map((p) => [p.id, p.canCreateMissions, p.canCreateEvents])).toEqual([
+      ['org-cvsc', true, false],
+      ['org-rmr', true, false],
+      ['org-sheriff', true, false],
+    ]);
+
+    // One above that may create neither isn't offered.
+    seed.organizations[0]!.canCreateEvents = false;
+    seed.organizations[1]!.partners = [{ id: 'org-rmr', canCreateMissions: true, canCreateEvents: false }];
+    const neither = OrganizationStore.memory(seed);
+    expect(neither.siteConfig(neither.get('org-rmr')!, { devSignIn: false, buildId: '' }).organization.partners.map((p) => p.id)).toEqual(['org-sheriff']);
+  });
+
   it("shows a site the activities it's on, owns, or owned by it, one above it, or a partner of either, missions included", () => {
     const seed = testSeed();
     seed.organizations.push({ ...seed.organizations[2]!, id: 'org-sheriff', parentId: null, title: 'Sheriff', hostnames: [], emailDomains: [], partners: [] });
